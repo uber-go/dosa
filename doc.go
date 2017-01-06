@@ -18,7 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package dosa is the dosa   .
+// Package dosa is the DOSA - Declarative Object Storage Abstraction.
+//
+// [![Report Card][report-card-img]][report-card]
+//
+//
+// Abstract
 //
 // [dosa][dosa-spec] is a library that provides a distributed
 // object storage abstraction for applications in golang and
