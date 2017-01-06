@@ -1,16 +1,52 @@
-hash: 31947c96b7bd2eda3cd996ee4b9e358337cb968c17a8a5e567e557d46ffe94c2
-updated: 2016-12-22T10:16:58.793734659-08:00
+hash: 7c6899d36f988ad7d43d80cacd6fa00ef133094059b0596ba7e210543763b52d
+updated: 2017-01-05T16:05:13.163933054-08:00
 imports: []
 testImports:
+- name: github.com/anmitsu/go-shlex
+  version: 648efa622239a2f6ff949fed78ee37b48d499ba4
+- name: github.com/axw/gocov
+  version: 54b98cfcac0c63fb3f9bd8e7ad241b724d4e985b
+  subpackages:
+  - gocov
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
+- name: github.com/go-playground/overalls
+  version: 6de3f6a9f4b3449d179d98d63b521716cda834fb
+- name: github.com/golang/lint
+  version: 3390df4df2787994aea98de825b964ac7944b817
+  subpackages:
+  - golint
+- name: github.com/jessevdk/go-flags
+  version: 0648c820cd4e564706597268ae2d2c7d9e6900c6
+- name: github.com/kisielk/errcheck
+  version: 9c1292e1c962175f76516859f4a88aabd86dc495
+- name: github.com/kisielk/gotool
+  version: 5e136deb9b893bbe6c8f23236ff4378b7a8a0dbb
+- name: github.com/mattn/goveralls
+  version: edf7508a2bcb40ec1160e94518c983c2fc169f02
+- name: github.com/mvdan/interfacer
+  version: 588bd9940e912b1b2760d41bd836ef28ff97164d
+  subpackages:
+  - cmd/interfacer
+- name: github.com/pborman/uuid
+  version: 3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
+- name: github.com/russross/blackfriday
+  version: a4dd8ad4a6fda03e68be3eacb71efbf51565415e
+- name: github.com/sectioneight/md-to-godoc
+  version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
+- name: github.com/shurcooL/sanitized_anchor_name
+  version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: github.com/stretchr/testify
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
   - assert
+- name: golang.org/x/tools
+  version: 3fe2afc9e626f32e91aff6eddb78b14743446865
+  subpackages:
+  - cover

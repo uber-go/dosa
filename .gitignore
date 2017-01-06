@@ -1,6 +1,3 @@
-
-# Created by https://www.gitignore.io/api/go,intellij
-
 ### Go ###
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
 *.o
@@ -29,10 +26,22 @@ _testmain.go
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+*.html
+*.coverprofile
 
 # External packages folder
-vendor/
+/vendor
+node_modules
 
+# Testing artifacts
+*.mem
+*.cpu
+*.test
+*.pprof
+/.bench
+
+# Logs
+*.log
 
 ### Intellij ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and Webstorm

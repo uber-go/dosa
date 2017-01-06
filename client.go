@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2016 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,12 +22,13 @@ package dosa
 
 import "context"
 
-// marker interface method for Entity
+// DomainObject is a marker interface method for an Entity
 type DomainObject interface {
 	// dummy marker interface method (not exported)
 	isDomainObject() bool
 }
 
+// Entity represents any object that can be persisted by DOSA
 type Entity struct{}
 
 // make entity a DomainObject
@@ -35,11 +36,11 @@ func (*Entity) isDomainObject() bool {
 	return true
 }
 
+// Client defines the methods used to
 type Client interface {
 	// Initialize must be called before any data operation
 	// It validates the schema and establishes any data
 	Initialize(context.Context) error
-	// connections.
 
 	// Create, fail if row already exists
 	// Use Upsert if possible, which works for new rows
@@ -57,51 +58,65 @@ type Client interface {
 	//
 	// BatchRead(context.Context, []string, ...DomainObject) (BatchReadResult, error)
 
-	// Deletes a row by primary key
+	// Delete removes a row by primary key
 	Delete(context.Context, DomainObject) error
 
-	// Find rows within a range
+	// Range fetches rows within a range
 	Range(context.Context, *RangeOp) ([]DomainObject, string, error)
 
-	// Search a "searchable" field
+	// Search fetches by fields that have been marked "searchable"
 	Search(context.Context, *SearchOp) ([]DomainObject, string, error)
 
-	// fetch everything
+	// ScanEverything fetches all objects
 	ScanEverything(context.Context) ([]DomainObject, string, error)
 }
 
-// BatchResult contains the result for individual entities.
+// BatchReadResult contains the result for individual entities.
 // If the read succeeded for an entity, the entity
 // is filled and the error is nil; otherwise, the entity is
 // untouched and error is not nil.
 type BatchReadResult map[DomainObject]error
 
-// All() is used for "fields []string" to read/update all fields.
+// All is used for "fields []string" to read/update all fields.
 // It's a convenience function for code readability.
 func All() []string { return nil }
 
+// RangeOp is used to specify constraints to Range calls
 type RangeOp struct{}
 
+// String satisfies the Stringer interface
 func (r *RangeOp) String() string {
 	/* TODO */
 	return ""
 }
+
+// Eq is used to express an equality constraint for a range query
 func (r *RangeOp) Eq(string, interface{}) *RangeOp {
 	/* TODO */
 	return r
 }
+
+// Gt is used to express an "greater than" constraint for a range query
 func (r *RangeOp) Gt(key string, value interface{}) *RangeOp {
 	/* TODO */
 	return r
 }
+
+// GtOrEq is used to express an "greater than or equal" constraint for a
+// range query
 func (r *RangeOp) GtOrEq(key string, value interface{}) *RangeOp {
 	/* TODO */
 	return r
 }
+
+// Lt is used to express a "less than" constraint for a range query
 func (r *RangeOp) Lt(key string, value interface{}) *RangeOp {
 	/* TODO */
 	return r
 }
+
+// LtOrEq is used to express a "less than or equal" constraint for a
+// range query
 func (r *RangeOp) LtOrEq(key string, value interface{}) *RangeOp {
 	/* TODO */
 	return r
@@ -114,14 +129,14 @@ func (r *RangeOp) Fields([]string) *RangeOp {
 	return r
 }
 
-// Sets the number of rows returned per call.
-// If not set, a default value would be applied
+// Limit sets the number of rows returned per call. If not set, a default
+// value would be applied
 func (r *RangeOp) Limit(n int) *RangeOp {
 	/* TODO */
 	return r
 }
 
-// Sets the pagination token. If not set, an empty token would be used.
+// Offset sets the pagination token. If not set, an empty token would be used.
 func (r *RangeOp) Offset(token string) *RangeOp {
 	/* TODO */
 	return r
@@ -132,12 +147,12 @@ type SearchOp struct {
 	/* TODO */
 }
 
-// Create a new SearchOp
+// NewSearchOp returns a new SearchOp instance
 func NewSearchOp(DomainObject) *SearchOp {
 	return &SearchOp{}
 }
 
-// for debug
+// String satisfies the stringer interface
 func (s *SearchOp) String() string {
 	/* TODO */
 	return ""
@@ -149,13 +164,13 @@ func (s *SearchOp) By(fieldName string, fieldValue interface{}) *SearchOp {
 	return s
 }
 
-// Same as Limit in RangeOp. Default 128.
+// Limit sets the number of rows returned per call. Default is 128.
 func (s *SearchOp) Limit(n int) *SearchOp {
 	/* TODO */
 	return s
 }
 
-// Same as Offset in RangeOp.
+// Offset sets the pagination token. If not set, an empty token would be used.
 func (s *SearchOp) Offset(token string) *SearchOp {
 	/* TODO */
 	return s
