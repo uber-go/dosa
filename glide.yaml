@@ -21,6 +21,7 @@ testImport:
 - package: github.com/axw/gocov
   subpackages:
   - gocov
+- package: github.com/matm/gocov-html
 - package: github.com/go-playground/overalls
 - package: github.com/sectioneight/md-to-godoc
   version: master

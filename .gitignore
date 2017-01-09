@@ -137,3 +137,8 @@ fabric.properties
 # *.ipr
 
 # End of https://www.gitignore.io/api/go,node,intellij
+
+# Can't override overalls path
+overalls.coverprofile
+profile.coverprofile
+coverage.html

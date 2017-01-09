@@ -8,6 +8,7 @@ libdeps:
 dependencies: libdeps
 	@$(call label,Installing test dependencies...)
 	$(ECHO_V)go install ./vendor/github.com/axw/gocov/gocov
+	$(ECHO_V)go install ./vendor/github.com/matm/gocov-html
 	$(ECHO_V)go install ./vendor/github.com/mattn/goveralls
 	$(ECHO_V)go install ./vendor/github.com/go-playground/overalls
 	@$(call label,Installing golint...)
