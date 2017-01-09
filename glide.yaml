@@ -1,7 +1,32 @@
-package: github.com/uber/dosa-go
+package: go.uber.org/dosa
 import: []
 testImport:
 - package: github.com/stretchr/testify
   version: ^1.1.4
   subpackages:
   - assert
+- package: golang.org/x/tools
+  subpackages:
+  - cover
+- package: github.com/anmitsu/go-shlex
+- package: github.com/jessevdk/go-flags
+- package: github.com/mattn/goveralls
+# Necessary for goveralls
+- package: github.com/pborman/uuid
+- package: github.com/golang/lint
+  subpackages:
+  - golint
+- package: github.com/kisielk/gotool
+- package: github.com/kisielk/errcheck
+- package: github.com/axw/gocov
+  subpackages:
+  - gocov
+- package: github.com/matm/gocov-html
+- package: github.com/go-playground/overalls
+- package: github.com/sectioneight/md-to-godoc
+  version: master
+# specified manually since we don't import md-to-godoc
+- package: github.com/russross/blackfriday
+  version: 2
+- package: github.com/shurcooL/sanitized_anchor_name
+- package: github.com/mvdan/interfacer/cmd/interfacer
