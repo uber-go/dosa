@@ -38,13 +38,13 @@ typeSettings = {
     "go": {
         "extensions": [".go"],
         "keepFirst": None,
-        "blockCommentStartPattern": re.compile('^\s*/\*'),  ## used to find the beginning of a header bloc
-        "blockCommentEndPattern": re.compile(r'\*/\s*$'),   ## used to find the end of a header block
+        "blockCommentStartPattern": None,  ## used to find the beginning of a header bloc
+        "blockCommentEndPattern": None,   ## used to find the end of a header block
         "lineCommentStartPattern": re.compile(r'\s*//'),    ## used to find header blocks made by line comments
         "lineCommentEndPattern": None,
-        "headerStartLine": "/*\n",   ## inserted before the first header text line
-        "headerEndLine": " */\n",    ## inserted after the last header text line
-        "headerLinePrefix": " * ",   ## inserted before each header text line
+        "headerStartLine": "",   ## inserted before the first header text line
+        "headerEndLine": "",    ## inserted after the last header text line
+        "headerLinePrefix": "// ",   ## inserted before each header text line
         "headerLineSuffix": None,            ## inserted after each header text line, but before the new line
     },
     "java": {
@@ -177,7 +177,7 @@ def read_file(file):
     type = ext2type.get(extension)
     logging.debug("Type for this file is %s",type)
     if not type:
-        return None
+        return (None, None)
     settings = typeSettings.get(type)
     with open(file,'r') as f:
         lines = f.readlines()
@@ -204,14 +204,14 @@ def read_file(file):
         else:
             ## we have reached something else, so no header in this file
             #logging.debug("Did not find the start giving up at lien %s, line is >%s<",i,line)
-            return {"lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense}
+            return (type, {"lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense})
         i = i+1
     #logging.debug("Found preliminary start at %s",headStart)
     ## now we have either reached the end, or we are at a line where a block start or line comment occurred
     # if we have reached the end, return default dictionary without info
     if i == len(lines):
         #logging.debug("We have reached the end, did not find anything really")
-        return {"lines":lines, "skip":skip, "headStart":headStart, "headEnd":headEnd, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
+        return (type, {"lines":lines, "skip":skip, "headStart":headStart, "headEnd":headEnd, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense})
     # otherwise process the comment block until it ends
     if blockCommentStartPattern:
         for j in range(i,len(lines)):
@@ -219,26 +219,26 @@ def read_file(file):
             if licensePattern.findall(lines[j]):
                 haveLicense = True
             elif blockCommentEndPattern.findall(lines[j]):
-                return {"lines":lines, "skip":skip, "headStart":headStart, "headEnd":j, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
+                return (type, {"lines":lines, "skip":skip, "headStart":headStart, "headEnd":j, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense})
             elif yearsPattern.findall(lines[j]):
                 haveLicense = True
                 yearsLine = j
         # if we went through all the lines without finding an end, maybe we have some syntax error or some other
         # unusual situation, so lets return no header
         #logging.debug("Did not find the end of a block comment, returning no header")
-        return {"lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense}
+        return (type, {"lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense})
     else:
         for j in range(i,len(lines)-1):
             if lineCommentStartPattern.findall(lines[j]) and licensePattern.findall(lines[j]):
                 haveLicense = True
             elif not lineCommentStartPattern.findall(lines[j]):
-                return {"lines":lines, "skip":skip, "headStart":i, "headEnd":j-1, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
+                return (type, {"lines":lines, "skip":skip, "headStart":i, "headEnd":j-1, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense})
             elif yearsPattern.findall(lines[j]):
                 haveLicense = True
                 yearsLine = j
         ## if we went through all the lines without finding the end of the block, it could be that the whole
         ## file only consisted of the header, so lets return the last line index
-        return {"lines":lines, "skip":skip, "headStart":i, "headEnd":len(lines)-1, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
+        return (type, {"lines":lines, "skip":skip, "headStart":i, "headEnd":len(lines)-1, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense})
 
 def make_backup(file):
     copyfile(file,file+".bak")
@@ -309,7 +309,7 @@ def main():
             logging.debug("Patterns: %s",patterns)
             for file in get_paths(patterns,start_dir):
                 logging.debug("Processing file: %s",file)
-                dict = read_file(file)
+                (type, dict) = read_file(file)
                 if not dict:
                     logging.debug("File not supported %s",file)
                     continue
