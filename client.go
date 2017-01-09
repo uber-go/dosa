@@ -20,7 +20,7 @@
 
 package dosa
 
-import "golang.org/x/net/context"
+import "context"
 
 // DomainObject is a marker interface method for an Entity
 type DomainObject interface {
