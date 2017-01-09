@@ -1,4 +1,11 @@
-# dosa [![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov]
+# DOSA - Declarative Object Storage Abstraction
+
+[![GoDoc][doc-img]][doc]
+[![Coverage Status][cov-img]][cov]
+[![Build Status][ci-img]][ci]
+[![Report Card][report-card-img]][report-card]
+
+## Abstract
 
 [dosa][dosa-spec] is a library that provides a distributed
 object storage abstraction for applications in golang and
@@ -19,7 +26,6 @@ DOSA is a storage library that supports:
 
 ## Annotations
 
-<hr>
 This project is released under the [MIT License](LICENSE.md).
 
 [doc-img]: https://godoc.org/github.com/uber/dosa-go?status.svg
