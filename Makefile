@@ -11,7 +11,8 @@ include $(SUPPORT_FILES)/verbosity.mk
 all: lint test
 .DEFAULT_GOAL := all
 
-COV_REPORT := overalls.coverprofile
+COV_REPORT := coverage/overalls.coverprofile
+COVER_OUT := coverage/profile.coverprofile
 
 # all .go files that don't exist in hidden directories
 ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
@@ -39,9 +40,6 @@ else
 _FILTER_OVERALLS = grep -v "^Processing:"
 endif
 
-# This is the default for overalls
-COVER_OUT := profile.coverprofile
-
 $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
 	@$(call label,Running tests)
 	@echo
@@ -56,7 +54,7 @@ $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
 		$(GOCOV) convert $@ | $(GOCOV) report ; \
 	fi
 
-COV_HTML := coverage.html
+COV_HTML := coverage/coverage.html
 
 $(COV_HTML): $(COV_REPORT)
 	$(ECHO_V)$(GOCOV) convert $< | gocov-html > $@
