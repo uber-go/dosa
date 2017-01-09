@@ -27,8 +27,6 @@ lint: vendor
 	$(ECHO_V)$(foreach dir,$(PKGS),errcheck $(ERRCHECK_FLAGS) $(dir) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG);)
 	@echo "Checking for unresolved FIXMEs..."
 	$(ECHO_V)git grep -i fixme | grep -v -e $(_THIS_MAKEFILE) -e CONTRIBUTING.md | tee -a $(LINT_LOG)
-	@echo "Checking for license headers..."
-	$(ECHO_V)$(_THIS_DIR)/check_license.sh | tee -a $(LINT_LOG)
 	@echo "Checking for imports of log package"
 	$(ECHO_V)go list -f '{{ .ImportPath }}: {{ .Imports }}' $(shell glide nv) | grep -e "\blog\b" | tee -a $(LINT_LOG)
 	@echo "Ensuring generated doc.go are up to date"
