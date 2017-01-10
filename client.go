@@ -24,7 +24,7 @@ import "context"
 
 // DomainObject is a marker interface method for an Entity
 type DomainObject interface {
-	// dummy marker interface method (not exported)
+	// dummy marker interface method
 	isDomainObject() bool
 }
 
@@ -36,39 +36,41 @@ func (*Entity) isDomainObject() bool {
 	return true
 }
 
-// Client defines the methods used to
+// Client defines the methods to operate with DOSA entities
 type Client interface {
 	// Initialize must be called before any data operation
-	// It validates the schema and establishes any data
 	Initialize(context.Context) error
 
-	// Create, fail if row already exists
-	// Use Upsert if possible, which works for new rows
+	// Create creates an entity; it fails if the entity already exists.
+	// This is a relatively expensive operation.
+	// Use Upsert whenever possible.
 	CreateIfNotExists(context.Context, DomainObject) error
 
-	// Reads one DOSA entity. The passed-in entity contains
-	// the field values; other values are filled in from the
-	// datastore. A list of columns can be specified, or nil
-	// for all columns
+	// Read reads one DOSA entity. The passed-in entity should contain
+	// the primary key field values.
+	// Other fields are filled in from the datastore.
+	// A list of fields can be specified. Use All() or nil for all fields.
 	Read(context.Context, []string, DomainObject) error
 
-	// Upsert
-	Upsert(context.Context, []string, DomainObject) error
+	// BatchRead reads multiple DOSA entities.
+	BatchRead(context.Context, []string, ...DomainObject) (BatchReadResult, error)
 
-	//
-	// BatchRead(context.Context, []string, ...DomainObject) (BatchReadResult, error)
+	// Upsert creates or update an Entity.
+	// A list of fields to update can be specified. Use All() or nil for all fields.
+	Upsert(context.Context, []string, ...DomainObject) error
 
-	// Delete removes a row by primary key
-	Delete(context.Context, DomainObject) error
+	// Delete removes DOSA entities by primary key. The passed-in entity should contain
+	// the primary key field values.
+	Delete(context.Context, ...DomainObject) error
 
-	// Range fetches rows within a range
+	// Range fetches entities within a range
 	Range(context.Context, *RangeOp) ([]DomainObject, string, error)
 
-	// Search fetches by fields that have been marked "searchable"
+	// Search fetches entities by fields that have been marked "searchable"
 	Search(context.Context, *SearchOp) ([]DomainObject, string, error)
 
-	// ScanEverything fetches all objects
-	ScanEverything(context.Context) ([]DomainObject, string, error)
+	// ScanEverything fetches all entities of a type
+	ScanEverything(context.Context, *ScanOp) ([]DomainObject, string, error)
 }
 
 // BatchReadResult contains the result for individual entities.
@@ -176,9 +178,34 @@ func (s *SearchOp) Offset(token string) *SearchOp {
 	return s
 }
 
-// Fields list the non-key fields users want to fetch. If not set, all normalized fields (supplied with “storing” annotation) would be fetched.
+// Fields list the non-key fields users want to fetch. If not set, all normalized fields
+// (supplied with “storing” annotation) would be fetched.
 // PrimaryKey fields are always fetched.
 func (s *SearchOp) Fields([]string) *SearchOp {
+	/* TODO */
+	return s
+}
+
+// ScanOp represents the scan query
+type ScanOp struct {
+	/* TODO */
+}
+
+// Limit sets the number of rows returned per call. Default is 128.
+func (s *ScanOp) Limit(n int) *ScanOp {
+	/* TODO */
+	return s
+}
+
+// Offset sets the pagination token. If not set, an empty token would be used.
+func (s *ScanOp) Offset(token string) *ScanOp {
+	/* TODO */
+	return s
+}
+
+// Fields list the non-key fields users want to fetch.
+// PrimaryKey fields are always fetched.
+func (s *ScanOp) Fields([]string) *ScanOp {
 	/* TODO */
 	return s
 }
