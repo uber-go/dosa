@@ -1,5 +1,7 @@
 package: go.uber.org/dosa
-import: []
+import:
+- package: github.com/pkg/errors
+  version: ^0.8.0
 testImport:
 - package: github.com/stretchr/testify
   version: ^1.1.4
@@ -11,7 +13,6 @@ testImport:
 - package: github.com/anmitsu/go-shlex
 - package: github.com/jessevdk/go-flags
 - package: github.com/mattn/goveralls
-# Necessary for goveralls
 - package: github.com/pborman/uuid
 - package: github.com/golang/lint
   subpackages:
@@ -25,8 +26,9 @@ testImport:
 - package: github.com/go-playground/overalls
 - package: github.com/sectioneight/md-to-godoc
   version: master
-# specified manually since we don't import md-to-godoc
 - package: github.com/russross/blackfriday
-  version: 2
+  version: "2"
 - package: github.com/shurcooL/sanitized_anchor_name
-- package: github.com/mvdan/interfacer/cmd/interfacer
+- package: github.com/mvdan/interfacer
+  subpackages:
+  - cmd/interfacer
