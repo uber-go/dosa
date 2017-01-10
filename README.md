@@ -30,7 +30,7 @@ This project is released under the [MIT License](LICENSE.md).
 
 [doc-img]: https://godoc.org/github.com/uber/dosa-go?status.svg
 [doc]: https://godoc.org/github.com/uber/dosa-go
-[ci-img]: https://travis-ci.org/uber/dosa-go.svg?branch=master
-[ci]: https://travis-ci.org/uber/dosa-go
+[ci-img]: https://travis-ci.com/uber/dosa-go.svg?branch=master
+[ci]: https://travis-ci.com/uber/dosa-go
 [cov-img]: https://coveralls.io/repos/uber/dosa-go/badge.svg?branch=master&service=github
 [cov]: https://coveralls.io/github/uber/dosa-go?branch=master
