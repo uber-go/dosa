@@ -28,6 +28,7 @@ import (
 const (
 	fqnSeparator = "."
 	rootFQN      = FQN("")
+	maxNameLen   = 32
 )
 
 // FQN is the fully qualified name for an entity
@@ -68,16 +69,20 @@ func isInvalidOtherRune(r rune) bool {
 	return !(r >= '0' && r <= '9') && isInvalidFirstRune(r)
 }
 
-// CheckName ensures input is a valid name
-// Note that this is the same as this regexp: ^[A-Za-z_][A-Za-z0-9_]+$
-// However, this three pass check is about 4x faster than regexp as of go1.7
-func CheckName(key, value string) error {
-	if len(value) == 0 {
-		return errors.Errorf("%s must not be empty", key)
-	} else if strings.IndexFunc(value[:1], isInvalidFirstRune) != -1 {
-		return errors.Errorf("%s must start with [A-Za-z_]. Actual=%s", key, value)
-	} else if strings.IndexFunc(value[1:], isInvalidOtherRune) != -1 {
-		return errors.Errorf("%s must contain only [A-Za-z0-9_], Actual=%s", key, value)
+// Normalize normalizes names to a canonical representation that contains only [a-z0-9_] and conforms
+// the following rules:
+// 1. all upper case characters would be replaced with lower case ones
+// 2. canonical name can only start with [a-z_]
+// 3. the rest of canonical name can contain only [a-z0-9_]
+// 4. the length of name must be greater than 0 and less than or equal to maxNameLen
+func Normalize(name string) (string, error) {
+	if len(name) == 0 || len(name) > maxNameLen {
+		return "", errors.Errorf("name must not be empty and cannot have a length "+
+			"greater than %d. Actual len= %d", maxNameLen, len(name))
+	} else if strings.IndexFunc(name[:1], isInvalidFirstRune) != -1 {
+		return "", errors.Errorf("name must start with [A-Za-z_]. Actual='%s'", name)
+	} else if strings.IndexFunc(name[1:], isInvalidOtherRune) != -1 {
+		return "", errors.Errorf("name must contain only [A-Za-z0-9_], Actual='%s'", name)
 	}
-	return nil
+	return strings.ToLower(name), nil
 }
