@@ -20,9 +20,6 @@
 
 // Package dosa is the DOSA - Declarative Object Storage Abstraction.
 //
-// [![Report Card][report-card-img]][report-card]
-//
-//
 // Abstract
 //
 // [dosa][dosa-spec] is a library that provides a distributed
