@@ -25,8 +25,21 @@ import (
 	"testing"
 )
 
-func PrimaryKeyTest(t *testing.T) {
+func TestPrimaryKey(t *testing.T) {
 	k, err := parsePrimaryKey("t", "partkey")
 	assert.Equal(t, k.partitionKeys, []string{"partkey"})
 	assert.Nil(t, err)
+}
+
+func TestMissingComma(t *testing.T) {
+	k, err := parsePrimaryKey("t", "(partkey)primkey")
+	assert.Nil(t, k)
+	assert.Contains(t, err.Error(), "comma")
+}
+
+func TestDuplicateField(t *testing.T) {
+	k, err := parsePrimaryKey("t", "(partkey),partkey")
+	assert.Nil(t, k)
+	assert.Contains(t, err.Error(), "\"partkey\"")
+	assert.Contains(t, err.Error(), "duplicate")
 }

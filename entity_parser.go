@@ -24,12 +24,14 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"unicode"
 )
 
 func parsePrimaryKey(tableName string, s string) (*keyDeclaration, error) {
 	k := keyDeclaration{}
 
-	// remove set of matching open and close parens
+	s = removeSpaces(s)
+	// remove set of matching open and close parens over whole string
 	if strings.HasSuffix(s, ")") && strings.HasPrefix(s, "(") {
 		s = s[1 : len(s)-1]
 	}
@@ -37,16 +39,16 @@ func parsePrimaryKey(tableName string, s string) (*keyDeclaration, error) {
 	// look for multi-component partition key notation
 	if strings.HasPrefix(s, "(") {
 		closeIndex := strings.Index(s, ")")
-		if closeIndex < 1 {
-			return nil, fmt.Errorf("Object %q missing close parenthesis for primary key struct tag", tableName)
-		}
 		// complex case: (a,b),c,d
-		if s[closeIndex+1] != ',' {
-			return nil, fmt.Errorf("Object %q missing comma after partition key close parenthesis", tableName)
+		k.partitionKeys = strings.Split(s[1:closeIndex], ",")
+		if closeIndex < len(s)-1 {
+			if s[closeIndex+1] != ',' {
+				return nil, fmt.Errorf("Object %q missing comma after partition key close parenthesis", tableName)
+			}
+			k.primaryKeys = strings.Split(s[closeIndex+2:], ",")
+		} else {
+			k.primaryKeys = nil
 		}
-
-		k.partitionKeys = strings.Split(s[1:closeIndex-1], ",")
-		k.primaryKeys = strings.Split(s[closeIndex+2:], ",")
 	} else {
 		// not using multi-component partition key syntax, so first element
 		// is the partition key, remaining elements are primary keys
@@ -71,14 +73,6 @@ func parsePrimaryKey(tableName string, s string) (*keyDeclaration, error) {
 		seen[everything[v]] = true
 	}
 
-	// if there are no partition keys specified, use the primary keys as the
-	// partition key
-	if len(k.partitionKeys) == 0 {
-		k.partitionKeys, k.primaryKeys = k.primaryKeys, k.partitionKeys
-	}
-	if len(k.partitionKeys) == 0 {
-		return nil, fmt.Errorf("Object %q has no dosa primary nor partition keys", tableName)
-	}
 	return &k, nil
 }
 
@@ -126,6 +120,9 @@ func TableFromInstance(object interface{}) (*Table, error) {
 					return nil, fmt.Errorf("Invalid annotation %q found on object %q", attr, d.StructName)
 				}
 			}
+			if saved != "" {
+				return nil, fmt.Errorf("Object %q missing close parenthesis for primary key struct tag", d.StructName)
+			}
 		} else {
 			typ, err := typify(structField.Type)
 			if err != nil {
@@ -135,6 +132,13 @@ func TableFromInstance(object interface{}) (*Table, error) {
 		}
 	}
 
+	/* TODO: Check that all the fields exist
+	everything := append(d.Keys.primaryKeys, d.Keys..partitionKeys...)
+	for _, value := range everything {
+		...
+	}
+	*/
+
 	return &d, nil
 }
 
@@ -142,8 +146,6 @@ func typify(f reflect.Type) (Type, error) {
 	switch f.Kind() {
 	case reflect.Bool:
 		return Bool, nil
-	case reflect.Int:
-		return Int64, nil
 	case reflect.Int32:
 		return Int32, nil
 	case reflect.Int64:
@@ -152,6 +154,7 @@ func typify(f reflect.Type) (Type, error) {
 		return Double, nil
 	case reflect.String:
 		return String, nil
+	// TODO: need UUID
 	default:
 		// TODO: this error can be better
 		return 0, fmt.Errorf("Invalid type %v", f)
@@ -162,16 +165,12 @@ func (d Table) String() string {
 	return d.TableName
 }
 
-// inserts into a slice at a given offset (1 based) or extends the slice
-func insertOrExtend(orig []string, position int, value string) []string {
-	var newSize int
-	if position > len(orig) {
-		newSize = position
-	} else {
-		newSize = len(orig)
-	}
-	rval := make([]string, newSize)
-	copy(rval, orig)
-	rval[position-1] = value
-	return rval
+func removeSpaces(s string) string {
+	result := strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, s)
+	return result
 }
