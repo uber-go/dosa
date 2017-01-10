@@ -1,0 +1,26 @@
+language: go
+sudo: false
+go:
+  - 1.7
+
+# verbose
+env:
+  - V=1
+
+env:
+  global:
+    - GO15VENDOREXPERIMENT=1
+
+cache:
+  directories:
+    - vendor
+
+install:
+  - make vendors
+
+script:
+  - make lint
+  - make test
+
+after_success:
+  - make coveralls
