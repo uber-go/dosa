@@ -1,0 +1,28 @@
+language: go
+sudo: false
+go:
+  - 1.7
+
+go_import_path: go.uber.org/dosa
+
+# verbose
+env:
+  - V=1
+
+env:
+  global:
+    - GO15VENDOREXPERIMENT=1
+
+cache:
+  directories:
+    - vendor
+
+install:
+  - make vendor
+
+script:
+  - make lint
+  - make test
+
+after_success:
+  - make coveralls
