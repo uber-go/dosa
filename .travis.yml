@@ -16,7 +16,7 @@ cache:
     - vendor
 
 install:
-  - make vendors
+  - make vendor
 
 script:
   - make lint
