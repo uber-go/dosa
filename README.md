@@ -3,7 +3,6 @@
 [![GoDoc][doc-img]][doc]
 [![Coverage Status][cov-img]][cov]
 [![Build Status][ci-img]][ci]
-[![Report Card][report-card-img]][report-card]
 
 ## Abstract
 
