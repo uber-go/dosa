@@ -209,3 +209,20 @@ func (s *ScanOp) Fields([]string) *ScanOp {
 	/* TODO */
 	return s
 }
+
+// FQN is the fully qualified name for an entity
+type FQN string
+
+// AdminClient has methods to manage schemas and scopes
+type AdminClient interface {
+	// CheckSchema checks the compatibility of schemas
+	CheckSchema(ctx context.Context, fqns ...FQN) error
+	// UpsertSchema upserts the schemas
+	UpsertSchema(ctx context.Context, fqns ...FQN) error
+	// CreateScope creates a new scope
+	CreateScope(s string) error
+	// TruncateScope keeps the scope and the schemas, but drops the data associated with the scope
+	TruncateScope(s string) error
+	// DropScope drops the scope and the data and schemas in the scope
+	DropScope(s string) error
+}
