@@ -22,10 +22,9 @@ package dosa
 
 // Table represents a parsed entity format on the client side
 type Table struct {
+	EntityDefinition
 	StructName string
-	TableName  string
-	Keys       *PrimaryKey
-	Types      map[string]Type
+	FieldNames map[string]string
 }
 
 type ClusteringKey struct {
@@ -41,11 +40,12 @@ type PrimaryKey struct {
 type FieldDefinition struct {
 	Name string
 	Type Type
-	// TODO: support tags like pii, searchable
+	// TODO: change as need to support tags like pii, searchable, etc
+	Tags map[string]string
 }
 
 type EntityDefinition struct {
-	Name   FQN
+	Name   string
 	Key    *PrimaryKey
-	Fields FieldDefinition
+	Fields []FieldDefinition
 }

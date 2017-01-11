@@ -87,6 +87,7 @@ func parsePrimaryKey(tableName string, s string) (*PrimaryKey, error) {
 }
 
 // TableFromInstance creates a dosa.Table from an instance
+// TODO: normalize names
 func TableFromInstance(object interface{}) (*Table, error) {
 	value := reflect.ValueOf(object)
 	if value.Type().Kind() != reflect.Ptr {
@@ -95,8 +96,9 @@ func TableFromInstance(object interface{}) (*Table, error) {
 	elem := value.Elem()
 	d := Table{}
 	d.StructName = elem.Type().Name()
-	d.TableName = d.StructName
-	d.Types = map[string]Type{}
+	d.Name = d.StructName
+	d.FieldNames = map[string]string{}
+	d.Fields = []FieldDefinition{}
 	for i := 0; i < elem.NumField(); i++ {
 		structField := elem.Type().Field(i)
 		name := structField.Name
@@ -122,7 +124,7 @@ func TableFromInstance(object interface{}) (*Table, error) {
 						continue
 					}
 
-					d.Keys, err = parsePrimaryKey(d.StructName, pkString)
+					d.Key, err = parsePrimaryKey(d.StructName, pkString)
 					if err != nil {
 						return nil, err
 					}
@@ -138,7 +140,9 @@ func TableFromInstance(object interface{}) (*Table, error) {
 			if err != nil {
 				return nil, err
 			}
-			d.Types[name] = typ
+			fd := FieldDefinition{Name: name, Type: typ}
+			d.Fields = append(d.Fields, fd)
+			d.FieldNames[fd.Name] = name
 		}
 	}
 
@@ -172,7 +176,8 @@ func typify(f reflect.Type) (Type, error) {
 }
 
 func (d Table) String() string {
-	return d.TableName
+	// TODO: better output
+	return d.Name
 }
 
 func removeSpaces(s string) string {
