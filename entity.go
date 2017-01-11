@@ -33,3 +33,25 @@ type Table struct {
 	Keys       *keyDeclaration
 	Types      map[string]Type
 }
+
+type ClusteringKey struct {
+	Name      string
+	Ascending bool
+}
+
+type PrimaryKey struct {
+	PartitionKeys  []string
+	ClusteringKeys []ClusteringKey
+}
+
+type FieldDefinition struct {
+	Name string
+	Type Type
+	// TODO: support tags like pii, searchable
+}
+
+type EntityDefinition struct {
+	Name   FQN
+	Key    *PrimaryKey
+	Fields FieldDefinition
+}
