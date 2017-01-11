@@ -76,8 +76,8 @@ func isInvalidOtherRune(r rune) bool {
 
 // IsValidName checks if a name conforms the following rules:
 // 1. name starts with [a-z_]
-// 3. the rest of name can contain only [a-z0-9_]
-// 4. the length of name must be greater than 0 and less than or equal to maxNameLen
+// 2. the rest of name can contain only [a-z0-9_]
+// 3. the length of name must be greater than 0 and less than or equal to maxNameLen
 func IsValidName(name string) error {
 	if len(name) == 0 || len(name) > maxNameLen {
 		return errors.Errorf("name must not be empty and cannot have a length "+

@@ -28,17 +28,69 @@ import (
 	"go.uber.org/dosa"
 )
 
+func TestIsValidName(t *testing.T) {
+	dataProvider := []struct {
+		arg     string
+		allowed bool
+	}{
+		{
+			arg:     "has_underscore",
+			allowed: true,
+		},
+		{
+			arg:     "mixeDCase",
+			allowed: false,
+		},
+		{
+			arg:     "md5",
+			allowed: true,
+		},
+		{
+			arg:     "_name",
+			allowed: true,
+		},
+		{
+			arg:     "_alreadynormalized9",
+			allowed: true,
+		},
+		{
+			arg:     "123numberprefix",
+			allowed: false,
+		},
+		{
+			arg:     "",
+			allowed: false,
+		},
+		{
+			arg:     "longname012345678901234567890123456789",
+			allowed: false,
+		},
+		{
+			arg:     "世界",
+			allowed: false,
+		},
+		{
+			arg:     "an apple",
+			allowed: false,
+		},
+	}
+
+	for _, testData := range dataProvider {
+		err := dosa.IsValidName(testData.arg)
+		if testData.allowed {
+			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", testData.arg))
+		} else {
+			assert.Error(t, err, fmt.Sprintf("expect error but got no error for %s", testData.arg))
+		}
+	}
+}
+
 func TestNormalizeName(t *testing.T) {
 	dataProvider := []struct {
 		arg      string
 		allowed  bool
 		expected string
 	}{
-		{
-			arg:      "has_underscore",
-			allowed:  true,
-			expected: "has_underscore",
-		},
 		{
 			arg:      "lOwerEVeryTHiNG",
 			allowed:  true,
@@ -60,26 +112,6 @@ func TestNormalizeName(t *testing.T) {
 			expected: "_alreadynormalized9",
 		},
 		{
-			arg:      "123startWithNumber",
-			allowed:  false,
-			expected: "",
-		},
-		{
-			arg:      "",
-			allowed:  false,
-			expected: "",
-		},
-		{
-			arg:      "ALongName012345678901234567890123456789",
-			allowed:  false,
-			expected: "",
-		},
-		{
-			arg:      "世界",
-			allowed:  false,
-			expected: "",
-		},
-		{
 			arg:      "an apple",
 			allowed:  false,
 			expected: "",
@@ -89,11 +121,11 @@ func TestNormalizeName(t *testing.T) {
 	for _, testData := range dataProvider {
 		name, err := dosa.NormalizeName(testData.arg)
 		if testData.allowed {
-			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", name))
+			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", testData.arg))
 			assert.Equal(t, testData.expected, name,
-				fmt.Sprintf("unexpected normalized name for %s", name))
+				fmt.Sprintf("unexpected normalized name for %s", testData.arg))
 		} else {
-			assert.Error(t, err, fmt.Sprintf("expect error but got no error for %s", name))
+			assert.Error(t, err, fmt.Sprintf("expect error but got no error for %s", testData.arg))
 		}
 	}
 }
