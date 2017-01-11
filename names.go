@@ -67,27 +67,35 @@ func ToFQN(s string) (FQN, error) {
 }
 
 func isInvalidFirstRune(r rune) bool {
-	return !((r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') || r == '_')
+	return !((r >= 'a' && r <= 'z') || r == '_')
 }
 
 func isInvalidOtherRune(r rune) bool {
 	return !(r >= '0' && r <= '9') && isInvalidFirstRune(r)
 }
 
-// NormalizeName normalizes names to a canonical representation that contains only [a-z0-9_] and conforms
-// the following rules:
-// 1. all upper case characters would be replaced with lower case ones
-// 2. canonical name can only start with [a-z_]
-// 3. the rest of canonical name can contain only [a-z0-9_]
+// IsValidName checks if a name conforms the following rules:
+// 1. name starts with [a-z_]
+// 3. the rest of name can contain only [a-z0-9_]
 // 4. the length of name must be greater than 0 and less than or equal to maxNameLen
-func NormalizeName(name string) (string, error) {
+func IsValidName(name string) error {
 	if len(name) == 0 || len(name) > maxNameLen {
-		return "", errors.Errorf("name must not be empty and cannot have a length "+
+		return errors.Errorf("name must not be empty and cannot have a length "+
 			"greater than %d. Actual len= %d", maxNameLen, len(name))
 	} else if strings.IndexFunc(name[:1], isInvalidFirstRune) != -1 {
-		return "", errors.Errorf("name must start with [A-Za-z_]. Actual='%s'", name)
+		return errors.Errorf("name must start with [A-Za-z_]. Actual='%s'", name)
 	} else if strings.IndexFunc(name[1:], isInvalidOtherRune) != -1 {
-		return "", errors.Errorf("name must contain only [A-Za-z0-9_], Actual='%s'", name)
+		return errors.Errorf("name must contain only [A-Za-z0-9_], Actual='%s'", name)
 	}
-	return strings.ToLower(name), nil
+	return nil
+}
+
+// NormalizeName normalizes names to a canonical representation by lowercase everything.
+// It returns error if the resultant canonical name is invalid.
+func NormalizeName(name string) (string, error) {
+	lowercaseName := strings.ToLower(name)
+	if err := IsValidName(lowercaseName); err != nil {
+		return "", errors.Wrapf(err, "failed to normalize to a valid name for %s", name)
+	}
+	return lowercaseName, nil
 }
