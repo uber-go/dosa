@@ -17,6 +17,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
+
 package dosa
 
 import (
@@ -41,7 +42,7 @@ func (f FQN) String() string {
 
 // Child returns a new child FQN with the given comp at the end
 func (f FQN) Child(s string) (FQN, error) {
-	comp, err := Normalize(s)
+	comp, err := NormalizeName(s)
 	if err != nil {
 		return "", errors.Wrap(err, "cannot create child FQN")
 	}
@@ -56,7 +57,7 @@ func ToFQN(s string) (FQN, error) {
 	comps := strings.Split(s, fqnSeparator)
 	normalizedComps := make([]string, len(comps))
 	for i, c := range comps {
-		comp, err := Normalize(c)
+		comp, err := NormalizeName(c)
 		if err != nil {
 			return "", errors.Wrap(err, "cannot create FQN with invalid name component")
 		}
@@ -73,13 +74,13 @@ func isInvalidOtherRune(r rune) bool {
 	return !(r >= '0' && r <= '9') && isInvalidFirstRune(r)
 }
 
-// Normalize normalizes names to a canonical representation that contains only [a-z0-9_] and conforms
+// NormalizeName normalizes names to a canonical representation that contains only [a-z0-9_] and conforms
 // the following rules:
 // 1. all upper case characters would be replaced with lower case ones
 // 2. canonical name can only start with [a-z_]
 // 3. the rest of canonical name can contain only [a-z0-9_]
 // 4. the length of name must be greater than 0 and less than or equal to maxNameLen
-func Normalize(name string) (string, error) {
+func NormalizeName(name string) (string, error) {
 	if len(name) == 0 || len(name) > maxNameLen {
 		return "", errors.Errorf("name must not be empty and cannot have a length "+
 			"greater than %d. Actual len= %d", maxNameLen, len(name))

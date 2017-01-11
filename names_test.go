@@ -17,4 +17,121 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
+
 package dosa_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/dosa"
+)
+
+func TestNormalizeName(t *testing.T) {
+	dataProvider := []struct {
+		arg      string
+		allowed  bool
+		expected string
+	}{
+		{
+			arg:      "has_underscore",
+			allowed:  true,
+			expected: "has_underscore",
+		},
+		{
+			arg:      "lOwerEVeryTHiNG",
+			allowed:  true,
+			expected: "lowereverything",
+		},
+		{
+			arg:      "MD5",
+			allowed:  true,
+			expected: "md5",
+		},
+		{
+			arg:      "_MyName",
+			allowed:  true,
+			expected: "_myname",
+		},
+		{
+			arg:      "_alreadynormalized9",
+			allowed:  true,
+			expected: "_alreadynormalized9",
+		},
+		{
+			arg:      "123startWithNumber",
+			allowed:  false,
+			expected: "",
+		},
+		{
+			arg:      "",
+			allowed:  false,
+			expected: "",
+		},
+		{
+			arg:      "ALongName012345678901234567890123456789",
+			allowed:  false,
+			expected: "",
+		},
+		{
+			arg:      "世界",
+			allowed:  false,
+			expected: "",
+		},
+		{
+			arg:      "an apple",
+			allowed:  false,
+			expected: "",
+		},
+	}
+
+	for _, testData := range dataProvider {
+		name, err := dosa.NormalizeName(testData.arg)
+		if testData.allowed {
+			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", name))
+			assert.Equal(t, testData.expected, name,
+				fmt.Sprintf("unexpected normalized name for %s", name))
+		} else {
+			assert.Error(t, err, fmt.Sprintf("expect error but got no error for %s", name))
+		}
+	}
+}
+
+func TestToFQN(t *testing.T) {
+	f, err := dosa.ToFQN("service.foo")
+	assert.NoError(t, err)
+	assert.EqualValues(t, "service.foo", f)
+
+	f, err = dosa.ToFQN("MyService.Foo.V2")
+	assert.NoError(t, err)
+	assert.EqualValues(t, "myservice.foo.v2", f)
+
+	f, err = dosa.ToFQN("")
+	assert.NoError(t, err)
+	assert.EqualValues(t, "", f)
+
+	f, err = dosa.ToFQN("service.an entity")
+	assert.Error(t, err)
+
+	f, err = dosa.ToFQN("germanRush.über")
+	assert.Error(t, err)
+}
+
+func TestFQNChild(t *testing.T) {
+	fqn, err := dosa.ToFQN("foo.bar")
+	assert.NoError(t, err)
+
+	c, err := fqn.Child("qux")
+	assert.NoError(t, err)
+	assert.EqualValues(t, "foo.bar.qux", c)
+
+	_, err = fqn.Child("世界")
+	assert.Error(t, err)
+}
+
+func TestFQNStringer(t *testing.T) {
+	fqn, err := dosa.ToFQN("foo.bar")
+	assert.NoError(t, err)
+	assert.Equal(t, "foo.bar", fqn.String())
+}
