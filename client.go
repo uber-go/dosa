@@ -210,9 +210,6 @@ func (s *ScanOp) Fields([]string) *ScanOp {
 	return s
 }
 
-// FQN is the fully qualified name for an entity
-type FQN string
-
 // AdminClient has methods to manage schemas and scopes
 type AdminClient interface {
 	// CheckSchema checks the compatibility of schemas

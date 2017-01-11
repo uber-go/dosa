@@ -1,6 +1,8 @@
-hash: f0802666bd98b213c14e43f7ba5dc3b80bb3ea0228bf09fc4da4276d14f5f96c
-updated: 2017-01-08T16:55:41.299508491-08:00
-imports: []
+hash: d0ad9eb3e5d1bdda7059f0733a450d6b3501887940677200fd811162a4bf55bf
+updated: 2017-01-10T15:37:16.034657025-08:00
+imports:
+- name: github.com/pkg/errors
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
