@@ -83,9 +83,9 @@ func IsValidName(name string) error {
 		return errors.Errorf("name must not be empty and cannot have a length "+
 			"greater than %d. Actual len= %d", maxNameLen, len(name))
 	} else if strings.IndexFunc(name[:1], isInvalidFirstRune) != -1 {
-		return errors.Errorf("name must start with [A-Za-z_]. Actual='%s'", name)
+		return errors.Errorf("name must start with [a-z_]. Actual='%s'", name)
 	} else if strings.IndexFunc(name[1:], isInvalidOtherRune) != -1 {
-		return errors.Errorf("name must contain only [A-Za-z0-9_], Actual='%s'", name)
+		return errors.Errorf("name must contain only [a-z0-9_], Actual='%s'", name)
 	}
 	return nil
 }
