@@ -39,26 +39,30 @@ func (f FQN) String() string {
 	return string(f)
 }
 
-// IsPrefix checks if this FQN is prefix to the other FQN
-func (f FQN) IsPrefix(other FQN) bool {
-	if f == rootFQN {
-		return true
+// Child returns a new child FQN with the given comp at the end
+func (f FQN) Child(s string) (FQN, error) {
+	comp, err := Normalize(s)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot create child FQN")
 	}
-
-	switch {
-	case len(f) > len(other):
-		return false
-	case len(f) == len(other):
-		return f == other
-	}
-
-	// e.g. "foo.bar" is not prefix of "foo.barz", but is prefix to "foo.bar.z"
-	return other[0:len(f)] == f && other[len(f)] == '.'
+	return FQN(strings.Join([]string{string(f), comp}, fqnSeparator)), nil
 }
 
-// Child returns a new child FQN with the given comp at the end
-func (f FQN) Child(comp string) (FQN, error) {
-	return "", nil
+// ToFQN converts the input string to FQN
+func ToFQN(s string) (FQN, error) {
+	if s == "" {
+		return rootFQN, nil
+	}
+	comps := strings.Split(s, fqnSeparator)
+	normalizedComps := make([]string, len(comps))
+	for i, c := range comps {
+		comp, err := Normalize(c)
+		if err != nil {
+			return "", errors.Wrap(err, "cannot create FQN with invalid name component")
+		}
+		normalizedComps[i] = comp
+	}
+	return FQN(strings.Join(normalizedComps, fqnSeparator)), nil
 }
 
 func isInvalidFirstRune(r rune) bool {
