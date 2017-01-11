@@ -98,7 +98,7 @@ func TableFromInstance(object interface{}) (*Table, error) {
 	d.StructName = elem.Type().Name()
 	d.Name = d.StructName
 	d.FieldNames = map[string]string{}
-	d.Fields = []FieldDefinition{}
+	d.Columns = []ColumnDefinition{}
 	for i := 0; i < elem.NumField(); i++ {
 		structField := elem.Type().Field(i)
 		name := structField.Name
@@ -140,9 +140,9 @@ func TableFromInstance(object interface{}) (*Table, error) {
 			if err != nil {
 				return nil, err
 			}
-			fd := FieldDefinition{Name: name, Type: typ}
-			d.Fields = append(d.Fields, fd)
-			d.FieldNames[fd.Name] = name
+			cd := ColumnDefinition{Name: name, Type: typ}
+			d.Columns = append(d.Columns, cd)
+			d.FieldNames[cd.Name] = name
 		}
 	}
 
