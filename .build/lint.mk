@@ -1,4 +1,4 @@
-LINT_EXCLUDES =
+LINT_EXCLUDES = _string.go
 # Create a pipeline filter for go vet/golint. Patterns specified in LINT_EXCLUDES are
 # converted to a grep -v pipeline. If there are no filters, cat is used.
 FILTER_LINT := $(if $(LINT_EXCLUDES), grep -v $(foreach file, $(LINT_EXCLUDES),-e $(file)),cat)
