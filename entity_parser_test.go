@@ -36,8 +36,8 @@ type SinglePrimaryKeyNoParen struct {
 func TestSinglePrimaryKeyNoParen(t *testing.T) {
 	dosaTable, err := TableFromInstance(&SinglePrimaryKeyNoParen{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"PrimaryKey"}, dosaTable.Keys.partitionKeys)
-	assert.Equal(t, 0, len(dosaTable.Keys.primaryKeys))
+	assert.Equal(t, []string{"PrimaryKey"}, dosaTable.Keys.PartitionKeys)
+	assert.Equal(t, 0, len(dosaTable.Keys.ClusteringKeys))
 }
 
 type SinglePrimaryKey struct {
@@ -57,8 +57,8 @@ func TestNonPointer(t *testing.T) {
 func TestSinglePrimaryKey(t *testing.T) {
 	dosaTable, err := TableFromInstance(&SinglePrimaryKey{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"PrimaryKey"}, dosaTable.Keys.partitionKeys)
-	assert.Equal(t, 0, len(dosaTable.Keys.primaryKeys))
+	assert.Equal(t, []string{"PrimaryKey"}, dosaTable.Keys.PartitionKeys)
+	assert.Equal(t, 0, len(dosaTable.Keys.ClusteringKeys))
 }
 
 func BenchmarkSingleKey(b *testing.B) {
@@ -76,8 +76,8 @@ type SinglePartitionKey struct {
 func TestSinglePartitionKey(t *testing.T) {
 	dosaTable, err := TableFromInstance(&SinglePartitionKey{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"PrimaryKey"}, dosaTable.Keys.partitionKeys)
-	assert.Equal(t, 0, len(dosaTable.Keys.primaryKeys))
+	assert.Equal(t, []string{"PrimaryKey"}, dosaTable.Keys.PartitionKeys)
+	assert.Equal(t, 0, len(dosaTable.Keys.ClusteringKeys))
 }
 
 // unhappy path: this struct doesn't have anything specified for pk
@@ -120,8 +120,8 @@ type PrimaryKeyWithSecondaryRange struct {
 func TestPrimaryKeyWithSecondaryRange(t *testing.T) {
 	dosaTable, err := TableFromInstance(&PrimaryKeyWithSecondaryRange{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"PrimaryKey"}, dosaTable.Keys.primaryKeys)
-	assert.Equal(t, []string{"PartKey"}, dosaTable.Keys.partitionKeys)
+	assert.Equal(t, []string{"PartKey"}, dosaTable.Keys.PartitionKeys)
+	assert.Equal(t, []ClusteringKey{{"PrimaryKey", false}}, dosaTable.Keys.ClusteringKeys)
 }
 
 type MultiComponentPrimaryKey struct {
@@ -134,8 +134,8 @@ type MultiComponentPrimaryKey struct {
 func TestMultiComponentPrimaryKey(t *testing.T) {
 	dosaTable, err := TableFromInstance(&MultiComponentPrimaryKey{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"PartKey", "AnotherPartKey"}, dosaTable.Keys.partitionKeys)
-	assert.Nil(t, dosaTable.Keys.primaryKeys)
+	assert.Equal(t, []string{"PartKey", "AnotherPartKey"}, dosaTable.Keys.PartitionKeys)
+	assert.Nil(t, dosaTable.Keys.ClusteringKeys)
 }
 
 type InvalidDosaAttribute struct {

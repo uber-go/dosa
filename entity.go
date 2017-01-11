@@ -20,23 +20,17 @@
 
 package dosa
 
-type keyDeclaration struct {
-	partitionKeys []string
-	primaryKeys   []string
-	pkDescending  []bool
-}
-
 // Table represents a parsed entity format on the client side
 type Table struct {
 	StructName string
 	TableName  string
-	Keys       *keyDeclaration
+	Keys       *PrimaryKey
 	Types      map[string]Type
 }
 
 type ClusteringKey struct {
-	Name      string
-	Ascending bool
+	Name       string
+	Descending bool
 }
 
 type PrimaryKey struct {

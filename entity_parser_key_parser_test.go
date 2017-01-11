@@ -28,7 +28,7 @@ import (
 
 func TestPrimaryKey(t *testing.T) {
 	k, err := parsePrimaryKey("t", "partkey")
-	assert.Equal(t, k.partitionKeys, []string{"partkey"})
+	assert.Equal(t, k.PartitionKeys, []string{"partkey"})
 	assert.Nil(t, err)
 }
 
