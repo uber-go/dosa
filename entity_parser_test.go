@@ -111,7 +111,7 @@ func TestEmptyPrimaryKey(t *testing.T) {
 }
 
 type PrimaryKeyWithSecondaryRange struct {
-	Entity     `dosa:"primaryKey=(PartKey,PrimaryKey )"`
+	Entity     `dosa:"primaryKey=(PartKey,PrimaryKey  )"`
 	PartKey    int64
 	PrimaryKey int64
 	data       string
@@ -122,6 +122,20 @@ func TestPrimaryKeyWithSecondaryRange(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"PartKey"}, dosaTable.Key.PartitionKeys)
 	assert.Equal(t, []ClusteringKey{{"PrimaryKey", false}}, dosaTable.Key.ClusteringKeys)
+}
+
+type PrimaryKeyWithDescendingRange struct {
+	Entity     `dosa:"primaryKey=(PartKey,PrimaryKey desc )"`
+	PartKey    int64
+	PrimaryKey int64
+	data       string
+}
+
+func TestPrimaryKeyWithDescendingRange(t *testing.T) {
+	dosaTable, err := TableFromInstance(&PrimaryKeyWithDescendingRange{})
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"PartKey"}, dosaTable.Key.PartitionKeys)
+	assert.Equal(t, []ClusteringKey{{"PrimaryKey", true}}, dosaTable.Key.ClusteringKeys)
 }
 
 type MultiComponentPrimaryKey struct {
@@ -206,10 +220,4 @@ func TestUnsupportedType(t *testing.T) {
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "float32")
-}
-
-func TestRemoveSpaces(t *testing.T) {
-	assert.Equal(t, removeSpaces(" \t"), "")
-	assert.Equal(t, removeSpaces(" t e s t "), "test")
-	assert.Equal(t, removeSpaces("\tt\te\ts\tt"), "test")
 }
