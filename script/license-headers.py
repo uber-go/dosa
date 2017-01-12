@@ -18,6 +18,7 @@ from string import Template
 from shutil import copyfile
 import io
 import subprocess
+import os.path
 
 
 __version__ = '0.1'
@@ -111,11 +112,12 @@ def parse_command_line(argv):
     log.setLevel(max(3 - arguments.verbose_count, 0) * 10)
     return arguments
 
-
+exclude = set(["vendor", ".git"])
 def get_paths(patterns, start_dir="."):
     """Retrieve files that match any of the glob patterns from the start_dir and below."""
     for root, dirs, files in os.walk(start_dir):
         names = []
+        dirs[:] = [d for d in dirs if d not in exclude]
         for pattern in patterns:
             names += fnmatch.filter(files, pattern)
         for name in names:
@@ -336,8 +338,8 @@ def main():
                         else:
                             fw.writelines(lines[0:skip])
                             fw.writelines(for_type(templateLines, type))
+                            fw.write("\n")
                             fw.writelines(lines[skip:])
-                    ## TODO: remove backup unless option -b
                 else: ## no template lines, just update the line with the year, if we found a year
                     yearsLine = dict["yearsLine"]
                     if yearsLine is not None:
@@ -345,7 +347,6 @@ def main():
                         with open(file,'w') as fw:
                             fw.writelines(lines[0:yearsLine])
                             fw.write(yearsPattern.sub(arguments.years,lines[yearsLine]))
-                        ## TODO: remove backup
     finally:
         logging.shutdown()
 
