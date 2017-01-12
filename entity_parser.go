@@ -27,8 +27,16 @@ import (
 	"unicode"
 )
 
-func parsePrimaryKey(tableName string, s string) (*keyDeclaration, error) {
-	k := keyDeclaration{}
+func parseClusteringKeys(ss []string) []ClusteringKey {
+	ClusteringKeys := make([]ClusteringKey, len(ss))
+	for i, ck := range ss {
+		ClusteringKeys[i] = ClusteringKey{Name: ck}
+	}
+	return ClusteringKeys
+}
+
+func parsePrimaryKey(tableName string, s string) (*PrimaryKey, error) {
+	k := PrimaryKey{}
 
 	s = removeSpaces(s)
 	// remove set of matching open and close parens over whole string
@@ -40,14 +48,13 @@ func parsePrimaryKey(tableName string, s string) (*keyDeclaration, error) {
 	if strings.HasPrefix(s, "(") {
 		closeIndex := strings.Index(s, ")")
 		// complex case: (a,b),c,d
-		k.partitionKeys = strings.Split(s[1:closeIndex], ",")
+		k.PartitionKeys = strings.Split(s[1:closeIndex], ",")
 		if closeIndex < len(s)-1 {
 			if s[closeIndex+1] != ',' {
 				return nil, fmt.Errorf("Object %q missing comma after partition key close parenthesis", tableName)
 			}
-			k.primaryKeys = strings.Split(s[closeIndex+2:], ",")
-		} else {
-			k.primaryKeys = nil
+			// TODO: handle order
+			k.ClusteringKeys = parseClusteringKeys(strings.Split(s[closeIndex+2:], ","))
 		}
 	} else {
 		// not using multi-component partition key syntax, so first element
@@ -55,12 +62,15 @@ func parsePrimaryKey(tableName string, s string) (*keyDeclaration, error) {
 		// simple case: a,b,c
 		fields := strings.Split(s, ",")
 
-		k.partitionKeys = []string{fields[0]}
-		k.primaryKeys = fields[1:]
+		k.PartitionKeys = []string{fields[0]}
+		k.ClusteringKeys = parseClusteringKeys(fields[1:])
 	}
 
 	// search for duplicates
-	everything := append(k.primaryKeys, k.partitionKeys...)
+	everything := k.PartitionKeys
+	for _, ck := range k.ClusteringKeys {
+		everything = append(everything, ck.Name)
+	}
 	seen := map[string]bool{}
 	for v := range everything {
 		if seen[everything[v]] {
@@ -77,6 +87,7 @@ func parsePrimaryKey(tableName string, s string) (*keyDeclaration, error) {
 }
 
 // TableFromInstance creates a dosa.Table from an instance
+// TODO: normalize names
 func TableFromInstance(object interface{}) (*Table, error) {
 	value := reflect.ValueOf(object)
 	if value.Type().Kind() != reflect.Ptr {
@@ -85,8 +96,9 @@ func TableFromInstance(object interface{}) (*Table, error) {
 	elem := value.Elem()
 	d := Table{}
 	d.StructName = elem.Type().Name()
-	d.TableName = d.StructName
-	d.Types = map[string]Type{}
+	d.Name = d.StructName
+	d.FieldNames = map[string]string{}
+	d.Columns = []ColumnDefinition{}
 	for i := 0; i < elem.NumField(); i++ {
 		structField := elem.Type().Field(i)
 		name := structField.Name
@@ -112,7 +124,7 @@ func TableFromInstance(object interface{}) (*Table, error) {
 						continue
 					}
 
-					d.Keys, err = parsePrimaryKey(d.StructName, pkString)
+					d.Key, err = parsePrimaryKey(d.StructName, pkString)
 					if err != nil {
 						return nil, err
 					}
@@ -128,7 +140,9 @@ func TableFromInstance(object interface{}) (*Table, error) {
 			if err != nil {
 				return nil, err
 			}
-			d.Types[name] = typ
+			cd := ColumnDefinition{Name: name, Type: typ}
+			d.Columns = append(d.Columns, cd)
+			d.FieldNames[cd.Name] = name
 		}
 	}
 
@@ -162,7 +176,8 @@ func typify(f reflect.Type) (Type, error) {
 }
 
 func (d Table) String() string {
-	return d.TableName
+	// TODO: better output
+	return d.Name
 }
 
 func removeSpaces(s string) string {

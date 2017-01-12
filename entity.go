@@ -20,16 +20,38 @@
 
 package dosa
 
-type keyDeclaration struct {
-	partitionKeys []string
-	primaryKeys   []string
-	pkDescending  []bool
+// Table represents a parsed entity format on the client side
+// In addition to shared EntityDefinition, it records struct name and field names.
+type Table struct {
+	EntityDefinition
+	StructName string
+	FieldNames map[string]string // map from column name -> field name
 }
 
-// Table represents a parsed entity format on the client side
-type Table struct {
-	StructName string
-	TableName  string
-	Keys       *keyDeclaration
-	Types      map[string]Type
+// ClusteringKey stores name and ordering of a clustering key
+type ClusteringKey struct {
+	Name       string
+	Descending bool
+}
+
+// PrimaryKey stores information about partition keys and clustering keys
+type PrimaryKey struct {
+	PartitionKeys  []string
+	ClusteringKeys []ClusteringKey
+}
+
+// ColumnDefinition stores information about a column
+type ColumnDefinition struct {
+	Name string // normalized column name
+	Type Type
+	// TODO: change as need to support tags like pii, searchable, etc
+	// currently it's in the form of a map from tag name to (optional) tag value
+	Tags map[string]string
+}
+
+// EntityDefinition stores information about a DOSA entity
+type EntityDefinition struct {
+	Name    string // normalized entity name
+	Key     *PrimaryKey
+	Columns []ColumnDefinition
 }
