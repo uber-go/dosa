@@ -1,8 +1,10 @@
-hash: d0ad9eb3e5d1bdda7059f0733a450d6b3501887940677200fd811162a4bf55bf
-updated: 2017-01-10T15:37:16.034657025-08:00
+hash: b6311ba23d5b6f48e59d82cd20b6f66a6d8ab5892eda0131e6e016fcf82f37ff
+updated: 2017-01-18T13:33:20.829795332-08:00
 imports:
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
+- name: github.com/satori/go.uuid
+  version: 879c5887cd475cd7864858769793b2ceb0d44feb
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
