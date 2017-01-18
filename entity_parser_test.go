@@ -128,7 +128,7 @@ func TestPrimaryKeyWithDescendingRange(t *testing.T) {
 	dosaTable, err := TableFromInstance(&PrimaryKeyWithDescendingRange{})
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"PartKey"}, dosaTable.Key.PartitionKeys)
-	assert.Equal(t, []ClusteringKey{{"PrimaryKey", true}}, dosaTable.Key.ClusteringKeys)
+	assert.Equal(t, []*ClusteringKey{{"PrimaryKey", true}}, dosaTable.Key.ClusteringKeys)
 }
 
 type MultiComponentPrimaryKey struct {
