@@ -27,8 +27,12 @@ import (
 	"strings"
 )
 
-func parseClusteringKeys(ss []string) ([]ClusteringKey, error) {
-	ClusteringKeys := make([]ClusteringKey, len(ss))
+const (
+	entityName = "Entity"
+)
+
+func parseClusteringKeys(ss []string) ([]*ClusteringKey, error) {
+	clusteringKeys := make([]*ClusteringKey, len(ss))
 	for i, ck := range ss {
 		fields := strings.Fields(ck)
 		if len(fields) > 2 || len(fields) < 1 {
@@ -48,9 +52,9 @@ func parseClusteringKeys(ss []string) ([]ClusteringKey, error) {
 
 		}
 
-		ClusteringKeys[i] = ClusteringKey{Name: fields[0], Descending: descending}
+		clusteringKeys[i] = &ClusteringKey{Name: fields[0], Descending: descending}
 	}
-	return ClusteringKeys, nil
+	return clusteringKeys, nil
 }
 
 func parsePrimaryKey(tableName string, s string) (*PrimaryKey, error) {
@@ -116,78 +120,97 @@ func parsePrimaryKey(tableName string, s string) (*PrimaryKey, error) {
 }
 
 // TableFromInstance creates a dosa.Table from an instance
-// TODO: normalize names
-func TableFromInstance(object interface{}) (*Table, error) {
-	value := reflect.ValueOf(object)
-	if value.Type().Kind() != reflect.Ptr {
-		return nil, fmt.Errorf("Passed type %q, expected a pointer to a dosa-annotated struct (did you forget an ampersand?)", value.Type().Kind())
+func TableFromInstance(object DomainObject) (*Table, error) {
+	elem := reflect.ValueOf(object).Elem()
+	name, err := NormalizeName(elem.Type().Name())
+	if err != nil {
+		return nil, errors.Wrapf(err, "struct name is invalid")
 	}
-	elem := value.Elem()
-	d := Table{}
-	d.StructName = elem.Type().Name()
-	d.Name = d.StructName
-	d.FieldNames = map[string]string{}
-	d.Columns = []ColumnDefinition{}
+
+	t := &Table{
+		StructName: elem.Type().Name(),
+		FieldNames: map[string]string{},
+		EntityDefinition: EntityDefinition{
+			Name:    name,
+			Columns: []*ColumnDefinition{},
+		},
+	}
 	for i := 0; i < elem.NumField(); i++ {
 		structField := elem.Type().Field(i)
 		name := structField.Name
-		dosaAnnotation := structField.Tag.Get("dosa")
-		if name == "Entity" {
-			if dosaAnnotation == "" {
-				return nil, fmt.Errorf("dosa.Entity on object %s found without a dosa struct tag", d.StructName)
-			}
-			attrs := strings.Split(dosaAnnotation, ",")
-			var saved string
-			for _, attr := range attrs {
-				if saved != "" {
-					attr = saved + "," + attr
-					saved = ""
-				}
-				if strings.HasPrefix(attr, "primaryKey=") {
-					// could hardcode the offset, but this is cleaner
-					pkString := strings.SplitN(attr, "=", 2)[1]
-					var err error
-					// TODO: this could be better
-					if strings.Count(pkString, "(") > strings.Count(pkString, ")") {
-						saved = attr
-						continue
-					}
-
-					d.Key, err = parsePrimaryKey(d.StructName, pkString)
-					if err != nil {
-						return nil, err
-					}
-				} else {
-					return nil, fmt.Errorf("Invalid annotation %q found on object %q", attr, d.StructName)
-				}
-			}
-			if saved != "" {
-				return nil, fmt.Errorf("Object %q missing close parenthesis for primary key struct tag", d.StructName)
+		if name == entityName {
+			if t.Key, err = parseEntity(structField, t.StructName); err != nil {
+				return nil, err
 			}
 		} else {
-			typ, err := typify(structField.Type)
+			cd, err := parseField(structField)
 			if err != nil {
 				return nil, errors.Wrapf(err, "Column %q had invalid type", name)
 			}
-			cd := ColumnDefinition{Name: name, Type: typ}
-			d.Columns = append(d.Columns, cd)
-			d.FieldNames[cd.Name] = name
+			t.Columns = append(t.Columns, cd)
+			t.FieldNames[cd.Name] = name
 		}
 	}
 
 	// TODO: we are computing "everything" twice, maybe we can do it once?
-	everything := d.Key.PartitionKeys
-	for _, ck := range d.Key.ClusteringKeys {
+	everything := t.Key.PartitionKeys
+	for _, ck := range t.Key.ClusteringKeys {
 		everything = append(everything, ck.Name)
 	}
 	for _, value := range everything {
-		if _, ok := d.FieldNames[value]; !ok {
+		if _, ok := t.FieldNames[value]; !ok {
 			return nil, fmt.Errorf("Object %q references non-existent primary key field %q",
-				d.StructName, value)
+				t.StructName, value)
 		}
 	}
 
-	return &d, nil
+	return t, nil
+}
+
+func parseEntity(structField reflect.StructField, structName string) (*PrimaryKey, error) {
+	dosaAnnotation := structField.Tag.Get("dosa")
+	if len(dosaAnnotation) == 0 {
+		return nil, fmt.Errorf("dosa.EntityName on object %s found without a dosa struct tag", structName)
+	}
+	attrs := strings.Split(dosaAnnotation, ",")
+	var saved string
+	var key *PrimaryKey
+	for _, attr := range attrs {
+		if saved != "" {
+			attr = saved + "," + attr
+			saved = ""
+		}
+		if strings.HasPrefix(attr, "primaryKey=") {
+			// could hardcode the offset, but this is cleaner
+			pkString := strings.SplitN(attr, "=", 2)[1]
+			var err error
+			// TODO: this could be better
+			if strings.Count(pkString, "(") > strings.Count(pkString, ")") {
+				saved = attr
+				continue
+			}
+
+			key, err = parsePrimaryKey(structName, pkString)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, fmt.Errorf("Invalid annotation %q found on object %q", attr, structName)
+		}
+	}
+	if saved != "" {
+		return nil, fmt.Errorf("Object %q missing close parenthesis for primary key struct tag", structName)
+	}
+
+	return key, nil
+}
+
+func parseField(structField reflect.StructField) (*ColumnDefinition, error) {
+	typ, err := typify(structField.Type)
+	if err != nil {
+		return nil, err
+	}
+	return &ColumnDefinition{Name: structField.Name, Type: typ}, nil
 }
 
 func typify(f reflect.Type) (Type, error) {
