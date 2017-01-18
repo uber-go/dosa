@@ -53,3 +53,8 @@ const (
 	// Bool is a bool type
 	Bool
 )
+
+// UUID stores a string format of uuid
+// Validation is done before saving to datastore.
+// The format of uuid used in datastore is orthogonal to the string format here.
+type UUID string
