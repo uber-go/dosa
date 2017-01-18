@@ -21,61 +21,31 @@
 package dosa
 
 import (
-	"github.com/pkg/errors"
+	"testing"
+
+	"code.uber.internal/odp/cherami/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 	"github.com/satori/go.uuid"
 )
 
-//go:generate stringer -type=Type
+func TestUUIDToBytes(t *testing.T) {
+	id := UUID(uuid.NewV4().String())
+	bs, err := id.bytes()
+	assert.NoError(t, err)
+	assert.Len(t, bs, 16)
 
-// Type defines a data type for an entity field
-type Type int
-
-const (
-	// Invalid type to be used as zero value for Type
-	Invalid Type = iota
-
-	// TUUID is different from dosa.UUID
-	TUUID
-
-	// String represents a string
-	String
-
-	// Int32 represents an int32
-	Int32
-
-	// Int64 represents either an int64 or a regular int
-	Int64
-
-	// Double is a float64
-	Double
-
-	// Blob is a byte array
-	Blob
-
-	// Timestamp is a time.Time
-	Timestamp
-
-	// Bool is a bool type
-	Bool
-)
-
-// UUID stores a string format of uuid.
-// Validation is done before saving to datastore.
-// The format of uuid used in datastore is orthogonal to the string format here.
-type UUID string
-
-func (u UUID) bytes() ([]byte, error) {
-	id, err := uuid.FromString(string(u))
-	if err != nil {
-		return nil, errors.Wrap(err, "invalid uuid string")
-	}
-	return id.Bytes(), nil
+	invalidUUID := UUID("xyz-1827380-kdwi-4829")
+	_, err = invalidUUID.bytes()
+	assert.Error(t, err)
 }
 
-func bytesToUUID(bs []byte) (UUID, error) {
-	id, err := uuid.FromBytes(bs)
-	if err != nil {
-		return "", errors.Wrap(err, "invalid uuid bytes")
-	}
-	return UUID(id.String()), nil
+func TestBytesToUUID(t *testing.T) {
+	id := uuid.NewV4()
+	bs := id.Bytes()
+	uid, err := bytesToUUID(bs)
+	assert.NoError(t, err)
+	assert.EqualValues(t, id.String(), uid)
+
+	invalidBs := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+	_, err = bytesToUUID(invalidBs)
+	assert.Error(t, err)
 }
