@@ -37,7 +37,7 @@ type ClusteringKey struct {
 // PrimaryKey stores information about partition keys and clustering keys
 type PrimaryKey struct {
 	PartitionKeys  []string
-	ClusteringKeys []ClusteringKey
+	ClusteringKeys []*ClusteringKey
 }
 
 // ColumnDefinition stores information about a column
@@ -53,5 +53,5 @@ type ColumnDefinition struct {
 type EntityDefinition struct {
 	Name    string // normalized entity name
 	Key     *PrimaryKey
-	Columns []ColumnDefinition
+	Columns []*ColumnDefinition
 }

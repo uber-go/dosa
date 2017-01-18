@@ -46,13 +46,6 @@ type SinglePrimaryKey struct {
 	Data       string
 }
 
-func TestNonPointer(t *testing.T) {
-	dosaTable, err := TableFromInstance(SinglePrimaryKey{})
-	assert.Nil(t, dosaTable)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "\"struct\"")
-}
-
 // happy path: A single primaryKey becomes the partition key
 func TestSinglePrimaryKey(t *testing.T) {
 	dosaTable, err := TableFromInstance(&SinglePrimaryKey{})
@@ -121,7 +114,7 @@ func TestPrimaryKeyWithSecondaryRange(t *testing.T) {
 	dosaTable, err := TableFromInstance(&PrimaryKeyWithSecondaryRange{})
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"PartKey"}, dosaTable.Key.PartitionKeys)
-	assert.Equal(t, []ClusteringKey{{"PrimaryKey", false}}, dosaTable.Key.ClusteringKeys)
+	assert.Equal(t, []*ClusteringKey{{"PrimaryKey", false}}, dosaTable.Key.ClusteringKeys)
 }
 
 type PrimaryKeyWithDescendingRange struct {
@@ -167,7 +160,7 @@ func TestInvalidDosaAttribute(t *testing.T) {
 func TestStringify(t *testing.T) {
 	dosaTable, _ := TableFromInstance(&SinglePrimaryKey{})
 	assert.Contains(t, dosaTable.String(), dosaTable.Name)
-	assert.Contains(t, dosaTable.String(), "PrimaryKey")
+	assert.Contains(t, dosaTable.String(), "primarykey")
 }
 
 type MissingCloseParen struct {
