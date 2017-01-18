@@ -2,4 +2,4 @@
 
 set -e 
 
-python ./script/license-headers.py -t LICENSE.md  -d .
+python ./script/license-headers.py -t LICENSE.txt  -d .
