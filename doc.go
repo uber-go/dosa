@@ -46,7 +46,7 @@
 //
 // Annotations
 //
-// This project is released under the MIT License (LICENSE.md).
+// This project is released under the MIT License (LICENSE.txt).
 //
 //
 package dosa

@@ -25,7 +25,7 @@ DOSA is a storage library that supports:
 
 ## Annotations
 
-This project is released under the [MIT License](LICENSE.md).
+This project is released under the [MIT License](LICENSE.txt).
 
 [doc-img]: https://godoc.org/github.com/uber/dosa-go?status.svg
 [doc]: https://godoc.org/github.com/uber/dosa-go
