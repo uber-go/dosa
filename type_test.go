@@ -23,8 +23,8 @@ package dosa
 import (
 	"testing"
 
-	"code.uber.internal/odp/cherami/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 	"github.com/satori/go.uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUUIDToBytes(t *testing.T) {

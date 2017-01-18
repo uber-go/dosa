@@ -49,7 +49,7 @@ const (
 	// Double is a float64
 	Double
 
-	// Blob is a byte array
+	// Blob is a byte slice
 	Blob
 
 	// Timestamp is a time.Time
