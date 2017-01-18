@@ -44,3 +44,34 @@ func TestDuplicateField(t *testing.T) {
 	assert.Contains(t, err.Error(), "\"partkey\"")
 	assert.Contains(t, err.Error(), "duplicate")
 }
+
+func TestAscendingDefault(t *testing.T) {
+	k1, err1 := parsePrimaryKey("t", "(partkey),primkey")
+	k2, err2 := parsePrimaryKey("t", "( partkey ), primkey asc")
+	assert.Nil(t, err1)
+	assert.Nil(t, err2)
+	assert.Equal(t, k1, k2)
+}
+
+func TestBogusAscendingDescending(t *testing.T) {
+	k, err := parsePrimaryKey("t", "(partkey),primkey bogus")
+	assert.Nil(t, k)
+	assert.Contains(t, err.Error(), "primkey")
+	assert.Contains(t, err.Error(), "bogus")
+	assert.Contains(t, err.Error(), "clustering")
+}
+
+func TestExtraAscendingDescending(t *testing.T) {
+	k, err := parsePrimaryKey("t", "(partkey),primkey asc desc")
+	assert.Nil(t, k)
+	assert.Contains(t, err.Error(), "primkey")
+	assert.Contains(t, err.Error(), "lustering")
+}
+
+func TestDescendingInSimpleModeTypo(t *testing.T) {
+	k, err := parsePrimaryKey("t", "partkey,primkey bogus")
+	assert.Nil(t, k)
+	assert.Contains(t, err.Error(), "primkey")
+	assert.Contains(t, err.Error(), "bogus")
+	assert.Contains(t, err.Error(), "clustering")
+}

@@ -24,21 +24,38 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"unicode"
 )
 
-func parseClusteringKeys(ss []string) []ClusteringKey {
+func parseClusteringKeys(ss []string) ([]ClusteringKey, error) {
 	ClusteringKeys := make([]ClusteringKey, len(ss))
 	for i, ck := range ss {
-		ClusteringKeys[i] = ClusteringKey{Name: ck}
+		fields := strings.Fields(ck)
+		if len(fields) > 2 || len(fields) < 1 {
+			return nil, fmt.Errorf("Clustering key definition %q should look like \"name[ asc/desc]\"",
+				ck)
+		}
+		descending := false
+		if len(fields) == 2 {
+			switch strings.ToLower(fields[1]) {
+			case "desc":
+				descending = true
+			case "asc":
+				descending = false
+			default:
+				return nil, fmt.Errorf("invalid clustering key order %q in %q", fields[1], ck)
+			}
+
+		}
+
+		ClusteringKeys[i] = ClusteringKey{Name: fields[0], Descending: descending}
 	}
-	return ClusteringKeys
+	return ClusteringKeys, nil
 }
 
 func parsePrimaryKey(tableName string, s string) (*PrimaryKey, error) {
 	k := PrimaryKey{}
 
-	s = removeSpaces(s)
+	s = strings.TrimSpace(s)
 	// remove set of matching open and close parens over whole string
 	if strings.HasSuffix(s, ")") && strings.HasPrefix(s, "(") {
 		s = s[1 : len(s)-1]
@@ -49,12 +66,20 @@ func parsePrimaryKey(tableName string, s string) (*PrimaryKey, error) {
 		closeIndex := strings.Index(s, ")")
 		// complex case: (a,b),c,d
 		k.PartitionKeys = strings.Split(s[1:closeIndex], ",")
+		for i, pk := range k.PartitionKeys {
+			k.PartitionKeys[i] = strings.TrimSpace(pk)
+		}
 		if closeIndex < len(s)-1 {
 			if s[closeIndex+1] != ',' {
 				return nil, fmt.Errorf("Object %q missing comma after partition key close parenthesis", tableName)
 			}
 			// TODO: handle order
-			k.ClusteringKeys = parseClusteringKeys(strings.Split(s[closeIndex+2:], ","))
+			var err error
+			k.ClusteringKeys, err = parseClusteringKeys(strings.Split(s[closeIndex+2:], ","))
+			if err != nil {
+				return nil, err
+			}
+
 		}
 	} else {
 		// not using multi-component partition key syntax, so first element
@@ -63,7 +88,11 @@ func parsePrimaryKey(tableName string, s string) (*PrimaryKey, error) {
 		fields := strings.Split(s, ",")
 
 		k.PartitionKeys = []string{fields[0]}
-		k.ClusteringKeys = parseClusteringKeys(fields[1:])
+		var err error
+		k.ClusteringKeys, err = parseClusteringKeys(fields[1:])
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// search for duplicates
@@ -178,14 +207,4 @@ func typify(f reflect.Type) (Type, error) {
 func (d Table) String() string {
 	// TODO: better output
 	return d.Name
-}
-
-func removeSpaces(s string) string {
-	result := strings.Map(func(r rune) rune {
-		if unicode.IsSpace(r) {
-			return -1
-		}
-		return r
-	}, s)
-	return result
 }
