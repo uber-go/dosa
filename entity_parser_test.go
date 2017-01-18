@@ -40,6 +40,13 @@ func TestSinglePrimaryKeyNoParen(t *testing.T) {
 	assert.Equal(t, 0, len(dosaTable.Key.ClusteringKeys))
 }
 
+func TestNilPointer(t *testing.T) {
+	dosaTable, err := TableFromInstance((*SinglePrimaryKeyNoParen)(nil))
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"PrimaryKey"}, dosaTable.Key.PartitionKeys)
+	assert.Equal(t, 0, len(dosaTable.Key.ClusteringKeys))
+}
+
 type SinglePrimaryKey struct {
 	Entity     `dosa:"primaryKey=(PrimaryKey)"`
 	PrimaryKey int64

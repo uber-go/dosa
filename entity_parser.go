@@ -121,14 +121,14 @@ func parsePrimaryKey(tableName string, s string) (*PrimaryKey, error) {
 
 // TableFromInstance creates a dosa.Table from an instance
 func TableFromInstance(object DomainObject) (*Table, error) {
-	elem := reflect.ValueOf(object).Elem()
-	name, err := NormalizeName(elem.Type().Name())
+	elem := reflect.TypeOf(object).Elem()
+	name, err := NormalizeName(elem.Name())
 	if err != nil {
 		return nil, errors.Wrapf(err, "struct name is invalid")
 	}
 
 	t := &Table{
-		StructName: elem.Type().Name(),
+		StructName: elem.Name(),
 		FieldNames: map[string]string{},
 		EntityDefinition: EntityDefinition{
 			Name:    name,
@@ -136,14 +136,14 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		},
 	}
 	for i := 0; i < elem.NumField(); i++ {
-		structField := elem.Type().Field(i)
+		structField := elem.Field(i)
 		name := structField.Name
 		if name == entityName {
-			if t.Key, err = parseEntity(structField, t.StructName); err != nil {
+			if t.Key, err = parseEntityTag(structField, t.StructName); err != nil {
 				return nil, err
 			}
 		} else {
-			cd, err := parseField(structField)
+			cd, err := parseFieldTag(structField)
 			if err != nil {
 				return nil, errors.Wrapf(err, "Column %q had invalid type", name)
 			}
@@ -167,10 +167,11 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 	return t, nil
 }
 
-func parseEntity(structField reflect.StructField, structName string) (*PrimaryKey, error) {
+// parseEntityTag function parses DOSA tag on the "Entity" field
+func parseEntityTag(structField reflect.StructField, structName string) (*PrimaryKey, error) {
 	dosaAnnotation := structField.Tag.Get("dosa")
 	if len(dosaAnnotation) == 0 {
-		return nil, fmt.Errorf("dosa.EntityName on object %s found without a dosa struct tag", structName)
+		return nil, fmt.Errorf("dosa.Entity on object %s found without a dosa struct tag", structName)
 	}
 	attrs := strings.Split(dosaAnnotation, ",")
 	var saved string
@@ -205,7 +206,8 @@ func parseEntity(structField reflect.StructField, structName string) (*PrimaryKe
 	return key, nil
 }
 
-func parseField(structField reflect.StructField) (*ColumnDefinition, error) {
+// parseFieldTag function parses DOSA tag on the fields in the DOSA struct except the "Entity" field
+func parseFieldTag(structField reflect.StructField) (*ColumnDefinition, error) {
 	typ, err := typify(structField.Type)
 	if err != nil {
 		return nil, err
