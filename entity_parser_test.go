@@ -40,17 +40,17 @@ func TestSinglePrimaryKeyNoParen(t *testing.T) {
 	assert.Equal(t, 0, len(dosaTable.Key.ClusteringKeys))
 }
 
+func TestNilPointer(t *testing.T) {
+	dosaTable, err := TableFromInstance((*SinglePrimaryKeyNoParen)(nil))
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"PrimaryKey"}, dosaTable.Key.PartitionKeys)
+	assert.Equal(t, 0, len(dosaTable.Key.ClusteringKeys))
+}
+
 type SinglePrimaryKey struct {
 	Entity     `dosa:"primaryKey=(PrimaryKey)"`
 	PrimaryKey int64
 	Data       string
-}
-
-func TestNonPointer(t *testing.T) {
-	dosaTable, err := TableFromInstance(SinglePrimaryKey{})
-	assert.Nil(t, dosaTable)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "\"struct\"")
 }
 
 // happy path: A single primaryKey becomes the partition key
@@ -121,7 +121,7 @@ func TestPrimaryKeyWithSecondaryRange(t *testing.T) {
 	dosaTable, err := TableFromInstance(&PrimaryKeyWithSecondaryRange{})
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"PartKey"}, dosaTable.Key.PartitionKeys)
-	assert.Equal(t, []ClusteringKey{{"PrimaryKey", false}}, dosaTable.Key.ClusteringKeys)
+	assert.Equal(t, []*ClusteringKey{{"PrimaryKey", false}}, dosaTable.Key.ClusteringKeys)
 }
 
 type PrimaryKeyWithDescendingRange struct {
@@ -135,7 +135,7 @@ func TestPrimaryKeyWithDescendingRange(t *testing.T) {
 	dosaTable, err := TableFromInstance(&PrimaryKeyWithDescendingRange{})
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"PartKey"}, dosaTable.Key.PartitionKeys)
-	assert.Equal(t, []ClusteringKey{{"PrimaryKey", true}}, dosaTable.Key.ClusteringKeys)
+	assert.Equal(t, []*ClusteringKey{{"PrimaryKey", true}}, dosaTable.Key.ClusteringKeys)
 }
 
 type MultiComponentPrimaryKey struct {
@@ -167,7 +167,7 @@ func TestInvalidDosaAttribute(t *testing.T) {
 func TestStringify(t *testing.T) {
 	dosaTable, _ := TableFromInstance(&SinglePrimaryKey{})
 	assert.Contains(t, dosaTable.String(), dosaTable.Name)
-	assert.Contains(t, dosaTable.String(), "PrimaryKey")
+	assert.Contains(t, dosaTable.String(), "primarykey")
 }
 
 type MissingCloseParen struct {
