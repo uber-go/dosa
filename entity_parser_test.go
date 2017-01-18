@@ -220,4 +220,17 @@ func TestUnsupportedType(t *testing.T) {
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "float32")
+	assert.Contains(t, err.Error(), "UnsupType")
+}
+
+type KeyFieldNameTypo struct {
+	Entity   `dosa:"primaryKey=BoolHype"`
+	BoolType bool
+}
+
+func TestKeyFieldNameTypo(t *testing.T) {
+	dosaTable, err := TableFromInstance(&KeyFieldNameTypo{})
+	assert.Nil(t, dosaTable)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "BoolHype")
 }
