@@ -22,6 +22,7 @@ package dosa
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"reflect"
 	"strings"
 )
@@ -73,7 +74,6 @@ func parsePrimaryKey(tableName string, s string) (*PrimaryKey, error) {
 			if s[closeIndex+1] != ',' {
 				return nil, fmt.Errorf("Object %q missing comma after partition key close parenthesis", tableName)
 			}
-			// TODO: handle order
 			var err error
 			k.ClusteringKeys, err = parseClusteringKeys(strings.Split(s[closeIndex+2:], ","))
 			if err != nil {
@@ -167,7 +167,7 @@ func TableFromInstance(object interface{}) (*Table, error) {
 		} else {
 			typ, err := typify(structField.Type)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrapf(err, "Column %q had invalid type", name)
 			}
 			cd := ColumnDefinition{Name: name, Type: typ}
 			d.Columns = append(d.Columns, cd)
@@ -175,12 +175,17 @@ func TableFromInstance(object interface{}) (*Table, error) {
 		}
 	}
 
-	/* TODO: Check that all the fields exist
-	everything := append(d.Keys.primaryKeys, d.Keys..partitionKeys...)
-	for _, value := range everything {
-		...
+	// TODO: we are computing "everything" twice, maybe we can do it once?
+	everything := d.Key.PartitionKeys
+	for _, ck := range d.Key.ClusteringKeys {
+		everything = append(everything, ck.Name)
 	}
-	*/
+	for _, value := range everything {
+		if _, ok := d.FieldNames[value]; !ok {
+			return nil, fmt.Errorf("Object %q references non-existent primary key field %q",
+				d.StructName, value)
+		}
+	}
 
 	return &d, nil
 }
@@ -199,7 +204,6 @@ func typify(f reflect.Type) (Type, error) {
 		return String, nil
 	// TODO: need UUID
 	default:
-		// TODO: this error can be better
 		return 0, fmt.Errorf("Invalid type %v", f)
 	}
 }
