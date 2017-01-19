@@ -25,6 +25,8 @@ import (
 
 	"time"
 
+	"io"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -265,4 +267,20 @@ func TestKeyFieldNameTypo(t *testing.T) {
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "BoolHype")
+}
+
+func TestIgnoreUnexportedFields(t *testing.T) {
+	type UnexportedFieldType struct {
+		Entity          `dosa:"primaryKey=BoolType"`
+		BoolType        bool
+		unexported      string
+		unsupportedType io.Reader
+	}
+
+	table, err := TableFromInstance(&UnexportedFieldType{})
+	assert.NoError(t, err)
+	assert.Len(t, table.FieldNames, 1)
+	assert.NotContains(t, table.FieldNames, "unexported")
+	assert.NotContains(t, table.FieldNames, "unsupportedType")
+	assert.Len(t, table.Columns, 1)
 }
