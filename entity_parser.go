@@ -140,6 +140,9 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 	}
 	for i := 0; i < elem.NumField(); i++ {
 		structField := elem.Field(i)
+		if len(structField.PkgPath) > 0 { // skip unexported fields
+			continue
+		}
 		name := structField.Name
 		if name == entityName {
 			if t.Key, err = parseEntityTag(structField, t.StructName); err != nil {
