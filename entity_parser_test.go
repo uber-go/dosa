@@ -284,3 +284,20 @@ func TestIgnoreUnexportedFields(t *testing.T) {
 	assert.NotContains(t, table.FieldNames, "unsupportedType")
 	assert.Len(t, table.Columns, 1)
 }
+
+func TestIgnoreTag(t *testing.T) {
+	type IgnoreTagType struct {
+		Entity          `dosa:"primaryKey=BoolType"`
+		BoolType        bool
+		Exported        string    `dosa:"-"`
+		UnsupportedType io.Reader `dosa:"-"`
+	}
+
+	table, err := TableFromInstance(&IgnoreTagType{})
+	assert.NoError(t, err)
+	assert.Len(t, table.FieldNames, 1)
+	// TODO: should be checking normalized names once normalization is done
+	assert.NotContains(t, table.FieldNames, "Exported")
+	assert.NotContains(t, table.FieldNames, "UnsupportedType")
+	assert.Len(t, table.Columns, 1)
+}

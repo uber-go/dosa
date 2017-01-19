@@ -143,9 +143,13 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		if len(structField.PkgPath) > 0 { // skip unexported fields
 			continue
 		}
+		tag := strings.TrimSpace(structField.Tag.Get("dosa"))
+		if tag == "-" { // skip explicitly ignored fields
+			continue
+		}
 		name := structField.Name
 		if name == entityName {
-			if t.Key, err = parseEntityTag(structField, t.StructName); err != nil {
+			if t.Key, err = parseEntityTag(t.StructName, tag); err != nil {
 				return nil, err
 			}
 		} else {
@@ -174,8 +178,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 }
 
 // parseEntityTag function parses DOSA tag on the "Entity" field
-func parseEntityTag(structField reflect.StructField, structName string) (*PrimaryKey, error) {
-	dosaAnnotation := structField.Tag.Get("dosa")
+func parseEntityTag(structName, dosaAnnotation string) (*PrimaryKey, error) {
 	if len(dosaAnnotation) == 0 {
 		return nil, fmt.Errorf("dosa.Entity on object %s found without a dosa struct tag", structName)
 	}
