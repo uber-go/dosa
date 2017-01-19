@@ -23,6 +23,8 @@ package dosa
 import (
 	"testing"
 
+	"time"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -196,17 +198,47 @@ func TestMissingAnnotation(t *testing.T) {
 }
 
 type AllTypes struct {
-	Entity      `dosa:"primaryKey=BoolType"`
-	BoolType    bool
-	Int32Type   int32
-	Int64Type   int64
-	Float64Type float64
+	Entity     `dosa:"primaryKey=BoolType"`
+	BoolType   bool
+	Int32Type  int32
+	Int64Type  int64
+	DoubleType float64
+	StringType string
+	BlobType   []byte
+	TimeType   time.Time
+	UUIDType   UUID
 }
 
 func TestAllTypes(t *testing.T) {
 	dosaTable, err := TableFromInstance(&AllTypes{})
 	assert.NotNil(t, dosaTable)
 	assert.Nil(t, err)
+	cds := dosaTable.Columns
+	assert.Len(t, cds, 8)
+	for _, cd := range cds {
+		name, err := NormalizeName(cd.Name)
+		assert.NoError(t, err)
+		switch name {
+		case "booltype":
+			assert.Equal(t, Bool, cd.Type)
+		case "int32type":
+			assert.Equal(t, Int32, cd.Type)
+		case "int64type":
+			assert.Equal(t, Int64, cd.Type)
+		case "doubletype":
+			assert.Equal(t, Double, cd.Type)
+		case "stringtype":
+			assert.Equal(t, String, cd.Type)
+		case "blobtype":
+			assert.Equal(t, Blob, cd.Type)
+		case "timetype":
+			assert.Equal(t, Timestamp, cd.Type)
+		case "uuidtype":
+			assert.Equal(t, TUUID, cd.Type)
+		default:
+			assert.Fail(t, "unexpected column name", name)
+		}
+	}
 }
 
 type UnsupportedType struct {

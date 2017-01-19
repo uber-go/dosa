@@ -22,9 +22,12 @@ package dosa
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"reflect"
 	"strings"
+
+	"time"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -215,22 +218,38 @@ func parseFieldTag(structField reflect.StructField) (*ColumnDefinition, error) {
 	return &ColumnDefinition{Name: structField.Name, Type: typ}, nil
 }
 
+var (
+	uuidType      = reflect.TypeOf(UUID(""))
+	blobType      = reflect.TypeOf([]byte{})
+	timestampType = reflect.TypeOf(time.Time{})
+	int32Type     = reflect.TypeOf(int32(0))
+	int64Type     = reflect.TypeOf(int64(0))
+	doubleType    = reflect.TypeOf(float64(0.0))
+	stringType    = reflect.TypeOf("")
+	boolType      = reflect.TypeOf(true)
+)
+
 func typify(f reflect.Type) (Type, error) {
-	switch f.Kind() {
-	case reflect.Bool:
-		return Bool, nil
-	case reflect.Int32:
+	switch f {
+	case uuidType:
+		return TUUID, nil
+	case blobType:
+		return Blob, nil
+	case timestampType:
+		return Timestamp, nil
+	case int32Type:
 		return Int32, nil
-	case reflect.Int64:
+	case int64Type:
 		return Int64, nil
-	case reflect.Float64:
+	case doubleType:
 		return Double, nil
-	case reflect.String:
+	case stringType:
 		return String, nil
-	// TODO: need UUID
-	default:
-		return 0, fmt.Errorf("Invalid type %v", f)
+	case boolType:
+		return Bool, nil
 	}
+
+	return Invalid, fmt.Errorf("Invalid type %v", f)
 }
 
 func (d Table) String() string {
