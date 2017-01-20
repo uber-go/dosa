@@ -72,7 +72,7 @@ func TestPrimaryKey(t *testing.T) {
 		{
 			PrimaryKey: "(pk1        , pk2              )",
 			Error:      nil,
-			Result:     &PrimaryKey{
+			Result: &PrimaryKey{
 				PartitionKeys: []string{"pk1"},
 				ClusteringKeys: []*ClusteringKey{
 					{
