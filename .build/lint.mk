@@ -10,7 +10,7 @@ LINT_LOG := lint.log
 _THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
 _THIS_DIR := $(dir $(_THIS_MAKEFILE))
 
-ERRCHECK_FLAGS := -ignore "fmt.*,io:WriteString" -ignoretests
+ERRCHECK_FLAGS := -ignore "fmt.*,io:WriteString,bytes:WriteString" -ignoretests
 
 .PHONY: lint
 lint: vendor
