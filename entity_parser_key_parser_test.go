@@ -52,9 +52,27 @@ func TestPrimaryKey(t *testing.T) {
 			Result:     nil,
 		},
 		{
+			PrimaryKey: "pk1 desc",
+			Error:      errors.New("invalid primary key: pk1 desc"),
+			Result:     nil,
+		},
+		{
 			PrimaryKey: "(pk1, pk2,)",
 			Error:      nil,
 			Result: &PrimaryKey{
+				PartitionKeys: []string{"pk1"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "pk2",
+						Descending: false,
+					},
+				},
+			},
+		},
+		{
+			PrimaryKey: "(pk1        , pk2              )",
+			Error:      nil,
+			Result:     &PrimaryKey{
 				PartitionKeys: []string{"pk1"},
 				ClusteringKeys: []*ClusteringKey{
 					{

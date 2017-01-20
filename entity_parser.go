@@ -190,7 +190,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		if len(structField.PkgPath) > 0 { // skip unexported fields
 			continue
 		}
-		tag := strings.TrimSpace(structField.Tag.Get("dosa"))
+		tag := strings.TrimSpace(structField.Tag.Get(dosaTagKey))
 		if tag == "-" { // skip explicitly ignored fields
 			continue
 		}
