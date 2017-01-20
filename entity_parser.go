@@ -23,6 +23,7 @@ package dosa
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"time"
@@ -32,22 +33,38 @@ import (
 
 const (
 	entityName = "Entity"
+	dosaTagKey = "dosa"
+	asc        = "asc"
+	desc       = "desc"
 )
 
-func parseClusteringKeys(ss []string) ([]*ClusteringKey, error) {
-	clusteringKeys := make([]*ClusteringKey, len(ss))
-	for i, ck := range ss {
+var (
+	primaryKeyPattern0 = regexp.MustCompile(`primaryKey\s*=\s*([^=]*)((\s+.*=)|$)`)
+	primaryKeyPattern1 = regexp.MustCompile(`\(\s*\((.*)\)(.*)\)`)
+	primaryKeyPattern2 = regexp.MustCompile(`\(\s*(\w*),?(.*)\)`)
+	primaryKeyPattern3 = regexp.MustCompile(`^\s*(\w*)\s*$`)
+)
+
+// parseClusteringKeys func parses the clustering key of DOSA object
+func parseClusteringKeys(ckStr string) ([]*ClusteringKey, error) {
+	ckStr = strings.TrimSpace(ckStr)
+	cks := strings.Split(ckStr, ",")
+	var clusteringKeys []*ClusteringKey
+	for _, ck := range cks {
 		fields := strings.Fields(ck)
-		if len(fields) > 2 || len(fields) < 1 {
+		if len(fields) == 0 {
+			continue
+		}
+		if len(fields) > 2 {
 			return nil, fmt.Errorf("Clustering key definition %q should look like \"name[ asc/desc]\"",
 				ck)
 		}
 		descending := false
 		if len(fields) == 2 {
 			switch strings.ToLower(fields[1]) {
-			case "desc":
+			case desc:
 				descending = true
-			case "asc":
+			case asc:
 				descending = false
 			default:
 				return nil, fmt.Errorf("invalid clustering key order %q in %q", fields[1], ck)
@@ -55,71 +72,101 @@ func parseClusteringKeys(ss []string) ([]*ClusteringKey, error) {
 
 		}
 
-		clusteringKeys[i] = &ClusteringKey{Name: fields[0], Descending: descending}
+		name, err := NormalizeName(fields[0])
+		if err != nil {
+			return nil, err
+		}
+		clusteringKeys = append(clusteringKeys, &ClusteringKey{Name: name, Descending: descending})
 	}
 	return clusteringKeys, nil
 }
 
-func parsePrimaryKey(tableName string, s string) (*PrimaryKey, error) {
-	k := PrimaryKey{}
-
-	s = strings.TrimSpace(s)
-	// remove set of matching open and close parens over whole string
-	if strings.HasSuffix(s, ")") && strings.HasPrefix(s, "(") {
-		s = s[1 : len(s)-1]
-	}
-
-	// look for multi-component partition key notation
-	if strings.HasPrefix(s, "(") {
-		closeIndex := strings.Index(s, ")")
-		// complex case: (a,b),c,d
-		k.PartitionKeys = strings.Split(s[1:closeIndex], ",")
-		for i, pk := range k.PartitionKeys {
-			k.PartitionKeys[i] = strings.TrimSpace(pk)
-		}
-		if closeIndex < len(s)-1 {
-			if s[closeIndex+1] != ',' {
-				return nil, fmt.Errorf("Object %q missing comma after partition key close parenthesis", tableName)
-			}
-			var err error
-			k.ClusteringKeys, err = parseClusteringKeys(strings.Split(s[closeIndex+2:], ","))
-			if err != nil {
-				return nil, err
-			}
-
-		}
-	} else {
-		// not using multi-component partition key syntax, so first element
-		// is the partition key, remaining elements are primary keys
-		// simple case: a,b,c
-		fields := strings.Split(s, ",")
-
-		k.PartitionKeys = []string{fields[0]}
-		var err error
-		k.ClusteringKeys, err = parseClusteringKeys(fields[1:])
-		if err != nil {
+// parsePartitionKey func parses the partition key of DOSA object
+func parsePartitionKey(pkStr string) ([]string, error) {
+	pkStr = strings.TrimSpace(pkStr)
+	var pks []string
+	var npk string
+	var err error
+	partitionKeys := strings.Split(pkStr, ",")
+	for _, pk := range partitionKeys {
+		if npk, err = NormalizeName(pk); err != nil {
 			return nil, err
 		}
+		pks = append(pks, npk)
+	}
+	return pks, err
+}
+
+// parsePrimaryKey func parses the primary key of DOSA object
+func parsePrimaryKey(tableName string, pkStr string) (*PrimaryKey, error) {
+	pkStr = strings.TrimSpace(pkStr)
+
+	var partitionKeyStr string
+	var clusteringKeyStr string
+
+	matched := false
+	// case 1: primaryKey=((PK1,PK2), PK3, PK4)
+	matchs := primaryKeyPattern1.FindStringSubmatch(pkStr)
+	if len(matchs) == 3 {
+		matched = true
+		partitionKeyStr = matchs[1]
+		clusteringKeyStr = matchs[2]
 	}
 
+	// case 2: primaryKey=(PK1,PK2)
+	if !matched {
+		matchs = primaryKeyPattern2.FindStringSubmatch(pkStr)
+		if len(matchs) == 3 {
+			matched = true
+			partitionKeyStr = matchs[1]
+			clusteringKeyStr = matchs[2]
+		}
+	}
+
+	// case 3: primaryKey=PK1 (only one primary key)
+	if !matched {
+		matchs = primaryKeyPattern3.FindStringSubmatch(pkStr)
+		if len(matchs) == 2 {
+			matched = true
+			partitionKeyStr = matchs[1]
+			clusteringKeyStr = ""
+		}
+	}
+
+	if !matched {
+		return nil, fmt.Errorf("invalid primary key: %s", pkStr)
+	}
+
+	var err error
+	partitionKeys, err := parsePartitionKey(partitionKeyStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid primary key: %s", pkStr)
+	}
+
+	clusteringKeys, err := parseClusteringKeys(clusteringKeyStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid primary key: %s", pkStr)
+	}
+
+	// TODO optimize this , this is too slow
 	// search for duplicates
-	everything := k.PartitionKeys
-	for _, ck := range k.ClusteringKeys {
+	everything := partitionKeys
+	for _, ck := range clusteringKeys {
 		everything = append(everything, ck.Name)
 	}
 	seen := map[string]bool{}
 	for v := range everything {
-		if seen[everything[v]] {
+		if _, ok := seen[everything[v]]; ok {
 			return nil, fmt.Errorf("Object %q has duplicate field %q in key struct tag", tableName, everything[v])
-		}
-		if everything[v] == "" {
-			return nil, fmt.Errorf("Object %q has an empty primaryKey column", tableName)
 		}
 
 		seen[everything[v]] = true
 	}
 
-	return &k, nil
+	return &PrimaryKey{
+		PartitionKeys:  partitionKeys,
+		ClusteringKeys: clusteringKeys,
+	}, nil
 }
 
 // TableFromInstance creates a dosa.Table from an instance
@@ -143,7 +190,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		if len(structField.PkgPath) > 0 { // skip unexported fields
 			continue
 		}
-		tag := strings.TrimSpace(structField.Tag.Get("dosa"))
+		tag := strings.TrimSpace(structField.Tag.Get(dosaTagKey))
 		if tag == "-" { // skip explicitly ignored fields
 			continue
 		}
@@ -155,7 +202,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		} else {
 			cd, err := parseFieldTag(structField)
 			if err != nil {
-				return nil, errors.Wrapf(err, "Column %q had invalid type", name)
+				return nil, errors.Wrapf(err, "column %q had invalid type", name)
 			}
 			t.Columns = append(t.Columns, cd)
 			t.FieldNames[cd.Name] = name
@@ -169,7 +216,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 	}
 	for _, value := range everything {
 		if _, ok := t.FieldNames[value]; !ok {
-			return nil, fmt.Errorf("Object %q references non-existent primary key field %q",
+			return nil, fmt.Errorf("object %q references non-existent primary key field %q",
 				t.StructName, value)
 		}
 	}
@@ -179,38 +226,25 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 
 // parseEntityTag function parses DOSA tag on the "Entity" field
 func parseEntityTag(structName, dosaAnnotation string) (*PrimaryKey, error) {
-	if len(dosaAnnotation) == 0 {
-		return nil, fmt.Errorf("dosa.Entity on object %s found without a dosa struct tag", structName)
+	// find the primaryKey
+	matchs := primaryKeyPattern0.FindStringSubmatch(dosaAnnotation)
+	if len(matchs) < 2 {
+		return nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag", structName)
 	}
-	attrs := strings.Split(dosaAnnotation, ",")
-	var saved string
-	var key *PrimaryKey
-	for _, attr := range attrs {
-		if saved != "" {
-			attr = saved + "," + attr
-			saved = ""
-		}
-		if strings.HasPrefix(attr, "primaryKey=") {
-			// could hardcode the offset, but this is cleaner
-			pkString := strings.SplitN(attr, "=", 2)[1]
-			var err error
-			// TODO: this could be better
-			if strings.Count(pkString, "(") > strings.Count(pkString, ")") {
-				saved = attr
-				continue
-			}
+	pkString := matchs[1]
 
-			key, err = parsePrimaryKey(structName, pkString)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, fmt.Errorf("Invalid annotation %q found on object %q", attr, structName)
-		}
+	// validate if there is invalid tag left
+	leftAnn := strings.Replace(dosaAnnotation, matchs[0], "", 1)
+	if strings.TrimSpace(leftAnn) != "" {
+		return nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag: %s", structName, leftAnn)
 	}
-	if saved != "" {
-		return nil, fmt.Errorf("Object %q missing close parenthesis for primary key struct tag", structName)
+
+	key, err := parsePrimaryKey(structName, pkString)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse primary key %s for DOSA object", pkString)
 	}
+
+	//TODO find the name
 
 	return key, nil
 }
@@ -221,7 +255,12 @@ func parseFieldTag(structField reflect.StructField) (*ColumnDefinition, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ColumnDefinition{Name: structField.Name, Type: typ}, nil
+
+	name, err := NormalizeName(structField.Name)
+	if err != nil {
+		return nil, err
+	}
+	return &ColumnDefinition{Name: name, Type: typ}, nil
 }
 
 var (

@@ -29,7 +29,4 @@ lint: vendor
 	$(ECHO_V)git grep -i fixme | grep -v -e $(_THIS_MAKEFILE) -e CONTRIBUTING.md | tee -a $(LINT_LOG)
 	@echo "Checking for imports of log package"
 	$(ECHO_V)go list -f '{{ .ImportPath }}: {{ .Imports }}' $(shell glide nv) | grep -e "\blog\b" | tee -a $(LINT_LOG)
-	@echo "Ensuring generated doc.go are up to date"
-	$(ECHO_V)$(MAKE) gendoc
-	$(ECHO_V)[ -z "$(shell git status --porcelain | grep '\bdoc.go$$')" ] || echo "Commit updated doc.go changes" | tee -a $(LINT_LOG)
 	$(ECHO_V)[ ! -s $(LINT_LOG) ]

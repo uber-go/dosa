@@ -23,55 +23,203 @@ package dosa
 import (
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPrimaryKey(t *testing.T) {
-	k, err := parsePrimaryKey("t", "partkey")
-	assert.Equal(t, k.PartitionKeys, []string{"partkey"})
-	assert.Nil(t, err)
-}
+	data := []struct {
+		PrimaryKey string
+		Error      error
+		Result     *PrimaryKey
+	}{
+		{
+			PrimaryKey: "pk1",
+			Error:      nil,
+			Result: &PrimaryKey{
+				PartitionKeys:  []string{"pk1"},
+				ClusteringKeys: nil,
+			},
+		},
+		{
+			PrimaryKey: "pk1,",
+			Error:      errors.New("invalid primary key: pk1,"),
+			Result:     nil,
+		},
+		{
+			PrimaryKey: "pk1, pk2",
+			Error:      errors.New("invalid primary key: pk1, pk2"),
+			Result:     nil,
+		},
+		{
+			PrimaryKey: "pk1 desc",
+			Error:      errors.New("invalid primary key: pk1 desc"),
+			Result:     nil,
+		},
+		{
+			PrimaryKey: "(pk1, pk2,)",
+			Error:      nil,
+			Result: &PrimaryKey{
+				PartitionKeys: []string{"pk1"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "pk2",
+						Descending: false,
+					},
+				},
+			},
+		},
+		{
+			PrimaryKey: "(pk1        , pk2              )",
+			Error:      nil,
+			Result: &PrimaryKey{
+				PartitionKeys: []string{"pk1"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "pk2",
+						Descending: false,
+					},
+				},
+			},
+		},
+		{
+			PrimaryKey: "(pk1, , pk2,)",
+			Error:      nil,
+			Result: &PrimaryKey{
+				PartitionKeys: []string{"pk1"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "pk2",
+						Descending: false,
+					},
+				},
+			},
+		},
+		{
+			PrimaryKey: "(pk1, pk2, io-$%^*)",
+			Error:      errors.New("invalid primary key: (pk1, pk2, io-$%^*)"),
+			Result:     nil,
+		},
+		{
+			PrimaryKey: "(pk1, pk2, pk3)",
+			Error:      nil,
+			Result: &PrimaryKey{
+				PartitionKeys: []string{"pk1"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "pk2",
+						Descending: false,
+					},
+					{
+						Name:       "pk3",
+						Descending: false,
+					},
+				},
+			},
+		},
+		{
+			PrimaryKey: "((pk1), pk2)",
+			Error:      nil,
+			Result: &PrimaryKey{
+				PartitionKeys: []string{"pk1"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "pk2",
+						Descending: false,
+					},
+				},
+			},
+		},
+		{
+			PrimaryKey: "((pk1), pk2, pk3)",
+			Error:      nil,
+			Result: &PrimaryKey{
+				PartitionKeys: []string{"pk1"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "pk2",
+						Descending: false,
+					},
+					{
+						Name:       "pk3",
+						Descending: false,
+					},
+				},
+			},
+		},
+		{
+			PrimaryKey: "((pk1, pk2), pk3)",
+			Error:      nil,
+			Result: &PrimaryKey{
+				PartitionKeys: []string{"pk1", "pk2"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "pk3",
+						Descending: false,
+					},
+				},
+			},
+		},
+		{
+			PrimaryKey: "((pk1, pk2), pk3, pk4)",
+			Error:      nil,
+			Result: &PrimaryKey{
+				PartitionKeys: []string{"pk1", "pk2"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "pk3",
+						Descending: false,
+					},
+					{
+						Name:       "pk4",
+						Descending: false,
+					},
+				},
+			},
+		}, {
+			PrimaryKey: "((pk1, pk2), pk3 asc, pk4 zxdlk)",
+			Error:      errors.New("invalid primary key: ((pk1, pk2), pk3 asc, pk4 zxdlk)"),
+			Result:     nil,
+		},
+		{
+			PrimaryKey: "((pk1, pk2), pk3 asc, pk4 desc, pk5 ASC, pk6 DESC, pk7)",
+			Error:      nil,
+			Result: &PrimaryKey{
+				PartitionKeys: []string{"pk1", "pk2"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "pk3",
+						Descending: false,
+					},
+					{
+						Name:       "pk4",
+						Descending: true,
+					},
+					{
+						Name:       "pk5",
+						Descending: false,
+					},
+					{
+						Name:       "pk6",
+						Descending: true,
+					},
+					{
+						Name:       "pk7",
+						Descending: false,
+					},
+				},
+			},
+		},
+	}
 
-func TestMissingComma(t *testing.T) {
-	k, err := parsePrimaryKey("t", "(partkey)primkey")
-	assert.Nil(t, k)
-	assert.Contains(t, err.Error(), "comma")
-}
-
-func TestDuplicateField(t *testing.T) {
-	k, err := parsePrimaryKey("t", "(partkey),partkey")
-	assert.Nil(t, k)
-	assert.Contains(t, err.Error(), "\"partkey\"")
-	assert.Contains(t, err.Error(), "duplicate")
-}
-
-func TestAscendingDefault(t *testing.T) {
-	k1, err1 := parsePrimaryKey("t", "(partkey),primkey")
-	k2, err2 := parsePrimaryKey("t", "( partkey ), primkey asc")
-	assert.Nil(t, err1)
-	assert.Nil(t, err2)
-	assert.Equal(t, k1, k2)
-}
-
-func TestBogusAscendingDescending(t *testing.T) {
-	k, err := parsePrimaryKey("t", "(partkey),primkey bogus")
-	assert.Nil(t, k)
-	assert.Contains(t, err.Error(), "primkey")
-	assert.Contains(t, err.Error(), "bogus")
-	assert.Contains(t, err.Error(), "clustering")
-}
-
-func TestExtraAscendingDescending(t *testing.T) {
-	k, err := parsePrimaryKey("t", "(partkey),primkey asc desc")
-	assert.Nil(t, k)
-	assert.Contains(t, err.Error(), "primkey")
-	assert.Contains(t, err.Error(), "lustering")
-}
-
-func TestDescendingInSimpleModeTypo(t *testing.T) {
-	k, err := parsePrimaryKey("t", "partkey,primkey bogus")
-	assert.Nil(t, k)
-	assert.Contains(t, err.Error(), "primkey")
-	assert.Contains(t, err.Error(), "bogus")
-	assert.Contains(t, err.Error(), "clustering")
+	for _, d := range data {
+		k, err := parsePrimaryKey("t", d.PrimaryKey)
+		if nil == d.Error {
+			assert.Nil(t, err)
+			assert.Equal(t, k.PartitionKeys, d.Result.PartitionKeys)
+			assert.Equal(t, k.ClusteringKeys, d.Result.ClusteringKeys)
+		} else {
+			assert.Contains(t, err.Error(), d.Error.Error())
+		}
+	}
 }

@@ -40,14 +40,14 @@ type SinglePrimaryKeyNoParen struct {
 func TestSinglePrimaryKeyNoParen(t *testing.T) {
 	dosaTable, err := TableFromInstance(&SinglePrimaryKeyNoParen{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"PrimaryKey"}, dosaTable.Key.PartitionKeys)
+	assert.Equal(t, []string{"primarykey"}, dosaTable.Key.PartitionKeys)
 	assert.Equal(t, 0, len(dosaTable.Key.ClusteringKeys))
 }
 
 func TestNilPointer(t *testing.T) {
 	dosaTable, err := TableFromInstance((*SinglePrimaryKeyNoParen)(nil))
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"PrimaryKey"}, dosaTable.Key.PartitionKeys)
+	assert.Equal(t, []string{"primarykey"}, dosaTable.Key.PartitionKeys)
 	assert.Equal(t, 0, len(dosaTable.Key.ClusteringKeys))
 }
 
@@ -61,7 +61,7 @@ type SinglePrimaryKey struct {
 func TestSinglePrimaryKey(t *testing.T) {
 	dosaTable, err := TableFromInstance(&SinglePrimaryKey{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"PrimaryKey"}, dosaTable.Key.PartitionKeys)
+	assert.Equal(t, []string{"primarykey"}, dosaTable.Key.PartitionKeys)
 	assert.Equal(t, 0, len(dosaTable.Key.ClusteringKeys))
 }
 
@@ -80,7 +80,7 @@ type SinglePartitionKey struct {
 func TestSinglePartitionKey(t *testing.T) {
 	dosaTable, err := TableFromInstance(&SinglePartitionKey{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"PrimaryKey"}, dosaTable.Key.PartitionKeys)
+	assert.Equal(t, []string{"primarykey"}, dosaTable.Key.PartitionKeys)
 	assert.Equal(t, 0, len(dosaTable.Key.ClusteringKeys))
 }
 
@@ -96,7 +96,6 @@ func TestNoPrimaryKey(t *testing.T) {
 	dosaTable, err := TableFromInstance(&NoPrimaryKey{})
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "\"NoPrimaryKey\"")
 }
 
 // unhappy path: this struct has an empty primary key
@@ -111,7 +110,6 @@ func TestEmptyPrimaryKey(t *testing.T) {
 	dosaTable, err := TableFromInstance(&EmptyPrimaryKey{})
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "\"EmptyPrimaryKey\"")
 }
 
 type PrimaryKeyWithSecondaryRange struct {
@@ -124,8 +122,8 @@ type PrimaryKeyWithSecondaryRange struct {
 func TestPrimaryKeyWithSecondaryRange(t *testing.T) {
 	dosaTable, err := TableFromInstance(&PrimaryKeyWithSecondaryRange{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"PartKey"}, dosaTable.Key.PartitionKeys)
-	assert.Equal(t, []*ClusteringKey{{"PrimaryKey", false}}, dosaTable.Key.ClusteringKeys)
+	assert.Equal(t, []string{"partkey"}, dosaTable.Key.PartitionKeys)
+	assert.Equal(t, []*ClusteringKey{{"primarykey", false}}, dosaTable.Key.ClusteringKeys)
 }
 
 type PrimaryKeyWithDescendingRange struct {
@@ -138,8 +136,8 @@ type PrimaryKeyWithDescendingRange struct {
 func TestPrimaryKeyWithDescendingRange(t *testing.T) {
 	dosaTable, err := TableFromInstance(&PrimaryKeyWithDescendingRange{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"PartKey"}, dosaTable.Key.PartitionKeys)
-	assert.Equal(t, []*ClusteringKey{{"PrimaryKey", true}}, dosaTable.Key.ClusteringKeys)
+	assert.Equal(t, []string{"partkey"}, dosaTable.Key.PartitionKeys)
+	assert.Equal(t, []*ClusteringKey{{"primarykey", true}}, dosaTable.Key.ClusteringKeys)
 }
 
 type MultiComponentPrimaryKey struct {
@@ -152,12 +150,12 @@ type MultiComponentPrimaryKey struct {
 func TestMultiComponentPrimaryKey(t *testing.T) {
 	dosaTable, err := TableFromInstance(&MultiComponentPrimaryKey{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"PartKey", "AnotherPartKey"}, dosaTable.Key.PartitionKeys)
+	assert.Equal(t, []string{"partkey", "anotherpartkey"}, dosaTable.Key.PartitionKeys)
 	assert.Nil(t, dosaTable.Key.ClusteringKeys)
 }
 
 type InvalidDosaAttribute struct {
-	Entity `dosa:"oopsie,primaryKey=Oops"`
+	Entity `dosa:"oopsie, primaryKey=Oops"`
 	Oops   int64
 }
 
@@ -165,7 +163,7 @@ func TestInvalidDosaAttribute(t *testing.T) {
 	dosaTable, err := TableFromInstance(&InvalidDosaAttribute{})
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "\"oopsie\"")
+	assert.Contains(t, err.Error(), "oopsie")
 }
 
 func TestStringify(t *testing.T) {
@@ -266,7 +264,7 @@ func TestKeyFieldNameTypo(t *testing.T) {
 	dosaTable, err := TableFromInstance(&KeyFieldNameTypo{})
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "BoolHype")
+	assert.Contains(t, err.Error(), "boolhype")
 }
 
 func TestIgnoreUnexportedFields(t *testing.T) {
