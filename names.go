@@ -93,7 +93,7 @@ func IsValidName(name string) error {
 // NormalizeName normalizes names to a canonical representation by lowercase everything.
 // It returns error if the resultant canonical name is invalid.
 func NormalizeName(name string) (string, error) {
-	lowercaseName := strings.ToLower(name)
+	lowercaseName := strings.ToLower(strings.TrimSpace(name))
 	if err := IsValidName(lowercaseName); err != nil {
 		return "", errors.Wrapf(err, "failed to normalize to a valid name for %s", name)
 	}
