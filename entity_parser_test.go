@@ -299,3 +299,77 @@ func TestIgnoreTag(t *testing.T) {
 	assert.NotContains(t, table.FieldNames, "UnsupportedType")
 	assert.Len(t, table.Columns, 1)
 }
+
+func TestExtraStuffInClusteringKeyDecl(t *testing.T) {
+	type BadClusteringKeyDefinition struct {
+		Entity     `dosa:"primaryKey=(BoolType,StringType asc asc)"`
+		BoolType   bool
+		StringType string
+	}
+
+	table, err := TableFromInstance(&BadClusteringKeyDefinition{})
+	assert.Nil(t, table)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "lustering")
+}
+
+func TestDuplicateKey(t *testing.T) {
+	type DuplicateKeyDefinition struct {
+		Entity     `dosa:"primaryKey=(BoolType,BoolType)"`
+		BoolType   bool
+		StringType string
+	}
+
+	table, err := TableFromInstance(&DuplicateKeyDefinition{})
+	assert.Nil(t, table)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "uplicate")
+}
+
+func TestInvalidStructName(t *testing.T) {
+	type ăBădNăme struct {
+		Entity   `dosa:"primaryKey=BoolType"`
+		BoolType bool
+	}
+	table, err := TableFromInstance(&ăBădNăme{})
+	assert.Nil(t, table)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ormalize")
+}
+func TestInvalidFieldInTag(t *testing.T) {
+	type HasInvalidCharInTag struct {
+		Entity   `dosa:"primaryKey=(ABădNăme)"`
+		ABădNăme bool
+	}
+	table, err := TableFromInstance(&HasInvalidCharInTag{})
+	assert.Nil(t, table)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ormalize")
+}
+
+/*
+ These tests do not currently pass, but I think they should
+*/
+func TestRenameToInvalidName(t *testing.T) {
+	type InvalidRename struct {
+		Entity    `dosa:"primaryKey=BoolType"`
+		BoolType  bool
+		AGoodName string `dosa:"name=ABădNăme"`
+	}
+	t.Skip("Currently does not throw an error, but should")
+	table, err := TableFromInstance(&InvalidRename{})
+	assert.Nil(t, table)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ormalize")
+}
+
+func TestRenameToValidName(t *testing.T) {
+	type BadNameButRenamed struct {
+		Entity   `dosa:"primaryKey=(ABădNăme)"`
+		ABădNăme bool `dosa:"name=goodname"`
+	}
+	t.Skip("Throws an error, but probably should not")
+	table, err := TableFromInstance(&BadNameButRenamed{})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"goodname"}, table.Key.PartitionKeys)
+}
