@@ -82,3 +82,12 @@ clean:
 vendor:
 	$(ECHO_V)test -d vendor
 	$(MAKE) deps
+
+GOIMPORTS := $(shell command -v goimports 2> /dev/null)
+.PHONY: fmt
+fmt:
+ifdef GOIMPORTS
+				$(ECHO_V)$(GOIMPORTS) -w $(ALL_SRC)
+else
+				$(ECHO_V)gofmt -w $(ALL_SRC)
+endif
