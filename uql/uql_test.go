@@ -105,6 +105,12 @@ func TestToUql(t *testing.T) {
 		Columns: allColumnTypes,
 	}
 
+	invalidEntity := &dosa.EntityDefinition{
+		Name:    "twopartitionkey",
+		Key:     nil,
+		Columns: allColumnTypes,
+	}
+
 	expectedTmpl := `CREATE TABLE %s (
 	  foo int32;
 	  bar uuid;
@@ -118,8 +124,9 @@ func TestToUql(t *testing.T) {
 	`
 
 	dataProvider := []struct {
-		e        *dosa.EntityDefinition
-		expected string
+		e         *dosa.EntityDefinition
+		expected  string
+		shouldErr bool
 	}{
 		{
 			e:        singleKeyEntity,
@@ -137,11 +144,26 @@ func TestToUql(t *testing.T) {
 			e:        compositeKeyEntity,
 			expected: fmt.Sprintf(expectedTmpl, compositeKeyEntity.Name, "((foo, bar), qux DESC, fox ASC)"),
 		},
+		{
+			e:         nil,
+			expected:  "",
+			shouldErr: true,
+		},
+		{
+			e:         invalidEntity,
+			expected:  "",
+			shouldErr: true,
+		},
 	}
 
 	for _, testdata := range dataProvider {
+		actual, err := uql.ToUQL(testdata.e)
+		if testdata.shouldErr {
+			assert.Error(t, err)
+			continue
+		}
+
 		caseName := testdata.e.Name
-		actual := uql.ToUQL(testdata.e)
 		// compare line by line ignore leading and trailing whitespaces
 		actualLines := strings.Split(actual, "\n")
 		expectedLines := strings.Split(testdata.expected, "\n")

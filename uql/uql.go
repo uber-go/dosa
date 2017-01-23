@@ -25,6 +25,9 @@ import (
 
 	"text/template"
 
+	"strings"
+
+	"github.com/pkg/errors"
 	"go.uber.org/dosa"
 )
 
@@ -40,16 +43,12 @@ var uqlTypes = map[dosa.Type]string{
 	dosa.TUUID:     "uuid",
 }
 
-const seperator = ", "
+const separator = ", "
 
 func formatPartitionKeys(s []string) string {
 	buf := &bytes.Buffer{}
 	buf.WriteString("(")
-	for _, partitionKey := range s {
-		buf.WriteString(partitionKey)
-		buf.WriteString(seperator)
-	}
-	buf.Truncate(buf.Len() - len(seperator)) // discard the last ", "
+	buf.WriteString(strings.Join(s, separator))
 	buf.WriteString(")")
 
 	return buf.String()
@@ -60,16 +59,15 @@ func formatWithClusteringKeys(partitionKeys string, clusteringKeys []*dosa.Clust
 	buf.WriteString("(")
 	buf.WriteString(partitionKeys)
 	buf.WriteString(", ")
-	for _, clusteringKey := range clusteringKeys {
-		buf.WriteString(clusteringKey.Name)
+	cks := make([]string, len(clusteringKeys))
+	for i, clusteringKey := range clusteringKeys {
 		if clusteringKey.Descending {
-			buf.WriteString(" DESC")
+			cks[i] = clusteringKey.Name + " DESC"
 		} else {
-			buf.WriteString(" ASC")
+			cks[i] = clusteringKey.Name + " ASC"
 		}
-		buf.WriteString(seperator)
 	}
-	buf.Truncate(buf.Len() - len(seperator)) // discard the last ", "
+	buf.WriteString(strings.Join(cks, separator))
 	buf.WriteString(")")
 	return buf.String()
 }
@@ -94,13 +92,15 @@ const createStmt = "CREATE TABLE {{.Name}} (\n" +
 var tmpl = template.Must(template.New("uql").Funcs(funcMap).Parse(createStmt))
 
 // ToUQL translates an entity defintion to UQL string of create table stmt.
-// This func assumes the entity definition is valid.
-func ToUQL(e *dosa.EntityDefinition) string {
-	var buf bytes.Buffer
-	// error shouldn't happen unless there is a bug in our code, so not exposing error in ToUQL return result,
-	// which would force users to check error every time
-	if err := tmpl.Execute(&buf, e); err != nil {
-		return "" // would cause test failure if this ever happens
+func ToUQL(e *dosa.EntityDefinition) (string, error) {
+	if err := e.EnsureValid(); err != nil {
+		return "", errors.Wrap(err, "EntityDefinition is invalid")
 	}
-	return buf.String()
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, e); err != nil {
+		// shouldn't happen unless we have a bug in our code
+		return "", errors.Wrap(err, "failed to execute UQL template; this is most likely a DOSA bug")
+	}
+	return buf.String(), nil
 }
