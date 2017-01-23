@@ -43,7 +43,26 @@ var (
 	primaryKeyPattern1 = regexp.MustCompile(`\(\s*\((.*)\)(.*)\)`)
 	primaryKeyPattern2 = regexp.MustCompile(`\(\s*(\w*),?(.*)\)`)
 	primaryKeyPattern3 = regexp.MustCompile(`^\s*(\w*)\s*$`)
+
+	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
 )
+
+func removeTrailing(s string, seps ...string) string {
+	set := make(map[string]bool)
+
+	for _, sep := range seps {
+		set[sep] = true
+	}
+
+	i := 0
+	for i = len(s) - 1; i >= 0; i-- {
+		ss := string(s[i])
+		if !set[ss] {
+			break
+		}
+	}
+	return s[:i+1]
+}
 
 // parseClusteringKeys func parses the clustering key of DOSA object
 func parseClusteringKeys(ckStr string) ([]*ClusteringKey, error) {
@@ -99,6 +118,8 @@ func parsePartitionKey(pkStr string) ([]string, error) {
 
 // parsePrimaryKey func parses the primary key of DOSA object
 func parsePrimaryKey(tableName string, pkStr string) (*PrimaryKey, error) {
+	// filter out "trailing comma"
+	pkStr = removeTrailing(pkStr, ",", " ")
 	pkStr = strings.TrimSpace(pkStr)
 
 	var partitionKeyStr string
@@ -196,11 +217,11 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		}
 		name := structField.Name
 		if name == entityName {
-			if t.Key, err = parseEntityTag(t.StructName, tag); err != nil {
+			if t.StructName, t.Key, err = parseEntityTag(t.StructName, tag); err != nil {
 				return nil, err
 			}
 		} else {
-			cd, err := parseFieldTag(structField)
+			cd, err := parseFieldTag(structField, tag)
 			if err != nil {
 				return nil, errors.Wrapf(err, "column %q had invalid type", name)
 			}
@@ -209,57 +230,85 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		}
 	}
 
-	// TODO: we are computing "everything" twice, maybe we can do it once?
-	everything := t.Key.PartitionKeys
-	for _, ck := range t.Key.ClusteringKeys {
-		everything = append(everything, ck.Name)
-	}
-	for _, value := range everything {
-		if _, ok := t.FieldNames[value]; !ok {
-			return nil, fmt.Errorf("object %q references non-existent primary key field %q",
-				t.StructName, value)
-		}
+	if err := t.EntityDefinition.EnsureValid(); err != nil {
+		return nil, errors.Wrap(err, "failed to parse dosa object")
 	}
 
 	return t, nil
 }
 
+func parseNameTag(tag, defaultName string) (string, string, error) {
+	fullNameTag := ""
+	name := defaultName
+
+	matches := namePattern0.FindStringSubmatch(tag)
+	if len(matches) == 2 {
+		fullNameTag = matches[0]
+		name = matches[1]
+	}
+
+	// filter out "trailing comma"
+	name = removeTrailing(name, ",", " ")
+
+	var err error
+	name, err = NormalizeName(name)
+	if err != nil {
+		return "", "", err
+	}
+
+	return fullNameTag, name, nil
+}
+
 // parseEntityTag function parses DOSA tag on the "Entity" field
-func parseEntityTag(structName, dosaAnnotation string) (*PrimaryKey, error) {
+func parseEntityTag(structName, dosaAnnotation string) (string, *PrimaryKey, error) {
+	tag := dosaAnnotation
 	// find the primaryKey
-	matchs := primaryKeyPattern0.FindStringSubmatch(dosaAnnotation)
-	if len(matchs) < 2 {
-		return nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag", structName)
+	matchs := primaryKeyPattern0.FindStringSubmatch(tag)
+	if len(matchs) != 4 {
+		return "", nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag", structName)
 	}
 	pkString := matchs[1]
-
-	// validate if there is invalid tag left
-	leftAnn := strings.Replace(dosaAnnotation, matchs[0], "", 1)
-	if strings.TrimSpace(leftAnn) != "" {
-		return nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag: %s", structName, leftAnn)
-	}
-
 	key, err := parsePrimaryKey(structName, pkString)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse primary key %s for DOSA object", pkString)
+		return "", nil, errors.Wrapf(err, "failed to parse primary key %s for DOSA object", pkString)
 	}
 
-	//TODO find the name
+	toRemove := strings.TrimSuffix(matchs[0], matchs[2])
+	toRemove = strings.TrimSuffix(matchs[0], matchs[3])
+	tag = strings.Replace(tag, toRemove, "", 1)
+	//find the name
+	fullNameTag, name, err := parseNameTag(tag, structName)
+	if err != nil {
+		return "", nil, fmt.Errorf("invalid name tag: %s", tag)
+	}
 
-	return key, nil
+	tag = strings.Replace(tag, fullNameTag, "", 1)
+	if strings.TrimSpace(tag) != "" {
+		return "", nil, fmt.Errorf("struct %s with an invalid dosa struct tag: %s", structName, tag)
+	}
+
+	return name, key, nil
 }
 
 // parseFieldTag function parses DOSA tag on the fields in the DOSA struct except the "Entity" field
-func parseFieldTag(structField reflect.StructField) (*ColumnDefinition, error) {
+func parseFieldTag(structField reflect.StructField, dosaAnnotation string) (*ColumnDefinition, error) {
 	typ, err := typify(structField.Type)
 	if err != nil {
 		return nil, err
 	}
 
-	name, err := NormalizeName(structField.Name)
+	tag := dosaAnnotation
+	// parse name tag
+	fullNameTag, name, err := parseNameTag(tag, structField.Name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid name tag: %s", tag)
 	}
+
+	tag = strings.Replace(tag, fullNameTag, "", 1)
+	if strings.TrimSpace(tag) != "" {
+		return nil, fmt.Errorf("field %s with an invalid dosa field tag: %s", structField.Name, tag)
+	}
+
 	return &ColumnDefinition{Name: name, Type: typ}, nil
 }
 
