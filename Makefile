@@ -83,9 +83,9 @@ vendor:
 	$(ECHO_V)test -d vendor
 	$(MAKE) deps
 
-GOIMPORTS := $(shell command -v goimports 2> /dev/null)
 .PHONY: fmt
 fmt:
+  GOIMPORTS := $(shell command -v goimports 2> /dev/null)
 ifdef GOIMPORTS
 				$(ECHO_V)$(GOIMPORTS) -w $(ALL_SRC)
 else
