@@ -84,10 +84,10 @@ vendor:
 	$(MAKE) deps
 
 .PHONY: fmt
+GOIMPORTS=goimports
 fmt:
-  GOIMPORTS := $(shell command -v goimports 2> /dev/null)
-ifdef GOIMPORTS
-				$(ECHO_V)$(GOIMPORTS) -w $(ALL_SRC)
-else
+ifeq (, $(shell command -v $(GOIMPORTS) 2> /dev/null))
 				$(ECHO_V)gofmt -w $(ALL_SRC)
+else
+				$(ECHO_V)$(GOIMPORTS) -w $(ALL_SRC)
 endif
