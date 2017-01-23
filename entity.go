@@ -20,6 +20,8 @@
 
 package dosa
 
+import "github.com/pkg/errors"
+
 // Table represents a parsed entity format on the client side
 // In addition to shared EntityDefinition, it records struct name and field names.
 type Table struct {
@@ -54,4 +56,71 @@ type EntityDefinition struct {
 	Name    string // normalized entity name
 	Key     *PrimaryKey
 	Columns []*ColumnDefinition
+}
+
+// EnsureValid ensures the entity definition is valid.
+// All the names used (entity name, column name) must be valid.
+// No duplicate names can be used in column names or key names.
+// The primary key must not be nil and must contain at least one partition key.
+func (e *EntityDefinition) EnsureValid() error {
+	if e == nil {
+		return errors.New("EntityDefinition is nil")
+	}
+
+	if err := IsValidName(e.Name); err != nil {
+		return errors.Wrap(err, "EntityDefinition has invalid name")
+	}
+
+	columnNamesSeen := map[string]struct{}{}
+	for _, c := range e.Columns {
+		if c == nil {
+			return errors.New("EntityDefinition has nil column")
+		}
+		if err := IsValidName(c.Name); err != nil {
+			return errors.Wrap(err, "EntityDefinition has invalid column name")
+		}
+		if _, ok := columnNamesSeen[c.Name]; ok {
+			return errors.Errorf("duplicated column found: %q", c.Name)
+		}
+		if c.Type == Invalid {
+			return errors.Errorf("invalid type for column: %q", c.Name)
+		}
+		columnNamesSeen[c.Name] = struct{}{}
+	}
+
+	if e.Key == nil {
+		return errors.New("EntityDefinition has nil primary key")
+	}
+
+	if len(e.Key.PartitionKeys) == 0 {
+		return errors.New("EntityDefinition does not have partition key")
+	}
+
+	keyNamesSeen := map[string]struct{}{}
+	for _, p := range e.Key.PartitionKeys {
+		if _, ok := columnNamesSeen[p]; !ok {
+			return errors.Errorf("partition key does not refer to a column: %q", p)
+		}
+		if _, ok := keyNamesSeen[p]; ok {
+			return errors.Errorf("a column cannot be used twice in key: %q", p)
+		}
+		keyNamesSeen[p] = struct{}{}
+	}
+
+	for _, c := range e.Key.ClusteringKeys {
+		if c == nil {
+			return errors.New("EntityDefinition has invalid nil clustering key")
+		}
+
+		if _, ok := columnNamesSeen[c.Name]; !ok {
+			return errors.Errorf("clustering key does not refer to a column: %q", c.Name)
+		}
+
+		if _, ok := keyNamesSeen[c.Name]; ok {
+			return errors.Errorf("a column cannot be used twice in key: %q", c.Name)
+		}
+		keyNamesSeen[c.Name] = struct{}{}
+	}
+
+	return nil
 }
