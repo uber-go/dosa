@@ -457,6 +457,59 @@ func TestEntityParse(t *testing.T) {
 			Error: nil,
 		},
 		{
+			Tag:       "primaryKey=((ok)) name=jj",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error: nil,
+		},
+		{
+			Tag:       "primaryKey=((ok, dd), a,b DESC,  c ASC) name=jj",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys: []string{"ok", "dd"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "a",
+						Descending: false,
+					},
+					{
+						Name:       "b",
+						Descending: true,
+					},
+					{
+						Name:       "c",
+						Descending: false,
+					},
+				},
+			},
+			Error: nil,
+		},
+		{
+			Tag:       "name=jj, primaryKey=((ok, dd), a,b DESC,  c ASC) ",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys: []string{"ok", "dd"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "a",
+						Descending: false,
+					},
+					{
+						Name:       "b",
+						Descending: true,
+					},
+					{
+						Name:       "c",
+						Descending: false,
+					},
+				},
+			},
+			Error: nil,
+		},
+		{
 			Tag:        "primaryKey=ok,adsf, name=jj",
 			TableName:  "jj",
 			PrimaryKey: nil,
