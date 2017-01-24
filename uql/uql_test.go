@@ -134,11 +134,11 @@ func TestToUql(t *testing.T) {
 		},
 		{
 			e:        compoundKeyEntity,
-			expected: fmt.Sprintf(expectedTmpl, compoundKeyEntity.Name, "((foo), qux DESC)"),
+			expected: fmt.Sprintf(expectedTmpl, compoundKeyEntity.Name, "(foo, qux DESC)"),
 		},
 		{
 			e:        twoParitionKeyEntity,
-			expected: fmt.Sprintf(expectedTmpl, twoParitionKeyEntity.Name, "(foo, bar)"),
+			expected: fmt.Sprintf(expectedTmpl, twoParitionKeyEntity.Name, "((foo, bar))"),
 		},
 		{
 			e:        compositeKeyEntity,

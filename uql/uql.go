@@ -46,19 +46,10 @@ var uqlTypes = map[dosa.Type]string{
 const separator = ", "
 
 func formatPartitionKeys(s []string) string {
-	buf := &bytes.Buffer{}
-	buf.WriteString("(")
-	buf.WriteString(strings.Join(s, separator))
-	buf.WriteString(")")
-
-	return buf.String()
+	return strings.Join(s, separator)
 }
 
-func formatWithClusteringKeys(partitionKeys string, clusteringKeys []*dosa.ClusteringKey) string {
-	buf := &bytes.Buffer{}
-	buf.WriteString("(")
-	buf.WriteString(partitionKeys)
-	buf.WriteString(", ")
+func formatWithClusteringKeys(clusteringKeys []*dosa.ClusteringKey) string {
 	cks := make([]string, len(clusteringKeys))
 	for i, clusteringKey := range clusteringKeys {
 		if clusteringKey.Descending {
@@ -67,9 +58,7 @@ func formatWithClusteringKeys(partitionKeys string, clusteringKeys []*dosa.Clust
 			cks[i] = clusteringKey.Name + " ASC"
 		}
 	}
-	buf.WriteString(strings.Join(cks, separator))
-	buf.WriteString(")")
-	return buf.String()
+	return strings.Join(cks, separator)
 }
 
 var funcMap = template.FuncMap{
@@ -78,10 +67,17 @@ var funcMap = template.FuncMap{
 	},
 	"formatKey": func(k dosa.PrimaryKey) string {
 		partitionKeys := formatPartitionKeys(k.PartitionKeys)
-		if len(k.ClusteringKeys) == 0 {
-			return partitionKeys
+		clusteringKeys := formatWithClusteringKeys(k.ClusteringKeys)
+		switch {
+		case len(k.PartitionKeys) == 1 && len(k.ClusteringKeys) == 0:
+			return "(" + partitionKeys + ")"
+		case len(k.PartitionKeys) == 1:
+			return "(" + partitionKeys + separator + clusteringKeys + ")"
+		case len(k.ClusteringKeys) == 0:
+			return "((" + partitionKeys + "))"
+		default:
+			return "((" + partitionKeys + ")" + separator + clusteringKeys + ")"
 		}
-		return formatWithClusteringKeys(partitionKeys, k.ClusteringKeys)
 	},
 }
 
