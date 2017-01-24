@@ -128,3 +128,5 @@ fabric.properties
 overalls.coverprofile
 profile.coverprofile
 coverage.html
+# have to ignore .glide in the case where GLIDE_HOME is not set
+.glide

@@ -68,10 +68,12 @@ include $(SUPPORT_FILES)/lint.mk
 
 .PHONY: gendoc
 gendoc:
-	$(ECHO_V)find . -name README.md \
-		-not -path "./vendor/*" \
-		-not -path "./node_modules/*" | \
-		xargs -I% md-to-godoc -input=%
+	$(ECHO_V)find . \( \
+		-path ./vendor -o  \
+		-path ./node_modules -o \
+		-path ./.glide \
+	\) -prune -o -name README.md -print | \
+	xargs -I% md-to-godoc -input=%
 
 .PHONY: clean
 clean:
