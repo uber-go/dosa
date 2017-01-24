@@ -25,8 +25,6 @@ import (
 
 	"text/template"
 
-	"strings"
-
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 )
@@ -43,47 +41,14 @@ var uqlTypes = map[dosa.Type]string{
 	dosa.TUUID:     "uuid",
 }
 
-const separator = ", "
-
-func formatPartitionKeys(s []string) string {
-	return strings.Join(s, separator)
-}
-
-func formatWithClusteringKeys(clusteringKeys []*dosa.ClusteringKey) string {
-	cks := make([]string, len(clusteringKeys))
-	for i, clusteringKey := range clusteringKeys {
-		if clusteringKey.Descending {
-			cks[i] = clusteringKey.Name + " DESC"
-		} else {
-			cks[i] = clusteringKey.Name + " ASC"
-		}
-	}
-	return strings.Join(cks, separator)
-}
-
 var funcMap = template.FuncMap{
 	"toUqlType": func(t dosa.Type) string {
 		return uqlTypes[t]
-	},
-	"formatKey": func(k dosa.PrimaryKey) string {
-		partitionKeys := formatPartitionKeys(k.PartitionKeys)
-		clusteringKeys := formatWithClusteringKeys(k.ClusteringKeys)
-		switch {
-		case len(k.PartitionKeys) == 1 && len(k.ClusteringKeys) == 0:
-			return "(" + partitionKeys + ")"
-		case len(k.PartitionKeys) == 1:
-			return "(" + partitionKeys + separator + clusteringKeys + ")"
-		case len(k.ClusteringKeys) == 0:
-			return "((" + partitionKeys + "))"
-		default:
-			return "((" + partitionKeys + ")" + separator + clusteringKeys + ")"
-		}
-	},
-}
+	}}
 
 const createStmt = "CREATE TABLE {{.Name}} (\n" +
 	"{{range .Columns}}  {{.Name}} {{(toUqlType .Type)}};\n{{end}}" +
-	") PRIMARY KEY {{(formatKey .Key)}};\n"
+	") PRIMARY KEY {{(.Key)}};\n"
 
 var tmpl = template.Must(template.New("uql").Funcs(funcMap).Parse(createStmt))
 

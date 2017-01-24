@@ -20,7 +20,11 @@
 
 package dosa
 
-import "github.com/pkg/errors"
+import (
+	"bytes"
+	"github.com/pkg/errors"
+	"strings"
+)
 
 // Table represents a parsed entity format on the client side
 // In addition to shared EntityDefinition, it records struct name and field names.
@@ -37,10 +41,50 @@ type ClusteringKey struct {
 	Descending bool
 }
 
+// String takes a ClusteringKey and returns "column-name ASC|DESC"
+func (ck ClusteringKey) String() string {
+	if ck.Descending {
+		return ck.Name + " DESC"
+	}
+	return ck.Name + " ASC"
+}
+
 // PrimaryKey stores information about partition keys and clustering keys
 type PrimaryKey struct {
 	PartitionKeys  []string
 	ClusteringKeys []*ClusteringKey
+}
+
+// formatClusteringKeys takes an array of ClusteringKeys and returns
+// a string that shows all of them, separated by commas
+func formatClusteringKeys(keys []*ClusteringKey) string {
+	pieces := make([]string, len(keys))
+	for index, ck := range keys {
+		pieces[index] = ck.String()
+	}
+	return strings.Join(pieces, ", ")
+}
+
+func formatPartitionKeys(keys []string) string {
+	if len(keys) > 1 {
+		return "(" + strings.Join(keys, ", ") + ")"
+	}
+	return keys[0]
+}
+
+// String method produces the following output:
+// for multiple partition keys: ((partition-key, ...), clustering-key ASC/DESC, ...)
+// for one partition key: (partition-key, clustering-key ASC/DESC, ...)
+func (pk PrimaryKey) String() string {
+	var b bytes.Buffer
+	_ = b.WriteByte('(')
+	b.WriteString(formatPartitionKeys(pk.PartitionKeys))
+	if pk.ClusteringKeys != nil && len(pk.ClusteringKeys) > 0 {
+		b.WriteString(", ")
+		b.WriteString(formatClusteringKeys(pk.ClusteringKeys))
+	}
+	_ = b.WriteByte(')')
+	return b.String()
 }
 
 // ColumnDefinition stores information about a column
