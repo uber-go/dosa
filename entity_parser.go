@@ -47,25 +47,6 @@ var (
 	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
 )
 
-// removeTrailing func will removes all the trailing strings that match to the input.
-// e.g. if the input is ' ', ',' , the method will remove all the ' ' and ',' at the
-// right side of the string until it reaches to the first character not matches to the inputs.
-func removeTrailingCharacters(s string, seps ...byte) string {
-	set := make(map[byte]bool, len(seps))
-
-	for _, sep := range seps {
-		set[sep] = true
-	}
-
-	var i int
-	for i = len(s) - 1; i >= 0; i-- {
-		if !set[s[i]] {
-			break
-		}
-	}
-	return s[:i+1]
-}
-
 // parseClusteringKeys func parses the clustering key of DOSA object
 func parseClusteringKeys(ckStr string) ([]*ClusteringKey, error) {
 	ckStr = strings.TrimSpace(ckStr)
@@ -121,7 +102,7 @@ func parsePartitionKey(pkStr string) ([]string, error) {
 // parsePrimaryKey func parses the primary key of DOSA object
 func parsePrimaryKey(tableName string, pkStr string) (*PrimaryKey, error) {
 	// filter out "trailing comma"
-	pkStr = removeTrailingCharacters(pkStr, ',', ' ')
+	pkStr = strings.TrimRight(pkStr, ", ")
 	pkStr = strings.TrimSpace(pkStr)
 
 	var partitionKeyStr string
@@ -273,7 +254,7 @@ func parseNameTag(tag, defaultName string) (string, string, error) {
 	}
 
 	// filter out "trailing comma"
-	name = removeTrailingCharacters(name, ',', ' ')
+	name = strings.TrimRight(name, " ,")
 
 	var err error
 	name, err = NormalizeName(name)
