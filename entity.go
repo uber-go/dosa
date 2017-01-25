@@ -27,7 +27,8 @@ import "github.com/pkg/errors"
 type Table struct {
 	EntityDefinition
 	StructName string
-	FieldNames map[string]string // map from column name -> field name
+	ColToField map[string]string // map from column name -> field name
+	FieldToCol map[string]string // map from field name -> column name
 }
 
 // ClusteringKey stores name and ordering of a clustering key
