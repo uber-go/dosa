@@ -24,8 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"go.uber.org/dosa"
+	"github.com/uber-go/dosa"
 )
 
 func TestRangeOpStringer(t *testing.T) {

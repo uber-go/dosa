@@ -1,4 +1,4 @@
-package: go.uber.org/dosa
+package: github.com/uber-go/dosa
 import:
 - package: github.com/pkg/errors
   version: ^0.8.0

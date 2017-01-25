@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-PROJECT_ROOT := go.uber.org/dosa
+PROJECT_ROOT := github.com/uber-go/dosa
 
 SUPPORT_FILES := .build
 include $(SUPPORT_FILES)/colors.mk

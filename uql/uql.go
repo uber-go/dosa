@@ -28,7 +28,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"go.uber.org/dosa"
+	"github.com/uber-go/dosa"
 )
 
 // map from dosa type to uql type string

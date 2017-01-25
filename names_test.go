@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/dosa"
+	"github.com/uber-go/dosa"
 )
 
 func TestIsValidName(t *testing.T) {
