@@ -82,7 +82,6 @@ clean:
 
 .PHONY: vendor
 vendor:
-	$(ECHO_V)test -d vendor
 	$(MAKE) deps
 
 .PHONY: fmt
