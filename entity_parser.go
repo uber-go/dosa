@@ -47,17 +47,19 @@ var (
 	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
 )
 
-func removeTrailing(s string, seps ...string) string {
-	set := make(map[string]bool)
+// removeTrailing func will removes all the trailing strings that match to the input.
+// e.g. if the input is ' ', ',' , the method will remove all the ' ' and ',' at the
+// right side of the string until it reaches to the first character not matches to the inputs.
+func removeTrailingCharacters(s string, seps ...byte) string {
+	set := make(map[byte]bool, len(seps))
 
 	for _, sep := range seps {
 		set[sep] = true
 	}
 
-	i := 0
+	var i int
 	for i = len(s) - 1; i >= 0; i-- {
-		ss := string(s[i])
-		if !set[ss] {
+		if !set[s[i]] {
 			break
 		}
 	}
@@ -119,7 +121,7 @@ func parsePartitionKey(pkStr string) ([]string, error) {
 // parsePrimaryKey func parses the primary key of DOSA object
 func parsePrimaryKey(tableName string, pkStr string) (*PrimaryKey, error) {
 	// filter out "trailing comma"
-	pkStr = removeTrailing(pkStr, ",", " ")
+	pkStr = removeTrailingCharacters(pkStr, ',', ' ')
 	pkStr = strings.TrimSpace(pkStr)
 
 	var partitionKeyStr string
@@ -200,7 +202,8 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 
 	t := &Table{
 		StructName: elem.Name(),
-		FieldNames: map[string]string{},
+		ColToField: map[string]string{},
+		FieldToCol: map[string]string{},
 		EntityDefinition: EntityDefinition{
 			Name:    name,
 			Columns: []*ColumnDefinition{},
@@ -217,7 +220,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		}
 		name := structField.Name
 		if name == entityName {
-			if t.StructName, t.Key, err = parseEntityTag(t.StructName, tag); err != nil {
+			if t.EntityDefinition.Name, t.Key, err = parseEntityTag(t.StructName, tag); err != nil {
 				return nil, err
 			}
 		} else {
@@ -225,10 +228,14 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "column %q had invalid type", name)
 			}
+			name, _ := NormalizeName(name)
 			t.Columns = append(t.Columns, cd)
-			t.FieldNames[cd.Name] = name
+			t.ColToField[cd.Name] = name
+			t.FieldToCol[name] = cd.Name
 		}
 	}
+
+	primaryKeyNameMatch(t)
 
 	if err := t.EntityDefinition.EnsureValid(); err != nil {
 		return nil, errors.Wrap(err, "failed to parse dosa object")
@@ -237,6 +244,24 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 	return t, nil
 }
 
+// primaryKeyNameMatch translate the primary keys to the internal column name based on the maping
+// between fields and columns.
+func primaryKeyNameMatch(t *Table) {
+	pk := t.EntityDefinition.Key
+	for i := range pk.PartitionKeys {
+		if v, ok := t.FieldToCol[pk.PartitionKeys[i]]; ok {
+			pk.PartitionKeys[i] = v
+		}
+	}
+
+	for i := range pk.ClusteringKeys {
+		if v, ok := t.FieldToCol[pk.ClusteringKeys[i].Name]; ok {
+			pk.ClusteringKeys[i].Name = v
+		}
+	}
+}
+
+// parseNameTag functions parses DOSA "name" tag
 func parseNameTag(tag, defaultName string) (string, string, error) {
 	fullNameTag := ""
 	name := defaultName
@@ -248,7 +273,7 @@ func parseNameTag(tag, defaultName string) (string, string, error) {
 	}
 
 	// filter out "trailing comma"
-	name = removeTrailing(name, ",", " ")
+	name = removeTrailingCharacters(name, ',', ' ')
 
 	var err error
 	name, err = NormalizeName(name)
@@ -279,7 +304,7 @@ func parseEntityTag(structName, dosaAnnotation string) (string, *PrimaryKey, err
 	//find the name
 	fullNameTag, name, err := parseNameTag(tag, structName)
 	if err != nil {
-		return "", nil, fmt.Errorf("invalid name tag: %s", tag)
+		return "", nil, errors.Wrapf(err, "invalid name tag: %s", tag)
 	}
 
 	tag = strings.Replace(tag, fullNameTag, "", 1)

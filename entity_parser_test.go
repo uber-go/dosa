@@ -277,9 +277,9 @@ func TestIgnoreUnexportedFields(t *testing.T) {
 
 	table, err := TableFromInstance(&UnexportedFieldType{})
 	assert.NoError(t, err)
-	assert.Len(t, table.FieldNames, 1)
-	assert.NotContains(t, table.FieldNames, "unexported")
-	assert.NotContains(t, table.FieldNames, "unsupportedType")
+	assert.Len(t, table.ColToField, 1)
+	assert.NotContains(t, table.ColToField, "unexported")
+	assert.NotContains(t, table.ColToField, "unsupportedType")
 	assert.Len(t, table.Columns, 1)
 }
 
@@ -293,10 +293,10 @@ func TestIgnoreTag(t *testing.T) {
 
 	table, err := TableFromInstance(&IgnoreTagType{})
 	assert.NoError(t, err)
-	assert.Len(t, table.FieldNames, 1)
+	assert.Len(t, table.ColToField, 1)
 	// TODO: should be checking normalized names once normalization is done
-	assert.NotContains(t, table.FieldNames, "Exported")
-	assert.NotContains(t, table.FieldNames, "UnsupportedType")
+	assert.NotContains(t, table.ColToField, "Exported")
+	assert.NotContains(t, table.ColToField, "UnsupportedType")
 	assert.Len(t, table.Columns, 1)
 }
 
@@ -356,19 +356,17 @@ func TestRenameToInvalidName(t *testing.T) {
 		BoolType  bool
 		AGoodName string `dosa:"name=ABădNăme"`
 	}
-	t.Skip("Currently does not throw an error, but should")
 	table, err := TableFromInstance(&InvalidRename{})
 	assert.Nil(t, table)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "ormalize")
+	assert.Contains(t, err.Error(), "invalid name tag: name=ABădNăme")
 }
 
 func TestRenameToValidName(t *testing.T) {
 	type BadNameButRenamed struct {
-		Entity   `dosa:"primaryKey=(ABădNăme)"`
-		ABădNăme bool `dosa:"name=goodname"`
+		Entity `dosa:"primaryKey=(Foo)"`
+		Foo    bool `dosa:"name=goodname"`
 	}
-	t.Skip("Throws an error, but probably should not")
 	table, err := TableFromInstance(&BadNameButRenamed{})
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"goodname"}, table.Key.PartitionKeys)
