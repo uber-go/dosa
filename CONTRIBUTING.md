@@ -12,8 +12,8 @@ This doc is intended for contributors to uber-go/dosa
 Make sure the repository is cloned to the correct location:
 
 ```bash
-go get go.uber.org/dosa/...
-cd $GOPATH/src/go.uber.org/dosa
+go get github.com/uber-go/dosa/...
+cd $GOPATH/src/github.com/uber-go/dosa
 ```
 
 ## Dependency management
@@ -85,7 +85,7 @@ go get -u gopkg.in/matm/v1/gocov-html
 Dosa uses [md-to-godoc](https://github.com/sectioneight/md-to-godoc) to
 generate `doc.go` package documentation from `README.md` markdown syntax. This
 means that all package-level documentation is viewable both on GitHub and
-[godoc.org](https://godoc.org/go.uber.org/dosa).
+[godoc.org](https://godoc.org/github.com/uber-go/dosa).
 
 To document a new package, simply create a `README.md` in the package directory.
 Once you're satisfied with its contents, run `make gendoc` from the root of the

@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/dosa"
+	"github.com/uber-go/dosa"
 )
 
 func TestEntityDefinitionEnsureValid(t *testing.T) {
