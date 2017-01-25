@@ -18,7 +18,7 @@ lint: vendor
 	@echo "Installing test dependencies for vet..."
 	$(ECHO_V)go test -i $(PKGS)
 	@echo "Checking formatting..."
-	$(ECHO_V)gofmt -d -s $(PKG_FILES) 2>&1 | tee $(LINT_LOG)
+	@$(MAKE) fmt
 	@echo "Checking vet..."
 	$(ECHO_V)$(foreach dir,$(PKG_FILES),go tool vet $(VET_RULES) $(dir) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG);)
 	@echo "Checking lint..."
