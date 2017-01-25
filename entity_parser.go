@@ -41,8 +41,8 @@ const (
 var (
 	primaryKeyPattern0 = regexp.MustCompile(`primaryKey\s*=\s*([^=]*)((\s+.*=)|$)`)
 	primaryKeyPattern1 = regexp.MustCompile(`\(\s*\((.*)\)(.*)\)`)
-	primaryKeyPattern2 = regexp.MustCompile(`\(\s*(\w*),?(.*)\)`)
-	primaryKeyPattern3 = regexp.MustCompile(`^\s*(\w*)\s*$`)
+	primaryKeyPattern2 = regexp.MustCompile(`\(\s*([^,\s]+),?(.*)\)`)
+	primaryKeyPattern3 = regexp.MustCompile(`^\s*([^,\s]+)\s*$`)
 
 	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
 )
@@ -74,40 +74,33 @@ func parseClusteringKeys(ckStr string) ([]*ClusteringKey, error) {
 
 		}
 
-		name, err := NormalizeName(fields[0])
-		if err != nil {
-			return nil, err
-		}
-		clusteringKeys = append(clusteringKeys, &ClusteringKey{Name: name, Descending: descending})
+		clusteringKeys = append(clusteringKeys, &ClusteringKey{Name: strings.TrimSpace(fields[0]), Descending: descending})
 	}
 	return clusteringKeys, nil
 }
 
 // parsePartitionKey func parses the partition key of DOSA object
-func parsePartitionKey(pkStr string) ([]string, error) {
+func parsePartitionKey(pkStr string) []string {
 	pkStr = strings.TrimSpace(pkStr)
 	var pks []string
-	var npk string
-	var err error
 	partitionKeys := strings.Split(pkStr, ",")
 	for _, pk := range partitionKeys {
-		if npk, err = NormalizeName(pk); err != nil {
-			return nil, err
+		npk := strings.TrimSpace(pk)
+		if len(pk) > 0 {
+			pks = append(pks, npk)
 		}
-		pks = append(pks, npk)
 	}
-	return pks, err
+	return pks
 }
 
 // parsePrimaryKey func parses the primary key of DOSA object
-func parsePrimaryKey(tableName string, pkStr string) (*PrimaryKey, error) {
-	// filter out "trailing comma"
+func parsePrimaryKey(tableName, pkStr string) (*PrimaryKey, error) {
+	// filter out "trailing comma and space"
 	pkStr = strings.TrimRight(pkStr, ", ")
 	pkStr = strings.TrimSpace(pkStr)
 
 	var partitionKeyStr string
 	var clusteringKeyStr string
-
 	matched := false
 	// case 1: primaryKey=((PK1,PK2), PK3, PK4)
 	matchs := primaryKeyPattern1.FindStringSubmatch(pkStr)
@@ -140,13 +133,7 @@ func parsePrimaryKey(tableName string, pkStr string) (*PrimaryKey, error) {
 	if !matched {
 		return nil, fmt.Errorf("invalid primary key: %s", pkStr)
 	}
-
-	var err error
-	partitionKeys, err := parsePartitionKey(partitionKeyStr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid primary key: %s", pkStr)
-	}
-
+	partitionKeys := parsePartitionKey(partitionKeyStr)
 	clusteringKeys, err := parseClusteringKeys(clusteringKeyStr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid primary key: %s", pkStr)
@@ -209,16 +196,14 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "column %q had invalid type", name)
 			}
-			name, _ := NormalizeName(name)
 			t.Columns = append(t.Columns, cd)
 			t.ColToField[cd.Name] = name
 			t.FieldToCol[name] = cd.Name
 		}
 	}
 
-	primaryKeyNameMatch(t)
-
-	if err := t.EntityDefinition.EnsureValid(); err != nil {
+	translateKeyName(t)
+	if err := t.EnsureValid(); err != nil {
 		return nil, errors.Wrap(err, "failed to parse dosa object")
 	}
 
@@ -227,16 +212,18 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 
 // primaryKeyNameMatch translate the primary keys to the internal column name based on the maping
 // between fields and columns.
-func primaryKeyNameMatch(t *Table) {
+func translateKeyName(t *Table) {
 	pk := t.EntityDefinition.Key
 	for i := range pk.PartitionKeys {
-		if v, ok := t.FieldToCol[pk.PartitionKeys[i]]; ok {
+		name := pk.PartitionKeys[i]
+		if v, ok := t.FieldToCol[name]; ok {
 			pk.PartitionKeys[i] = v
 		}
 	}
 
 	for i := range pk.ClusteringKeys {
-		if v, ok := t.FieldToCol[pk.ClusteringKeys[i].Name]; ok {
+		name := pk.ClusteringKeys[i].Name
+		if v, ok := t.FieldToCol[name]; ok {
 			pk.ClusteringKeys[i].Name = v
 		}
 	}
@@ -278,10 +265,10 @@ func parseEntityTag(structName, dosaAnnotation string) (string, *PrimaryKey, err
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to parse primary key %s for DOSA object", pkString)
 	}
-
 	toRemove := strings.TrimSuffix(matchs[0], matchs[2])
 	toRemove = strings.TrimSuffix(matchs[0], matchs[3])
 	tag = strings.Replace(tag, toRemove, "", 1)
+
 	//find the name
 	fullNameTag, name, err := parseNameTag(tag, structName)
 	if err != nil {

@@ -44,6 +44,14 @@ func TestPrimaryKey(t *testing.T) {
 			},
 		},
 		{
+			PrimaryKey: "ABădNăm",
+			Error:      nil,
+			Result: &PrimaryKey{
+				PartitionKeys:  []string{"ABădNăm"},
+				ClusteringKeys: nil,
+			},
+		},
+		{
 			PrimaryKey: "pk1,,",
 			Error:      nil,
 			Result: &PrimaryKey{
@@ -115,8 +123,20 @@ func TestPrimaryKey(t *testing.T) {
 		},
 		{
 			PrimaryKey: "(pk1, pk2, io-$%^*)",
-			Error:      errors.New("invalid primary key: (pk1, pk2, io-$%^*)"),
-			Result:     nil,
+			Error:      nil,
+			Result: &PrimaryKey{
+				PartitionKeys: []string{"pk1"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "pk2",
+						Descending: false,
+					},
+					{
+						Name:       "io-$%^*",
+						Descending: false,
+					},
+				},
+			},
 		},
 		{
 			PrimaryKey: "(pk1, pk2, pk3)",

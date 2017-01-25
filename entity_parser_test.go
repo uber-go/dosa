@@ -264,7 +264,7 @@ func TestKeyFieldNameTypo(t *testing.T) {
 	dosaTable, err := TableFromInstance(&KeyFieldNameTypo{})
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "boolhype")
+	assert.Contains(t, err.Error(), "BoolHype")
 }
 
 func TestIgnoreUnexportedFields(t *testing.T) {
@@ -344,7 +344,7 @@ func TestInvalidFieldInTag(t *testing.T) {
 	table, err := TableFromInstance(&HasInvalidCharInTag{})
 	assert.Nil(t, table)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "ormalize")
+	assert.Contains(t, err.Error(), "invalid")
 }
 
 /*
@@ -364,8 +364,8 @@ func TestRenameToInvalidName(t *testing.T) {
 
 func TestRenameToValidName(t *testing.T) {
 	type BadNameButRenamed struct {
-		Entity `dosa:"primaryKey=(Foo)"`
-		Foo    bool `dosa:"name=goodname"`
+		Entity   `dosa:"primaryKey=(ABădNăme)"`
+		ABădNăme bool `dosa:"name=goodname"`
 	}
 	table, err := TableFromInstance(&BadNameButRenamed{})
 	assert.NoError(t, err)
