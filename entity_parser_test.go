@@ -267,14 +267,14 @@ func TestKeyFieldNameTypo(t *testing.T) {
 	assert.Contains(t, err.Error(), "BoolHype")
 }
 
-func TestIgnoreUnexportedFields(t *testing.T) {
-	type UnexportedFieldType struct {
-		Entity          `dosa:"primaryKey=BoolType"`
-		BoolType        bool
-		unexported      string
-		unsupportedType io.Reader
-	}
+type UnexportedFieldType struct {
+	Entity          `dosa:"primaryKey=BoolType"`
+	BoolType        bool
+	unexported      string
+	unsupportedType io.Reader
+}
 
+func TestIgnoreUnexportedFields(t *testing.T) {
 	table, err := TableFromInstance(&UnexportedFieldType{})
 	assert.NoError(t, err)
 	assert.Len(t, table.ColToField, 1)
@@ -283,14 +283,14 @@ func TestIgnoreUnexportedFields(t *testing.T) {
 	assert.Len(t, table.Columns, 1)
 }
 
-func TestIgnoreTag(t *testing.T) {
-	type IgnoreTagType struct {
-		Entity          `dosa:"primaryKey=BoolType"`
-		BoolType        bool
-		Exported        string    `dosa:"-"`
-		UnsupportedType io.Reader `dosa:"-"`
-	}
+type IgnoreTagType struct {
+	Entity          `dosa:"primaryKey=BoolType"`
+	BoolType        bool
+	Exported        string    `dosa:"-"`
+	UnsupportedType io.Reader `dosa:"-"`
+}
 
+func TestIgnoreTag(t *testing.T) {
 	table, err := TableFromInstance(&IgnoreTagType{})
 	assert.NoError(t, err)
 	assert.Len(t, table.ColToField, 1)
@@ -362,11 +362,12 @@ func TestRenameToInvalidName(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid name tag: name=ABădNăme")
 }
 
+type BadNameButRenamed struct {
+	Entity   `dosa:"primaryKey=(ABădNăme)"`
+	ABădNăme bool `dosa:"name=goodname"`
+}
+
 func TestRenameToValidName(t *testing.T) {
-	type BadNameButRenamed struct {
-		Entity   `dosa:"primaryKey=(ABădNăme)"`
-		ABădNăme bool `dosa:"name=goodname"`
-	}
 	table, err := TableFromInstance(&BadNameButRenamed{})
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"goodname"}, table.Key.PartitionKeys)
