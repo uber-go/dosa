@@ -360,22 +360,22 @@ func TestFieldParse(t *testing.T) {
 		{
 			StructField: validFieldType,
 			Tag:         "    name=jj  sddf  ",
-			Error:       errors.New("field valid with an invalid dosa field tag"),
+			Error:       errors.New("invalid dosa field tag"),
 		},
 		{
 			StructField: validFieldType,
 			Tag:         "asdf    name=jj    ",
-			Error:       errors.New("field valid with an invalid dosa field tag"),
+			Error:       errors.New("invalid dosa field tag"),
 		},
 		{
 			StructField: validFieldType,
 			Tag:         "asdf    name=jj    asdfads",
-			Error:       errors.New("field valid with an invalid dosa field tag"),
+			Error:       errors.New("invalid dosa field tag"),
 		},
 		{
 			StructField: validFieldType,
 			Tag:         "  asdfljk  ",
-			Error:       errors.New("field valid with an invalid dosa field tag"),
+			Error:       errors.New("invalid dosa field tag"),
 		},
 		{
 			StructField: validFieldType,
@@ -390,7 +390,7 @@ func TestFieldParse(t *testing.T) {
 		{
 			StructField: validFieldType,
 			Tag:         "name=x name=0",
-			Error:       errors.New("field valid with an invalid dosa field tag"),
+			Error:       errors.New("invalid dosa field tag"),
 		},
 	}
 	for _, d := range data {
@@ -533,7 +533,7 @@ func TestEntityParse(t *testing.T) {
 			Tag:        "primaryKey=ok,adsf, name=jj",
 			TableName:  "jj",
 			PrimaryKey: nil,
-			Error:      errors.New("failed to parse primary key ok,adsf, for DOSA object: invalid primary key: ok,adsf"),
+			Error:      errors.New("ok,adsf"),
 		},
 		{
 			Tag:        "primaryK=adsf, name=jj",

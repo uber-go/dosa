@@ -42,7 +42,7 @@ var (
 	primaryKeyPattern0 = regexp.MustCompile(`primaryKey\s*=\s*([^=]*)((\s+.*=)|$)`)
 	primaryKeyPattern1 = regexp.MustCompile(`\(\s*\((.*)\)(.*)\)`)
 	primaryKeyPattern2 = regexp.MustCompile(`\(\s*([^,\s]+),?(.*)\)`)
-	primaryKeyPattern3 = regexp.MustCompile(`^\s*([^,\s]+)\s*$`)
+	primaryKeyPattern3 = regexp.MustCompile(`^\s*([^(),\s]+)\s*$`)
 
 	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
 )
@@ -165,6 +165,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 	elem := reflect.TypeOf(object).Elem()
 	name, err := NormalizeName(elem.Name())
 	if err != nil {
+		// TODO: This isn't correct, someone could override the name later
 		return nil, errors.Wrapf(err, "struct name is invalid")
 	}
 
@@ -263,7 +264,7 @@ func parseEntityTag(structName, dosaAnnotation string) (string, *PrimaryKey, err
 	pkString := matchs[1]
 	key, err := parsePrimaryKey(structName, pkString)
 	if err != nil {
-		return "", nil, errors.Wrapf(err, "failed to parse primary key %s for DOSA object", pkString)
+		return "", nil, errors.Wrapf(err, "struct %s has an invalid primary key %q", structName, pkString)
 	}
 	toRemove := strings.TrimSuffix(matchs[0], matchs[2])
 	toRemove = strings.TrimSuffix(matchs[0], matchs[3])
@@ -289,17 +290,19 @@ func parseFieldTag(structField reflect.StructField, dosaAnnotation string) (*Col
 	if err != nil {
 		return nil, err
 	}
+	return parseField(typ, structField.Name, dosaAnnotation)
+}
 
-	tag := dosaAnnotation
+func parseField(typ Type, name string, tag string) (*ColumnDefinition, error) {
 	// parse name tag
-	fullNameTag, name, err := parseNameTag(tag, structField.Name)
+	fullNameTag, name, err := parseNameTag(tag, name)
 	if err != nil {
 		return nil, fmt.Errorf("invalid name tag: %s", tag)
 	}
 
 	tag = strings.Replace(tag, fullNameTag, "", 1)
 	if strings.TrimSpace(tag) != "" {
-		return nil, fmt.Errorf("field %s with an invalid dosa field tag: %s", structField.Name, tag)
+		return nil, fmt.Errorf("field %s with an invalid dosa field tag: %s", name, tag)
 	}
 
 	return &ColumnDefinition{Name: name, Type: typ}, nil
@@ -340,6 +343,5 @@ func typify(f reflect.Type) (Type, error) {
 }
 
 func (d Table) String() string {
-	// TODO: better output
-	return d.Name
+	return d.Name + " " + d.Key.String()
 }
