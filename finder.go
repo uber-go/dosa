@@ -120,7 +120,7 @@ func tableFromStructType(structName string, structType *ast.StructType) (*Table,
 		}
 		if kind == entityName {
 			var err error
-			if t.EntityDefinition.Name, t.Key, err = ParseEntityTag(structName, dosaTag); err != nil {
+			if t.EntityDefinition.Name, t.Key, err = parseEntityTag(structName, dosaTag); err != nil {
 				return nil, err
 			}
 		} else {
@@ -163,9 +163,6 @@ func (f *EntityRecordingVisitor) Visit(n ast.Node) ast.Visitor {
 				if err == nil {
 					f.Entities = append(f.Entities, *table)
 				} else {
-					if f.Warnings == nil {
-						f.Warnings = make([]error, 0)
-					}
 					f.Warnings = append(f.Warnings, err)
 				}
 			}

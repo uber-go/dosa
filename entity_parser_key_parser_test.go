@@ -556,7 +556,7 @@ func TestEntityParse(t *testing.T) {
 	}
 
 	for _, d := range data {
-		tableName, primaryKey, err := ParseEntityTag(structName, d.Tag)
+		tableName, primaryKey, err := parseEntityTag(structName, d.Tag)
 		if d.Error != nil {
 			assert.Contains(t, err.Error(), d.Error.Error())
 		} else {

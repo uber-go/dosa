@@ -189,7 +189,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		}
 		name := structField.Name
 		if name == entityName {
-			if t.EntityDefinition.Name, t.Key, err = ParseEntityTag(t.StructName, tag); err != nil {
+			if t.EntityDefinition.Name, t.Key, err = parseEntityTag(t.StructName, tag); err != nil {
 				return nil, err
 			}
 		} else {
@@ -253,8 +253,8 @@ func parseNameTag(tag, defaultName string) (string, string, error) {
 	return fullNameTag, name, nil
 }
 
-// ParseEntityTag function parses DOSA tag on the "Entity" field
-func ParseEntityTag(structName, dosaAnnotation string) (string, *PrimaryKey, error) {
+// parseEntityTag function parses DOSA tag on the "Entity" field
+func parseEntityTag(structName, dosaAnnotation string) (string, *PrimaryKey, error) {
 	tag := dosaAnnotation
 	// find the primaryKey
 	matchs := primaryKeyPattern0.FindStringSubmatch(tag)
