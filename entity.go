@@ -77,13 +77,13 @@ func formatPartitionKeys(keys []string) string {
 // for one partition key: (partition-key, clustering-key ASC/DESC, ...)
 func (pk PrimaryKey) String() string {
 	var b bytes.Buffer
-	_ = b.WriteByte('(')
+	b.WriteByte('(')
 	b.WriteString(formatPartitionKeys(pk.PartitionKeys))
 	if pk.ClusteringKeys != nil && len(pk.ClusteringKeys) > 0 {
 		b.WriteString(", ")
 		b.WriteString(formatClusteringKeys(pk.ClusteringKeys))
 	}
-	_ = b.WriteByte(')')
+	b.WriteByte(')')
 	return b.String()
 }
 

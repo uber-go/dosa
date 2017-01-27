@@ -14,9 +14,12 @@ import (
 
 // FindEntities finds all entities in a directory
 // Returns a slice of warnings (or nil)
-func FindEntities(path string) ([]Table, []error) {
+func FindEntities(path string) ([]*Table, []error, error) {
 	fileSet := token.NewFileSet()
-	packages, _ := parser.ParseDir(fileSet, path, nil, 0)
+	packages, err := parser.ParseDir(fileSet, path, nil, 0)
+	if err != nil {
+		return nil, nil, err
+	}
 	erv := new(EntityRecordingVisitor)
 	for _, pkg := range packages { // go through all the packages
 		for _, file := range pkg.Files { // go through all the files
@@ -25,27 +28,46 @@ func FindEntities(path string) ([]Table, []error) {
 			}
 		}
 	}
-	return erv.Entities, erv.Warnings
+	return erv.Entities, erv.Warnings, nil
 }
 
 // EntityRecordingVisitor is a visitor that records entities it finds
 // It also keeps track of all failed entities that pass the basic "looks like a DOSA object" test
 // (see isDosaEntity to understand that test)
 type EntityRecordingVisitor struct {
-	Entities []Table
+	Entities []*Table
 	Warnings []error
+}
+
+// Visit records all the entities seen into the EntityRecordingVisitor structure
+func (f *EntityRecordingVisitor) Visit(n ast.Node) ast.Visitor {
+	switch n := n.(type) {
+	case *ast.File, *ast.Package, *ast.BlockStmt, *ast.DeclStmt, *ast.FuncDecl, *ast.GenDecl:
+		return f
+	case *ast.TypeSpec:
+		if structType, ok := n.Type.(*ast.StructType); ok {
+			// look for a Entity with a dosa annotation
+			if isDosaEntity(structType) {
+				table, err := tableFromStructType(n.Name.Name, structType)
+				if err == nil {
+					f.Entities = append(f.Entities, table)
+				} else {
+					f.Warnings = append(f.Warnings, err)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // isDosaEntity is a sanity check so that only objects that are probably supposed to be dosa
 // annotated objects will generate warnings. The rules for that are:
 //  - must have some fields
 //  - the first field should be of type Entity
+//    TODO: Really any field could be type Entity, but we currently do not have this case
 
 func isDosaEntity(structType *ast.StructType) bool {
 	// structures with no fields cannot be dosa entities
-	if structType.Fields == nil {
-		return false
-	}
 	if len(structType.Fields.List) < 1 {
 		return false
 	}
@@ -111,12 +133,11 @@ func tableFromStructType(structName string, structType *ast.StructType) (*Table,
 		case *ast.SelectorExpr:
 			// only dosa allowed selector is time.Time
 			if typeName, ok := typeName.X.(*ast.Ident); ok {
+				// TODO: Improve this so only time.Time is accepted
 				if typeName.Name == "time" {
 					kind = "time.Time"
 				}
 			}
-		default:
-			fmt.Printf("got type %T %s\n", field.Type, field.Type)
 		}
 		if kind == entityName {
 			var err error
@@ -124,23 +145,25 @@ func tableFromStructType(structName string, structType *ast.StructType) (*Table,
 				return nil, err
 			}
 		} else {
-			fieldName := field.Names[0].Name
-			firstRune, _ := utf8.DecodeRuneInString(fieldName)
-			if unicode.IsLower(firstRune) {
-				// skip unexported fields
-				continue
+			for _, fieldName := range field.Names {
+				name := fieldName.Name
+				firstRune, _ := utf8.DecodeRuneInString(name)
+				if unicode.IsLower(firstRune) {
+					// skip unexported fields
+					continue
+				}
+				typ := stringToDosaType(kind)
+				if typ == Invalid {
+					return nil, fmt.Errorf("Column %q has invalid type %q", name, kind)
+				}
+				cd, err := parseField(typ, name, dosaTag)
+				if err != nil {
+					return nil, errors.Wrapf(err, "column %q", name)
+				}
+				t.Columns = append(t.Columns, cd)
+				t.ColToField[cd.Name] = name
+				t.FieldToCol[name] = cd.Name
 			}
-			typ := stringToDosaType(kind)
-			if typ == Invalid {
-				return nil, fmt.Errorf("Column %q has invalid type %q", fieldName, kind)
-			}
-			cd, err := parseField(typ, fieldName, dosaTag)
-			if err != nil {
-				return nil, errors.Wrapf(err, "column %q", fieldName)
-			}
-			t.Columns = append(t.Columns, cd)
-			t.ColToField[cd.Name] = fieldName
-			t.FieldToCol[fieldName] = cd.Name
 		}
 	}
 	translateKeyName(t)
@@ -150,26 +173,6 @@ func tableFromStructType(structName string, structType *ast.StructType) (*Table,
 	return t, nil
 }
 
-// Visit records all the entities seen into the EntityRecordingVisitor structure
-func (f *EntityRecordingVisitor) Visit(n ast.Node) ast.Visitor {
-	switch n := n.(type) {
-	case *ast.File, *ast.Package, *ast.BlockStmt, *ast.DeclStmt, *ast.FuncDecl, *ast.GenDecl:
-		return f
-	case *ast.TypeSpec:
-		if structType, ok := n.Type.(*ast.StructType); ok {
-			// look for a Entity with a dosa annotation
-			if isDosaEntity(structType) {
-				table, err := tableFromStructType(n.Name.Name, structType)
-				if err == nil {
-					f.Entities = append(f.Entities, *table)
-				} else {
-					f.Warnings = append(f.Warnings, err)
-				}
-			}
-		}
-	}
-	return nil
-}
 func stringToDosaType(inType string) Type {
 	switch inType {
 	case "string":

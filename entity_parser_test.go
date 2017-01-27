@@ -113,10 +113,10 @@ func TestEmptyPrimaryKey(t *testing.T) {
 }
 
 type PrimaryKeyWithSecondaryRange struct {
-	Entity     `dosa:"primaryKey=(PartKey,PrimaryKey  )"`
-	PartKey    int64
-	PrimaryKey int64
-	data       string
+	Entity         `dosa:"primaryKey=(PartKey,PrimaryKey  )"`
+	PartKey        int64
+	PrimaryKey     int64
+	data, moredata string
 }
 
 func TestPrimaryKeyWithSecondaryRange(t *testing.T) {
@@ -371,4 +371,8 @@ func TestRenameToValidName(t *testing.T) {
 	table, err := TableFromInstance(&BadNameButRenamed{})
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"goodname"}, table.Key.PartitionKeys)
+}
+
+type StructWithUnannotatedEntity struct {
+	Entity `notdosa:"covers a rare test case"`
 }

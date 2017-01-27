@@ -36,3 +36,7 @@ func BenchmarkCQL(b *testing.B) {
 		table.EntityDefinition.CqlCreateTable()
 	}
 }
+
+func TestTypemapUnknown(t *testing.T) {
+	assert.Equal(t, "unknown", typemap(Invalid))
+}
