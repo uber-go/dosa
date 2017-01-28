@@ -95,7 +95,7 @@ func TestToAvroSchema(t *testing.T) {
 	assert.Equal(t, ed, ed1)
 }
 
-func TestDecodePartitionKeyFailure(t *testing.T) {
+func TestDecodeFailure(t *testing.T) {
 	data := []struct {
 		Schema string
 		Err    error
