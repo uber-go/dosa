@@ -20,8 +20,8 @@
 
 package schema
 
-import "encoding/json"
 import (
+	"encoding/json"
 	"fmt"
 
 	gv "github.com/elodina/go-avro"
@@ -149,6 +149,7 @@ func toAvroSchema(fqn dosa.FQN, ed *dosa.EntityDefinition) ([]byte, error) {
 
 	ar := &AvroRecord{
 		Name:       ed.Name,
+		Namespace: fqn.String(),
 		Fields:     fields,
 		Properties: meta,
 	}

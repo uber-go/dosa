@@ -22,7 +22,6 @@ package dosa
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -30,6 +29,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/pkg/errors"
 )
 
 // FindEntities finds all entities in a directory
