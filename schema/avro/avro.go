@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package schema
+package avro
 
 import (
 	"encoding/json"
@@ -49,18 +49,18 @@ var avroTypes = map[dosa.Type]gv.Schema{
 	dosa.TUUID:     &gv.StringSchema{},
 }
 
-// AvroRecord implements Schema and represents Avro record type.
-type AvroRecord struct {
+// Record implements Schema and represents Avro record type.
+type Record struct {
 	Name       string                 `json:"name,omitempty"`
 	Namespace  string                 `json:"namespace,omitempty"`
 	Doc        string                 `json:"doc,omitempty"`
 	Aliases    []string               `json:"aliases,omitempty"`
 	Properties map[string]interface{} `json:"meta, omitempty"`
-	Fields     []*AvroField           `json:"fields"`
+	Fields     []*Field               `json:"fields"`
 }
 
 // String returns a JSON representation of RecordSchema.
-func (s *AvroRecord) String() string {
+func (s *Record) String() string {
 	bytes, err := json.MarshalIndent(s, "", "    ")
 	if err != nil {
 		panic(err)
@@ -70,7 +70,7 @@ func (s *AvroRecord) String() string {
 }
 
 // MarshalJSON serializes the given schema as JSON.
-func (s *AvroRecord) MarshalJSON() ([]byte, error) {
+func (s *Record) MarshalJSON() ([]byte, error) {
 	m := make(map[string]interface{})
 
 	m["type"] = "record"
@@ -97,8 +97,8 @@ func (s *AvroRecord) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-// AvroField represents a schema field for Avro record.
-type AvroField struct {
+// Field represents a schema field for Avro record.
+type Field struct {
 	Name       string      `json:"name,omitempty"`
 	Doc        string      `json:"doc,omitempty"`
 	Default    interface{} `json:"default"`
@@ -107,7 +107,7 @@ type AvroField struct {
 }
 
 // MarshalJSON serializes the given schema field as JSON.
-func (s *AvroField) MarshalJSON() ([]byte, error) {
+func (s *Field) MarshalJSON() ([]byte, error) {
 	m := make(map[string]interface{})
 	if s.Type != nil {
 		m["type"] = s.Type
@@ -129,13 +129,14 @@ func (s *AvroField) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-func toAvroSchema(fqn dosa.FQN, ed *dosa.EntityDefinition) ([]byte, error) {
-	fields := make([]*AvroField, len(ed.Columns))
+// ToAvro converts dosa entity definition to avro schema
+func ToAvro(fqn dosa.FQN, ed *dosa.EntityDefinition) ([]byte, error) {
+	fields := make([]*Field, len(ed.Columns))
 	for i, c := range ed.Columns {
 		props := make(map[string]string)
 		props[dosaTypeKey] = c.Type.String()
 		// TODO add tags
-		fields[i] = &AvroField{
+		fields[i] = &Field{
 			Name:       c.Name,
 			Type:       avroTypes[c.Type],
 			Properties: props,
@@ -147,9 +148,9 @@ func toAvroSchema(fqn dosa.FQN, ed *dosa.EntityDefinition) ([]byte, error) {
 	meta[partitionKeys] = ed.Key.PartitionKeys
 	meta[clusteringKeys] = ed.Key.ClusteringKeys
 
-	ar := &AvroRecord{
+	ar := &Record{
 		Name:       ed.Name,
-		Namespace: fqn.String(),
+		Namespace:  fqn.String(),
 		Fields:     fields,
 		Properties: meta,
 	}
@@ -161,7 +162,8 @@ func toAvroSchema(fqn dosa.FQN, ed *dosa.EntityDefinition) ([]byte, error) {
 	return bs, nil
 }
 
-func fromAvroSchema(data string) (*dosa.EntityDefinition, error) {
+// FromAvro converts avro schema to dosa entity definition
+func FromAvro(data string) (*dosa.EntityDefinition, error) {
 	schema, err := gv.ParseSchema(data)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse avro schema from json")

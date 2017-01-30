@@ -18,50 +18,49 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uql
+package cql
 
 import (
 	"bytes"
-
 	"text/template"
 
-	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 )
 
-// map from dosa type to uql type string
-var uqlTypes = map[dosa.Type]string{
-	dosa.String:    "string",
-	dosa.Blob:      "blob",
-	dosa.Bool:      "bool",
-	dosa.Double:    "double",
-	dosa.Int32:     "int32",
-	dosa.Int64:     "int64",
-	dosa.Timestamp: "timestamp",
-	dosa.TUUID:     "uuid",
+// typeMap returns the CQL type associated with the given dosa.Type,
+// used in the template
+func typeMap(t dosa.Type) string {
+	switch t {
+	case dosa.String:
+		return "text"
+	case dosa.Blob:
+		return "blob"
+	case dosa.Bool:
+		return "boolean"
+	case dosa.Double:
+		return "double"
+	case dosa.Int32:
+		return "int"
+	case dosa.Int64:
+		return "bigint"
+	case dosa.Timestamp:
+		return "timestamp"
+	case dosa.TUUID:
+		return "uuid"
+	}
+	return "unknown"
 }
 
-var funcMap = template.FuncMap{
-	"toUqlType": func(t dosa.Type) string {
-		return uqlTypes[t]
-	}}
+// precompile the template for create table
+var cqlCreateTableTemplate = template.Must(template.
+	New("cqlCreateTable").
+	Funcs(map[string]interface{}{"typeMap": typeMap}).
+	Parse(`create table "{{.Name}}" ({{range .Columns}}"{{- .Name -}}" {{ typeMap .Type -}}, {{end}}primary key {{ .Key }})`))
 
-const createStmt = "CREATE TABLE {{.Name}} (\n" +
-	"{{range .Columns}}  {{.Name}} {{(toUqlType .Type)}};\n{{end}}" +
-	") PRIMARY KEY {{(.Key)}};\n"
-
-var tmpl = template.Must(template.New("uql").Funcs(funcMap).Parse(createStmt))
-
-// ToUQL translates an entity defintion to UQL string of create table stmt.
-func ToUQL(e *dosa.EntityDefinition) (string, error) {
-	if err := e.EnsureValid(); err != nil {
-		return "", errors.Wrap(err, "EntityDefinition is invalid")
-	}
-
+// ToCql generates CQL from an EntityDefinition
+func ToCql(e *dosa.EntityDefinition) string {
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, e); err != nil {
-		// shouldn't happen unless we have a bug in our code
-		return "", errors.Wrap(err, "failed to execute UQL template; this is most likely a DOSA bug")
-	}
-	return buf.String(), nil
+	// errors are ignored here, they can only happen from an invalid template, which will get caught in tests
+	_ = cqlCreateTableTemplate.Execute(&buf, e)
+	return buf.String()
 }

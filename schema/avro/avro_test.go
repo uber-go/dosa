@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package schema
+package avro
 
 import (
 	"testing"
@@ -88,9 +88,9 @@ func TestToAvroSchema(t *testing.T) {
 	ed := createEntityDefinition()
 	fqn, err := dosa.ToFQN("xxx.tt.yy")
 	assert.NoError(t, err)
-	av, err := toAvroSchema(fqn, ed)
+	av, err := ToAvro(fqn, ed)
 	assert.NoError(t, err)
-	ed1, err := fromAvroSchema(string(av))
+	ed1, err := FromAvro(string(av))
 	assert.NoError(t, err)
 	assert.Equal(t, ed, ed1)
 }
@@ -245,7 +245,7 @@ func TestDecodeFailure(t *testing.T) {
 		},
 	}
 	for _, d := range data {
-		_, err := fromAvroSchema(d.Schema)
+		_, err := FromAvro(d.Schema)
 		assert.Contains(t, err.Error(), d.Err.Error())
 	}
 }

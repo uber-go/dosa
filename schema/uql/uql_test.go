@@ -27,7 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/uql"
+	"github.com/uber-go/dosa/schema/uql"
 )
 
 func TestToUql(t *testing.T) {
@@ -157,7 +157,7 @@ func TestToUql(t *testing.T) {
 	}
 
 	for _, testdata := range dataProvider {
-		actual, err := uql.ToUQL(testdata.e)
+		actual, err := uql.ToUql(testdata.e)
 		if testdata.shouldErr {
 			assert.Error(t, err)
 			continue
