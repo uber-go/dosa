@@ -22,8 +22,9 @@ package dosa
 
 import (
 	"bytes"
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Table represents a parsed entity format on the client side

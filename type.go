@@ -79,3 +79,27 @@ func bytesToUUID(bs []byte) (UUID, error) {
 	}
 	return UUID(id.String()), nil
 }
+
+// FromString converts string to dosa Type
+func FromString(s string) Type {
+	switch s {
+	case TUUID.String():
+		return TUUID
+	case String.String():
+		return String
+	case Int32.String():
+		return Int32
+	case Int64.String():
+		return Int64
+	case Double.String():
+		return Double
+	case Blob.String():
+		return Blob
+	case Timestamp.String():
+		return Timestamp
+	case Bool.String():
+		return Bool
+	default:
+		return Invalid
+	}
+}
