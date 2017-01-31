@@ -157,7 +157,7 @@ func TestToUql(t *testing.T) {
 	}
 
 	for _, testdata := range dataProvider {
-		actual, err := uql.ToUql(testdata.e)
+		actual, err := uql.ToUQL(testdata.e)
 		if testdata.shouldErr {
 			assert.Error(t, err)
 			continue

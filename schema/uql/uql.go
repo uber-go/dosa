@@ -54,8 +54,8 @@ const createStmt = "CREATE TABLE {{.Name}} (\n" +
 
 var tmpl = template.Must(template.New("uql").Funcs(funcMap).Parse(createStmt))
 
-// ToUql translates an entity defintion to UQL string of create table stmt.
-func ToUql(e *dosa.EntityDefinition) (string, error) {
+// ToUQL translates an entity defintion to UQL string of create table stmt.
+func ToUQL(e *dosa.EntityDefinition) (string, error) {
 	if err := e.EnsureValid(); err != nil {
 		return "", errors.Wrap(err, "EntityDefinition is invalid")
 	}

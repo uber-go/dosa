@@ -67,7 +67,7 @@ func TestCQL(t *testing.T) {
 	for _, d := range data {
 		table, err := dosa.TableFromInstance(d.Instance)
 		assert.Nil(t, err) // this code does not test TableFromInstance
-		statement := ToCql(&table.EntityDefinition)
+		statement := ToCQL(&table.EntityDefinition)
 		assert.Equal(t, statement, d.Statement, fmt.Sprintf("Instance: %T", d.Instance))
 	}
 }
@@ -75,7 +75,7 @@ func TestCQL(t *testing.T) {
 func BenchmarkCQL(b *testing.B) {
 	table, _ := dosa.TableFromInstance(&AllTypes{})
 	for i := 0; i < b.N; i++ {
-		ToCql(&table.EntityDefinition)
+		ToCQL(&table.EntityDefinition)
 	}
 }
 

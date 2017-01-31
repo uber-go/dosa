@@ -57,8 +57,8 @@ var cqlCreateTableTemplate = template.Must(template.
 	Funcs(map[string]interface{}{"typeMap": typeMap}).
 	Parse(`create table "{{.Name}}" ({{range .Columns}}"{{- .Name -}}" {{ typeMap .Type -}}, {{end}}primary key {{ .Key }})`))
 
-// ToCql generates CQL from an EntityDefinition
-func ToCql(e *dosa.EntityDefinition) string {
+// ToCQL generates CQL from an EntityDefinition
+func ToCQL(e *dosa.EntityDefinition) string {
 	var buf bytes.Buffer
 	// errors are ignored here, they can only happen from an invalid template, which will get caught in tests
 	_ = cqlCreateTableTemplate.Execute(&buf, e)
