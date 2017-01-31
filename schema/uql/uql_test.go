@@ -27,7 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/uql"
+	"github.com/uber-go/dosa/schema/uql"
 )
 
 func TestToUql(t *testing.T) {

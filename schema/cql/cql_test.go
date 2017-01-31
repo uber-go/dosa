@@ -18,18 +18,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package dosa
+package cql
 
 import (
 	"fmt"
 	"testing"
 
+	"time"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/dosa"
 )
+
+type AllTypes struct {
+	dosa.Entity `dosa:"primaryKey=BoolType"`
+	BoolType    bool
+	Int32Type   int32
+	Int64Type   int64
+	DoubleType  float64
+	StringType  string
+	BlobType    []byte
+	TimeType    time.Time
+	UUIDType    dosa.UUID
+}
+
+type SinglePrimaryKey struct {
+	dosa.Entity `dosa:"primaryKey=(PrimaryKey)"`
+	PrimaryKey  int64
+	Data        string
+}
 
 func TestCQL(t *testing.T) {
 	data := []struct {
-		Instance  DomainObject
+		Instance  dosa.DomainObject
 		Statement string
 	}{
 		{
@@ -44,20 +65,20 @@ func TestCQL(t *testing.T) {
 	}
 
 	for _, d := range data {
-		table, err := TableFromInstance(d.Instance)
+		table, err := dosa.TableFromInstance(d.Instance)
 		assert.Nil(t, err) // this code does not test TableFromInstance
-		statement := table.EntityDefinition.CqlCreateTable()
+		statement := ToCQL(&table.EntityDefinition)
 		assert.Equal(t, statement, d.Statement, fmt.Sprintf("Instance: %T", d.Instance))
 	}
 }
 
 func BenchmarkCQL(b *testing.B) {
-	table, _ := TableFromInstance(&AllTypes{})
+	table, _ := dosa.TableFromInstance(&AllTypes{})
 	for i := 0; i < b.N; i++ {
-		table.EntityDefinition.CqlCreateTable()
+		ToCQL(&table.EntityDefinition)
 	}
 }
 
 func TestTypemapUnknown(t *testing.T) {
-	assert.Equal(t, "unknown", typemap(Invalid))
+	assert.Equal(t, "unknown", typeMap(dosa.Invalid))
 }
