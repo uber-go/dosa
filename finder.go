@@ -25,6 +25,8 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"unicode"
@@ -35,9 +37,15 @@ import (
 
 // FindEntities finds all entities in a directory
 // Returns a slice of warnings (or nil)
-func FindEntities(path string) ([]*Table, []error, error) {
+func FindEntities(path string, excludes string) ([]*Table, []error, error) {
 	fileSet := token.NewFileSet()
-	packages, err := parser.ParseDir(fileSet, path, nil, 0)
+	packages, err := parser.ParseDir(fileSet, path, func(fileInfo os.FileInfo) bool {
+		if excludes == "" {
+			return true
+		}
+		matched, _ := filepath.Match(excludes, fileInfo.Name())
+		return !matched
+	}, 0)
 	if err != nil {
 		return nil, nil, err
 	}

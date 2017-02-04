@@ -55,11 +55,11 @@ func TestCQL(t *testing.T) {
 	}{
 		{
 			Instance:  &SinglePrimaryKey{},
-			Statement: `create table "singleprimarykey" ("primarykey" bigint, "data" text, primary key (primarykey))`,
+			Statement: `create table "singleprimarykey" ("primarykey" bigint, "data" text, primary key (primarykey));`,
 		},
 		{
 			Instance:  &AllTypes{},
-			Statement: `create table "alltypes" ("booltype" boolean, "int32type" int, "int64type" bigint, "doubletype" double, "stringtype" text, "blobtype" blob, "timetype" timestamp, "uuidtype" uuid, primary key (booltype))`,
+			Statement: `create table "alltypes" ("booltype" boolean, "int32type" int, "int64type" bigint, "doubletype" double, "stringtype" text, "blobtype" blob, "timetype" timestamp, "uuidtype" uuid, primary key (booltype));`,
 		},
 		// TODO: Add more test cases
 	}

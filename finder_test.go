@@ -39,7 +39,7 @@ func TestUnparseableGoCode(t *testing.T) {
 	if err := ioutil.WriteFile(tmpdir+"/broken.go", []byte("package broken\nfunc broken\n"), 0644); err != nil {
 		t.Fatalf("can't create %s/broken.go: %s", tmpdir, err)
 	}
-	entities, errs, err := FindEntities(tmpdir)
+	entities, errs, err := FindEntities(tmpdir, "")
 	assert.Nil(entities)
 	assert.Nil(errs)
 	assert.Contains(err.Error(), "expected '('")
@@ -47,7 +47,7 @@ func TestUnparseableGoCode(t *testing.T) {
 
 func TestNonExistentDirectory(t *testing.T) {
 	const nonExistentDirectory = "ThisDirectoryBetterNotExist"
-	entities, errs, err := FindEntities(nonExistentDirectory)
+	entities, errs, err := FindEntities(nonExistentDirectory, "")
 	assert := assert.New(t)
 	assert.Nil(entities)
 	assert.Nil(errs)
@@ -55,7 +55,7 @@ func TestNonExistentDirectory(t *testing.T) {
 }
 
 func TestParser(t *testing.T) {
-	entities, errs, err := FindEntities(".")
+	entities, errs, err := FindEntities(".", "")
 	assert := assert.New(t)
 
 	assert.Equal(10, len(entities), fmt.Sprintf("%s", entities))
@@ -93,8 +93,16 @@ func TestParser(t *testing.T) {
 	}
 }
 
+func TestExclusion(t *testing.T) {
+	entities, errs, err := FindEntities(".", "*_test.go")
+	assert := assert.New(t)
+	assert.Equal(0, len(entities))
+	assert.Equal(0, len(errs))
+	assert.Nil(err)
+}
+
 func BenchmarkFinder(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		FindEntities(".")
+		FindEntities(".", "")
 	}
 }

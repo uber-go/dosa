@@ -55,7 +55,7 @@ func typeMap(t dosa.Type) string {
 var cqlCreateTableTemplate = template.Must(template.
 	New("cqlCreateTable").
 	Funcs(map[string]interface{}{"typeMap": typeMap}).
-	Parse(`create table "{{.Name}}" ({{range .Columns}}"{{- .Name -}}" {{ typeMap .Type -}}, {{end}}primary key {{ .Key }})`))
+	Parse(`create table "{{.Name}}" ({{range .Columns}}"{{- .Name -}}" {{ typeMap .Type -}}, {{end}}primary key {{ .Key }});`))
 
 // ToCQL generates CQL from an EntityDefinition
 func ToCQL(e *dosa.EntityDefinition) string {
