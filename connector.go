@@ -1,5 +1,3 @@
-package dosa
-
 // Copyright (c) 2017 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,6 +18,8 @@ package dosa
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+package dosa
+
 import "context"
 
 // Operator defines an operator against some data for range scans
@@ -27,7 +27,7 @@ type Operator int
 
 const (
 	// Eq is the equals operator
-	Eq Operator = iota
+	Eq Operator = iota + 1
 
 	// Lt is the less than operator
 	Lt
@@ -63,6 +63,12 @@ type SchemaReference string
 // FieldValue holds a field value. It's just a marker.
 type FieldValue interface{}
 
+// FieldValuesOrError either holds a slice of field values for a row, or an error
+type FieldValuesOrError struct {
+	Value []FieldValue
+	Error error
+}
+
 // Connector is the interface that must be implemented for a backend service
 // It can also be implemented using an RPC such as thrift (dosa-idl)
 type Connector interface {
@@ -72,9 +78,11 @@ type Connector interface {
 	// Read fetches a row by primary key
 	Read(ctx context.Context, sr SchemaReference, keys map[string]FieldValue, fieldsToRead []string) ([]FieldValue, error)
 	// BatchRead fetches several rows by primary key
-	BatchRead(ctx context.Context, sr SchemaReference, keys []map[string]FieldValue, fieldsToRead []string) ([][]FieldValue, error)
+	BatchRead(ctx context.Context, sr SchemaReference, keys []map[string]FieldValue, fieldsToRead []string) ([]FieldValuesOrError, error)
 	// Upsert updates some columns of a row, or creates a new one if it doesn't exist yet
 	Upsert(ctx context.Context, sr SchemaReference, keys map[string]FieldValue, fieldsToUpdate []string) error
+	// BatchUpsert updates some columns of several rows, or creates a new ones if they doesn't exist yet
+	BatchUpsert(ctx context.Context, sr SchemaReference, keys []map[string]FieldValue, fieldsToUpdate []string) ([]error, error)
 	// Remove deletes a row
 	Remove(ctx context.Context, sr SchemaReference, keys map[string]FieldValue) error
 	// Range does a range scan using a set of conditions
