@@ -1,12 +1,69 @@
-hash: ec041fe18ac61aded9a9206025747cf0811d9c59d78ba1877a51c4e8918d4234
-updated: 2017-01-26T14:52:29.896890957-08:00
+hash: 87a3adafb9ac495ce7e77c98c29bee7af997f039e69a387d819922f04ee1ea97
+updated: 2017-02-15T17:02:29.554102303-08:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
+- name: github.com/golang/mock
+  version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
+  subpackages:
+  - gomock
+- name: github.com/opentracing/opentracing-go
+  version: 6edb48674bd9467b8e91fda004f2bd7202d60ce4
+  subpackages:
+  - ext
+  - log
+- name: github.com/pborman/uuid
+  version: a97ce2ca70fa5a848076093f05e639a89ca34d06
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
+  - mock
+- name: github.com/uber/dosa-idl
+  version: 48fe2d923857dba414b3f3fe10c73a68c3177cf3
+  subpackages:
+  - .gen
+  - .gen/dosa
+  - .gen/dosa/dosaclient
+  - .gen/dosa/dosatest
+- name: go.uber.org/atomic
+  version: 0c9e689d64f004564b79d9a663634756df322902
+- name: go.uber.org/thriftrw
+  version: c98a13058faa5dd41584a77221a268d2c72d832d
+  subpackages:
+  - envelope
+  - internal/envelope/exception
+  - internal/semver
+  - protocol
+  - protocol/binary
+  - version
+  - wire
+- name: go.uber.org/yarpc
+  version: e4ae12793c38b4aea58721458670ded8bb4709a0
+  subpackages:
+  - api/encoding
+  - api/middleware
+  - api/transport
+  - encoding/thrift
+  - encoding/thrift/internal
+  - internal
+  - internal/clientconfig
+  - internal/encoding
+  - internal/errors
+  - internal/inboundmiddleware
+  - internal/introspection
+  - internal/outboundmiddleware
+  - internal/request
+  - internal/sync
+- name: golang.org/x/net
+  version: 61557ac0112b576429a0df080e1c2cef5dfbb642
+  subpackages:
+  - context
+  - context/ctxhttp
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -15,7 +72,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
@@ -38,22 +95,16 @@ testImports:
   version: 588bd9940e912b1b2760d41bd836ef28ff97164d
   subpackages:
   - cmd/interfacer
-- name: github.com/pborman/uuid
-  version: 3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b
 - name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
 - name: github.com/russross/blackfriday
-  version: a4dd8ad4a6fda03e68be3eacb71efbf51565415e
+  version: 5ebfae50aacdef0dacd1a1acc469c2c1c7a7d4d8
 - name: github.com/sectioneight/md-to-godoc
   version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
-- name: github.com/stretchr/testify
-  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
-  subpackages:
-  - assert
 - name: golang.org/x/tools
   version: 3fe2afc9e626f32e91aff6eddb78b14743446865
   subpackages:

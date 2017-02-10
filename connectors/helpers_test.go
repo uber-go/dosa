@@ -18,34 +18,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package dosa
+package connector_test
 
 import (
-	"testing"
-
-	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/connectors"
+	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
+	"testing"
 )
 
-func TestUUIDToBytes(t *testing.T) {
-	id := UUID(uuid.NewV4().String())
-	bs, err := id.Bytes()
-	assert.NoError(t, err)
-	assert.Len(t, bs, 16)
-
-	invalidUUID := UUID("xyz-1827380-kdwi-4829")
-	_, err = invalidUUID.Bytes()
-	assert.Error(t, err)
+func TestRawValueFromInterfaceBadType(t *testing.T) {
+	assert.Panics(t, func() {
+		connector.RawValueFromInterface(func() {})
+	})
 }
 
-func TestBytesToUUID(t *testing.T) {
-	id := uuid.NewV4()
-	bs := id.Bytes()
-	uid, err := BytesToUUID(bs)
-	assert.NoError(t, err)
-	assert.EqualValues(t, id.String(), uid)
-
-	invalidBs := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-	_, err = BytesToUUID(invalidBs)
-	assert.Error(t, err)
+func TestRawValueAsInterfaceBadType(t *testing.T) {
+	assert.Panics(t, func() {
+		connector.RawValueAsInterface(dosarpc.RawValue{}, dosa.Invalid)
+	})
 }
+
+// TODO: add additional happy path unit tests here. The helpers currently get
+// good coverage from the connectors though.
