@@ -76,7 +76,7 @@ type Connector interface {
 	// CreateIfNotExists creates a row, but only if it does not exist
 	CreateIfNotExists(ctx context.Context, sr SchemaReference, values map[string]interface{}) error
 	// Read fetches a row by primary key
-	Read(ctx context.Context, sr SchemaReference, keys map[string]FieldValue, fieldsToRead []string) ([]FieldValue, error)
+	Read(ctx context.Context, sr SchemaReference, keys map[string]FieldValue, fieldsToRead []string) (map[string]FieldValue, error)
 	// BatchRead fetches several rows by primary key
 	BatchRead(ctx context.Context, sr SchemaReference, keys []map[string]FieldValue, fieldsToRead []string) ([]FieldValuesOrError, error)
 	// Upsert updates some columns of a row, or creates a new one if it doesn't exist yet
@@ -108,4 +108,12 @@ type Connector interface {
 	TruncateScope(ctx context.Context, scope string) error
 	// DropScope removes the scope and all of the data
 	DropScope(ctx context.Context, scope string) error
+}
+
+type CreationFuncType func() (Connector, error)
+
+var registeredConnectors map[string]CreationFuncType = map[string]CreationFuncType{}
+
+func RegisterConnector(name string, creationFunc func() (Connector, error)) {
+	registeredConnectors[name] = creationFunc
 }
