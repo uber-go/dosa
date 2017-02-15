@@ -23,13 +23,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/schema/avro"
 	"github.com/uber-go/dosa/schema/cql"
 	"github.com/uber-go/dosa/schema/uql"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 // expandDirectory verifies that each argument is actually a directory or
@@ -130,7 +131,7 @@ func main() {
 		case "uql":
 			fmt.Println(uql.ToUQL(&entity.EntityDefinition))
 		case "avro":
-			fmt.Println(avro.ToAvro("TODO", &entity.EntityDefinition))
+			fmt.Println(avro.ToAvro("TODO", &entity.EntityDefinition, 1))
 		}
 	}
 }
