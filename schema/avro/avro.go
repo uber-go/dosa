@@ -24,6 +24,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"strconv"
+
 	gv "github.com/elodina/go-avro"
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
@@ -35,6 +37,7 @@ const (
 	nameKey        = "Name"
 	descendingKey  = "Descending"
 	dosaTypeKey    = "dosaType"
+	versionKey     = "schemaVersion"
 )
 
 // map from dosa type to avro type
@@ -130,7 +133,7 @@ func (s *Field) MarshalJSON() ([]byte, error) {
 }
 
 // ToAvro converts dosa entity definition to avro schema
-func ToAvro(fqn dosa.FQN, ed *dosa.EntityDefinition) ([]byte, error) {
+func ToAvro(fqn dosa.FQN, ed *dosa.EntityDefinition, version int) ([]byte, error) {
 	fields := make([]*Field, len(ed.Columns))
 	for i, c := range ed.Columns {
 		props := make(map[string]string)
@@ -147,7 +150,7 @@ func ToAvro(fqn dosa.FQN, ed *dosa.EntityDefinition) ([]byte, error) {
 	meta := make(map[string]interface{})
 	meta[partitionKeys] = ed.Key.PartitionKeys
 	meta[clusteringKeys] = ed.Key.ClusteringKeys
-
+	meta[versionKey] = version
 	ar := &Record{
 		Name:       ed.Name,
 		Namespace:  fqn.String(),
@@ -163,30 +166,34 @@ func ToAvro(fqn dosa.FQN, ed *dosa.EntityDefinition) ([]byte, error) {
 }
 
 // FromAvro converts avro schema to dosa entity definition
-func FromAvro(data string) (*dosa.EntityDefinition, error) {
+func FromAvro(data string) (*dosa.EntityDefinition, int, error) {
 	schema, err := gv.ParseSchema(data)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse avro schema from json")
+		return nil, 0, errors.Wrap(err, "failed to parse avro schema from json")
 	}
 
+	version, err := decodeVersion(schema)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "failed to parse avro schema for version field")
+	}
 	pks, err := decodePartitionKeys(schema)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse avro schema for partition keys")
+		return nil, 0, errors.Wrap(err, "failed to parse avro schema for partition keys")
 	}
 
 	cks, err := decodeClusteringKeys(schema)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse avro schema for clustering keys")
+		return nil, 0, errors.Wrap(err, "failed to parse avro schema for clustering keys")
 	}
 
 	rs, ok := schema.(*gv.RecordSchema)
 	if !ok {
-		return nil, errors.New("fail to parse avro schema")
+		return nil, 0, errors.New("fail to parse avro schema")
 	}
 
 	cols, err := decodeFields(rs.Fields)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse avro schema for fields")
+		return nil, 0, errors.Wrap(err, "failed to parse avro schema for fields")
 	}
 
 	return &dosa.EntityDefinition{
@@ -196,7 +203,7 @@ func FromAvro(data string) (*dosa.EntityDefinition, error) {
 			ClusteringKeys: cks,
 		},
 		Columns: cols,
-	}, nil
+	}, version, nil
 }
 
 func decodeFields(fields []*gv.SchemaField) ([]*dosa.ColumnDefinition, error) {
@@ -219,6 +226,19 @@ func decodeFields(fields []*gv.SchemaField) ([]*dosa.ColumnDefinition, error) {
 		cols[i] = col
 	}
 	return cols, nil
+}
+
+func decodeVersion(schema gv.Schema) (int, error) {
+	if prop, ok := schema.Prop(versionKey); ok {
+		v := fmt.Sprint(prop)
+		version, err := strconv.Atoi(v)
+		if err != nil {
+			return 0, fmt.Errorf("invalid version number: %s", v)
+
+		}
+		return version, nil
+	}
+	return 0, fmt.Errorf("cannot find %s key in the schema", versionKey)
 }
 
 func decodePartitionKeys(schema gv.Schema) ([]string, error) {
