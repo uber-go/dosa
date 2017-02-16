@@ -74,7 +74,7 @@ type FieldValuesOrError struct {
 type Connector interface {
 	// DML operations (CRUD + search)
 	// CreateIfNotExists creates a row, but only if it does not exist
-	CreateIfNotExists(ctx context.Context, sr SchemaReference, values map[string]interface{}) error
+	CreateIfNotExists(ctx context.Context, sr SchemaReference, values map[string]FieldValue) error
 	// Read fetches a row by primary key
 	Read(ctx context.Context, sr SchemaReference, keys map[string]FieldValue, fieldsToRead []string) (map[string]FieldValue, error)
 	// BatchRead fetches several rows by primary key

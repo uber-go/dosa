@@ -43,8 +43,34 @@ type Client struct {
 	SchemaReferenceMap map[dosa.SchemaReference]SchemaReferenceInfo
 }
 
+func valueMapFromClientMap(values map[string]dosa.FieldValue) (fields map[string]*dosarpc.Value) {
+	fields = map[string]*dosarpc.Value{}
+	for name, value := range values {
+		rpcValue := &dosarpc.Value{ElemValue: connector.RawValueFromInterface(value)}
+		fields[name] = rpcValue
+	}
+	return
+}
+
 // CreateIfNotExists ...
-func (y *Client) CreateIfNotExists(ctx context.Context, sr dosa.SchemaReference, values map[string]interface{}) error {
+func (y *Client) CreateIfNotExists(ctx context.Context, sr dosa.SchemaReference, values map[string]dosa.FieldValue) error {
+	// get the downstream schemaID
+	schemaID := y.schemaIDFromReference(sr)
+	if schemaID == nil {
+		return fmt.Errorf("Invalid schema reference %q passed to CreateIfNotExists", sr)
+	}
+
+	// build the list of rpc Field objects from the raw name->value pairs
+	fields := valueMapFromClientMap(values)
+
+	// Create the RPC entity object and make the request
+	entity := dosarpc.Entity{SchemaID: schemaID, Fields: fields}
+	createRequest := dosarpc.CreateRequest{&entity}
+	return y.Client.CreateIfNotExists(ctx, &createRequest)
+}
+
+// Upsert inserts or updates your data
+func (y *Client) Upsert(ctx context.Context, sr dosa.SchemaReference, values map[string]dosa.FieldValue, fieldsToUpdate []string) error {
 
 	// get the downstream schemaID
 	schemaID := y.schemaIDFromReference(sr)
@@ -53,16 +79,23 @@ func (y *Client) CreateIfNotExists(ctx context.Context, sr dosa.SchemaReference,
 	}
 
 	// build the list of rpc Field objects from the raw name->value pairs
-	fields := map[string]*dosarpc.Value{}
-	for name, value := range values {
-		rpcValue := &dosarpc.Value{ElemValue: connector.RawValueFromInterface(value)}
-		fields[name] = rpcValue
+	fields := valueMapFromClientMap(values)
+
+	// TODO: If fieldsToUpdate is nil, we should pass a nil to the UpsertRequest
+	var updateFields map[string]struct{}
+	if fieldsToUpdate != nil {
+		updateFields = map[string]struct{}{}
+
+		for _, name := range fieldsToUpdate {
+			updateFields[name] = struct{}{}
+		}
 	}
 
 	// Create the RPC entity object and make the request
 	entity := dosarpc.Entity{SchemaID: schemaID, Fields: fields}
-	createRequest := dosarpc.CreateRequest{&entity}
-	return y.Client.CreateIfNotExists(ctx, &createRequest)
+	upsertRequest := dosarpc.UpsertRequest{Entities: []*dosarpc.Entity{&entity}, FieldsToUpdate: updateFields}
+	return y.Client.Upsert(ctx, &upsertRequest)
+
 }
 
 // Read reads a single entity
@@ -117,13 +150,8 @@ func (y *Client) BatchRead(ctx context.Context, sr dosa.SchemaReference, keys []
 	panic("not implemented")
 }
 
-// Upsert is not yet implemented
-func (y *Client) Upsert(ctx context.Context, sr dosa.SchemaReference, keys map[string]dosa.FieldValue, fieldsToUpdate []string) error {
-	panic("not implemented")
-}
-
 // BatchUpsert is not yet implemented
-func (y *Client) BatchUpsert(ctx context.Context, sr dosa.SchemaReference, keys []map[string]dosa.FieldValue, fieldsToUpdate []string) ([]error, error) {
+func (y *Client) BatchUpsert(ctx context.Context, sr dosa.SchemaReference, values []map[string]dosa.FieldValue, fieldsToUpdate []string) ([]error, error) {
 	panic("not implemented")
 }
 
@@ -151,7 +179,7 @@ func (y *Client) Scan(ctx context.Context, sr dosa.SchemaReference, fieldsToRead
 // a schema service downstream.
 func (y *Client) CheckSchema(ctx context.Context, ed []*dosa.EntityDefinition) ([]dosa.SchemaReference, error) {
 	// convert the client EntityDefinition to the RPC EntityDefinition
-	rpcEntityDefinition := []*dosarpc.EntityDefinition{}
+	rpcEntityDefinition := make([]*dosarpc.EntityDefinition, len(ed))
 	for i, def := range ed {
 		ck := make([]*dosarpc.ClusteringKey, len(def.Key.ClusteringKeys))
 		for ckinx, clusteringKey := range def.Key.ClusteringKeys {
