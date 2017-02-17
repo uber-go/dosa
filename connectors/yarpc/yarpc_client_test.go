@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	drpc "github.com/uber/dosa-idl/.gen/dosa"
@@ -257,6 +258,26 @@ func TestClient_CheckSchema(t *testing.T) {
 	assert.NotNil(t, sr)
 }
 
+func TestClient_UpsertSchema(t *testing.T) {
+	// build a mock RPC client
+	ctrl := gomock.NewController(t)
+	mockedClient := dosatest.NewMockClient(ctrl)
+	sut := Client{Client: mockedClient}
+
+	ctx := context.Background()
+
+	ed, err := dosa.TableFromInstance(&TestDosaObject{})
+	assert.NoError(t, err)
+	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Return(nil)
+	err = sut.UpsertSchema(ctx, []*dosa.EntityDefinition{&ed.EntityDefinition})
+	assert.NoError(t, err)
+
+	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Return(errors.New("test error"))
+	err = sut.UpsertSchema(ctx, []*dosa.EntityDefinition{&ed.EntityDefinition})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "test error")
+}
+
 // TestPanic is an unimplemented method test for coverage, remove these as they are implemented
 func TestPanic(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -275,10 +296,6 @@ func TestPanic(t *testing.T) {
 
 	assert.Panics(t, func() {
 		sut.CreateScope(ctx, "")
-	})
-
-	assert.Panics(t, func() {
-		sut.UpsertSchema(ctx, nil)
 	})
 
 	assert.Panics(t, func() {
