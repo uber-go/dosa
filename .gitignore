@@ -57,6 +57,7 @@ vendor/
 .idea/sqlDataSources.xml
 .idea/dynamic.xml
 .idea/uiDesigner.xml
+.idea/vcs.xml
 
 # Gradle:
 .idea/gradle.xml
