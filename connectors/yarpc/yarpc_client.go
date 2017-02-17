@@ -75,13 +75,12 @@ func (y *Client) Upsert(ctx context.Context, sr dosa.SchemaReference, values map
 	// get the downstream schemaID
 	schemaID := y.schemaIDFromReference(sr)
 	if schemaID == nil {
-		return fmt.Errorf("Invalid schema reference %q passed to CreateIfNotExists", sr)
+		return fmt.Errorf("Invalid schema reference %q passed to Upsert", sr)
 	}
 
 	// build the list of rpc Field objects from the raw name->value pairs
 	fields := valueMapFromClientMap(values)
 
-	// TODO: If fieldsToUpdate is nil, we should pass a nil to the UpsertRequest
 	var updateFields map[string]struct{}
 	if fieldsToUpdate != nil {
 		updateFields = map[string]struct{}{}

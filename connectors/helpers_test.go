@@ -40,5 +40,11 @@ func TestRawValueAsInterfaceBadType(t *testing.T) {
 	})
 }
 
+
+func TestRPCTypeFromClientType(t *testing.T) {
+	assert.Panics(t, func() {
+		connector.RPCTypeFromClientType(dosa.Invalid)
+	})
+}
 // TODO: add additional happy path unit tests here. The helpers currently get
 // good coverage from the connectors though.

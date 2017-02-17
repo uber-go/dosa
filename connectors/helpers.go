@@ -34,7 +34,7 @@ func RawValueAsInterface(val dosarpc.RawValue, typ dosa.Type) interface{} {
 		uuid, _ := dosa.BytesToUUID(val.BinaryValue) // TODO: should we handle this error?
 		return uuid
 	case dosa.String:
-		return val.StringValue
+		return *val.StringValue
 	case dosa.Int32:
 		return *val.Int32Value
 	case dosa.Int64:
@@ -46,7 +46,7 @@ func RawValueAsInterface(val dosarpc.RawValue, typ dosa.Type) interface{} {
 	case dosa.Timestamp:
 		return time.Unix(0, *val.Int64Value)
 	case dosa.Bool:
-		return val.BoolValue
+		return *val.BoolValue
 	}
 	panic("bad type")
 }

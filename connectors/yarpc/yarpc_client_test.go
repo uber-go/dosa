@@ -30,16 +30,40 @@ import (
 	"github.com/uber/dosa-idl/.gen/dosa/dosatest"
 	"testing"
 	"time"
+	"fmt"
 )
 
 const testSchemaReference = dosa.SchemaReference("test")
 
 func getTestSchemaReferenceMap() map[dosa.SchemaReference]SchemaReferenceInfo {
-	return map[dosa.SchemaReference]SchemaReferenceInfo{testSchemaReference: {schemaID: drpc.SchemaID{}, typeMap: map[string]dosa.Type{"f1": dosa.Int64}}}
+	return map[dosa.SchemaReference]SchemaReferenceInfo{testSchemaReference: {schemaID: drpc.SchemaID{}, typeMap: map[string]dosa.Type{
+		"c1": dosa.Int64,
+		"c2": dosa.Double,
+		"c3": dosa.String,
+		"c4": dosa.Blob,
+		"c5": dosa.Bool,
+		"c6": dosa.Int32,
+	}}}
 }
 
-func testIntPtr(i int64) *int64 {
+func testInt64Ptr(i int64) *int64 {
 	return &i
+}
+
+func testInt32Ptr(i int32) *int32 {
+	return &i
+}
+
+func testFloat64Ptr(f float64) *float64 {
+	return &f
+}
+
+func testStringPtr(s string) *string {
+	return &s
+}
+
+func testBoolPtr(b bool) *bool {
+	return &b
 }
 
 // Test a happy path read of one column and specify the primary key
@@ -53,13 +77,18 @@ func TestYaRPCClient_Read(t *testing.T) {
 	sr := testSchemaReference
 	readRequest := drpc.ReadRequest{
 		SchemaID: &drpc.SchemaID{},
-		Key:      map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testIntPtr(5)}}}, FieldsToRead: map[string]struct{}{"f1": {}},
+		Key:      map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}}}, FieldsToRead: map[string]struct{}{"f1": {}},
 	}
 
 	// we expect a single call to Read, and we return back two fields, f1 which is in the typemap and another field that is not
 	mockedClient.EXPECT().Read(ctx, &readRequest).Return(&drpc.ReadResponse{&drpc.Entity{Fields: map[string]*drpc.Value{
-		"f1":               {ElemValue: &drpc.RawValue{Int64Value: testIntPtr(5)}},
-		"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testIntPtr(5)}},
+		"c1":               {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(1)}},
+		"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}},
+		"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(2.2)}},
+		"c3":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f3value")}},
+		"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
+		"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(false)}},
+		"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(1)}},
 	}}}, nil)
 
 	// Prepare the dosa client interface using the mocked RPC layer
@@ -69,7 +98,13 @@ func TestYaRPCClient_Read(t *testing.T) {
 	values, err := sut.Read(ctx, sr, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))}, []string{"f1"})
 	assert.Nil(t, err)                          // not an error
 	assert.NotNil(t, values)                    // found some values
-	assert.Equal(t, int64(5), values["f1"])     // the mapped field is found, and is the right type
+	fmt.Printf("%v", values)
+	assert.Equal(t, int64(1), values["c1"])     // the mapped field is found, and is the right type
+	assert.Equal(t, float64(2.2), values["c2"])
+	assert.Equal(t, "f3value", values["c3"])
+	assert.Equal(t,[]byte{'b', 'i', 'n', 'a', 'r', 'y'}, values["c4"] )
+	assert.Equal(t, false, values["c5"])
+	assert.Equal(t, int32(1), values["c6"])
 	assert.Empty(t, values["fieldNotInSchema"]) // the unknown field is not present
 
 	// make sure we actually called Read on the interface
