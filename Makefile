@@ -82,6 +82,9 @@ clean:
 
 .PHONY: vendor
 vendor:
+	$(ECHO_V)if [ "$$TRAVIS" == "true" ]; then \
+		git config --global url."git@github.com:".insteadOf "https://github.com/" ; \
+	fi
 	$(MAKE) deps
 
 .PHONY: fmt
