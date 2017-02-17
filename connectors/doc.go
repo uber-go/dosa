@@ -18,33 +18,4 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package connector_test
-
-import (
-	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/connectors"
-	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
-	"testing"
-)
-
-func TestRawValueFromInterfaceBadType(t *testing.T) {
-	assert.Panics(t, func() {
-		connector.RawValueFromInterface(func() {})
-	})
-}
-
-func TestRawValueAsInterfaceBadType(t *testing.T) {
-	assert.Panics(t, func() {
-		connector.RawValueAsInterface(dosarpc.RawValue{}, dosa.Invalid)
-	})
-}
-
-
-func TestRPCTypeFromClientType(t *testing.T) {
-	assert.Panics(t, func() {
-		connector.RPCTypeFromClientType(dosa.Invalid)
-	})
-}
-// TODO: add additional happy path unit tests here. The helpers currently get
-// good coverage from the connectors though.
+package connectors

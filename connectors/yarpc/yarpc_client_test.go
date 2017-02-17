@@ -22,15 +22,15 @@ package yarpc
 
 import (
 	"context"
+	"fmt"
+	"testing"
+	"time"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/connectors"
 	drpc "github.com/uber/dosa-idl/.gen/dosa"
 	"github.com/uber/dosa-idl/.gen/dosa/dosatest"
-	"testing"
-	"time"
-	"fmt"
 )
 
 const testSchemaReference = dosa.SchemaReference("test")
@@ -96,13 +96,13 @@ func TestYaRPCClient_Read(t *testing.T) {
 
 	// perform the read
 	values, err := sut.Read(ctx, sr, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))}, []string{"f1"})
-	assert.Nil(t, err)                          // not an error
-	assert.NotNil(t, values)                    // found some values
+	assert.Nil(t, err)       // not an error
+	assert.NotNil(t, values) // found some values
 	fmt.Printf("%v", values)
-	assert.Equal(t, int64(1), values["c1"])     // the mapped field is found, and is the right type
+	assert.Equal(t, int64(1), values["c1"]) // the mapped field is found, and is the right type
 	assert.Equal(t, float64(2.2), values["c2"])
 	assert.Equal(t, "f3value", values["c3"])
-	assert.Equal(t,[]byte{'b', 'i', 'n', 'a', 'r', 'y'}, values["c4"] )
+	assert.Equal(t, []byte{'b', 'i', 'n', 'a', 'r', 'y'}, values["c4"])
 	assert.Equal(t, false, values["c5"])
 	assert.Equal(t, int32(1), values["c6"])
 	assert.Empty(t, values["fieldNotInSchema"]) // the unknown field is not present
@@ -164,7 +164,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	outFields := map[string]*drpc.Value{}
 	for _, item := range vals {
 		inFields[item.Name] = item.Value
-		outFields[item.Name] = &drpc.Value{ElemValue: connector.RawValueFromInterface(item.Value)}
+		outFields[item.Name] = &drpc.Value{ElemValue: RawValueFromInterface(item.Value)}
 	}
 
 	mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Entity: &drpc.Entity{SchemaID: &drpc.SchemaID{}, Fields: outFields}})
@@ -207,7 +207,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 	outFields := map[string]*drpc.Value{}
 	for _, item := range vals {
 		inFields[item.Name] = item.Value
-		outFields[item.Name] = &drpc.Value{ElemValue: connector.RawValueFromInterface(item.Value)}
+		outFields[item.Name] = &drpc.Value{ElemValue: RawValueFromInterface(item.Value)}
 	}
 
 	mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
