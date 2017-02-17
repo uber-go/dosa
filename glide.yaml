@@ -5,18 +5,27 @@ import:
 - package: github.com/satori/go.uuid
   version: ^1.1.0
 - package: github.com/elodina/go-avro
-testImport:
+- package: github.com/uber/dosa-idl
+  repo: git@github.com:uber/dosa-idl.git
+  subpackages:
+  - .gen
 - package: github.com/stretchr/testify
   version: ^1.1.4
   subpackages:
   - assert
+  - mock
+- package: github.com/golang/mock
+  subpackages:
+  - gomock
+- package: github.com/pborman/uuid
+  version: ^1.0.0
+testImport:
 - package: golang.org/x/tools
   subpackages:
   - cover
 - package: github.com/anmitsu/go-shlex
 - package: github.com/jessevdk/go-flags
 - package: github.com/mattn/goveralls
-- package: github.com/pborman/uuid
 - package: github.com/golang/lint
   subpackages:
   - golint

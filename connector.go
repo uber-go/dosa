@@ -74,9 +74,9 @@ type FieldValuesOrError struct {
 type Connector interface {
 	// DML operations (CRUD + search)
 	// CreateIfNotExists creates a row, but only if it does not exist
-	CreateIfNotExists(ctx context.Context, sr SchemaReference, values map[string]interface{}) error
+	CreateIfNotExists(ctx context.Context, sr SchemaReference, values map[string]FieldValue) error
 	// Read fetches a row by primary key
-	Read(ctx context.Context, sr SchemaReference, keys map[string]FieldValue, fieldsToRead []string) ([]FieldValue, error)
+	Read(ctx context.Context, sr SchemaReference, keys map[string]FieldValue, fieldsToRead []string) (map[string]FieldValue, error)
 	// BatchRead fetches several rows by primary key
 	BatchRead(ctx context.Context, sr SchemaReference, keys []map[string]FieldValue, fieldsToRead []string) ([]FieldValuesOrError, error)
 	// Upsert updates some columns of a row, or creates a new one if it doesn't exist yet
@@ -95,10 +95,10 @@ type Connector interface {
 	// DDL operations (schema)
 	// CheckSchema validates that the set of entities you have provided is valid and registered already
 	// It returns a list of SchemaReference objects for use with later DML operations.
-	CheckSchema(ctx context.Context, ed []EntityDefinition) ([]SchemaReference, error)
+	CheckSchema(ctx context.Context, ed []*EntityDefinition) ([]SchemaReference, error)
 	// UpsertSchema says that this set of entity definitions is an updated set, and gets a new set of schema references
 	// after the appropriate database changes have been made
-	UpsertSchema(ctx context.Context, ed []EntityDefinition) ([]SchemaReference, error)
+	UpsertSchema(ctx context.Context, ed []*EntityDefinition) ([]SchemaReference, error)
 
 	// Datastore management
 	// CreateScope creates a scope for storage of data, usually implemented by a keyspace for this data
@@ -108,4 +108,19 @@ type Connector interface {
 	TruncateScope(ctx context.Context, scope string) error
 	// DropScope removes the scope and all of the data
 	DropScope(ctx context.Context, scope string) error
+}
+
+// CreationFuncType is the type of a creation function that creates an instance of a registered connector
+type CreationFuncType func() (Connector, error)
+
+var registeredConnectors map[string]CreationFuncType
+
+func init() {
+	// Can't seem to do this inline and make lint happy
+	registeredConnectors = map[string]CreationFuncType{}
+}
+
+// RegisterConnector registers a connector given a name
+func RegisterConnector(name string, creationFunc func() (Connector, error)) {
+	registeredConnectors[name] = creationFunc
 }

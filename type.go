@@ -64,7 +64,8 @@ const (
 // The format of uuid used in datastore is orthogonal to the string format here.
 type UUID string
 
-func (u UUID) bytes() ([]byte, error) {
+// Bytes gets the bytes from a UUID
+func (u UUID) Bytes() ([]byte, error) {
 	id, err := uuid.FromString(string(u))
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid uuid string")
@@ -72,7 +73,8 @@ func (u UUID) bytes() ([]byte, error) {
 	return id.Bytes(), nil
 }
 
-func bytesToUUID(bs []byte) (UUID, error) {
+// BytesToUUID creates a UUID from a byte slice
+func BytesToUUID(bs []byte) (UUID, error) {
 	id, err := uuid.FromBytes(bs)
 	if err != nil {
 		return "", errors.Wrap(err, "invalid uuid bytes")
