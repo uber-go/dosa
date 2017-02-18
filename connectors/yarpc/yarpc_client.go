@@ -217,7 +217,7 @@ func (y *Client) schemaIDFromReference(sr dosa.SchemaReference) *dosarpc.SchemaI
 	return &schemaID
 }
 
-// UpsertSchema is not implemented yet
+// UpsertSchema upserts the schema through RPC
 func (y *Client) UpsertSchema(ctx context.Context, eds []*dosa.EntityDefinition) error {
 	rpcEds := make([]*dosarpc.EntityDefinition, len(eds))
 	for i, ed := range eds {
