@@ -19,6 +19,7 @@ import:
   - gomock
 - package: github.com/pborman/uuid
   version: ^1.0.0
+- package: github.com/yookoala/realpath
 testImport:
 - package: golang.org/x/tools
   subpackages:

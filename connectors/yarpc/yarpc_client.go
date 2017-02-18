@@ -24,6 +24,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
@@ -216,9 +217,22 @@ func (y *Client) schemaIDFromReference(sr dosa.SchemaReference) *dosarpc.SchemaI
 	return &schemaID
 }
 
-// UpsertSchema is not implemented yet
-func (y *Client) UpsertSchema(ctx context.Context, ed []*dosa.EntityDefinition) ([]dosa.SchemaReference, error) {
-	panic("not implemented")
+// UpsertSchema upserts the schema through RPC
+func (y *Client) UpsertSchema(ctx context.Context, eds []*dosa.EntityDefinition) error {
+	rpcEds := make([]*dosarpc.EntityDefinition, len(eds))
+	for i, ed := range eds {
+		rpcEds[i] = EntityDefinitionToThrift(ed)
+	}
+
+	request := &dosarpc.UpsertSchemaRequest{
+		EntityDefs: rpcEds,
+	}
+
+	if err := y.Client.UpsertSchema(ctx, request); err != nil {
+		return errors.Wrap(err, "rpc upsertSchema failed")
+	}
+
+	return nil
 }
 
 // CreateScope is not implemented yet
