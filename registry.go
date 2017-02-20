@@ -29,8 +29,9 @@ import (
 // Registrar is the interface to register DOSA entities.
 type Registrar interface {
 	Register(...DomainObject) error
-	lookupByFQN(FQN) (*Table, error)
-	lookupByType(DomainObject) (*Table, FQN, error)
+	LookupAll() []DomainObject
+	LookupByFQN(FQN) (*Table, error)
+	LookupByType(DomainObject) (*Table, FQN, error)
 }
 
 // prefixedRegistrar puts every entity under a prefix.
@@ -38,6 +39,7 @@ type Registrar interface {
 // and after bootstrap multiple goroutines can safely read from this registrar.
 type prefixedRegistrar struct {
 	prefix    FQN
+	entities  []DomainObject
 	fqnIndex  map[FQN]*Table
 	typeIndex map[reflect.Type]FQN
 }
@@ -70,10 +72,17 @@ func (r *prefixedRegistrar) Register(entities ...DomainObject) error {
 		r.fqnIndex[fqn] = table
 		r.typeIndex[reflect.TypeOf(e).Elem()] = fqn
 	}
+	r.entities = entities
 	return nil
 }
 
-func (r *prefixedRegistrar) lookupByFQN(fqn FQN) (*Table, error) {
+// LookupAll returns all entities registered.
+func (r *prefixedRegistrar) LookupAll() []DomainObject {
+	return r.entities
+}
+
+// LookupByFQN returns the entity definition for the given FQN.
+func (r *prefixedRegistrar) LookupByFQN(fqn FQN) (*Table, error) {
 	table, ok := r.fqnIndex[fqn]
 	if !ok {
 		return nil, errors.Errorf("failed to find entity definition for FQN: %s", fqn)
@@ -81,7 +90,8 @@ func (r *prefixedRegistrar) lookupByFQN(fqn FQN) (*Table, error) {
 	return table, nil
 }
 
-func (r *prefixedRegistrar) lookupByType(entity DomainObject) (*Table, FQN, error) {
+// LookupByFQN returns the entity definition for the given entity.
+func (r *prefixedRegistrar) LookupByType(entity DomainObject) (*Table, FQN, error) {
 	t := reflect.TypeOf(entity).Elem()
 	fqn, ok := r.typeIndex[t]
 	if !ok {

@@ -1,8 +1,10 @@
-hash: 4b83e4e1aabe0f7dcd9942fbd44b0699c300273ef8af13a2a3b8b26fb48a410c
-updated: 2017-02-17T15:41:56.294371228-08:00
+hash: d6469aede17b4264df3df1f07a84fddcf86abbc0428115f9e56ab04dbf08d707
+updated: 2017-02-17T22:29:24.695592172-08:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
+- name: github.com/flynn/go-shlex
+  version: 3f9db97f856818214da2e1057f8ad84803971cff
 - name: github.com/golang/mock
   version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
   subpackages:
@@ -23,6 +25,8 @@ imports:
   subpackages:
   - assert
   - mock
+- name: github.com/uber-go/atomic
+  version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
 - name: github.com/uber/dosa-idl
   version: 48fe2d923857dba414b3f3fe10c73a68c3177cf3
   repo: git@github.com:uber/dosa-idl.git
@@ -31,6 +35,14 @@ imports:
   - .gen/dosa
   - .gen/dosa/dosaclient
   - .gen/dosa/dosatest
+- name: github.com/uber/tchannel-go
+  version: 79387824978f91318be3bfb43ae12e04c38cfe97
+  subpackages:
+  - internal/argreader
+  - relay
+  - tnet
+  - trand
+  - typed
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: go.uber.org/atomic
@@ -46,7 +58,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 47ebfe9337d943e637cc1748254727ec1fa89bf4
+  version: df9afd2629575769e54647cfb50f48e91d50c5dc
   subpackages:
   - api/encoding
   - api/middleware
@@ -75,7 +87,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
@@ -109,6 +121,6 @@ testImports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: golang.org/x/tools
-  version: e1bdc76d0461f7041136c70e0a1356ea0f5e01d0
+  version: 8e779ee0a4509783f6940db32d1a4e8df910cc8b
   subpackages:
   - cover

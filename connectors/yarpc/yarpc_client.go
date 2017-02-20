@@ -177,11 +177,25 @@ func (y *Client) Scan(ctx context.Context, sr dosa.SchemaReference, fieldsToRead
 
 // CheckSchema is one way to register a set of entities. This can be further validated by
 // a schema service downstream.
-func (y *Client) CheckSchema(ctx context.Context, eds []*dosa.EntityDefinition) ([]dosa.SchemaReference, error) {
+func (y *Client) CheckSchema(ctx context.Context, ed []*dosa.EntityDefinition) ([]dosa.SchemaReference, error) {
 	// convert the client EntityDefinition to the RPC EntityDefinition
-	rpcEntityDefinition := make([]*dosarpc.EntityDefinition, len(eds))
-	for i, ed := range eds {
-		rpcEntityDefinition[i] = EntityDefinitionToThrift(ed)
+	rpcEntityDefinition := make([]*dosarpc.EntityDefinition, len(ed))
+	for i, def := range ed {
+		ck := make([]*dosarpc.ClusteringKey, len(def.Key.ClusteringKeys))
+		for ckinx, clusteringKey := range def.Key.ClusteringKeys {
+			// TODO: The client uses 'descending' but the RPC uses 'ascending'? Fix this insanity!
+			ascending := !clusteringKey.Descending
+			name := clusteringKey.Name
+			ck[ckinx] = &dosarpc.ClusteringKey{Name: &name, Asc: &ascending}
+		}
+		pk := dosarpc.PrimaryKey{PartitionKeys: def.Key.PartitionKeys, ClusteringKeys: ck}
+		fd := make(map[string]*dosarpc.FieldDesc, len(def.Columns))
+		for _, column := range def.Columns {
+			rpcType := RPCTypeFromClientType(column.Type)
+			fd[column.Name] = &dosarpc.FieldDesc{Type: &rpcType}
+		}
+		// TODO: set Fqn
+		rpcEntityDefinition[i] = &dosarpc.EntityDefinition{PrimaryKey: &pk, FieldDescs: fd}
 	}
 	csr := dosarpc.CheckSchemaRequest{EntityDefs: rpcEntityDefinition}
 
@@ -193,8 +207,8 @@ func (y *Client) CheckSchema(ctx context.Context, eds []*dosa.EntityDefinition) 
 
 	// hang on to type information and the SchemaID for future operations
 	y.SchemaReferenceMap = map[dosa.SchemaReference]SchemaReferenceInfo{}
-	srList := make([]dosa.SchemaReference, len(eds))
-	for inx, ed := range eds {
+	srList := make([]dosa.SchemaReference, len(ed))
+	for inx, ed := range ed {
 		schemaID := response.SchemaIDs[inx]
 		sri := SchemaReferenceInfo{schemaID: *schemaID, typeMap: map[string]dosa.Type{}}
 		for _, columnDefinition := range ed.Columns {

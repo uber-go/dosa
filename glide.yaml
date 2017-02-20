@@ -20,6 +20,7 @@ import:
 - package: github.com/pborman/uuid
   version: ^1.0.0
 - package: github.com/yookoala/realpath
+- package: github.com/flynn/go-shlex
 testImport:
 - package: golang.org/x/tools
   subpackages:

@@ -97,6 +97,8 @@ type Connector interface {
 	// It returns a list of SchemaReference objects for use with later DML operations.
 	CheckSchema(ctx context.Context, ed []*EntityDefinition) ([]SchemaReference, error)
 	// UpsertSchema upserts the schema
+	// UpsertSchema says that this set of entity definitions is an updated set, and gets a new set of schema references
+	// after the appropriate database changes have been made
 	UpsertSchema(ctx context.Context, ed []*EntityDefinition) error
 
 	// Datastore management

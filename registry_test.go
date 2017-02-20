@@ -48,18 +48,18 @@ func TestRegistrar(t *testing.T) {
 	for _, e := range []DomainObject{&SinglePrimaryKeyNoParen{}, &SinglePrimaryKey{}, &MultiComponentPrimaryKey{}} {
 		expectedFQN := FQN(fmt.Sprintf("test.registrar.%s", strings.ToLower(reflect.TypeOf(e).Elem().Name())))
 
-		table, fqn, err := r.lookupByType(e)
+		table, fqn, err := r.LookupByType(e)
 		assert.NoError(t, err)
 		assert.NotNil(t, table)
 		assert.Equal(t, expectedFQN, fqn)
 
-		table, err = r.lookupByFQN(expectedFQN)
+		table, err = r.LookupByFQN(expectedFQN)
 		assert.NoError(t, err)
 		assert.NotNil(t, table)
 	}
 
-	_, err = r.lookupByFQN("test.registrar.nil")
+	_, err = r.LookupByFQN("test.registrar.nil")
 	assert.Error(t, err)
-	_, _, err = r.lookupByType(&SinglePartitionKey{})
+	_, _, err = r.LookupByType(&SinglePartitionKey{})
 	assert.Error(t, err)
 }
