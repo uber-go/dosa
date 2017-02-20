@@ -37,7 +37,11 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, sr dosa.SchemaReferen
 
 // Read always returns an empty resultset
 func (c *Connector) Read(ctx context.Context, sr dosa.SchemaReference, keys map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
-	return make(map[string]dosa.FieldValue), nil
+	values := make(map[string]dosa.FieldValue)
+	values["ID"] = int64(1)
+	values["Name"] = "test"
+	values["Email"] = "email"
+	return values, nil
 }
 
 // BatchRead is not yet implemented

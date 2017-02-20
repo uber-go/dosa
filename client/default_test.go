@@ -109,4 +109,7 @@ func TestRead(t *testing.T) {
 
 	err = c.Read(context.TODO(), []string{"ID", "Name", "Email"}, testEntity)
 	assert.NoError(t, err)
+	assert.Equal(t, testEntity.ID, int64(1))
+	assert.Equal(t, testEntity.Name, "test")
+	assert.Equal(t, testEntity.Email, "email")
 }

@@ -76,23 +76,25 @@ func (c *Default) ensureInit(ctx context.Context) error {
 			entityDefs[i] = ed
 		}
 
-		// TODO: replace with CheckSchema
-		schemaRefs, err := c.connector.CheckSchema(ctx, entityDefs)
-		if err != nil {
+		// TODO: replace with CheckSchema when ready
+		if err := c.connector.UpsertSchema(ctx, entityDefs); err != nil {
 			c.initErr = err
 			return
 		}
 		// this is a little ugly but we need a way to lookup schema refs by FQN
 		// using the registry; this is essentially our bridge between the
 		// registry and the connector
-		c.schemaRefIndex = make(map[dosa.FQN]dosa.SchemaReference)
-		for fqn := range c.entityDefIndex {
-			for i, ref := range schemaRefs {
-				if c.entityDefIndex[fqn] == entityDefs[i] {
-					c.schemaRefIndex[fqn] = ref
+		// TODO: uncomment below after replacing UpsertSchema w/ CheckSchema
+		/*
+			c.schemaRefIndex = make(map[dosa.FQN]dosa.SchemaReference)
+			for fqn := range c.entityDefIndex {
+				for i, ref := range schemaRefs {
+					if c.entityDefIndex[fqn] == entityDefs[i] {
+						c.schemaRefIndex[fqn] = ref
+					}
 				}
 			}
-		}
+		*/
 	})
 	return c.initErr
 }
@@ -111,33 +113,41 @@ func (c *Default) CreateIfNotExists(context.Context, dosa.DomainObject) error {
 
 // Read uses the connector to read one DOSA entity.
 func (c *Default) Read(ctx context.Context, fieldsToRead []string, entity dosa.DomainObject) error {
+	r := reflect.ValueOf(entity).Elem()
+
+	/* TODO: uncomment when CheckSchema is building schemaRefIndex on init
 	if err := c.ensureInit(ctx); err != nil {
 		return err
 	}
-
+	*/
 	// lookup entity definition, use FQN to lookup schema referen
-	ed, fqn, err := c.registrar.LookupByType(entity)
+	ed, _, err := c.registrar.LookupByType(entity)
 	if err != nil {
 		return err
 	}
 
+	/* TODO: uncomment when CheckSchema is building schemaRefIndex on init
 	sr, ok := c.schemaRefIndex[fqn]
 	if !ok {
 		return fmt.Errorf("could not find schema reference for fqn %s", fqn)
 	}
+	*/
 
 	// build map of values to read using entity parser
-	var fieldValues map[string]dosa.FieldValue
+	fieldValues := make(map[string]dosa.FieldValue)
 	for _, pk := range ed.Key.PartitionKeys {
-		value := r.FieldByName(pk)
+		colName := ed.ColToField[pk]
+		value := r.FieldByName(colName)
 		if !value.IsValid() {
 			// this should never happen
-			panic("Field " + pk + " was not found in " + ed.Name)
+			panic("Field " + colName + " was not found in " + ed.Name)
 		}
 		fieldValues[pk] = value.Interface()
 	}
 
-	results, err := c.connector.Read(ctx, sr, fieldValues, fieldsToRead)
+	// TODO: add clustering keys
+	// TODO: replace hard-coded SchemaReference
+	results, err := c.connector.Read(ctx, "", fieldValues, fieldsToRead)
 	if err != nil {
 		return err
 	}

@@ -126,7 +126,7 @@ func (y *Client) Read(ctx context.Context, sr dosa.SchemaReference, keys map[str
 	}
 
 	// perform the read request
-	readRequest := dosarpc.ReadRequest{SchemaID: &schemaID, Key: rpcFields, FieldsToRead: rpcFieldsToRead}
+	readRequest := dosarpc.ReadRequest{SchemaID: "1", Key: rpcFields, FieldsToRead: rpcFieldsToRead}
 	response, err := y.Client.Read(ctx, &readRequest)
 	if err != nil {
 		return nil, err
