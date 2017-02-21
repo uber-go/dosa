@@ -155,7 +155,7 @@ func (c *Default) Read(ctx context.Context, fieldsToRead []string, entity dosa.D
 	}
 
 	// translate fields to read
-	fieldsToRead = translateToServerFields(fieldsToRead, ed.ColToField)
+	fieldsToRead = translateToServerFields(fieldsToRead, ed.FieldToCol)
 
 	// TODO: add clustering keys
 	// TODO: replace hard-coded SchemaReference
@@ -163,10 +163,12 @@ func (c *Default) Read(ctx context.Context, fieldsToRead []string, entity dosa.D
 	if err != nil {
 		return err
 	}
+	fmt.Println(results)
 
 	// map values onto entity
 	for name, value := range results {
-		v := r.FieldByName(name)
+		fieldName := ed.ColToField[name]
+		v := r.FieldByName(fieldName)
 		if !v.IsValid() {
 			return fmt.Errorf("Invalid value for field %s: %s", name, value)
 		}
@@ -192,15 +194,15 @@ func (c *Default) Upsert(ctx context.Context, fieldsToInsert []string, objects .
 		}
 		fieldValues := make(map[string]dosa.FieldValue)
 		for _, column := range ed.Columns {
-			colName := ed.ColToField[column.Name]
-			value := r.FieldByName(colName)
+			fieldName := ed.ColToField[column.Name]
+			value := r.FieldByName(fieldName)
 			if !value.IsValid() {
 				// this should never happen
-				panic("Field " + colName + " was not found in " + ed.Name)
+				panic("Field " + fieldName + " was not found in " + ed.Name)
 			}
-			fieldValues[colName] = value.Interface()
+			fieldValues[column.Name] = value.Interface()
 		}
-		fieldsToInsert = translateToServerFields(fieldsToInsert, ed.ColToField)
+		fieldsToInsert = translateToServerFields(fieldsToInsert, ed.FieldToCol)
 
 		err = c.connector.Upsert(ctx, "", fieldValues, fieldsToInsert)
 		if err != nil {

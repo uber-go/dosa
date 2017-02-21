@@ -168,6 +168,7 @@ cscope.out
 cscope.in.out
 cscope.po.out
 
+examples/examples
 
 # End of https://www.gitignore.io/api/go,node,intellij+iml,tags
 

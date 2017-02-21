@@ -121,7 +121,7 @@ func (y *Client) Read(ctx context.Context, sr dosa.SchemaReference, keys map[str
 		Fqn:     &fqn,
 		Version: &version,
 	}
-	sri := SchemaReferenceInfo{schemaID: schemaID, typeMap: map[string]dosa.Type{}}
+	//sri := SchemaReferenceInfo{schemaID: schemaID, typeMap: map[string]dosa.Type{}}
 
 	// Convert the fields from the client's map to a set of fields to read
 	var rpcFieldsToRead map[string]struct{}
@@ -150,12 +150,12 @@ func (y *Client) Read(ctx context.Context, sr dosa.SchemaReference, keys map[str
 	// no error, so for each column, transform it into the map of (col->value) items
 	result := map[string]dosa.FieldValue{}
 	for name, value := range response.Entity.Fields {
-		if dosaType, ok := sri.typeMap[name]; ok {
-			result[name] = RawValueAsInterface(*value.ElemValue, dosaType)
-		} else {
-			// skip fields that we do not know the type (continue is just for readability)
-			continue
-		}
+		//if dosaType, ok := sri.typeMap[name]; ok {
+		result[name] = RawValueAsInterface(*value.ElemValue, dosa.Double)
+		//} else {
+		//	// skip fields that we do not know the type (continue is just for readability)
+		//	continue
+		//}
 	}
 	return result, nil
 }
