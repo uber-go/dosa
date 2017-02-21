@@ -34,19 +34,6 @@ import (
 	"github.com/uber/dosa-idl/.gen/dosa/dosatest"
 )
 
-const testSchemaReference = dosa.SchemaReference("test")
-
-func getTestSchemaReferenceMap() map[dosa.SchemaReference]SchemaReferenceInfo {
-	return map[dosa.SchemaReference]SchemaReferenceInfo{testSchemaReference: {schemaID: drpc.SchemaID{}, typeMap: map[string]dosa.Type{
-		"c1": dosa.Int64,
-		"c2": dosa.Double,
-		"c3": dosa.String,
-		"c4": dosa.Blob,
-		"c5": dosa.Bool,
-		"c6": dosa.Int32,
-	}}}
-}
-
 func testInt64Ptr(i int64) *int64 {
 	return &i
 }
@@ -75,7 +62,6 @@ func TestYaRPCClient_Read(t *testing.T) {
 
 	// set up the parameters
 	ctx := context.TODO()
-	sr := testSchemaReference
 	readRequest := drpc.ReadRequest{
 		SchemaID: &drpc.SchemaID{},
 		Key:      map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}}}, FieldsToRead: map[string]struct{}{"f1": {}},
