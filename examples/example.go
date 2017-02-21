@@ -56,14 +56,18 @@ func main() {
 
 	conn := &connectors.Client{Client: dosarpc.New(dispatcher.ClientConfig("dosa-gateway"))}
 	client, _ := dosaclient.NewDefault(reg, conn)
-	client.Initialize(ctx)
+	err := client.Initialize(ctx)
+	if err != nil {
+		fmt.Printf("err = %n", err.Error())
+		return
+	}
 	writeErr := client.Upsert(ctx, nil, &Book{ISBN: "abc", Price: 23.45})
 	if writeErr != nil {
 		fmt.Printf("err = %s\n", writeErr)
 	}
 
 	newBook := &Book{ISBN: "abc"}
-	readErr := client.Read(ctx, nil, newBook)
+	readErr := client.Read(ctx, []string{"Price"}, newBook)
 	if readErr != nil {
 		fmt.Printf("err = %s\n", readErr)
 	}
