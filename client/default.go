@@ -171,8 +171,29 @@ func (c *Default) BatchRead(context.Context, []string, ...dosa.DomainObject) (do
 }
 
 // Upsert uses the connector to create or update an Entity.
-func (c *Default) Upsert(context.Context, []string, ...dosa.DomainObject) error {
-	// TODO: implement me
+func (c *Default) Upsert(ctx context.Context, fieldsToInsert []string, objects ...dosa.DomainObject) error {
+	for _, entity := range objects {
+		r := reflect.ValueOf(entity).Elem()
+		ed, _, err := c.registrar.LookupByType(entity)
+		if err != nil {
+			return err
+		}
+		fieldValues := make(map[string]dosa.FieldValue)
+		for _, column := range ed.Columns {
+			colName := ed.ColToField[column.Name]
+			value := r.FieldByName(colName)
+			if !value.IsValid() {
+				// this should never happen
+				panic("Field " + colName + " was not found in " + ed.Name)
+			}
+			fieldValues[colName] = value.Interface()
+		}
+
+		err = c.connector.Upsert(ctx, "", fieldValues, fieldsToInsert)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
