@@ -60,6 +60,21 @@ type Condition struct {
 // These strings are returned when the entity is registered at startup
 type SchemaReference string
 
+// SchemaRef is a reference to the table and schema version of an object
+type SchemaRef struct {
+	Scope      string
+	NamePrefix string
+	EntityName string
+	Version    int32
+}
+
+// EntityInfo is all the information about an entity, including the schema reference
+// as well as the entity definition
+type EntityInfo struct {
+	Ref *SchemaRef
+	Def *EntityDefinition
+}
+
 // FieldValue holds a field value. It's just a marker.
 type FieldValue interface{}
 
