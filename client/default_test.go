@@ -44,7 +44,7 @@ var (
 
 func ExampleNewDefault() {
 	// initialize registrar
-	reg, _ := dosa.NewRegistrar("myteam.service")
+	reg, _ := dosa.NewRegistrar("myteam")
 	if err := reg.Register(testEntities...); err != nil {
 		// registration will most likely fail as a result of programmer error
 		panic("registrar.Register returned an error")

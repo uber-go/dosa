@@ -79,6 +79,7 @@ func (c *Default) ensureInit(ctx context.Context) error {
 		// TODO: replace with CheckSchema when ready
 		if err := c.connector.UpsertSchema(ctx, entityDefs); err != nil {
 			c.initErr = err
+			fmt.Println("upsert schema")
 			return
 		}
 		// this is a little ugly but we need a way to lookup schema refs by FQN

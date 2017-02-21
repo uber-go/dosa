@@ -74,10 +74,10 @@ func (y *Client) CreateIfNotExists(ctx context.Context, sr dosa.SchemaReference,
 func (y *Client) Upsert(ctx context.Context, sr dosa.SchemaReference, values map[string]dosa.FieldValue, fieldsToUpdate []string) error {
 
 	// get the downstream schemaID
-	schemaID := y.schemaIDFromReference(sr)
-	if schemaID == nil {
-		return fmt.Errorf("Invalid schema reference %q passed to Upsert", sr)
-	}
+	//schemaID := y.schemaIDFromReference(sr)
+	//if schemaID == nil {
+	//	return fmt.Errorf("Invalid schema reference %q passed to Upsert", sr)
+	//}
 
 	// build the list of rpc Field objects from the raw name->value pairs
 	fields := valueMapFromClientMap(values)
@@ -92,6 +92,12 @@ func (y *Client) Upsert(ctx context.Context, sr dosa.SchemaReference, values map
 	}
 
 	// Create the RPC entity object and make the request
+	fqn := dosarpc.FQN("myteam")
+	version := dosarpc.Version(1)
+	schemaID := &dosarpc.SchemaID{
+		Fqn:     &fqn,
+		Version: &version,
+	}
 	entity := dosarpc.Entity{SchemaID: schemaID, Fields: fields}
 	upsertRequest := dosarpc.UpsertRequest{Entities: []*dosarpc.Entity{&entity}, FieldsToUpdate: updateFields}
 	return y.Client.Upsert(ctx, &upsertRequest)
@@ -109,7 +115,7 @@ func (y *Client) Read(ctx context.Context, sr dosa.SchemaReference, keys map[str
 		}
 		schemaID := sri.schemaID
 	*/
-	fqn := dosarpc.FQN("myteam.service")
+	fqn := dosarpc.FQN("myteam")
 	version := dosarpc.Version(1)
 	schemaID := dosarpc.SchemaID{
 		Fqn:     &fqn,
@@ -248,7 +254,7 @@ func (y *Client) schemaIDFromReference(sr dosa.SchemaReference) *dosarpc.SchemaI
 // UpsertSchema upserts the schema through RPC
 func (y *Client) UpsertSchema(ctx context.Context, eds []*dosa.EntityDefinition) error {
 	// TODO: hard-coding for demo
-	fqn := dosarpc.FQN("myteam.service")
+	fqn := dosarpc.FQN("myteam")
 	version := dosarpc.Version(1)
 
 	y.SchemaReferenceMap = map[dosa.SchemaReference]SchemaReferenceInfo{}
@@ -266,6 +272,7 @@ func (y *Client) UpsertSchema(ctx context.Context, eds []*dosa.EntityDefinition)
 	rpcEds := make([]*dosarpc.EntityDefinition, len(eds))
 	for i, ed := range eds {
 		rpcEds[i] = EntityDefinitionToThrift(ed)
+		rpcEds[i].Fqn = &fqn
 	}
 
 	request := &dosarpc.UpsertSchemaRequest{
@@ -273,6 +280,7 @@ func (y *Client) UpsertSchema(ctx context.Context, eds []*dosa.EntityDefinition)
 	}
 
 	if err := y.Client.UpsertSchema(ctx, request); err != nil {
+		fmt.Println(err)
 		return errors.Wrap(err, "rpc upsertSchema failed")
 	}
 
