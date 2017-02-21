@@ -40,10 +40,10 @@ func entityInfoToSchemaRef(ei dosa.EntityInfo) *dosarpc.SchemaRef {
 	entityName := dosarpc.EntityName(ei.Ref.EntityName)
 	version := dosarpc.Version(ei.Ref.Version)
 	sr := dosarpc.SchemaRef{
-		Scope: &scope,
+		Scope:      &scope,
 		NamePrefix: &namePrefix,
 		EntityName: &entityName,
-		Version: &version,
+		Version:    &version,
 	}
 	return &sr
 }
@@ -60,7 +60,7 @@ func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) dosarpc.Field
 // CreateIfNotExists ...
 func (y *Client) CreateIfNotExists(ctx context.Context, ei dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	createRequest := dosarpc.CreateRequest{
-		Ref: entityInfoToSchemaRef(ei),
+		Ref:          entityInfoToSchemaRef(ei),
 		EntityValues: fieldValueMapFromClientMap(values),
 	}
 	return y.Client.CreateIfNotExists(ctx, &createRequest)
@@ -69,7 +69,7 @@ func (y *Client) CreateIfNotExists(ctx context.Context, ei dosa.EntityInfo, valu
 // Upsert inserts or updates your data
 func (y *Client) Upsert(ctx context.Context, ei dosa.EntityInfo, values map[string]dosa.FieldValue, fieldsToUpdate []string) error {
 	upsertRequest := dosarpc.UpsertRequest{
-		Ref: entityInfoToSchemaRef(ei),
+		Ref:          entityInfoToSchemaRef(ei),
 		EntityValues: fieldValueMapFromClientMap(values),
 	}
 	return y.Client.Upsert(ctx, &upsertRequest)
@@ -96,8 +96,8 @@ func (y *Client) Read(ctx context.Context, ei dosa.EntityInfo, keys map[string]d
 
 	// perform the read request
 	readRequest := dosarpc.ReadRequest{
-		Ref: entityInfoToSchemaRef(ei),
-		KeyValues: rpcFields,
+		Ref:          entityInfoToSchemaRef(ei),
+		KeyValues:    rpcFields,
 		FieldsToRead: rpcFieldsToRead,
 	}
 	response, err := y.Client.Read(ctx, &readRequest)
@@ -181,7 +181,7 @@ func (y *Client) UpsertSchema(ctx context.Context, eds []*dosa.EntityDefinition)
 		EntityDefs: rpcEds,
 	}
 
-	response, err := y.Client.UpsertSchema(ctx, request)
+	_, err := y.Client.UpsertSchema(ctx, request)
 	if err != nil {
 		return nil, errors.Wrap(err, "rpc upsertSchema failed")
 	}

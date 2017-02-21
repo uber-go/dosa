@@ -56,16 +56,13 @@ type Condition struct {
 	Op Operator
 }
 
-type Scope string
-type NamePrefix string
-type EntityName string
 type Version int32
 
 // SchemaRef is a reference to the table and schema version of an object
 type SchemaRef struct {
-	Scope      Scope
-	NamePrefix NamePrefix
-	EntityName EntityName
+	Scope      string
+	NamePrefix string
+	EntityName string
 	Version    Version
 }
 
