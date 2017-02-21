@@ -54,6 +54,12 @@ func testBoolPtr(b bool) *bool {
 	return &b
 }
 
+const testEi dosa.EntityInfo = dosa.EntityInfo{
+	Ref: &dosa.SchemaRef{},
+	Def: &dosa.EntityDefinition{
+
+	},
+}
 // Test a happy path read of one column and specify the primary key
 func TestYaRPCClient_Read(t *testing.T) {
 	// build a mock RPC client
@@ -199,7 +205,7 @@ func TestClient_CheckSchema(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 	ctx := context.TODO()
 
-	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any()).Return(&drpc.CheckSchemaResponse{[]drpc.Version{}})
+	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any()).Return(&drpc.CheckSchemaResponse{[]int32{}})
 
 	sut := Client{Client: mockedClient}
 

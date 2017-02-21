@@ -35,10 +35,10 @@ type Client struct {
 }
 
 func entityInfoToSchemaRef(ei dosa.EntityInfo) *dosarpc.SchemaRef {
-	scope := dosarpc.Scope(ei.Ref.Scope)
-	namePrefix := dosarpc.NamePrefix(ei.Ref.NamePrefix)
-	entityName := dosarpc.EntityName(ei.Ref.EntityName)
-	version := dosarpc.Version(ei.Ref.Version)
+	scope := ei.Ref.Scope
+	namePrefix := ei.Ref.NamePrefix
+	entityName := ei.Ref.EntityName
+	version := ei.Ref.Version
 	sr := dosarpc.SchemaRef{
 		Scope:      &scope,
 		NamePrefix: &namePrefix,

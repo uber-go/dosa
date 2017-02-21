@@ -142,7 +142,7 @@ func EntityDefinitionToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefiniti
 		rpcType := RPCTypeFromClientType(column.Type)
 		fd[column.Name] = &dosarpc.FieldDesc{Type: &rpcType}
 	}
-	name := dosarpc.EntityName(ed.Name)
+	name := ed.Name
 	return &dosarpc.EntityDefinition{PrimaryKey: &pk, FieldDescs: fd, Name: &name}
 }
 
