@@ -61,7 +61,7 @@ func main() {
 		fmt.Printf("err = %n", err.Error())
 		return
 	}
-	writeErr := client.Upsert(ctx, nil, &Book{ISBN: "abc", Price: 23.45})
+	writeErr := client.Upsert(ctx, []string{"ISBN", "Price"}, &Book{ISBN: "abc", Price: 23.45})
 	if writeErr != nil {
 		fmt.Printf("err = %s\n", writeErr)
 	}

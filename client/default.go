@@ -111,6 +111,14 @@ func (c *Default) CreateIfNotExists(context.Context, dosa.DomainObject) error {
 	panic("not implemented")
 }
 
+func translateToServerFields(fieldsToRead []string, nameMap map[string]string) []string {
+	newFields := make([]string, len(fieldsToRead))
+	for i, field := range fieldsToRead {
+		newFields[i] = nameMap[field]
+	}
+	return newFields
+}
+
 // Read uses the connector to read one DOSA entity.
 func (c *Default) Read(ctx context.Context, fieldsToRead []string, entity dosa.DomainObject) error {
 	r := reflect.ValueOf(entity).Elem()
@@ -144,6 +152,9 @@ func (c *Default) Read(ctx context.Context, fieldsToRead []string, entity dosa.D
 		}
 		fieldValues[pk] = value.Interface()
 	}
+
+	// translate fields to read
+	fieldsToRead = translateToServerFields(fieldsToRead, ed.ColToField)
 
 	// TODO: add clustering keys
 	// TODO: replace hard-coded SchemaReference
@@ -188,6 +199,7 @@ func (c *Default) Upsert(ctx context.Context, fieldsToInsert []string, objects .
 			}
 			fieldValues[colName] = value.Interface()
 		}
+		fieldsToInsert = translateToServerFields(fieldsToInsert, ed.ColToField)
 
 		err = c.connector.Upsert(ctx, "", fieldValues, fieldsToInsert)
 		if err != nil {
