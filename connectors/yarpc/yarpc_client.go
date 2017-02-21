@@ -102,11 +102,20 @@ func (y *Client) Upsert(ctx context.Context, sr dosa.SchemaReference, values map
 func (y *Client) Read(ctx context.Context, sr dosa.SchemaReference, keys map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
 
 	// Given the client's SchemaReference, find the SchemaReferenceInformation to get the SchemaID and the type information for the columns
-	sri, ok := y.SchemaReferenceMap[sr]
-	if !ok {
-		return nil, fmt.Errorf("Invalid schema reference %q passed to Read", sr)
+	/*
+		sri, ok := y.SchemaReferenceMap[sr]
+		if !ok {
+			return nil, fmt.Errorf("Invalid schema reference %q passed to Read", sr)
+		}
+		schemaID := sri.schemaID
+	*/
+	fqn := dosarpc.FQN("myteam.service")
+	version := dosarpc.Version(1)
+	schemaID := dosarpc.SchemaID{
+		Fqn:     &fqn,
+		Version: &version,
 	}
-	schemaID := sri.schemaID
+	sri := SchemaReferenceInfo{schemaID: schemaID, typeMap: map[string]dosa.Type{}}
 
 	// Convert the fields from the client's map to a set of fields to read
 	var rpcFieldsToRead map[string]struct{}
@@ -126,7 +135,7 @@ func (y *Client) Read(ctx context.Context, sr dosa.SchemaReference, keys map[str
 	}
 
 	// perform the read request
-	readRequest := dosarpc.ReadRequest{SchemaID: "1", Key: rpcFields, FieldsToRead: rpcFieldsToRead}
+	readRequest := dosarpc.ReadRequest{SchemaID: &schemaID, Key: rpcFields, FieldsToRead: rpcFieldsToRead}
 	response, err := y.Client.Read(ctx, &readRequest)
 	if err != nil {
 		return nil, err
@@ -233,6 +242,22 @@ func (y *Client) schemaIDFromReference(sr dosa.SchemaReference) *dosarpc.SchemaI
 
 // UpsertSchema upserts the schema through RPC
 func (y *Client) UpsertSchema(ctx context.Context, eds []*dosa.EntityDefinition) error {
+	// TODO: hard-coding for demo
+	fqn := dosarpc.FQN("myteam.service")
+	version := dosarpc.Version(1)
+
+	y.SchemaReferenceMap = map[dosa.SchemaReference]SchemaReferenceInfo{}
+	for _, ed := range eds {
+		schemaID := &dosarpc.SchemaID{Fqn: &fqn, Version: &version}
+		sri := SchemaReferenceInfo{schemaID: *schemaID, typeMap: map[string]dosa.Type{}}
+		for _, columnDefinition := range ed.Columns {
+			sri.typeMap[columnDefinition.Name] = columnDefinition.Type
+		}
+		// This uuid is the key to find the SchemaReferenceInfo
+		uuidref := dosa.SchemaReference(uuid.NewV4().String())
+		y.SchemaReferenceMap[uuidref] = sri
+	}
+
 	rpcEds := make([]*dosarpc.EntityDefinition, len(eds))
 	for i, ed := range eds {
 		rpcEds[i] = EntityDefinitionToThrift(ed)
