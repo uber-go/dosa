@@ -20,7 +20,12 @@
 
 package dosa
 
-import "context"
+import (
+	"context"
+	"fmt"
+
+	"github.com/pkg/errors"
+)
 
 // DomainObject is a marker interface method for an Entity
 type DomainObject interface {
@@ -83,133 +88,6 @@ type BatchReadResult map[DomainObject]error
 // It's a convenience function for code readability.
 func All() []string { return nil }
 
-// RangeOp is used to specify constraints to Range calls
-type RangeOp struct{}
-
-// String satisfies the Stringer interface
-func (r *RangeOp) String() string {
-	/* TODO */
-	return ""
-}
-
-// Eq is used to express an equality constraint for a range query
-func (r *RangeOp) Eq(string, interface{}) *RangeOp {
-	/* TODO */
-	return r
-}
-
-// Gt is used to express an "greater than" constraint for a range query
-func (r *RangeOp) Gt(key string, value interface{}) *RangeOp {
-	/* TODO */
-	return r
-}
-
-// GtOrEq is used to express an "greater than or equal" constraint for a
-// range query
-func (r *RangeOp) GtOrEq(key string, value interface{}) *RangeOp {
-	/* TODO */
-	return r
-}
-
-// Lt is used to express a "less than" constraint for a range query
-func (r *RangeOp) Lt(key string, value interface{}) *RangeOp {
-	/* TODO */
-	return r
-}
-
-// LtOrEq is used to express a "less than or equal" constraint for a
-// range query
-func (r *RangeOp) LtOrEq(key string, value interface{}) *RangeOp {
-	/* TODO */
-	return r
-}
-
-// Fields list the non-key fields users want to fetch. If not set, all fields would be fetched.
-// PrimaryKey fields are always fetched.
-func (r *RangeOp) Fields([]string) *RangeOp {
-	/* TODO */
-	return r
-}
-
-// Limit sets the number of rows returned per call. If not set, a default
-// value would be applied
-func (r *RangeOp) Limit(n int) *RangeOp {
-	/* TODO */
-	return r
-}
-
-// Offset sets the pagination token. If not set, an empty token would be used.
-func (r *RangeOp) Offset(token string) *RangeOp {
-	/* TODO */
-	return r
-}
-
-// SearchOp represents the search query using a "searchable" field.
-type SearchOp struct {
-	/* TODO */
-}
-
-// NewSearchOp returns a new SearchOp instance
-func NewSearchOp(DomainObject) *SearchOp {
-	return &SearchOp{}
-}
-
-// String satisfies the stringer interface
-func (s *SearchOp) String() string {
-	/* TODO */
-	return ""
-}
-
-// By indicates the "searchable" field name and its value.
-func (s *SearchOp) By(fieldName string, fieldValue interface{}) *SearchOp {
-	/* TODO */
-	return s
-}
-
-// Limit sets the number of rows returned per call. Default is 128.
-func (s *SearchOp) Limit(n int) *SearchOp {
-	/* TODO */
-	return s
-}
-
-// Offset sets the pagination token. If not set, an empty token would be used.
-func (s *SearchOp) Offset(token string) *SearchOp {
-	/* TODO */
-	return s
-}
-
-// Fields list the non-key fields users want to fetch. If not set, all normalized fields
-// (supplied with “storing” annotation) would be fetched.
-// PrimaryKey fields are always fetched.
-func (s *SearchOp) Fields([]string) *SearchOp {
-	/* TODO */
-	return s
-}
-
-// ScanOp represents the scan query
-type ScanOp struct {
-	/* TODO */
-}
-
-// Limit sets the number of rows returned per call. Default is 128.
-func (s *ScanOp) Limit(n int) *ScanOp {
-	/* TODO */
-	return s
-}
-
-// Offset sets the pagination token. If not set, an empty token would be used.
-func (s *ScanOp) Offset(token string) *ScanOp {
-	/* TODO */
-	return s
-}
-
-// Fields list the non-key fields users want to fetch.
-// PrimaryKey fields are always fetched.
-func (s *ScanOp) Fields([]string) *ScanOp {
-	/* TODO */
-	return s
-}
-
 // AdminClient has methods to manage schemas and scopes
 type AdminClient interface {
 	// CheckSchema checks the compatibility of schemas
@@ -222,4 +100,165 @@ type AdminClient interface {
 	TruncateScope(s string) error
 	// DropScope drops the scope and the data and schemas in the scope
 	DropScope(s string) error
+}
+
+type client struct {
+	initialized bool
+	registrar   Registrar
+	connector   Connector
+}
+
+// NewClient returns a new DOSA client for the registry and connector
+// provided. This is currently only a partial implementation to demonstrate
+// basic CRUD functionality.
+// TODO: implement entire interface
+func NewClient(reg Registrar, conn Connector) (Client, error) {
+	return &client{
+		registrar: reg,
+		connector: conn,
+	}, nil
+}
+
+func (c *client) Initialize(ctx context.Context) error {
+	if c.initialized {
+		return nil
+	}
+
+	// check schema for all registered entities
+	registered, err := c.registrar.FindAll()
+	if err != nil {
+		return err
+	}
+	eds := []*EntityDefinition{}
+	for _, re := range registered {
+		eds = append(eds, re.EntityDefinition())
+	}
+
+	// fetch latest version for all registered entities, assume order is preserved
+	versions, err := c.connector.CheckSchema(ctx, c.registrar.Scope(), c.registrar.Prefix(), eds)
+
+	if err != nil {
+		return errors.Wrap(err, "CheckSchema failed")
+	}
+
+	// set version for all registered entities
+	for idx, version := range versions {
+		registered[idx].SetVersion(version)
+	}
+	c.initialized = true
+	return nil
+}
+
+// CreateIfNotExists uses the connector to create a DOSA entity.
+func (c *client) CreateIfNotExists(context.Context, DomainObject) error {
+	panic("not implemented")
+}
+
+// Read uses the connector to read one DOSA entity.
+func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainObject) error {
+	if !c.initialized {
+		return fmt.Errorf("client is not initialized")
+	}
+
+	// lookup entity definition, use FQN to lookup schema reference
+	reg, err := c.registrar.Find(entity)
+	if err != nil {
+		return err
+	}
+	table := reg.Table()
+	info := reg.EntityInfo()
+
+	/* TODO: uncomment when CheckSchema is building schemaRefIndex on init
+	sr, ok := c.schemaRefIndex[fqn]
+	if !ok {
+		return fmt.Errorf("could not find schema reference for fqn %s", fqn)
+	}
+	*/
+
+	// build map of values to read using entity parser
+	fieldValues, err := reg.FieldValues(entity)
+	if err != nil {
+		return err
+	}
+
+	// translate fields to read
+	fieldsToRead = translateToServerFields(fieldsToRead, table.FieldToCol)
+	results, err := c.connector.Read(ctx, info, fieldValues, fieldsToRead)
+	if err != nil {
+		return err
+	}
+
+	// populate entity with results
+	if err := reg.Populate(entity, results); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// BatchRead uses the connector to read multiple DOSA entities.
+func (c *client) BatchRead(context.Context, []string, ...DomainObject) (BatchReadResult, error) {
+	panic("not implemented")
+}
+
+// Upsert uses the connector to create or update an Entity.
+func (c *client) Upsert(ctx context.Context, fieldsToInsert []string, objects ...DomainObject) error {
+	if !c.initialized {
+		return fmt.Errorf("client is not initialized")
+	}
+
+	/*
+		for _, entity := range objects {
+			r := reflect.ValueOf(entity).Elem()
+			ed, _, err := c.registrar.Find(entity)
+			if err != nil {
+				return err
+			}
+			fieldValues := make(map[string]FieldValue)
+			for _, column := range ed.Columns {
+				fieldName := ed.ColToField[column.Name]
+				value := r.FieldByName(fieldName)
+				if !value.IsValid() {
+					// this should never happen
+					panic("Field " + fieldName + " was not found in " + ed.Name)
+				}
+				fieldValues[column.Name] = value.Interface()
+			}
+			fieldsToInsert = translateToServerFields(fieldsToInsert, ed.FieldToCol)
+
+			err = c.connector.Upsert(ctx, "", fieldValues, fieldsToInsert)
+			if err != nil {
+				return err
+			}
+		}
+	*/
+	return nil
+}
+
+// Delete uses the connector to delete DOSA entities by primary key.
+func (c *client) Delete(context.Context, ...DomainObject) error {
+	panic("not implemented")
+}
+
+// Range uses the connector to fetch DOSA entities for a given range.
+func (c *client) Range(context.Context, *RangeOp) ([]DomainObject, string, error) {
+	panic("not implemented")
+}
+
+// Search uses the connector to fetch DOSA entities by fields that have been marked "searchable".
+func (c *client) Search(context.Context, *SearchOp) ([]DomainObject, string, error) {
+	panic("not implemented")
+}
+
+// ScanEverything uses the connector to fetch all DOSA entities of the given type.
+func (c *client) ScanEverything(context.Context, *ScanOp) ([]DomainObject, string, error) {
+	panic("not implemented")
+}
+
+func translateToServerFields(fieldsToRead []string, nameMap map[string]string) []string {
+	newFields := make([]string, len(fieldsToRead))
+	for i, field := range fieldsToRead {
+		newFields[i] = nameMap[field]
+	}
+	return newFields
 }

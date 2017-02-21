@@ -161,14 +161,11 @@ func tableFromStructType(structName string, structType *ast.StructType) (*Table,
 			}
 		case *ast.SelectorExpr:
 			// only dosa allowed selector is time.Time
-			if typeName, ok := typeName.X.(*ast.Ident); ok {
-				// TODO: Improve this so only time.Time is accepted
-				if typeName.Name == "time" {
-					kind = "time.Time"
-				}
+			if innerName, ok := typeName.X.(*ast.Ident); ok {
+				kind = innerName.Name + "." + typeName.Sel.Name
 			}
 		}
-		if kind == entityName {
+		if kind == entityName || kind == "dosa."+entityName {
 			var err error
 			if t.EntityDefinition.Name, t.Key, err = parseEntityTag(structName, dosaTag); err != nil {
 				return nil, err

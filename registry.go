@@ -21,72 +21,199 @@
 package dosa
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
 )
 
-// Registrar is the interface to register DOSA entities.
-type Registrar interface {
-	Register(...DomainObject) error
-	lookupByFQN(FQN) (*Table, error)
-	lookupByType(DomainObject) (*Table, FQN, error)
+// RegisteredEntity is the structure that holds all information necessary for
+// performing operations on an entity as well as helper methods for accessing
+// type data so that reflection can be minimized.
+type RegisteredEntity struct {
+	scope  string
+	prefix string
+	table  *Table
+	info   *EntityInfo
 }
 
-// prefixedRegistrar puts every entity under a prefix.
-// This registrar is not threadsafe. However, Register step is done in bootstrap phase (usually with a single thread),
-// and after bootstrap multiple goroutines can safely read from this registrar.
-type prefixedRegistrar struct {
-	prefix    FQN
-	fqnIndex  map[FQN]*Table
-	typeIndex map[reflect.Type]FQN
-}
-
-// NewRegistrar creates a Registrar with desired FQN prefix.
-// All registered entities would be put under this FQN prefix.
-func NewRegistrar(fqnPrefix string) (Registrar, error) {
-	prefix, err := ToFQN(fqnPrefix)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to construct Registrar")
+// NewRegisteredEntity is a constructor for creating a RegisteredEntity
+func NewRegisteredEntity(scope, prefix string, table *Table) *RegisteredEntity {
+	// build entity info up-front since version will need to be set soon after
+	// the registry is initialized
+	info := &EntityInfo{
+		Ref: &SchemaRef{
+			Scope:      scope,
+			NamePrefix: prefix,
+			EntityName: table.Name,
+		},
+		Def: &EntityDefinition{
+			Name:    table.Name,
+			Key:     table.Key,
+			Columns: table.Columns,
+		},
 	}
-	return &prefixedRegistrar{
-		prefix:    prefix,
-		fqnIndex:  make(map[FQN]*Table),
-		typeIndex: make(map[reflect.Type]FQN),
-	}, nil
+	return &RegisteredEntity{
+		scope:  scope,
+		prefix: prefix,
+		table:  table,
+		info:   info,
+	}
 }
 
-func (r *prefixedRegistrar) Register(entities ...DomainObject) error {
-	for _, e := range entities {
-		table, err := TableFromInstance(e)
-		if err != nil {
-			return errors.Wrapf(err, "failed to register entity")
+// SetVersion sets the current schema version on the registered entity.
+func (e *RegisteredEntity) SetVersion(v int32) {
+	e.info.Ref.Version = v
+}
+
+// Table is a helper for accessing the registered entity's Table instance.
+func (e *RegisteredEntity) Table() *Table {
+	return e.table
+}
+
+// EntityDefinition is a helper for accessing the registered entity's
+// EntityDefinition instance.
+func (e *RegisteredEntity) EntityDefinition() *EntityDefinition {
+	return e.info.Def
+}
+
+// EntityInfo is a helper for accessing the registered entity's EntityInfo
+// instance which is required by clients to call connector methods.
+func (e *RegisteredEntity) EntityInfo() *EntityInfo {
+	return e.info
+}
+
+// FieldValues is a helper for generating a map of field values to be used in a query.
+func (e *RegisteredEntity) FieldValues(entity DomainObject) (map[string]FieldValue, error) {
+	r := reflect.ValueOf(entity).Elem()
+	fieldValues := make(map[string]FieldValue)
+
+	// populate primary key values
+	for _, pk := range e.table.Key.PartitionKeys {
+		colName := e.table.ColToField[pk]
+		value := r.FieldByName(colName)
+		if !value.IsValid() {
+			// this should never happen
+			return nil, fmt.Errorf("Field " + colName + " was not found in " + e.table.Name)
 		}
-		fqn, err := r.prefix.Child(table.Name)
-		if err != nil {
-			// shouldn't happen if TableFromInstance behave correctly
-			return errors.Wrap(err, "failed to register entity, this is most likely a bug in DOSA")
+		fieldValues[pk] = value.Interface()
+	}
+
+	// TODO: populate clustering key values
+
+	return fieldValues, nil
+}
+
+// Populate is a helper for populating a DOSA entity with the given
+// fieldName->value map
+func (e *RegisteredEntity) Populate(entity DomainObject, fieldValues map[string]FieldValue) error {
+	r := reflect.ValueOf(entity).Elem()
+	for fieldName, fieldValue := range fieldValues {
+		// column name may be different from the entity's field name, so we
+		// have to look it up along the way.
+		realFieldName := e.table.ColToField[fieldName]
+		val := r.FieldByName(realFieldName)
+		if !val.IsValid() {
+			return fmt.Errorf("Invalid value for field %s: %s", realFieldName, fieldValue)
 		}
-		r.fqnIndex[fqn] = table
-		r.typeIndex[reflect.TypeOf(e).Elem()] = fqn
+		val.Set(reflect.ValueOf(fieldValue))
 	}
 	return nil
 }
 
-func (r *prefixedRegistrar) lookupByFQN(fqn FQN) (*Table, error) {
-	table, ok := r.fqnIndex[fqn]
-	if !ok {
-		return nil, errors.Errorf("failed to find entity definition for FQN: %s", fqn)
-	}
-	return table, nil
+// Registrar is the interface to register DOSA entities.
+type Registrar interface {
+	Scope() string
+	Prefix() string
+	Find(DomainObject) (*RegisteredEntity, error)
+	FindAll() ([]*RegisteredEntity, error)
 }
 
-func (r *prefixedRegistrar) lookupByType(entity DomainObject) (*Table, FQN, error) {
-	t := reflect.TypeOf(entity).Elem()
-	fqn, ok := r.typeIndex[t]
-	if !ok {
-		return nil, "", errors.Errorf("failed to find entity definition for entity: %v", t)
+// prefixedRegistrar puts every entity under a prefix.
+// This registrar is not threadsafe. However, Register step is done in
+// bootstrap/client-init phase (usually with a single thread),
+// and after this phase, multiple goroutines can safely read from this registrar
+type prefixedRegistrar struct {
+	scope     string
+	prefix    string
+	fqnIndex  map[FQN]*RegisteredEntity
+	typeIndex map[reflect.Type]*RegisteredEntity
+}
+
+// NewRegistrar returns a new Registrar for the scope, name prefix and
+// entities provided. `dosa.Client` implementations are intended to use scope
+// and prefix to uniquely identify where entities should live but the
+// registrar itself is only responsible for basic accounting of entities.
+func NewRegistrar(scope, prefix string, entities ...DomainObject) (Registrar, error) {
+	baseFQN, err := ToFQN(prefix)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to construct Registrar")
 	}
-	table := r.fqnIndex[fqn]
-	return table, fqn, nil
+	fqnIndex := make(map[FQN]*RegisteredEntity)
+	typeIndex := make(map[reflect.Type]*RegisteredEntity)
+
+	// index all entities by "FQN" (it's canonical namespace)
+	// and by type.
+	// TODO: when FQN changes, this will need to be updated
+	for _, e := range entities {
+		table, err := TableFromInstance(e)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to register entity")
+		}
+
+		// fqnIndex key
+		fqn, err := baseFQN.Child(table.Name)
+		if err != nil {
+			// shouldn't happen if TableFromInstance behave correctly
+			return nil, errors.Wrap(err, "failed to register entity, this is most likely a bug in DOSA")
+		}
+
+		// typeIndex key
+		t := reflect.TypeOf(e).Elem()
+
+		// create instance and index it
+		re := NewRegisteredEntity(scope, prefix, table)
+		fqnIndex[fqn] = re
+		typeIndex[t] = re
+	}
+
+	return &prefixedRegistrar{
+		scope:     scope,
+		prefix:    prefix,
+		fqnIndex:  fqnIndex,
+		typeIndex: typeIndex,
+	}, nil
+}
+
+// Scope returns the registrar's scope.
+func (r *prefixedRegistrar) Scope() string {
+	return r.scope
+}
+
+// Prefix returns the registrar's prefix.
+func (r *prefixedRegistrar) Prefix() string {
+	return r.prefix
+}
+
+// Find looks at its internal index to find a registration that matches the
+// entity instance provided. Return an error when not found.
+func (r *prefixedRegistrar) Find(entity DomainObject) (*RegisteredEntity, error) {
+	t := reflect.TypeOf(entity).Elem()
+	re, ok := r.typeIndex[t]
+	if !ok {
+		return nil, errors.Errorf("failed to find registration for given entity")
+	}
+	return re, nil
+}
+
+// FindAll returns all registered entities from its internal index.
+func (r *prefixedRegistrar) FindAll() ([]*RegisteredEntity, error) {
+	res := []*RegisteredEntity{}
+	for _, re := range r.fqnIndex {
+		res = append(res, re)
+	}
+	if len(res) == 0 {
+		return nil, fmt.Errorf("registry.FindAll returned empty")
+	}
+	return res, nil
 }

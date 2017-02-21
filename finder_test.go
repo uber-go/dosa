@@ -58,8 +58,8 @@ func TestParser(t *testing.T) {
 	entities, errs, err := FindEntities(".", "")
 	assert := assert.New(t)
 
-	assert.Equal(10, len(entities), fmt.Sprintf("%s", entities))
-	assert.Equal(11, len(errs), fmt.Sprintf("%s", err))
+	assert.Equal(12, len(entities), fmt.Sprintf("%s", entities))
+	assert.Equal(12, len(errs), fmt.Sprintf("%s", err))
 	assert.Nil(err)
 
 	for _, entity := range entities {
@@ -85,6 +85,10 @@ func TestParser(t *testing.T) {
 			e, _ = TableFromInstance(&IgnoreTagType{})
 		case "badnamebutrenamed":
 			e, _ = TableFromInstance(&BadNameButRenamed{})
+		case "clienttestentity": // skip, see https://jira.uberinternal.com/browse/DOSA-788
+			continue
+		case "registrytestvalid": // skip, same as above
+			continue
 		default:
 			t.Errorf("entity %s not expected", entity.Name)
 			continue

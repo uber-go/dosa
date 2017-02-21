@@ -18,48 +18,70 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package dosa
+package dosa_test
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/uber-go/dosa"
 )
 
+type RegistryTestValid struct {
+	dosa.Entity `dosa:"primaryKey=(ID)"`
+	ID          int64
+	Name        string
+	Email       string
+}
+
+type RegistryTestInvalid struct {
+	dosa.Entity `dosa:"primaryKey=()"`
+	PrimaryKey  int64
+	data        string
+}
+
 func TestNewRegistrar(t *testing.T) {
-	_, err := NewRegistrar("invalid-prefix")
+	entities := []dosa.DomainObject{&RegistryTestValid{}}
+
+	_, err := dosa.NewRegistrar("test", "invalid-prefix", entities...)
 	assert.Error(t, err)
 
-	_, err = NewRegistrar("valid.prefix")
+	_, err = dosa.NewRegistrar("test", "valid.prefix", entities...)
 	assert.NoError(t, err)
 }
 
 func TestRegistrar(t *testing.T) {
-	r, err := NewRegistrar("test.registrar")
+	validEntities := []dosa.DomainObject{&RegistryTestValid{}}
+	invalidEntities := []dosa.DomainObject{&RegistryTestInvalid{}}
+
+	r, err := dosa.NewRegistrar("test", "team.service", validEntities...)
 	assert.NoError(t, err)
-	err = r.Register(&SinglePrimaryKeyNoParen{}, &SinglePrimaryKey{}, &MultiComponentPrimaryKey{})
-	assert.NoError(t, err)
-	err = r.Register(&EmptyPrimaryKey{})
+	_, err = dosa.NewRegistrar("test", "team.service", invalidEntities...)
 	assert.Error(t, err)
 
-	for _, e := range []DomainObject{&SinglePrimaryKeyNoParen{}, &SinglePrimaryKey{}, &MultiComponentPrimaryKey{}} {
-		expectedFQN := FQN(fmt.Sprintf("test.registrar.%s", strings.ToLower(reflect.TypeOf(e).Elem().Name())))
+	for _, e := range validEntities {
+		expectedEntityName := strings.ToLower(reflect.TypeOf(e).Elem().Name())
+		expectedVersion := int32(1)
 
-		table, fqn, err := r.lookupByType(e)
+		re, err := r.Find(e)
 		assert.NoError(t, err)
-		assert.NotNil(t, table)
-		assert.Equal(t, expectedFQN, fqn)
+		re.SetVersion(expectedVersion)
 
-		table, err = r.lookupByFQN(expectedFQN)
-		assert.NoError(t, err)
-		assert.NotNil(t, table)
+		info := re.EntityInfo()
+		assert.Equal(t, info.Ref.Scope, "test")
+		assert.Equal(t, info.Ref.NamePrefix, "team.service")
+		assert.Equal(t, info.Ref.EntityName, expectedEntityName)
+		assert.Equal(t, info.Ref.Version, expectedVersion)
 	}
 
-	_, err = r.lookupByFQN("test.registrar.nil")
+	_, err = r.Find(invalidEntities[0])
 	assert.Error(t, err)
-	_, _, err = r.lookupByType(&SinglePartitionKey{})
-	assert.Error(t, err)
+
+	var registered []*dosa.RegisteredEntity
+	registered, err = r.FindAll()
+	assert.NoError(t, err)
+	assert.Equal(t, len(registered), len(validEntities))
 }
