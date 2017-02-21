@@ -232,6 +232,11 @@ func (y *Client) CheckSchema(ctx context.Context, ed []*dosa.EntityDefinition) (
 }
 
 func (y *Client) schemaIDFromReference(sr dosa.SchemaReference) *dosarpc.SchemaID {
+	if sr == "" {
+		fqn := dosarpc.FQN("book")
+		ver := dosarpc.Version(1)
+		return &dosarpc.SchemaID{Fqn: &fqn, Version: &ver}
+	}
 	schemaReference, ok := y.SchemaReferenceMap[sr]
 	if !ok {
 		return nil
