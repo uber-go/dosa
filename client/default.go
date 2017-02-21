@@ -120,7 +120,7 @@ func (c *Default) Read(ctx context.Context, fieldsToRead []string, entity dosa.D
 		return err
 	}
 	*/
-	// lookup entity definition, use FQN to lookup schema referen
+	// lookup entity definition, use FQN to lookup schema reference
 	ed, _, err := c.registrar.LookupByType(entity)
 	if err != nil {
 		return err
@@ -172,7 +172,8 @@ func (c *Default) BatchRead(context.Context, []string, ...dosa.DomainObject) (do
 
 // Upsert uses the connector to create or update an Entity.
 func (c *Default) Upsert(context.Context, []string, ...dosa.DomainObject) error {
-	panic("not implemented")
+	// TODO: implement me
+	return nil
 }
 
 // Delete uses the connector to delete DOSA entities by primary key.
