@@ -168,7 +168,7 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 	}
 
 	return &dosa.EntityDefinition{
-		Name:    string(*ed.Name),
+		Name:    *ed.Name,
 		Columns: fields,
 		Key: &dosa.PrimaryKey{
 			PartitionKeys:  pk,

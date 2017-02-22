@@ -54,7 +54,7 @@ func testBoolPtr(b bool) *bool {
 	return &b
 }
 
-var testEi = dosa.EntityInfo{
+var testEi = &dosa.EntityInfo{
 	Ref: &testSchemaRef,
 	Def: &dosa.EntityDefinition{
 		Columns: []*dosa.ColumnDefinition{
@@ -214,7 +214,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 	sut := Client{Client: mockedClient}
 
 	// and run the test, first with a nil FieldsToUpdate, then with a specific list
-	err := sut.Upsert(ctx, testEi, inFields, nil)
+	err := sut.Upsert(ctx, testEi, inFields)
 	assert.Nil(t, err)
 
 	// make sure we actually called CreateIfNotExists on the interface
@@ -274,11 +274,11 @@ func TestPanic(t *testing.T) {
 	sut := Client{Client: mockedClient}
 
 	assert.Panics(t, func() {
-		sut.BatchRead(ctx, dosa.EntityInfo{}, nil, nil)
+		sut.BatchRead(ctx, testEi, nil, nil)
 	})
 
 	assert.Panics(t, func() {
-		sut.BatchUpsert(ctx, dosa.EntityInfo{}, nil, nil)
+		sut.BatchUpsert(ctx, testEi, nil, nil)
 	})
 
 	assert.Panics(t, func() {
@@ -290,7 +290,7 @@ func TestPanic(t *testing.T) {
 	})
 
 	assert.Panics(t, func() {
-		sut.Remove(ctx, dosa.EntityInfo{}, nil)
+		sut.Remove(ctx, testEi, nil)
 	})
 
 	assert.Panics(t, func() {
@@ -298,14 +298,14 @@ func TestPanic(t *testing.T) {
 	})
 
 	assert.Panics(t, func() {
-		sut.Range(ctx, dosa.EntityInfo{}, nil, nil, "", 0)
+		sut.Range(ctx, testEi, nil, nil, "", 0)
 	})
 
 	assert.Panics(t, func() {
-		sut.Search(ctx, dosa.EntityInfo{}, nil, nil, "", 0)
+		sut.Search(ctx, testEi, nil, nil, "", 0)
 	})
 
 	assert.Panics(t, func() {
-		sut.Scan(ctx, dosa.EntityInfo{}, nil, "", 0)
+		sut.Scan(ctx, testEi, nil, "", 0)
 	})
 }

@@ -34,7 +34,7 @@ type Client struct {
 	Client dosaclient.Interface
 }
 
-func entityInfoToSchemaRef(ei dosa.EntityInfo) *dosarpc.SchemaRef {
+func entityInfoToSchemaRef(ei *dosa.EntityInfo) *dosarpc.SchemaRef {
 	scope := ei.Ref.Scope
 	namePrefix := ei.Ref.NamePrefix
 	entityName := ei.Ref.EntityName
@@ -58,7 +58,7 @@ func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) dosarpc.Field
 }
 
 // CreateIfNotExists ...
-func (y *Client) CreateIfNotExists(ctx context.Context, ei dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+func (y *Client) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	createRequest := dosarpc.CreateRequest{
 		Ref:          entityInfoToSchemaRef(ei),
 		EntityValues: fieldValueMapFromClientMap(values),
@@ -67,7 +67,7 @@ func (y *Client) CreateIfNotExists(ctx context.Context, ei dosa.EntityInfo, valu
 }
 
 // Upsert inserts or updates your data
-func (y *Client) Upsert(ctx context.Context, ei dosa.EntityInfo, values map[string]dosa.FieldValue, fieldsToUpdate []string) error {
+func (y *Client) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	upsertRequest := dosarpc.UpsertRequest{
 		Ref:          entityInfoToSchemaRef(ei),
 		EntityValues: fieldValueMapFromClientMap(values),
@@ -76,7 +76,7 @@ func (y *Client) Upsert(ctx context.Context, ei dosa.EntityInfo, values map[stri
 }
 
 // Read reads a single entity
-func (y *Client) Read(ctx context.Context, ei dosa.EntityInfo, keys map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
+func (y *Client) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
 	// Convert the fields from the client's map to a set of fields to read
 	var rpcFieldsToRead map[string]struct{}
 	if fieldsToRead != nil {
@@ -120,32 +120,32 @@ func (y *Client) Read(ctx context.Context, ei dosa.EntityInfo, keys map[string]d
 }
 
 // BatchRead is not yet implemented
-func (y *Client) BatchRead(ctx context.Context, ei dosa.EntityInfo, keys []map[string]dosa.FieldValue, fieldsToRead []string) ([]dosa.FieldValuesOrError, error) {
+func (y *Client) BatchRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, fieldsToRead []string) ([]dosa.FieldValuesOrError, error) {
 	panic("not implemented")
 }
 
 // BatchUpsert is not yet implemented
-func (y *Client) BatchUpsert(ctx context.Context, ei dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToUpdate []string) ([]error, error) {
+func (y *Client) BatchUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToUpdate []string) ([]error, error) {
 	panic("not implemented")
 }
 
 // Remove is not yet implemented
-func (y *Client) Remove(ctx context.Context, ei dosa.EntityInfo, keys map[string]dosa.FieldValue) error {
+func (y *Client) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue) error {
 	panic("not implemented")
 }
 
 // Range is not yet implemented
-func (y *Client) Range(ctx context.Context, ei dosa.EntityInfo, conditions []dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (y *Client) Range(ctx context.Context, ei *dosa.EntityInfo, conditions []dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	panic("not implemented")
 }
 
 // Search is not yet implemented
-func (y *Client) Search(ctx context.Context, ei dosa.EntityInfo, FieldNameValuePair []string, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (y *Client) Search(ctx context.Context, ei *dosa.EntityInfo, FieldNameValuePair []string, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	panic("not implemented")
 }
 
 // Scan is not yet implemented
-func (y *Client) Scan(ctx context.Context, ei dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, error) {
+func (y *Client) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, error) {
 	panic("not implemented")
 }
 

@@ -100,23 +100,23 @@ type FieldValuesOrError struct {
 type Connector interface {
 	// DML operations (CRUD + search)
 	// CreateIfNotExists creates a row, but only if it does not exist
-	CreateIfNotExists(ctx context.Context, ei EntityInfo, values map[string]FieldValue) error
+	CreateIfNotExists(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
 	// Read fetches a row by primary key
-	Read(ctx context.Context, ei EntityInfo, keys map[string]FieldValue, fieldsToRead []string) (map[string]FieldValue, error)
+	Read(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue, fieldsToRead []string) (map[string]FieldValue, error)
 	// BatchRead fetches several rows by primary key
-	BatchRead(ctx context.Context, ei EntityInfo, keys []map[string]FieldValue, fieldsToRead []string) ([]FieldValuesOrError, error)
+	BatchRead(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToRead []string) ([]FieldValuesOrError, error)
 	// Upsert updates some columns of a row, or creates a new one if it doesn't exist yet
-	Upsert(ctx context.Context, ei EntityInfo, keys map[string]FieldValue, fieldsToUpdate []string) error
+	Upsert(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
 	// BatchUpsert updates some columns of several rows, or creates a new ones if they doesn't exist yet
-	BatchUpsert(ctx context.Context, ei EntityInfo, keys []map[string]FieldValue, fieldsToUpdate []string) ([]error, error)
+	BatchUpsert(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToUpdate []string) ([]error, error)
 	// Remove deletes a row
-	Remove(ctx context.Context, ei EntityInfo, keys map[string]FieldValue) error
+	Remove(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue) error
 	// Range does a range scan using a set of conditions
-	Range(ctx context.Context, ei EntityInfo, conditions []Condition, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
+	Range(ctx context.Context, ei *EntityInfo, conditions []Condition, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
 	// Search does a search against a field marked 'searchable'
-	Search(ctx context.Context, ei EntityInfo, FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
+	Search(ctx context.Context, ei *EntityInfo, FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
 	// Scan reads the whole table, for doing a sequential search or dump/load use cases
-	Scan(ctx context.Context, ei EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, error)
+	Scan(ctx context.Context, ei *EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, error)
 
 	// DDL operations (schema)
 	// CheckSchema validates that the set of entities you have provided is valid and registered already
