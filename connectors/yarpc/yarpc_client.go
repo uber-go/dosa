@@ -150,7 +150,7 @@ func (y *Client) Search(ctx context.Context, ei *dosa.EntityInfo, FieldNameValue
 }
 
 // Scan is not yet implemented
-func (y *Client) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, error) {
+func (y *Client) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	panic("not implemented")
 }
 
