@@ -88,7 +88,6 @@ func (y *Client) Read(ctx context.Context, ei dosa.EntityInfo, keys map[string]d
 
 	// convert the key values from interface{} to RPC's Value
 	rpcFields := map[string]*dosarpc.Value{}
-
 	for key, value := range keys {
 		rpcValue := &dosarpc.Value{ElemValue: RawValueFromInterface(value)}
 		rpcFields[key] = rpcValue
@@ -100,6 +99,7 @@ func (y *Client) Read(ctx context.Context, ei dosa.EntityInfo, keys map[string]d
 		KeyValues:    rpcFields,
 		FieldsToRead: rpcFieldsToRead,
 	}
+
 	response, err := y.Client.Read(ctx, &readRequest)
 	if err != nil {
 		return nil, err
@@ -151,27 +151,25 @@ func (y *Client) Scan(ctx context.Context, ei dosa.EntityInfo, fieldsToRead []st
 
 // CheckSchema is one way to register a set of entities. This can be further validated by
 // a schema service downstream.
-func (y *Client) CheckSchema(ctx context.Context, eds []*dosa.EntityDefinition) ([]dosa.SchemaRef, error) {
+func (y *Client) CheckSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) ([]int32, error) {
 	// convert the client EntityDefinition to the RPC EntityDefinition
 	rpcEntityDefinition := make([]*dosarpc.EntityDefinition, len(eds))
 	for i, ed := range eds {
 		rpcEntityDefinition[i] = EntityDefinitionToThrift(ed)
 	}
-	csr := dosarpc.CheckSchemaRequest{EntityDefs: rpcEntityDefinition}
+	csr := dosarpc.CheckSchemaRequest{EntityDefs: rpcEntityDefinition, Scope: &scope, NamePrefix: &namePrefix}
 
-	_, err := y.Client.CheckSchema(ctx, &csr)
+	response, err := y.Client.CheckSchema(ctx, &csr)
 
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: build up the EntityInfo objects
-
-	return nil, nil
+	return response.Versions, nil
 }
 
 // UpsertSchema upserts the schema through RPC
-func (y *Client) UpsertSchema(ctx context.Context, eds []*dosa.EntityDefinition) ([]dosa.SchemaRef, error) {
+func (y *Client) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) ([]int32, error) {
 	rpcEds := make([]*dosarpc.EntityDefinition, len(eds))
 	for i, ed := range eds {
 		rpcEds[i] = EntityDefinitionToThrift(ed)
@@ -181,12 +179,12 @@ func (y *Client) UpsertSchema(ctx context.Context, eds []*dosa.EntityDefinition)
 		EntityDefs: rpcEds,
 	}
 
-	_, err := y.Client.UpsertSchema(ctx, request)
+	response, err := y.Client.UpsertSchema(ctx, request)
 	if err != nil {
 		return nil, errors.Wrap(err, "rpc upsertSchema failed")
 	}
 
-	return nil, nil
+	return response.Versions, nil
 }
 
 // CreateScope is not implemented yet

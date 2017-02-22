@@ -121,9 +121,9 @@ type Connector interface {
 	// DDL operations (schema)
 	// CheckSchema validates that the set of entities you have provided is valid and registered already
 	// It returns a list of SchemaRef objects for use with later DML operations.
-	CheckSchema(ctx context.Context, ed []*EntityDefinition) ([]SchemaRef, error)
+	CheckSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) ([]int32, error)
 	// UpsertSchema updates the schema to match what you provide as entities, if possible
-	UpsertSchema(ctx context.Context, ed []*EntityDefinition) ([]SchemaRef, error)
+	UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) ([]int32, error)
 
 	// Datastore management
 	// CreateScope creates a scope for storage of data, usually implemented by a keyspace for this data
