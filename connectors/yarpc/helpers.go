@@ -142,8 +142,8 @@ func EntityDefinitionToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefiniti
 		rpcType := RPCTypeFromClientType(column.Type)
 		fd[column.Name] = &dosarpc.FieldDesc{Type: &rpcType}
 	}
-	fqn := dosarpc.FQN(ed.Name)
-	return &dosarpc.EntityDefinition{PrimaryKey: &pk, FieldDescs: fd, Fqn: &fqn}
+	name := ed.Name
+	return &dosarpc.EntityDefinition{PrimaryKey: &pk, FieldDescs: fd, Name: &name}
 }
 
 // FromThriftToEntityDefinition converts the RPC EntityDefinition to client EntityDefinition
@@ -168,7 +168,7 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 	}
 
 	return &dosa.EntityDefinition{
-		Name:    ed.Fqn.String(),
+		Name:    *ed.Name,
 		Columns: fields,
 		Key: &dosa.PrimaryKey{
 			PartitionKeys:  pk,

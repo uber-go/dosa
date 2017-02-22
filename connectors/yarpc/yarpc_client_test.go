@@ -34,19 +34,6 @@ import (
 	"github.com/uber/dosa-idl/.gen/dosa/dosatest"
 )
 
-const testSchemaReference = dosa.SchemaReference("test")
-
-func getTestSchemaReferenceMap() map[dosa.SchemaReference]SchemaReferenceInfo {
-	return map[dosa.SchemaReference]SchemaReferenceInfo{testSchemaReference: {schemaID: drpc.SchemaID{}, typeMap: map[string]dosa.Type{
-		"c1": dosa.Int64,
-		"c2": dosa.Double,
-		"c3": dosa.String,
-		"c4": dosa.Blob,
-		"c5": dosa.Bool,
-		"c6": dosa.Int32,
-	}}}
-}
-
 func testInt64Ptr(i int64) *int64 {
 	return &i
 }
@@ -67,6 +54,39 @@ func testBoolPtr(b bool) *bool {
 	return &b
 }
 
+var testEi = &dosa.EntityInfo{
+	Ref: &testSchemaRef,
+	Def: &dosa.EntityDefinition{
+		Columns: []*dosa.ColumnDefinition{
+			{Name: "f1", Type: dosa.String},
+			{Name: "c1", Type: dosa.Int64},
+			{Name: "c2", Type: dosa.Double},
+			{Name: "c3", Type: dosa.String},
+			{Name: "c4", Type: dosa.Blob},
+			{Name: "c5", Type: dosa.Bool},
+			{Name: "c6", Type: dosa.Int32},
+		},
+		Key: &dosa.PrimaryKey{
+			PartitionKeys: []string{"f1"},
+		},
+		Name: "t1",
+	},
+}
+
+var testSchemaRef = dosa.SchemaRef{
+	Scope:      "scope1",
+	NamePrefix: "namePrefix",
+	EntityName: "eName",
+	Version:    12345,
+}
+
+var testRPCSchemaRef = drpc.SchemaRef{
+	Scope:      testStringPtr("scope1"),
+	NamePrefix: testStringPtr("namePrefix"),
+	EntityName: testStringPtr("eName"),
+	Version:    testInt32Ptr(12345),
+}
+
 // Test a happy path read of one column and specify the primary key
 func TestYaRPCClient_Read(t *testing.T) {
 	// build a mock RPC client
@@ -75,14 +95,14 @@ func TestYaRPCClient_Read(t *testing.T) {
 
 	// set up the parameters
 	ctx := context.TODO()
-	sr := testSchemaReference
-	readRequest := drpc.ReadRequest{
-		SchemaID: &drpc.SchemaID{},
-		Key:      map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}}}, FieldsToRead: map[string]struct{}{"f1": {}},
+	readRequest := &drpc.ReadRequest{
+		Ref:          &testRPCSchemaRef,
+		KeyValues:    map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}}},
+		FieldsToRead: map[string]struct{}{"f1": {}},
 	}
 
 	// we expect a single call to Read, and we return back two fields, f1 which is in the typemap and another field that is not
-	mockedClient.EXPECT().Read(ctx, &readRequest).Return(&drpc.ReadResponse{&drpc.Entity{Fields: map[string]*drpc.Value{
+	mockedClient.EXPECT().Read(ctx, readRequest).Return(&drpc.ReadResponse{drpc.FieldValueMap{
 		"c1":               {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(1)}},
 		"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}},
 		"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(2.2)}},
@@ -90,13 +110,13 @@ func TestYaRPCClient_Read(t *testing.T) {
 		"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
 		"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(false)}},
 		"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(1)}},
-	}}}, nil)
+	}}, nil)
 
 	// Prepare the dosa client interface using the mocked RPC layer
-	sut := Client{Client: mockedClient, SchemaReferenceMap: getTestSchemaReferenceMap()}
+	sut := Client{Client: mockedClient}
 
 	// perform the read
-	values, err := sut.Read(ctx, sr, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))}, []string{"f1"})
+	values, err := sut.Read(ctx, testEi, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))}, []string{"f1"})
 	assert.Nil(t, err)       // not an error
 	assert.NotNil(t, values) // found some values
 	fmt.Printf("%v", values)
@@ -110,33 +130,6 @@ func TestYaRPCClient_Read(t *testing.T) {
 
 	// make sure we actually called Read on the interface
 	ctrl.Finish()
-}
-
-// TestBadSchemaRef covers the case where a bad schema reference is sent to a method. This should get caught early,
-// so not much setup is done for each method.
-func TestBadSchemaRef(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	mockedClient := dosatest.NewMockClient(ctrl)
-	ctx := context.TODO()
-
-	sut := Client{Client: mockedClient}
-	const badReference = dosa.SchemaReference("Bad")
-	for i := 1; i < 10; i++ {
-		var err error
-		switch i {
-		case 1:
-			_, err = sut.Read(ctx, badReference, nil, nil)
-		case 2:
-			err = sut.CreateIfNotExists(ctx, badReference, nil)
-		case 3:
-			err = sut.Upsert(ctx, badReference, nil, nil)
-		default:
-			continue
-		}
-		assert.Error(t, err, "case %d", i)
-		assert.Contains(t, err.Error(), `"Bad"`)
-	}
-
 }
 
 func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
@@ -162,20 +155,20 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	// build up the input field list and the output field list
 	// the layout is quite different; inputs are a simple map but the actual RPC call expects a messier format
 	inFields := map[string]dosa.FieldValue{}
-	outFields := map[string]*drpc.Value{}
+	outFields := drpc.FieldValueMap{}
 	for _, item := range vals {
 		inFields[item.Name] = item.Value
 		outFields[item.Name] = &drpc.Value{ElemValue: RawValueFromInterface(item.Value)}
 	}
 
-	mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Entity: &drpc.Entity{SchemaID: &drpc.SchemaID{}, Fields: outFields}})
+	mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields})
 
 	// create the YaRPCClient and give it the mocked RPC interface
 	// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
-	sut := Client{Client: mockedClient, SchemaReferenceMap: getTestSchemaReferenceMap()}
+	sut := Client{Client: mockedClient}
 
 	// and run the test
-	err := sut.CreateIfNotExists(ctx, dosa.SchemaReference("test"), inFields)
+	err := sut.CreateIfNotExists(ctx, testEi, inFields)
 	assert.Nil(t, err)
 
 	// make sure we actually called CreateIfNotExists on the interface
@@ -212,22 +205,16 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 	}
 
 	mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
-		Entities:       []*drpc.Entity{{SchemaID: &drpc.SchemaID{}, Fields: outFields}},
-		FieldsToUpdate: nil,
-	})
-	mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
-		Entities:       []*drpc.Entity{{SchemaID: &drpc.SchemaID{}, Fields: outFields}},
-		FieldsToUpdate: map[string]struct{}{"c1": {}, "c2": {}},
+		Ref:          &testRPCSchemaRef,
+		EntityValues: outFields,
 	})
 
 	// create the YaRPCClient and give it the mocked RPC interface
 	// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
-	sut := Client{Client: mockedClient, SchemaReferenceMap: getTestSchemaReferenceMap()}
+	sut := Client{Client: mockedClient}
 
 	// and run the test, first with a nil FieldsToUpdate, then with a specific list
-	err := sut.Upsert(ctx, dosa.SchemaReference("test"), inFields, nil)
-	assert.Nil(t, err)
-	err = sut.Upsert(ctx, dosa.SchemaReference("test"), inFields, []string{"c1", "c2"})
+	err := sut.Upsert(ctx, testEi, inFields)
 	assert.Nil(t, err)
 
 	// make sure we actually called CreateIfNotExists on the interface
@@ -246,14 +233,14 @@ func TestClient_CheckSchema(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 	ctx := context.TODO()
 
-	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any()).Return(&drpc.CheckSchemaResponse{[]*drpc.SchemaID{{}, {}}}, nil)
+	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any()).Return(&drpc.CheckSchemaResponse{[]int32{}}, nil)
 
 	sut := Client{Client: mockedClient}
 
 	ed, err := dosa.TableFromInstance(&TestDosaObject{})
 	assert.NoError(t, err)
 
-	sr, err := sut.CheckSchema(ctx, []*dosa.EntityDefinition{&ed.EntityDefinition})
+	sr, err := sut.CheckSchema(ctx, "scope", "prefix", []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
 	assert.NotNil(t, sr)
 }
@@ -268,12 +255,12 @@ func TestClient_UpsertSchema(t *testing.T) {
 
 	ed, err := dosa.TableFromInstance(&TestDosaObject{})
 	assert.NoError(t, err)
-	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Return(nil)
-	err = sut.UpsertSchema(ctx, []*dosa.EntityDefinition{&ed.EntityDefinition})
+	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Return(&drpc.UpsertSchemaResponse{Versions: []int32{1, 2, 3}}, nil)
+	_, err = sut.UpsertSchema(ctx, "scope", "prefix", []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
 
-	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Return(errors.New("test error"))
-	err = sut.UpsertSchema(ctx, []*dosa.EntityDefinition{&ed.EntityDefinition})
+	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Return(nil, errors.New("test error"))
+	_, err = sut.UpsertSchema(ctx, "scope", "prefix", []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
 }
@@ -287,11 +274,11 @@ func TestPanic(t *testing.T) {
 	sut := Client{Client: mockedClient}
 
 	assert.Panics(t, func() {
-		sut.BatchRead(ctx, testSchemaReference, nil, nil)
+		sut.MultiRead(ctx, testEi, nil, nil)
 	})
 
 	assert.Panics(t, func() {
-		sut.BatchUpsert(ctx, testSchemaReference, nil, nil)
+		sut.MultiUpsert(ctx, testEi, nil, nil)
 	})
 
 	assert.Panics(t, func() {
@@ -303,7 +290,7 @@ func TestPanic(t *testing.T) {
 	})
 
 	assert.Panics(t, func() {
-		sut.Remove(ctx, testSchemaReference, nil)
+		sut.Remove(ctx, testEi, nil)
 	})
 
 	assert.Panics(t, func() {
@@ -311,14 +298,14 @@ func TestPanic(t *testing.T) {
 	})
 
 	assert.Panics(t, func() {
-		sut.Range(ctx, testSchemaReference, nil, nil, "", 0)
+		sut.Range(ctx, testEi, nil, nil, "", 0)
 	})
 
 	assert.Panics(t, func() {
-		sut.Search(ctx, testSchemaReference, nil, nil, "", 0)
+		sut.Search(ctx, testEi, nil, nil, "", 0)
 	})
 
 	assert.Panics(t, func() {
-		sut.Scan(ctx, testSchemaReference, nil, "", 0)
+		sut.Scan(ctx, testEi, nil, "", 0)
 	})
 }

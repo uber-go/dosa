@@ -1,5 +1,5 @@
 hash: 4b83e4e1aabe0f7dcd9942fbd44b0699c300273ef8af13a2a3b8b26fb48a410c
-updated: 2017-02-17T15:41:56.294371228-08:00
+updated: 2017-02-21T13:34:32.580126866-08:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
@@ -24,7 +24,7 @@ imports:
   - assert
   - mock
 - name: github.com/uber/dosa-idl
-  version: 48fe2d923857dba414b3f3fe10c73a68c3177cf3
+  version: a43c3b7c1ff958632af2129b3c78581f73810f9d
   repo: git@github.com:uber/dosa-idl.git
   subpackages:
   - .gen
@@ -63,7 +63,7 @@ imports:
   - internal/request
   - internal/sync
 - name: golang.org/x/net
-  version: b4690f45fa1cafc47b1c280c2e75116efe40cc13
+  version: 6b27048ae5e6ad1ef927e72e437531493de612fe
   subpackages:
   - context
   - context/ctxhttp
@@ -75,7 +75,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
@@ -99,7 +99,7 @@ testImports:
   subpackages:
   - cmd/interfacer
 - name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
 - name: github.com/russross/blackfriday
@@ -109,6 +109,6 @@ testImports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: golang.org/x/tools
-  version: e1bdc76d0461f7041136c70e0a1356ea0f5e01d0
+  version: 8e779ee0a4509783f6940db32d1a4e8df910cc8b
   subpackages:
   - cover

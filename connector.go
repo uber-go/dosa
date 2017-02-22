@@ -56,10 +56,6 @@ type Condition struct {
 	Op Operator
 }
 
-// SchemaReference is a reference to the table and schema version of an object
-// These strings are returned when the entity is registered at startup
-type SchemaReference string
-
 // SchemaRef is a reference to the table and schema version of an object
 type SchemaRef struct {
 	Scope      string
@@ -89,30 +85,30 @@ type FieldValuesOrError struct {
 type Connector interface {
 	// DML operations (CRUD + search)
 	// CreateIfNotExists creates a row, but only if it does not exist
-	CreateIfNotExists(ctx context.Context, sr SchemaReference, values map[string]FieldValue) error
+	CreateIfNotExists(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
 	// Read fetches a row by primary key
-	Read(ctx context.Context, sr SchemaReference, keys map[string]FieldValue, fieldsToRead []string) (map[string]FieldValue, error)
-	// BatchRead fetches several rows by primary key
-	BatchRead(ctx context.Context, sr SchemaReference, keys []map[string]FieldValue, fieldsToRead []string) ([]FieldValuesOrError, error)
+	Read(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue, fieldsToRead []string) (map[string]FieldValue, error)
+	// MultiRead fetches several rows by primary key
+	MultiRead(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToRead []string) ([]FieldValuesOrError, error)
 	// Upsert updates some columns of a row, or creates a new one if it doesn't exist yet
-	Upsert(ctx context.Context, sr SchemaReference, keys map[string]FieldValue, fieldsToUpdate []string) error
-	// BatchUpsert updates some columns of several rows, or creates a new ones if they doesn't exist yet
-	BatchUpsert(ctx context.Context, sr SchemaReference, keys []map[string]FieldValue, fieldsToUpdate []string) ([]error, error)
+	Upsert(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
+	// MultiUpsert updates some columns of several rows, or creates a new ones if they doesn't exist yet
+	MultiUpsert(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToUpdate []string) ([]error, error)
 	// Remove deletes a row
-	Remove(ctx context.Context, sr SchemaReference, keys map[string]FieldValue) error
+	Remove(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue) error
 	// Range does a range scan using a set of conditions
-	Range(ctx context.Context, sr SchemaReference, conditions []Condition, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
+	Range(ctx context.Context, ei *EntityInfo, conditions []Condition, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
 	// Search does a search against a field marked 'searchable'
-	Search(ctx context.Context, sr SchemaReference, FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
+	Search(ctx context.Context, ei *EntityInfo, FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
 	// Scan reads the whole table, for doing a sequential search or dump/load use cases
-	Scan(ctx context.Context, sr SchemaReference, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, error)
+	Scan(ctx context.Context, ei *EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, error)
 
 	// DDL operations (schema)
 	// CheckSchema validates that the set of entities you have provided is valid and registered already
-	// It returns a list of SchemaReference objects for use with later DML operations.
-	CheckSchema(ctx context.Context, ed []*EntityDefinition) ([]SchemaReference, error)
-	// UpsertSchema upserts the schema
-	UpsertSchema(ctx context.Context, ed []*EntityDefinition) error
+	// It returns a list of SchemaRef objects for use with later DML operations.
+	CheckSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) ([]int32, error)
+	// UpsertSchema updates the schema to match what you provide as entities, if possible
+	UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) ([]int32, error)
 
 	// Datastore management
 	// CreateScope creates a scope for storage of data, usually implemented by a keyspace for this data
@@ -125,7 +121,7 @@ type Connector interface {
 }
 
 // CreationFuncType is the type of a creation function that creates an instance of a registered connector
-type CreationFuncType func() (Connector, error)
+type CreationFuncType func(map[string]interface{}) (Connector, error)
 
 var registeredConnectors map[string]CreationFuncType
 
@@ -135,6 +131,6 @@ func init() {
 }
 
 // RegisterConnector registers a connector given a name
-func RegisterConnector(name string, creationFunc func() (Connector, error)) {
+func RegisterConnector(name string, creationFunc func(map[string]interface{}) (Connector, error)) {
 	registeredConnectors[name] = creationFunc
 }
