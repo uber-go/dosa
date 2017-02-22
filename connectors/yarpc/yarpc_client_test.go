@@ -278,7 +278,11 @@ func TestPanic(t *testing.T) {
 	})
 
 	assert.Panics(t, func() {
-		sut.MultiUpsert(ctx, testEi, nil, nil)
+		sut.MultiUpsert(ctx, testEi, nil)
+	})
+
+	assert.Panics(t, func() {
+		sut.MultiRemove(ctx, testEi, nil)
 	})
 
 	assert.Panics(t, func() {
