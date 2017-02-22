@@ -87,30 +87,30 @@ type Connector interface {
 	// CreateIfNotExists creates a row, but only if it does not exist
 	CreateIfNotExists(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
 	// Read fetches a row by primary key
-	Read(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue, fieldsToRead []string) (map[string]FieldValue, error)
+	Read(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue, fieldsToRead []string) (values map[string]FieldValue, err error)
 	// MultiRead fetches several rows by primary key
-	MultiRead(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToRead []string) ([]FieldValuesOrError, error)
+	MultiRead(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToRead []string) (result []FieldValuesOrError, err error)
 	// Upsert updates some columns of a row, or creates a new one if it doesn't exist yet
 	Upsert(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
 	// MultiUpsert updates some columns of several rows, or creates a new ones if they doesn't exist yet
-	MultiUpsert(ctx context.Context, ei *EntityInfo, multiValues []map[string]FieldValue) ([]error, error)
+	MultiUpsert(ctx context.Context, ei *EntityInfo, multiValues []map[string]FieldValue) (result []error, err error)
 	// Remove deletes a row
 	Remove(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue) error
 	// MultiRemove removes multiple rows
-	MultiRemove(ctx context.Context, ei *EntityInfo, multiKeys []map[string]FieldValue) ([]error, error)
+	MultiRemove(ctx context.Context, ei *EntityInfo, multiKeys []map[string]FieldValue) (result []error, err error)
 	// Range does a range scan using a set of conditions
-	Range(ctx context.Context, ei *EntityInfo, conditions []Condition, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
+	Range(ctx context.Context, ei *EntityInfo, conditions []Condition, fieldsToRead []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)
 	// Search does a search against a field marked 'searchable'
-	Search(ctx context.Context, ei *EntityInfo, FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
+	Search(ctx context.Context, ei *EntityInfo, FieldNameValuePair, fieldsToRead []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)
 	// Scan reads the whole table, for doing a sequential search or dump/load use cases
-	Scan(ctx context.Context, ei *EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
+	Scan(ctx context.Context, ei *EntityInfo, fieldsToRead []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)
 
 	// DDL operations (schema)
 	// CheckSchema validates that the set of entities you have provided is valid and registered already
 	// It returns a list of SchemaRef objects for use with later DML operations.
-	CheckSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) ([]int32, error)
+	CheckSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (versions []int32, err error)
 	// UpsertSchema updates the schema to match what you provide as entities, if possible
-	UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) ([]int32, error)
+	UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (versions []int32, err error)
 
 	// Datastore management
 	// CreateScope creates a scope for storage of data, usually implemented by a keyspace for this data
