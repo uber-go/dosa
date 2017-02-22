@@ -103,7 +103,7 @@ type Connector interface {
 	// Search does a search against a field marked 'searchable'
 	Search(ctx context.Context, ei *EntityInfo, FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
 	// Scan reads the whole table, for doing a sequential search or dump/load use cases
-	Scan(ctx context.Context, ei *EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, error)
+	Scan(ctx context.Context, ei *EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
 
 	// DDL operations (schema)
 	// CheckSchema validates that the set of entities you have provided is valid and registered already
