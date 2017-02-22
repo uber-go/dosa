@@ -54,18 +54,17 @@ func testBoolPtr(b bool) *bool {
 	return &b
 }
 
-var testEi dosa.EntityInfo = dosa.EntityInfo{
+var testEi = dosa.EntityInfo{
 	Ref: &testSchemaRef,
 	Def: &dosa.EntityDefinition{
 		Columns: []*dosa.ColumnDefinition{
-			{ Name: "f1", Type: dosa.String },
-			{ Name: "c1", Type: dosa.Int64 },
-			{ Name: "c2", Type: dosa.Double },
-			{ Name: "c3", Type: dosa.String },
-			{ Name: "c4", Type: dosa.Blob },
-			{ Name: "c5", Type: dosa.Bool },
-			{ Name: "c6", Type: dosa.Int32 },
-
+			{Name: "f1", Type: dosa.String},
+			{Name: "c1", Type: dosa.Int64},
+			{Name: "c2", Type: dosa.Double},
+			{Name: "c3", Type: dosa.String},
+			{Name: "c4", Type: dosa.Blob},
+			{Name: "c5", Type: dosa.Bool},
+			{Name: "c6", Type: dosa.Int32},
 		},
 		Key: &dosa.PrimaryKey{
 			PartitionKeys: []string{"f1"},
@@ -74,18 +73,18 @@ var testEi dosa.EntityInfo = dosa.EntityInfo{
 	},
 }
 
-var testSchemaRef dosa.SchemaRef = dosa.SchemaRef{
-	Scope: "scope1",
+var testSchemaRef = dosa.SchemaRef{
+	Scope:      "scope1",
 	NamePrefix: "namePrefix",
 	EntityName: "eName",
-	Version: 12345,
+	Version:    12345,
 }
 
-var testRPCSchemaRef drpc.SchemaRef = drpc.SchemaRef{
-	Scope: testStringPtr("scope1"),
+var testRPCSchemaRef = drpc.SchemaRef{
+	Scope:      testStringPtr("scope1"),
 	NamePrefix: testStringPtr("namePrefix"),
 	EntityName: testStringPtr("eName"),
-	Version: testInt32Ptr(12345),
+	Version:    testInt32Ptr(12345),
 }
 
 // Test a happy path read of one column and specify the primary key
@@ -97,9 +96,9 @@ func TestYaRPCClient_Read(t *testing.T) {
 	// set up the parameters
 	ctx := context.TODO()
 	readRequest := &drpc.ReadRequest{
-		Ref:       &testRPCSchemaRef,
-		KeyValues: map[string]*drpc.Value{"f1": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}}},
-		FieldsToRead: map[string]struct{}{"f1":struct{}{}},
+		Ref:          &testRPCSchemaRef,
+		KeyValues:    map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}}},
+		FieldsToRead: map[string]struct{}{"f1": {}},
 	}
 
 	// we expect a single call to Read, and we return back two fields, f1 which is in the typemap and another field that is not
@@ -256,7 +255,7 @@ func TestClient_UpsertSchema(t *testing.T) {
 
 	ed, err := dosa.TableFromInstance(&TestDosaObject{})
 	assert.NoError(t, err)
-	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Return(&drpc.UpsertSchemaResponse{Versions: []int32{1,2,3}}, nil)
+	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Return(&drpc.UpsertSchemaResponse{Versions: []int32{1, 2, 3}}, nil)
 	_, err = sut.UpsertSchema(ctx, "scope", "prefix", []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
 
