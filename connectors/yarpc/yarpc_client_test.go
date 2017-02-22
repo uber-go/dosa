@@ -274,11 +274,11 @@ func TestPanic(t *testing.T) {
 	sut := Client{Client: mockedClient}
 
 	assert.Panics(t, func() {
-		sut.BatchRead(ctx, testEi, nil, nil)
+		sut.MultiRead(ctx, testEi, nil, nil)
 	})
 
 	assert.Panics(t, func() {
-		sut.BatchUpsert(ctx, testEi, nil, nil)
+		sut.MultiUpsert(ctx, testEi, nil, nil)
 	})
 
 	assert.Panics(t, func() {

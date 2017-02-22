@@ -103,12 +103,12 @@ type Connector interface {
 	CreateIfNotExists(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
 	// Read fetches a row by primary key
 	Read(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue, fieldsToRead []string) (map[string]FieldValue, error)
-	// BatchRead fetches several rows by primary key
-	BatchRead(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToRead []string) ([]FieldValuesOrError, error)
+	// MultiRead fetches several rows by primary key
+	MultiRead(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToRead []string) ([]FieldValuesOrError, error)
 	// Upsert updates some columns of a row, or creates a new one if it doesn't exist yet
 	Upsert(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
-	// BatchUpsert updates some columns of several rows, or creates a new ones if they doesn't exist yet
-	BatchUpsert(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToUpdate []string) ([]error, error)
+	// MultiUpsert updates some columns of several rows, or creates a new ones if they doesn't exist yet
+	MultiUpsert(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToUpdate []string) ([]error, error)
 	// Remove deletes a row
 	Remove(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue) error
 	// Range does a range scan using a set of conditions

@@ -119,13 +119,13 @@ func (y *Client) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]
 	return result, nil
 }
 
-// BatchRead is not yet implemented
-func (y *Client) BatchRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, fieldsToRead []string) ([]dosa.FieldValuesOrError, error) {
+// MultiRead is not yet implemented
+func (y *Client) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, fieldsToRead []string) ([]dosa.FieldValuesOrError, error) {
 	panic("not implemented")
 }
 
-// BatchUpsert is not yet implemented
-func (y *Client) BatchUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToUpdate []string) ([]error, error) {
+// MultiUpsert is not yet implemented
+func (y *Client) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToUpdate []string) ([]error, error) {
 	panic("not implemented")
 }
 
