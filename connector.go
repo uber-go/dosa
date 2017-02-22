@@ -93,9 +93,11 @@ type Connector interface {
 	// Upsert updates some columns of a row, or creates a new one if it doesn't exist yet
 	Upsert(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
 	// MultiUpsert updates some columns of several rows, or creates a new ones if they doesn't exist yet
-	MultiUpsert(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToUpdate []string) ([]error, error)
+	MultiUpsert(ctx context.Context, ei *EntityInfo, multiValues []map[string]FieldValue) ([]error, error)
 	// Remove deletes a row
 	Remove(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue) error
+	// MultiRemove removes multiple rows
+	MultiRemove(ctx context.Context, ei *EntityInfo, multiKeys []map[string]FieldValue) ([]error, error)
 	// Range does a range scan using a set of conditions
 	Range(ctx context.Context, ei *EntityInfo, conditions []Condition, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
 	// Search does a search against a field marked 'searchable'

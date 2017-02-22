@@ -125,12 +125,17 @@ func (y *Client) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[
 }
 
 // MultiUpsert is not yet implemented
-func (y *Client) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToUpdate []string) ([]error, error) {
+func (y *Client) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
 	panic("not implemented")
 }
 
 // Remove is not yet implemented
 func (y *Client) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue) error {
+	panic("not implemented")
+}
+
+// MultiRemove is not yet implemented
+func (y *Client) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiKeys []map[string]dosa.FieldValue) ([]error, error) {
 	panic("not implemented")
 }
 
