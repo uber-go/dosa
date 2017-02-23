@@ -156,6 +156,26 @@ func TestEntityDefinitionEnsureValid(t *testing.T) {
 	}
 }
 
+func TestEntityDefinitionHelpers(t *testing.T) {
+	ed := getValidEntityDefinition()
+
+	expectedColumnTypes := map[string]dosa.Type{
+		"foo": dosa.TUUID,
+		"bar": dosa.Int64,
+		"qux": dosa.Blob,
+	}
+	assert.Equal(t, expectedColumnTypes, ed.ColumnTypes())
+
+	expectedPartitionKeySet := map[string]struct{}{"foo": {}}
+	assert.Equal(t, expectedPartitionKeySet, ed.PartitionKeySet())
+
+	expectedClusteringKeySet := map[string]struct{}{"bar": {}}
+	assert.Equal(t, expectedClusteringKeySet, ed.ClusteringKeySet())
+
+	expectedKeySet := map[string]struct{}{"foo": {}, "bar": {}}
+	assert.Equal(t, expectedKeySet, ed.KeySet())
+}
+
 func getValidEntityDefinition() *dosa.EntityDefinition {
 	return &dosa.EntityDefinition{
 		Name: "testentity",

@@ -22,9 +22,12 @@ package dosa
 
 import "context"
 
+//go:generate stringer -type=Operator
+
 // Operator defines an operator against some data for range scans
 type Operator int
 
+// order of appearance matter here
 const (
 	// Eq is the equals operator
 	Eq Operator = iota + 1
@@ -32,11 +35,11 @@ const (
 	// Lt is the less than operator
 	Lt
 
-	// Gt is the greater than operator
-	Gt
-
 	// LtOrEq is the less than or equal operator
 	LtOrEq
+
+	// Gt is the greater than operator
+	Gt
 
 	// GtOrEq is the greater than or equal operator
 	GtOrEq
@@ -46,14 +49,6 @@ const (
 type FieldNameValuePair struct {
 	Name  string
 	Value FieldValue
-}
-
-// Condition is used to hold a field name, value, and operator
-type Condition struct {
-	FieldNameValuePair
-
-	// Op defines the operator being used for the condition
-	Op Operator
 }
 
 // SchemaRef is a reference to the table and schema version of an object
@@ -99,7 +94,7 @@ type Connector interface {
 	// MultiRemove removes multiple rows
 	MultiRemove(ctx context.Context, ei *EntityInfo, multiKeys []map[string]FieldValue) (result []error, err error)
 	// Range does a range scan using a set of conditions
-	Range(ctx context.Context, ei *EntityInfo, conditions []Condition, fieldsToRead []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)
+	Range(ctx context.Context, ei *EntityInfo, columnConditions map[string][]Condition, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
 	// Search does a search against a field marked 'searchable'
 	Search(ctx context.Context, ei *EntityInfo, FieldNameValuePair, fieldsToRead []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)
 	// Scan reads the whole table, for doing a sequential search or dump/load use cases
