@@ -170,3 +170,40 @@ func (e *EntityDefinition) EnsureValid() error {
 
 	return nil
 }
+
+// ColumnTypes returns a map of column name to column type for all columns.
+func (e *EntityDefinition) ColumnTypes() map[string]Type {
+	m := make(map[string]Type)
+	for _, c := range e.Columns {
+		m[c.Name] = c.Type
+	}
+	return m
+}
+
+// PartitionKeySet returns a set of all partition keys.
+func (e *EntityDefinition) PartitionKeySet() map[string]struct{} {
+	m := make(map[string]struct{})
+	for _, p := range e.Key.PartitionKeys {
+		m[p] = struct{}{}
+	}
+	return m
+}
+
+// ClusteringKeySet returns a set of all clustering keys.
+func (e *EntityDefinition) ClusteringKeySet() map[string]struct{} {
+	m := make(map[string]struct{})
+	for _, c := range e.Key.ClusteringKeys {
+		m[c.Name] = struct{}{}
+	}
+	return m
+}
+
+// KeySet returns a set of all keys, including partition keys and clustering keys.
+func (e *EntityDefinition) KeySet() map[string]struct{} {
+	m := e.ClusteringKeySet()
+	pks := e.PartitionKeySet()
+	for p := range pks {
+		m[p] = struct{}{}
+	}
+	return m
+}
