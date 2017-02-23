@@ -312,4 +312,8 @@ func TestPanic(t *testing.T) {
 	assert.Panics(t, func() {
 		sut.Scan(ctx, testEi, nil, "", 0)
 	})
+
+	assert.Panics(t, func() {
+		sut.Shutdown()
+	})
 }
