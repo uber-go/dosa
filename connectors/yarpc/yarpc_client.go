@@ -207,9 +207,9 @@ func (y *Client) DropScope(ctx context.Context, scope string) error {
 	panic("not implemented")
 }
 
-// Shutdown is not implemented yet
+// Shutdown is no-op
 func (y *Client) Shutdown() error {
-	panic("not implemented")
+	return nil
 }
 
 func init() {
