@@ -19,3 +19,20 @@
 // THE SOFTWARE.
 
 package dosa_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/uber-go/dosa"
+)
+
+func TestNewRangeOp(t *testing.T) {
+	assert.NotNil(t, dosa.NewRangeOp(&dosa.Entity{}))
+}
+
+func TestRangeOpStringer(t *testing.T) {
+	o := dosa.NewRangeOp(&dosa.Entity{})
+	assert.Equal(t, "", o.String())
+}
