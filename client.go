@@ -195,33 +195,24 @@ func (c *client) BatchRead(context.Context, []string, ...DomainObject) (BatchRea
 }
 
 // Upsert uses the connector to create or update an Entity.
-func (c *client) Upsert(ctx context.Context, fieldsToInsert []string, objects ...DomainObject) error {
+func (c *client) Upsert(ctx context.Context, fieldsToInsert []string, entities ...DomainObject) error {
 	if !c.initialized {
 		return fmt.Errorf("client is not initialized")
 	}
 
-	// lookup entity definition, use FQN to lookup schema reference
-	reg, err := c.registrar.Find(entity)
+	if entities == nil || len(entities) == 0 {
+		return fmt.Errorf("no entities provided to upsert")
+	}
+
+	// lookup entity registration, assumes that entities are all of same type
+	reg, err := c.registrar.Find(entities[0])
 	if err != nil {
 		return err
 	}
-	table := reg.Table()
-	info := reg.EntityInfo()
-
 	// TODO: build map of values to update
 	fieldValues := map[string]FieldValue{}
 
-	results, err := c.connector.Upsert(ctx, info, fieldValues)
-	if err != nil {
-		return err
-	}
-
-	// populate entity with results
-	if err := reg.Populate(entity, results); err != nil {
-		return err
-	}
-
-	return nil
+	return c.connector.Upsert(ctx, reg.EntityInfo(), fieldValues)
 }
 
 // Delete uses the connector to delete DOSA entities by primary key.
