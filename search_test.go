@@ -19,3 +19,20 @@
 // THE SOFTWARE.
 
 package dosa_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/uber-go/dosa"
+)
+
+func TestNewSearchOp(t *testing.T) {
+	assert.NotNil(t, dosa.NewSearchOp(&dosa.Entity{}))
+}
+
+func TestSearchOpStringer(t *testing.T) {
+	o := dosa.NewSearchOp(&dosa.Entity{})
+	assert.Equal(t, "", o.String())
+}

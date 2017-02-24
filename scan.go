@@ -18,4 +18,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package dosa_test
+package dosa
+
+// ScanOp represents the scan query
+type ScanOp struct{}
+
+// NewScanOp returns a new ScanOp instance
+func NewScanOp(DomainObject) *ScanOp {
+	return &ScanOp{}
+}
+
+// String satisfies the Stringer interface
+func (s *ScanOp) String() string {
+	/* TODO */
+	return ""
+}
+
+// Limit sets the number of rows returned per call. Default is 128.
+func (s *ScanOp) Limit(n int) *ScanOp {
+	/* TODO */
+	return s
+}
+
+// Offset sets the pagination token. If not set, an empty token would be used.
+func (s *ScanOp) Offset(token string) *ScanOp {
+	/* TODO */
+	return s
+}
+
+// Fields list the non-key fields users want to fetch.
+// PrimaryKey fields are always fetched.
+func (s *ScanOp) Fields([]string) *ScanOp {
+	/* TODO */
+	return s
+}

@@ -18,4 +18,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package dosa_test
+package dosa
+
+// SearchOp represents the search query using a "searchable" field.
+type SearchOp struct{}
+
+// NewSearchOp returns a new SearchOp instance
+func NewSearchOp(DomainObject) *SearchOp {
+	return &SearchOp{}
+}
+
+// String satisfies the stringer interface
+func (s *SearchOp) String() string {
+	/* TODO */
+	return ""
+}
+
+// By indicates the "searchable" field name and its value.
+func (s *SearchOp) By(fieldName string, fieldValue interface{}) *SearchOp {
+	/* TODO */
+	return s
+}
+
+// Limit sets the number of rows returned per call. Default is 128.
+func (s *SearchOp) Limit(n int) *SearchOp {
+	/* TODO */
+	return s
+}
+
+// Offset sets the pagination token. If not set, an empty token would be used.
+func (s *SearchOp) Offset(token string) *SearchOp {
+	/* TODO */
+	return s
+}
+
+// Fields list the non-key fields users want to fetch. If not set, all normalized fields
+// (supplied with “storing” annotation) would be fetched.
+// PrimaryKey fields are always fetched.
+func (s *SearchOp) Fields([]string) *SearchOp {
+	/* TODO */
+	return s
+}
