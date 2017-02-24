@@ -207,6 +207,11 @@ func (y *Client) DropScope(ctx context.Context, scope string) error {
 	panic("not implemented")
 }
 
+// ScopeExists is not implemented yet
+func (y *Client) ScopeExists(ctx context.Context, scope string) (bool, error) {
+	panic("not impelmented")
+}
+
 // Shutdown is no-op
 func (y *Client) Shutdown() error {
 	return nil

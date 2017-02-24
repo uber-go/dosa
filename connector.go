@@ -120,6 +120,8 @@ type Connector interface {
 	TruncateScope(ctx context.Context, scope string) error
 	// DropScope removes the scope and all of the data
 	DropScope(ctx context.Context, scope string) error
+	// ScopeExists checks whether a scope exists or not
+	ScopeExists(ctx context.Context, scope string) (bool, error)
 
 	// Shutdown finishes the connector to do clean up work
 	Shutdown() error
