@@ -170,39 +170,3 @@ func (e *EntityDefinition) EnsureValid() error {
 
 	return nil
 }
-
-/* Not sure if this is needed
-func EntityDefinitionFromInstance(entity DomainObject (*EntityDefinition, error) {
-	elem := reflect.TypeOf(object).Elem()
-	name, err := NormalizeName(elem.Name())
-	if err != nil {
-		// TODO: This isn't correct, someone could override the name later
-		return nil, errors.Wrapf(err, "struct name is invalid")
-	}
-
-	for i := 0; i < elem.NumField(); i++ {
-		structField := elem.Field(i)
-		if len(structField.PkgPath) > 0 { // skip unexported fields
-			continue
-		}
-		tag := strings.TrimSpace(structField.Tag.Get(dosaTagKey))
-		if tag == "-" { // skip explicitly ignored fields
-			continue
-		}
-		name := structField.Name
-		if name == entityName {
-			if t.EntityDefinition.Name, t.Key, err = parseEntityTag(t.StructName, tag); err != nil {
-				return nil, err
-			}
-		} else {
-			cd, err := parseFieldTag(structField, tag)
-			if err != nil {
-				return nil, errors.Wrapf(err, "column %q had invalid type", name)
-			}
-			t.Columns = append(t.Columns, cd)
-			t.ColToField[cd.Name] = name
-			t.FieldToCol[name] = cd.Name
-		}
-	}
-}
-*/
