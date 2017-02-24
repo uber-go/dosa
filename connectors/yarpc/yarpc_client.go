@@ -207,6 +207,11 @@ func (y *Client) DropScope(ctx context.Context, scope string) error {
 	panic("not implemented")
 }
 
+// Shutdown is no-op
+func (y *Client) Shutdown() error {
+	return nil
+}
+
 func init() {
 	// TODO: Actually create one of these connectors
 	dosa.RegisterConnector("yarpc", func(map[string]interface{}) (dosa.Connector, error) {

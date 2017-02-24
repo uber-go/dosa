@@ -173,6 +173,8 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 
 	// make sure we actually called CreateIfNotExists on the interface
 	ctrl.Finish()
+
+	assert.NoError(t, sut.Shutdown())
 }
 
 func TestYaRPCClient_Upsert(t *testing.T) {

@@ -120,6 +120,9 @@ type Connector interface {
 	TruncateScope(ctx context.Context, scope string) error
 	// DropScope removes the scope and all of the data
 	DropScope(ctx context.Context, scope string) error
+
+	// Shutdown finishes the connector to do clean up work
+	Shutdown() error
 }
 
 // CreationFuncType is the type of a creation function that creates an instance of a registered connector
