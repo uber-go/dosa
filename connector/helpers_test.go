@@ -18,14 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package yarpc_test
+package connector_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/connectors/yarpc"
+	"github.com/uber-go/dosa/connector"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 )
 
@@ -46,19 +46,19 @@ var (
 
 func TestRawValueFromInterfaceBadType(t *testing.T) {
 	assert.Panics(t, func() {
-		yarpc.RawValueFromInterface(func() {})
+		connector.RawValueFromInterface(func() {})
 	})
 }
 
 func TestRawValueAsInterfaceBadType(t *testing.T) {
 	assert.Panics(t, func() {
-		yarpc.RawValueAsInterface(dosarpc.RawValue{}, dosa.Invalid)
+		connector.RawValueAsInterface(dosarpc.RawValue{}, dosa.Invalid)
 	})
 }
 
 func TestRPCTypeFromClientType(t *testing.T) {
 	assert.Panics(t, func() {
-		yarpc.RPCTypeFromClientType(dosa.Invalid)
+		connector.RPCTypeFromClientType(dosa.Invalid)
 	})
 }
 
@@ -130,8 +130,8 @@ var testEntityDefinition = &dosa.EntityDefinition{
 }
 
 func TestEntityDefinitionConvert(t *testing.T) {
-	rpcEd := yarpc.EntityDefinitionToThrift(testEntityDefinition)
-	ed := yarpc.FromThriftToEntityDefinition(rpcEd)
+	rpcEd := connector.EntityDefinitionToThrift(testEntityDefinition)
+	ed := connector.FromThriftToEntityDefinition(rpcEd)
 	assert.Equal(t, testEntityDefinition.Key, ed.Key)
 	assert.Equal(t, testEntityDefinition.Name, ed.Name)
 	edCols := make(map[string]*dosa.ColumnDefinition)

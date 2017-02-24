@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package yarpc
+package connector
 
 import (
 	"context"
@@ -30,7 +30,7 @@ import (
 )
 
 // Client holds the client-side RPC interface and some schema information
-type Client struct {
+type YARPC struct {
 	Client dosaclient.Interface
 }
 
@@ -58,7 +58,7 @@ func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) dosarpc.Field
 }
 
 // CreateIfNotExists ...
-func (y *Client) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+func (y *YARPC) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	createRequest := dosarpc.CreateRequest{
 		Ref:          entityInfoToSchemaRef(ei),
 		EntityValues: fieldValueMapFromClientMap(values),
@@ -67,7 +67,7 @@ func (y *Client) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, val
 }
 
 // Upsert inserts or updates your data
-func (y *Client) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+func (y *YARPC) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	upsertRequest := dosarpc.UpsertRequest{
 		Ref:          entityInfoToSchemaRef(ei),
 		EntityValues: fieldValueMapFromClientMap(values),
@@ -76,7 +76,7 @@ func (y *Client) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[str
 }
 
 // Read reads a single entity
-func (y *Client) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
+func (y *YARPC) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
 	// Convert the fields from the client's map to a set of fields to read
 	var rpcFieldsToRead map[string]struct{}
 	if fieldsToRead != nil {
@@ -120,43 +120,43 @@ func (y *Client) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]
 }
 
 // MultiRead is not yet implemented
-func (y *Client) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, fieldsToRead []string) ([]dosa.FieldValuesOrError, error) {
+func (y *YARPC) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, fieldsToRead []string) ([]dosa.FieldValuesOrError, error) {
 	panic("not implemented")
 }
 
 // MultiUpsert is not yet implemented
-func (y *Client) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
+func (y *YARPC) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
 	panic("not implemented")
 }
 
 // Remove is not yet implemented
-func (y *Client) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue) error {
+func (y *YARPC) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue) error {
 	panic("not implemented")
 }
 
 // MultiRemove is not yet implemented
-func (y *Client) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiKeys []map[string]dosa.FieldValue) ([]error, error) {
+func (y *YARPC) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiKeys []map[string]dosa.FieldValue) ([]error, error) {
 	panic("not implemented")
 }
 
 // Range is not yet implemented
-func (y *Client) Range(ctx context.Context, ei *dosa.EntityInfo, conditions []dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (y *YARPC) Range(ctx context.Context, ei *dosa.EntityInfo, conditions []dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	panic("not implemented")
 }
 
 // Search is not yet implemented
-func (y *Client) Search(ctx context.Context, ei *dosa.EntityInfo, FieldNameValuePair []string, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (y *YARPC) Search(ctx context.Context, ei *dosa.EntityInfo, FieldNameValuePair []string, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	panic("not implemented")
 }
 
 // Scan is not yet implemented
-func (y *Client) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (y *YARPC) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	panic("not implemented")
 }
 
 // CheckSchema is one way to register a set of entities. This can be further validated by
 // a schema service downstream.
-func (y *Client) CheckSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) ([]int32, error) {
+func (y *YARPC) CheckSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) ([]int32, error) {
 	// convert the client EntityDefinition to the RPC EntityDefinition
 	rpcEntityDefinition := make([]*dosarpc.EntityDefinition, len(eds))
 	for i, ed := range eds {
@@ -174,7 +174,7 @@ func (y *Client) CheckSchema(ctx context.Context, scope, namePrefix string, eds 
 }
 
 // UpsertSchema upserts the schema through RPC
-func (y *Client) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) ([]int32, error) {
+func (y *YARPC) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) ([]int32, error) {
 	rpcEds := make([]*dosarpc.EntityDefinition, len(eds))
 	for i, ed := range eds {
 		rpcEds[i] = EntityDefinitionToThrift(ed)
@@ -193,17 +193,17 @@ func (y *Client) UpsertSchema(ctx context.Context, scope, namePrefix string, eds
 }
 
 // CreateScope is not implemented yet
-func (y *Client) CreateScope(ctx context.Context, scope string) error {
+func (y *YARPC) CreateScope(ctx context.Context, scope string) error {
 	panic("not implemented")
 }
 
 // TruncateScope is not implemented yet
-func (y *Client) TruncateScope(ctx context.Context, scope string) error {
+func (y *YARPC) TruncateScope(ctx context.Context, scope string) error {
 	panic("not implemented")
 }
 
 // DropScope is not implemented yet
-func (y *Client) DropScope(ctx context.Context, scope string) error {
+func (y *YARPC) DropScope(ctx context.Context, scope string) error {
 	panic("not implemented")
 }
 
@@ -213,14 +213,14 @@ func (y *Client) ScopeExists(ctx context.Context, scope string) (bool, error) {
 }
 
 // Shutdown is no-op
-func (y *Client) Shutdown() error {
+func (y *YARPC) Shutdown() error {
 	return nil
 }
 
 func init() {
 	// TODO: Actually create one of these connectors
 	dosa.RegisterConnector("yarpc", func(map[string]interface{}) (dosa.Connector, error) {
-		c := new(Client)
+		c := new(YARPC)
 		c.Client = dosaclient.New(nil)
 		return c, nil
 	})
