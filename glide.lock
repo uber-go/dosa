@@ -1,5 +1,5 @@
-hash: 70f8084a78dfb3aec5ee6bc95edd1c43b51f59c2d3dc9b2a2f2513e17c7b85db
-updated: 2017-02-23T15:49:12.559788311-08:00
+hash: 4b83e4e1aabe0f7dcd9942fbd44b0699c300273ef8af13a2a3b8b26fb48a410c
+updated: 2017-02-24T11:31:28.218389767-08:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
@@ -24,7 +24,7 @@ imports:
   - assert
   - mock
 - name: github.com/uber/dosa-idl
-  version: adc300c17e67bd724994762f7f9b3ce4c0b04360
+  version: 5a9c550942325d52b35d108657ebad651e0e1006
   repo: git@github.com:uber/dosa-idl.git
   subpackages:
   - .gen
