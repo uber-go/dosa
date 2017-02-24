@@ -168,13 +168,6 @@ func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainO
 	table := reg.Table()
 	info := reg.EntityInfo()
 
-	/* TODO: uncomment when CheckSchema is building schemaRefIndex on init
-	sr, ok := c.schemaRefIndex[fqn]
-	if !ok {
-		return fmt.Errorf("could not find schema reference for fqn %s", fqn)
-	}
-	*/
-
 	// build map of values to read using entity parser
 	fieldValues, err := reg.FieldValues(entity)
 	if err != nil {
@@ -207,31 +200,27 @@ func (c *client) Upsert(ctx context.Context, fieldsToInsert []string, objects ..
 		return fmt.Errorf("client is not initialized")
 	}
 
-	/*
-		for _, entity := range objects {
-			r := reflect.ValueOf(entity).Elem()
-			ed, _, err := c.registrar.Find(entity)
-			if err != nil {
-				return err
-			}
-			fieldValues := make(map[string]FieldValue)
-			for _, column := range ed.Columns {
-				fieldName := ed.ColToField[column.Name]
-				value := r.FieldByName(fieldName)
-				if !value.IsValid() {
-					// this should never happen
-					panic("Field " + fieldName + " was not found in " + ed.Name)
-				}
-				fieldValues[column.Name] = value.Interface()
-			}
-			fieldsToInsert = translateToServerFields(fieldsToInsert, ed.FieldToCol)
+	// lookup entity definition, use FQN to lookup schema reference
+	reg, err := c.registrar.Find(entity)
+	if err != nil {
+		return err
+	}
+	table := reg.Table()
+	info := reg.EntityInfo()
 
-			err = c.connector.Upsert(ctx, "", fieldValues, fieldsToInsert)
-			if err != nil {
-				return err
-			}
-		}
-	*/
+	// TODO: build map of values to update
+	fieldValues := map[string]FieldValue{}
+
+	results, err := c.connector.Upsert(ctx, info, fieldValues)
+	if err != nil {
+		return err
+	}
+
+	// populate entity with results
+	if err := reg.Populate(entity, results); err != nil {
+		return err
+	}
+
 	return nil
 }
 
