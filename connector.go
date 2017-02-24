@@ -122,6 +122,7 @@ type Connector interface {
 	DropScope(ctx context.Context, scope string) error
 
 	// Connector self management
+	// Shutdown finishes the connector to do clean up work
 	Shutdown() error
 }
 
