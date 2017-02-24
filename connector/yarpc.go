@@ -208,7 +208,7 @@ func (y *YARPC) DropScope(ctx context.Context, scope string) error {
 }
 
 // ScopeExists is not implemented yet
-func (y *Client) ScopeExists(ctx context.Context, scope string) (bool, error) {
+func (y *YARPC) ScopeExists(ctx context.Context, scope string) (bool, error) {
 	panic("not impelmented")
 }
 
