@@ -29,7 +29,7 @@ import (
 	"github.com/uber/dosa-idl/.gen/dosa/dosaclient"
 )
 
-// Client holds the client-side RPC interface and some schema information
+// YARPC holds the client-side RPC interface and some schema information
 type YARPC struct {
 	Client dosaclient.Interface
 }
