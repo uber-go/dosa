@@ -79,7 +79,7 @@ type FieldValuesOrError struct {
 // It can also be implemented using an RPC such as thrift (dosa-idl)
 type Connector interface {
 	// DML operations (CRUD + search)
-	// CreateIfNotExists creates a row, but only if it does not exist
+	// CreateIfNotExists creates a row, but only if it does not exist.
 	CreateIfNotExists(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
 	// Read fetches a row by primary key
 	// If fieldsToRead is empty or nil, all non-key fields would be fetched.
@@ -87,7 +87,7 @@ type Connector interface {
 	// MultiRead fetches several rows by primary key
 	// If fieldsToRead is empty or nil, all non-key fields would be fetched.
 	MultiRead(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToRead []string) (result []FieldValuesOrError, err error)
-	// Upsert updates some columns of a row, or creates a new one if it doesn't exist yet
+	// Upsert updates some columns of a row, or creates a new one if it doesn't exist yet.
 	Upsert(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
 	// MultiUpsert updates some columns of several rows, or creates a new ones if they doesn't exist yet
 	MultiUpsert(ctx context.Context, ei *EntityInfo, multiValues []map[string]FieldValue) (result []error, err error)

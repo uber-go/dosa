@@ -125,7 +125,12 @@ func (c *Connector) DropScope(ctx context.Context, scope string) error {
 	return nil
 }
 
-// Shutdown does nothing
+// ScopeExists checks whether a scope exists or not
+func (c *Noop) ScopeExists(ctx context.Context, scope string) (bool, error) {
+	panic("not implemented")
+}
+
+// Shutdown always returns nil
 func (c *Connector) Shutdown() error {
 	return nil
 }

@@ -19,3 +19,176 @@
 // THE SOFTWARE.
 
 package dosa_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/connector"
+	"github.com/uber-go/dosa/mocks"
+)
+
+type ClientTestEntity1 struct {
+	dosa.Entity `dosa:"primaryKey=(ID)"`
+	ID          int64
+	Name        string
+	Email       string
+}
+
+type ClientTestEntity2 struct {
+	dosa.Entity `dosa:"primaryKey=(UUID,Color)"`
+	UUID        string
+	Color       string
+	IsActive    bool
+	ignoreme    int32
+}
+
+var (
+	cte1 = &ClientTestEntity1{ID: int64(1), Name: "foo", Email: "foo@uber.com"}
+	cte2 = &ClientTestEntity2{UUID: "uuid", Color: "blue", IsActive: true}
+)
+
+func ExampleNewClient() {
+	// initialize registrar
+	entities := []dosa.DomainObject{cte1}
+	reg, err := dosa.NewRegistrar("test", "myteam.myservice", entities...)
+	if err != nil {
+		// registration will most likely fail as a result of programmer error
+		panic("dosa.NewRegister returned an error")
+	}
+
+	// use a noop connector for example purposes
+	conn := &connector.Noop{}
+
+	// initialize a pseudo-connected client
+	client, err := dosa.NewClient(reg, conn)
+	if err != nil {
+		// panic is probably not what you want to do in practice, but for the
+		// sake of an example, this is the behavior we want
+		panic("dosa.NewClient returned an error")
+	}
+
+	err = client.Initialize(context.Background())
+	if err != nil {
+		// same as above, probably want to surface the error in some way, but
+		// an error here may indicate something that is retriable, for example
+		// a timeout may be recoverable whereas a schema validation error is not
+		panic("client.Initialize returned an error")
+	}
+}
+
+func TestNewClient(t *testing.T) {
+	// initialize registrar
+	entities := []dosa.DomainObject{cte1}
+	reg, err := dosa.NewRegistrar("test", "myteam.myservice", entities...)
+	assert.NoError(t, err)
+	assert.NotNil(t, reg)
+
+	// use a noop connector for test test test purposes
+	conn := &connector.Noop{}
+
+	// initialize a pseudo-connected client
+	client, err := dosa.NewClient(reg, conn)
+	assert.NoError(t, err)
+	err = client.Initialize(context.TODO())
+	assert.NoError(t, err)
+}
+
+func TestClient_Initialize(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	ctx := context.TODO()
+	emptyReg, _ := dosa.NewRegistrar("test", "team.service", []dosa.DomainObject{}...)
+	reg, _ := dosa.NewRegistrar("test", "team.service", []dosa.DomainObject{cte1}...)
+	conn := &connector.Noop{}
+
+	// find error
+	c1, _ := dosa.NewClient(emptyReg, conn)
+	assert.Error(t, c1.Initialize(ctx))
+
+	// CheckSchema error
+	errConn := mocks.NewMockConnector(ctrl)
+	errConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("CheckSchema error")).AnyTimes()
+	c2, _ := dosa.NewClient(reg, errConn)
+	assert.Error(t, c2.Initialize(ctx))
+
+	// happy path
+	c3, _ := dosa.NewClient(reg, conn)
+	assert.NoError(t, c3.Initialize(ctx))
+
+	// already initialized
+	assert.NoError(t, c3.Initialize(ctx))
+}
+
+func TestClient_Read(t *testing.T) {
+	ctx := context.TODO()
+	ctes1 := []dosa.DomainObject{cte1}
+	ctes2 := []dosa.DomainObject{cte1, cte2}
+	reg1, _ := dosa.NewRegistrar("test", "team.service", ctes1...)
+	reg2, _ := dosa.NewRegistrar("test", "team.service", ctes2...)
+	noop := &connector.Noop{}
+	fieldsToRead := []string{"ID", "Name", "Email"}
+	results := map[string]dosa.FieldValue{
+		"id":    int64(2),
+		"name":  "bar",
+		"email": "bar@email.com",
+	}
+
+	// uninitialized
+	c1, _ := dosa.NewClient(reg1, noop)
+	assert.Error(t, c1.Read(ctx, fieldsToRead, cte1))
+
+	// find error
+	c2, _ := dosa.NewClient(reg1, noop)
+	c2.Initialize(ctx)
+	assert.Error(t, c2.Read(ctx, fieldsToRead, cte2))
+
+	// happy path, mock connector
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
+	mockConn.EXPECT().Read(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(results, nil).AnyTimes()
+
+	c3, _ := dosa.NewClient(reg2, mockConn)
+	assert.NoError(t, c3.Initialize(ctx))
+
+	assert.NoError(t, c3.Read(ctx, fieldsToRead, cte1))
+	assert.Equal(t, cte1.ID, results["id"])
+	assert.Equal(t, cte1.Name, results["name"])
+	assert.Equal(t, cte1.Email, results["email"])
+}
+
+func TestClient_Upsert(t *testing.T) {
+	ctx := context.TODO()
+	ctes1 := []dosa.DomainObject{cte1}
+	ctes2 := []dosa.DomainObject{cte1, cte2}
+	reg1, _ := dosa.NewRegistrar("test", "team.service", ctes1...)
+	reg2, _ := dosa.NewRegistrar("test", "team.service", ctes2...)
+	noop := &connector.Noop{}
+	fieldsToUpdate := []string{"Email"}
+
+	// uninitialized
+	c1, _ := dosa.NewClient(reg1, noop)
+	assert.Error(t, c1.Upsert(ctx, fieldsToUpdate, cte1))
+
+	// find error
+	c2, _ := dosa.NewClient(reg1, noop)
+	c2.Initialize(ctx)
+	assert.Error(t, c2.Read(ctx, fieldsToUpdate, cte2))
+
+	// happy path, mock connector
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
+	mockConn.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	c3, _ := dosa.NewClient(reg2, mockConn)
+	assert.NoError(t, c3.Initialize(ctx))
+	assert.NoError(t, c3.Upsert(ctx, fieldsToUpdate, cte1))
+}
