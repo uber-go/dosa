@@ -51,7 +51,7 @@ type ClientTestEntity2 struct {
 
 var (
 	cte1 = &ClientTestEntity1{ID: int64(1), Name: "foo", Email: "foo@uber.com"}
-	cte2 = &ClientTestEntity2{UUID: "uuid", Color: "blue", IsActive: true}
+	cte2 = &ClientTestEntity2{UUID: "b1f23fa3-f453-45b4-a5d5-6d73078ac3bd", Color: "blue", IsActive: true}
 )
 
 func ExampleNewClient() {
