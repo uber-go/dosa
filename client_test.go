@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/uber-go/dosa"
@@ -68,17 +69,12 @@ func ExampleNewClient() {
 	// initialize a pseudo-connected client
 	client, err := dosa.NewClient(reg, conn)
 	if err != nil {
-		// panic is probably not what you want to do in practice, but for the
-		// sake of an example, this is the behavior we want
-		panic("dosa.NewClient returned an error")
+		errors.Wrap(err, "dosa.NewClient returned an error")
 	}
 
 	err = client.Initialize(context.Background())
 	if err != nil {
-		// same as above, probably want to surface the error in some way, but
-		// an error here may indicate something that is retriable, for example
-		// a timeout may be recoverable whereas a schema validation error is not
-		panic("client.Initialize returned an error")
+		errors.Wrap(err, "client.Initialize returned an error")
 	}
 }
 

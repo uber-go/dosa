@@ -162,7 +162,6 @@ func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainO
 		return fmt.Errorf("client is not initialized")
 	}
 
-	// lookup entity definition, use FQN to lookup schema reference
 	reg, err := c.registrar.Find(entity)
 	if err != nil {
 		return err
@@ -208,7 +207,6 @@ func (c *client) Upsert(ctx context.Context, fieldsToUpdate []string, entity Dom
 		return fmt.Errorf("client is not initialized")
 	}
 
-	// lookup entity definition, use FQN to lookup schema reference
 	reg, err := c.registrar.Find(entity)
 	if err != nil {
 		return err
