@@ -18,48 +18,183 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package dosa
+package dosa_test
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/uber-go/dosa"
 )
 
-func TestNewRegistrar(t *testing.T) {
-	_, err := NewRegistrar("invalid-prefix")
+type RegistryTestValid struct {
+	dosa.Entity `dosa:"primaryKey=(ID, Name)"`
+	ID          int64
+	Name        string
+	Email       string
+}
+
+type RegistryTestInvalid struct {
+	dosa.Entity `dosa:"primaryKey=()"`
+	PrimaryKey  int64
+	data        string
+}
+
+func TestNewRegisteredEntity(t *testing.T) {
+	table, _ := dosa.TableFromInstance(&RegistryTestValid{})
+	scope := "test"
+	namePrefix := "team.service"
+	entityName := "registrytestvalid"
+	version := int32(12)
+
+	re := dosa.NewRegisteredEntity(scope, namePrefix, table)
+	assert.NotNil(t, re)
+
+	info := re.EntityInfo()
+	assert.NotNil(t, info)
+
+	ref := re.SchemaRef()
+	assert.NotNil(t, ref)
+
+	def := re.EntityDefinition()
+	assert.NotNil(t, def)
+
+	re.SetVersion(version)
+	assert.Equal(t, ref.Scope, scope)
+	assert.Equal(t, ref.NamePrefix, namePrefix)
+	assert.Equal(t, ref.EntityName, entityName)
+	assert.Equal(t, ref.Version, version)
+	assert.Equal(t, def.Name, entityName)
+}
+
+func TestRegisteredEntity_KeyFieldValues(t *testing.T) {
+	entity := &RegistryTestValid{
+		ID:    int64(1),
+		Name:  "foo",
+		Email: "foo@email.com",
+	}
+	scope := "test"
+	namePrefix := "team.service"
+	table, _ := dosa.TableFromInstance(entity)
+	re := dosa.NewRegisteredEntity(scope, namePrefix, table)
+
+	// invalid primary key
+	assert.Panics(t, func() {
+		re.KeyFieldValues(&RegistryTestInvalid{PrimaryKey: 1})
+	})
+
+	// valid
+	fieldValues := re.KeyFieldValues(entity)
+	expected := map[string]dosa.FieldValue{
+		"id":   int64(1),
+		"name": "foo",
+	}
+	assert.Equal(t, fieldValues, expected)
+}
+
+func TestRegisteredEntity_ColumnNames(t *testing.T) {
+	entity := &RegistryTestValid{
+		ID:    int64(1),
+		Name:  "foo",
+		Email: "foo@email.com",
+	}
+	scope := "test"
+	namePrefix := "team.service"
+	table, _ := dosa.TableFromInstance(entity)
+	re := dosa.NewRegisteredEntity(scope, namePrefix, table)
+
+	// empty
+	columnNames, err := re.ColumnNames([]string{})
 	assert.Error(t, err)
 
-	_, err = NewRegistrar("valid.prefix")
+	// invalid
+	columnNames, err = re.ColumnNames([]string{"ID", "foo"})
+	assert.Error(t, err)
+
+	// valid
+	columnNames, err = re.ColumnNames([]string{"ID", "Name"})
+	assert.NoError(t, err)
+	assert.Equal(t, columnNames, []string{"id", "name"})
+}
+
+func TestRegisteredEntity_SetFieldValues(t *testing.T) {
+	entity := &RegistryTestValid{
+		ID:    int64(1),
+		Name:  "foo",
+		Email: "foo@email.com",
+	}
+	scope := "test"
+	namePrefix := "team.service"
+	table, _ := dosa.TableFromInstance(entity)
+	re := dosa.NewRegisteredEntity(scope, namePrefix, table)
+	validFieldValues := map[string]dosa.FieldValue{
+		"id":    int64(2),
+		"name":  "bar",
+		"email": "bar@email.com",
+	}
+	invalidFieldValues := map[string]dosa.FieldValue{
+		"id":      int64(2),
+		"name":    "bar",
+		"invalid": "invalid",
+	}
+
+	// invalid entity
+	assert.Panics(t, func() {
+		re.SetFieldValues(&RegistryTestInvalid{PrimaryKey: 1}, validFieldValues)
+	})
+
+	// invalid values
+	assert.Error(t, re.SetFieldValues(entity, invalidFieldValues))
+
+	// valid
+	assert.NoError(t, re.SetFieldValues(entity, validFieldValues))
+	assert.Equal(t, entity.ID, validFieldValues["id"])
+	assert.Equal(t, entity.Name, validFieldValues["name"])
+	assert.Equal(t, entity.Email, validFieldValues["email"])
+}
+
+func TestNewRegistrar(t *testing.T) {
+	entities := []dosa.DomainObject{&RegistryTestValid{}}
+
+	_, err := dosa.NewRegistrar("test", "invalid-prefix", entities...)
+	assert.Error(t, err)
+
+	_, err = dosa.NewRegistrar("test", "valid.prefix", entities...)
 	assert.NoError(t, err)
 }
 
 func TestRegistrar(t *testing.T) {
-	r, err := NewRegistrar("test.registrar")
+	validEntities := []dosa.DomainObject{&RegistryTestValid{}}
+	invalidEntities := []dosa.DomainObject{&RegistryTestInvalid{}}
+
+	r, err := dosa.NewRegistrar("test", "team.service", validEntities...)
 	assert.NoError(t, err)
-	err = r.Register(&SinglePrimaryKeyNoParen{}, &SinglePrimaryKey{}, &MultiComponentPrimaryKey{})
-	assert.NoError(t, err)
-	err = r.Register(&EmptyPrimaryKey{})
+	_, err = dosa.NewRegistrar("test", "team.service", invalidEntities...)
 	assert.Error(t, err)
 
-	for _, e := range []DomainObject{&SinglePrimaryKeyNoParen{}, &SinglePrimaryKey{}, &MultiComponentPrimaryKey{}} {
-		expectedFQN := FQN(fmt.Sprintf("test.registrar.%s", strings.ToLower(reflect.TypeOf(e).Elem().Name())))
+	for _, e := range validEntities {
+		entityName := strings.ToLower(reflect.TypeOf(e).Elem().Name())
+		version := int32(1)
 
-		table, fqn, err := r.lookupByType(e)
+		re, err := r.Find(e)
 		assert.NoError(t, err)
-		assert.NotNil(t, table)
-		assert.Equal(t, expectedFQN, fqn)
+		re.SetVersion(version)
 
-		table, err = r.lookupByFQN(expectedFQN)
-		assert.NoError(t, err)
-		assert.NotNil(t, table)
+		info := re.EntityInfo()
+		assert.Equal(t, info.Ref.Scope, r.Scope())
+		assert.Equal(t, info.Ref.NamePrefix, r.NamePrefix())
+		assert.Equal(t, info.Ref.EntityName, entityName)
+		assert.Equal(t, info.Ref.Version, version)
 	}
 
-	_, err = r.lookupByFQN("test.registrar.nil")
+	_, err = r.Find(invalidEntities[0])
 	assert.Error(t, err)
-	_, _, err = r.lookupByType(&SinglePartitionKey{})
-	assert.Error(t, err)
+
+	var registered []*dosa.RegisteredEntity
+	registered, err = r.FindAll()
+	assert.NoError(t, err)
+	assert.Equal(t, len(registered), len(validEntities))
 }

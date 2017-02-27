@@ -160,7 +160,9 @@ func parsePrimaryKey(tableName, pkStr string) (*PrimaryKey, error) {
 	}, nil
 }
 
-// TableFromInstance creates a dosa.Table from an instance
+// TableFromInstance creates a dosa.Table from a dosa.DomainObject instance.
+// Note: this method is not cheap as it does a lot of reflection to build the
+// Table instances. It is recommended to only be called once and cache results.
 func TableFromInstance(object DomainObject) (*Table, error) {
 	elem := reflect.TypeOf(object).Elem()
 	name, err := NormalizeName(elem.Name())
