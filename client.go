@@ -162,28 +162,30 @@ func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainO
 		return fmt.Errorf("client is not initialized")
 	}
 
-	reg, err := c.registrar.Find(entity)
+	// lookup registered entity, registry will return error if registration
+	// is not found
+	re, err := c.registrar.Find(entity)
 	if err != nil {
 		return err
 	}
 
 	// translate entity field values to a map of primary key name/values pairs
 	// required to perform a read
-	fieldValues := reg.KeyFieldValues(entity)
+	fieldValues := re.KeyFieldValues(entity)
 
 	// build a list of column names from a list of entities field names
-	columnsToRead, err := reg.ColumnNames(fieldsToRead)
+	columnsToRead, err := re.ColumnNames(fieldsToRead)
 	if err != nil {
 		return err
 	}
 
-	results, err := c.connector.Read(ctx, reg.EntityInfo(), fieldValues, columnsToRead)
+	results, err := c.connector.Read(ctx, re.EntityInfo(), fieldValues, columnsToRead)
 	if err != nil {
 		return err
 	}
 
-	// populate entity with results
-	if err := reg.SetFieldValues(entity, results); err != nil {
+	// map results to entity fields
+	if err := re.SetFieldValues(entity, results); err != nil {
 		return err
 	}
 
@@ -207,19 +209,21 @@ func (c *client) Upsert(ctx context.Context, fieldsToUpdate []string, entity Dom
 		return fmt.Errorf("client is not initialized")
 	}
 
-	reg, err := c.registrar.Find(entity)
+	// lookup registered entity, registry will return error if registration
+	// is not found
+	re, err := c.registrar.Find(entity)
 	if err != nil {
 		return err
 	}
 
 	// translate entity field values to a map of primary key name/values pairs
 	// required to perform a read
-	fieldValues := reg.KeyFieldValues(entity)
+	fieldValues := re.KeyFieldValues(entity)
 	if err != nil {
 		return err
 	}
 
-	return c.connector.Upsert(ctx, reg.EntityInfo(), fieldValues)
+	return c.connector.Upsert(ctx, re.EntityInfo(), fieldValues)
 }
 
 // MultiUpsert updates several entities by primary key, The entities provided
