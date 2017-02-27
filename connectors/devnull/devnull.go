@@ -125,7 +125,7 @@ func (c *Connector) DropScope(ctx context.Context, scope string) error {
 	return nil
 }
 
-// ScopeExists checks whether a scope exists or not
+// ScopeExists is not implemented yet
 func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error) {
 	panic("not implemented")
 }

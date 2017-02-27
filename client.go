@@ -170,21 +170,21 @@ func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainO
 
 	// translate entity field values to a map of primary key name/values pairs
 	// required to perform a read
-	fieldValues, err := reg.FieldValues(entity)
+	fieldValues := reg.KeyFieldValues(entity)
+
+	// build a list of column names from a list of entities field names
+	columnsToRead, err := reg.ColumnNames(fieldsToRead)
 	if err != nil {
-		// this should never happen if client has been properly initialized
 		return err
 	}
 
-	// build a list of column names from a list of entities field names
-	columnsToRead := reg.ColumnNames(fieldsToRead)
 	results, err := c.connector.Read(ctx, reg.EntityInfo(), fieldValues, columnsToRead)
 	if err != nil {
 		return err
 	}
 
 	// populate entity with results
-	if err := reg.Populate(entity, results); err != nil {
+	if err := reg.SetFieldValues(entity, results); err != nil {
 		return err
 	}
 
@@ -216,7 +216,7 @@ func (c *client) Upsert(ctx context.Context, fieldsToUpdate []string, entity Dom
 
 	// translate entity field values to a map of primary key name/values pairs
 	// required to perform a read
-	fieldValues, err := reg.FieldValues(entity)
+	fieldValues := reg.KeyFieldValues(entity)
 	if err != nil {
 		return err
 	}
