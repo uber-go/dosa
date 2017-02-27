@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package connector_test
+package yarpc_test
 
 import (
 	"context"
@@ -30,7 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/connector"
+	"github.com/uber-go/dosa/connectors/yarpc"
 	drpc "github.com/uber/dosa-idl/.gen/dosa"
 	"github.com/uber/dosa-idl/.gen/dosa/dosatest"
 )
@@ -114,7 +114,7 @@ func TestYaRPCClient_Read(t *testing.T) {
 	}}, nil)
 
 	// Prepare the dosa client interface using the mocked RPC layer
-	sut := connector.YARPC{Client: mockedClient}
+	sut := yarpc.Connector{Client: mockedClient}
 
 	// perform the read
 	values, err := sut.Read(ctx, testEi, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))}, []string{"f1"})
@@ -159,14 +159,14 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	outFields := drpc.FieldValueMap{}
 	for _, item := range vals {
 		inFields[item.Name] = item.Value
-		outFields[item.Name] = &drpc.Value{ElemValue: connector.RawValueFromInterface(item.Value)}
+		outFields[item.Name] = &drpc.Value{ElemValue: yarpc.RawValueFromInterface(item.Value)}
 	}
 
 	mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields})
 
 	// create the YaRPCClient and give it the mocked RPC interface
 	// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
-	sut := connector.YARPC{Client: mockedClient}
+	sut := yarpc.Connector{Client: mockedClient}
 
 	// and run the test
 	err := sut.CreateIfNotExists(ctx, testEi, inFields)
@@ -204,7 +204,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 	outFields := map[string]*drpc.Value{}
 	for _, item := range vals {
 		inFields[item.Name] = item.Value
-		outFields[item.Name] = &drpc.Value{ElemValue: connector.RawValueFromInterface(item.Value)}
+		outFields[item.Name] = &drpc.Value{ElemValue: yarpc.RawValueFromInterface(item.Value)}
 	}
 
 	mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
@@ -214,7 +214,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 
 	// create the YaRPCClient and give it the mocked RPC interface
 	// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
-	sut := connector.YARPC{Client: mockedClient}
+	sut := yarpc.Connector{Client: mockedClient}
 
 	// and run the test, first with a nil FieldsToUpdate, then with a specific list
 	err := sut.Upsert(ctx, testEi, inFields)
@@ -238,7 +238,7 @@ func TestClient_CheckSchema(t *testing.T) {
 
 	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any()).Return(&drpc.CheckSchemaResponse{[]int32{}}, nil)
 
-	sut := connector.YARPC{Client: mockedClient}
+	sut := yarpc.Connector{Client: mockedClient}
 
 	ed, err := dosa.TableFromInstance(&TestDosaObject{})
 	assert.NoError(t, err)
@@ -252,7 +252,7 @@ func TestClient_UpsertSchema(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
-	sut := connector.YARPC{Client: mockedClient}
+	sut := yarpc.Connector{Client: mockedClient}
 
 	ctx := context.Background()
 
@@ -274,7 +274,7 @@ func TestPanic(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 	ctx := context.TODO()
 
-	sut := connector.YARPC{Client: mockedClient}
+	sut := yarpc.Connector{Client: mockedClient}
 
 	assert.Panics(t, func() {
 		sut.MultiRead(ctx, testEi, nil, nil)

@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package connector_test
+package noop_test
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/connector"
+	"github.com/uber-go/dosa/connectors/noop"
 )
 
 var (
@@ -47,12 +47,12 @@ func TestNoopClient(t *testing.T) {
 }
 
 func TestNoop_CreateIfNotExists(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	assert.NoError(t, c.CreateIfNotExists(context.TODO(), testInfo, testValues))
 }
 
 func TestNoop_Read(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	fieldsToRead := make([]string, 1)
 	val, err := c.Read(context.TODO(), testInfo, testValues, fieldsToRead)
 	assert.NotNil(t, val)
@@ -60,7 +60,7 @@ func TestNoop_Read(t *testing.T) {
 }
 
 func TestNoop_MultiRead(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	fieldsToRead := make([]string, 1)
 	assert.Panics(t, func() {
 		c.MultiRead(context.TODO(), testInfo, testMultiValues, fieldsToRead)
@@ -68,35 +68,35 @@ func TestNoop_MultiRead(t *testing.T) {
 }
 
 func TestNoop_Upsert(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	assert.Panics(t, func() {
 		c.Upsert(context.TODO(), testInfo, testValues)
 	})
 }
 
 func TestNoop_MultiUpsert(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	assert.Panics(t, func() {
 		c.MultiUpsert(context.TODO(), testInfo, testMultiValues)
 	})
 }
 
 func TestNoop_Remove(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	assert.Panics(t, func() {
 		c.Remove(context.TODO(), testInfo, testValues)
 	})
 }
 
 func TestNoop_MultiRemove(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	assert.Panics(t, func() {
 		c.MultiUpsert(context.TODO(), testInfo, testMultiValues)
 	})
 }
 
 func TestNoop_Range(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	conditions := make([]dosa.Condition, 1)
 	fieldsToRead := make([]string, 1)
 	assert.Panics(t, func() {
@@ -105,7 +105,7 @@ func TestNoop_Range(t *testing.T) {
 }
 
 func TestNoop_Search(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	fieldPairs := make([]string, 1)
 	fieldsToRead := make([]string, 1)
 	assert.Panics(t, func() {
@@ -114,7 +114,7 @@ func TestNoop_Search(t *testing.T) {
 }
 
 func TestNoop_Scan(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	fieldsToRead := make([]string, 1)
 	assert.Panics(t, func() {
 		c.Scan(context.TODO(), testInfo, fieldsToRead, "", 0)
@@ -122,7 +122,7 @@ func TestNoop_Scan(t *testing.T) {
 }
 
 func TestNoop_CheckSchema(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	defs := make([]*dosa.EntityDefinition, 4)
 	versions, err := c.CheckSchema(context.TODO(), "testScope", "testPrefix", defs)
 	assert.NotNil(t, versions)
@@ -130,7 +130,7 @@ func TestNoop_CheckSchema(t *testing.T) {
 }
 
 func TestNoop_UpsertSchema(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	defs := make([]*dosa.EntityDefinition, 4)
 	versions, err := c.UpsertSchema(context.TODO(), "testScope", "testPrefix", defs)
 	assert.NotNil(t, versions)
@@ -138,27 +138,27 @@ func TestNoop_UpsertSchema(t *testing.T) {
 }
 
 func TestNoop_CreateScope(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	assert.Panics(t, func() {
 		c.CreateScope(context.TODO(), "")
 	})
 }
 
 func TestNoop_TruncateScope(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	assert.Panics(t, func() {
 		c.TruncateScope(context.TODO(), "")
 	})
 }
 
 func TestNoop_DropScope(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	assert.Panics(t, func() {
 		c.DropScope(context.TODO(), "")
 	})
 }
 
 func TestNoop_Shutdown(t *testing.T) {
-	c := connector.Noop{}
+	c := noop.Connector{}
 	assert.Nil(t, c.Shutdown())
 }

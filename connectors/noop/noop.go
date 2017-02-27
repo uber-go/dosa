@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package connector
+package noop
 
 import (
 	"context"
@@ -26,16 +26,16 @@ import (
 	"github.com/uber-go/dosa"
 )
 
-// Noop is a connector implementation for testing
-type Noop struct{}
+// Connector is a connector implementation for testing
+type Connector struct{}
 
 // CreateIfNotExists always returns nil
-func (c *Noop) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	return nil
 }
 
 // Read always returns an empty resultset
-func (c *Noop) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
+func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
 	results := make(map[string]dosa.FieldValue)
 	results["id"] = int64(1)
 	results["name"] = "updated name"
@@ -44,47 +44,47 @@ func (c *Noop) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]
 }
 
 // MultiRead is not yet implemented
-func (c *Noop) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToRead []string) ([]dosa.FieldValuesOrError, error) {
+func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToRead []string) ([]dosa.FieldValuesOrError, error) {
 	panic("not implemented")
 }
 
 // Upsert is not yet implemented
-func (c *Noop) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	panic("not implemented")
 }
 
 // MultiUpsert is not yet implemented
-func (c *Noop) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue) ([]error, error) {
+func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue) ([]error, error) {
 	panic("not implemented")
 }
 
 // Remove is not yet implemented
-func (c *Noop) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	panic("not implemented")
 }
 
 // MultiRemove is not yet implemented
-func (c *Noop) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
+func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
 	panic("not implemented")
 }
 
 // Range is not yet implemented
-func (c *Noop) Range(ctx context.Context, ei *dosa.EntityInfo, conditions []dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, conditions []dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	panic("not implemented")
 }
 
 // Search is not yet implemented
-func (c *Noop) Search(ctx context.Context, ei *dosa.EntityInfo, FieldNameValuePair []string, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, FieldNameValuePair []string, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	panic("not implemented")
 }
 
 // Scan is not yet implemented
-func (c *Noop) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	panic("not implemented")
 }
 
 // CheckSchema always returns a slice of int32 values that match its index
-func (c *Noop) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) ([]int32, error) {
+func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) ([]int32, error) {
 	versions := make([]int32, len(ed))
 	for idx := range versions {
 		versions[idx] = int32(idx)
@@ -93,7 +93,7 @@ func (c *Noop) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*
 }
 
 // UpsertSchema always returns a slice of int32 values that match its index
-func (c *Noop) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) ([]int32, error) {
+func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) ([]int32, error) {
 	versions := make([]int32, len(ed))
 	for idx := range versions {
 		versions[idx] = int32(idx)
@@ -102,21 +102,21 @@ func (c *Noop) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []
 }
 
 // CreateScope is not implemented yet
-func (c *Noop) CreateScope(ctx context.Context, scope string) error {
+func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 	panic("not implemented")
 }
 
 // TruncateScope is not implemented yet
-func (c *Noop) TruncateScope(ctx context.Context, scope string) error {
+func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
 	panic("not implemented")
 }
 
 // DropScope is not implemented yet
-func (c *Noop) DropScope(ctx context.Context, scope string) error {
+func (c *Connector) DropScope(ctx context.Context, scope string) error {
 	panic("not implemented")
 }
 
 // Shutdown always returns nil
-func (c Noop) Shutdown() error {
+func (c *Connector) Shutdown() error {
 	return nil
 }
