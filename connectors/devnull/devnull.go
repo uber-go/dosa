@@ -126,7 +126,7 @@ func (c *Connector) DropScope(ctx context.Context, scope string) error {
 }
 
 // ScopeExists checks whether a scope exists or not
-func (c *Noop) ScopeExists(ctx context.Context, scope string) (bool, error) {
+func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error) {
 	panic("not implemented")
 }
 
