@@ -18,13 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package noop
+package devnull
 
 import (
 	"context"
 
+	"errors"
 	"github.com/uber-go/dosa"
 )
+
+var errNotFound = errors.New("Not found")
 
 // Connector is a connector implementation for testing
 type Connector struct{}
@@ -34,53 +37,62 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 	return nil
 }
 
-// Read always returns an empty resultset
+// Read always returns a not found error
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
-	results := make(map[string]dosa.FieldValue)
-	results["id"] = int64(1)
-	results["name"] = "updated name"
-	results["email"] = "updated@email.com"
-	return results, nil
+	return nil, errNotFound
 }
 
-// MultiRead is not yet implemented
+// MultiRead returns a set of not found errors for each key you specify
 func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToRead []string) ([]dosa.FieldValuesOrError, error) {
-	panic("not implemented")
+	errors := make([]dosa.FieldValuesOrError, len(values))
+	for inx := range values {
+		errors[inx] = dosa.FieldValuesOrError{Error: errNotFound}
+	}
+	return errors, nil
 }
 
-// Upsert is not yet implemented
+// Upsert throws away the data you upsert
 func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	panic("not implemented")
+	return nil
 }
 
-// MultiUpsert is not yet implemented
+// makeErrorSlice is a handy function to make a slice of errors or nil errors
+func makeErrorSlice(len int, e error) []error {
+	errors := make([]error, len)
+	for inx := 0; inx < len; inx = inx + 1 {
+		errors[inx] = e
+	}
+	return errors
+}
+
+// MultiUpsert throws away all the data you upsert, returning a set of no errors
 func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue) ([]error, error) {
-	panic("not implemented")
+	return makeErrorSlice(len(values), nil), nil
 }
 
-// Remove is not yet implemented
+// Remove always returns a not found error
 func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	panic("not implemented")
+	return errNotFound
 }
 
-// MultiRemove is not yet implemented
+// MultiRemove returns a not found error for each value
 func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
-	panic("not implemented")
+	return makeErrorSlice(len(multiValues), errNotFound), nil
 }
 
 // Range is not yet implemented
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, conditions []dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	panic("not implemented")
+	return nil, "", errNotFound
 }
 
 // Search is not yet implemented
 func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, FieldNameValuePair []string, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	panic("not implemented")
+	return nil, "", errNotFound
 }
 
 // Scan is not yet implemented
 func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	panic("not implemented")
+	return nil, "", errNotFound
 }
 
 // CheckSchema always returns a slice of int32 values that match its index
@@ -94,29 +106,25 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 
 // UpsertSchema always returns a slice of int32 values that match its index
 func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) ([]int32, error) {
-	versions := make([]int32, len(ed))
-	for idx := range versions {
-		versions[idx] = int32(idx)
-	}
-	return versions, nil
+	return c.CheckSchema(ctx, scope, namePrefix, ed)
 }
 
-// CreateScope is not implemented yet
+// CreateScope returns success
 func (c *Connector) CreateScope(ctx context.Context, scope string) error {
-	panic("not implemented")
+	return nil
 }
 
-// TruncateScope is not implemented yet
+// TruncateScope returns success
 func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
-	panic("not implemented")
+	return nil
 }
 
-// DropScope is not implemented yet
+// DropScope returns success
 func (c *Connector) DropScope(ctx context.Context, scope string) error {
-	panic("not implemented")
+	return nil
 }
 
-// Shutdown always returns nil
+// Shutdown does nothing
 func (c *Connector) Shutdown() error {
 	return nil
 }
