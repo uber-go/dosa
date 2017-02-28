@@ -207,3 +207,64 @@ func (e *EntityDefinition) KeySet() map[string]struct{} {
 	}
 	return m
 }
+
+// IsCompatible checks if the entitydefinition is backward compatible with the other one.
+func (e *EntityDefinition) IsCompatible(aed *EntityDefinition) error {
+	// entity name should be the same
+	if e.Name != aed.Name {
+		return errors.Errorf("the entity name is not matched: %s vs %s", e.Name, aed.Name)
+	}
+
+	// primary key should be exactly same
+	pks := e.Key.PartitionKeys
+	apks := aed.Key.PartitionKeys
+	if len(pks) != len(apks) {
+		return errors.Errorf("the size of the partition key is not matched: %d vs %d", len(pks), len(apks))
+	}
+
+	for i, pk := range pks {
+		apk := apks[i]
+		if pk != apk {
+			return errors.Errorf("the partition key at position %d is not matched: %s vs %s", i, pk, apk)
+		}
+	}
+
+	cks := e.Key.ClusteringKeys
+	acks := aed.Key.ClusteringKeys
+	if len(cks) != len(acks) {
+		return errors.Errorf("the size of the clustering key is not matched: %d vs %d", len(pks), len(apks))
+	}
+
+	for i, ck := range cks {
+		ack := acks[i]
+		if ck.Name != ack.Name {
+			return errors.Errorf("the clustering key at position %d name is not matched: %s vs %s", i, ck.Name, ack.Name)
+		}
+
+		if ck.Descending != ack.Descending {
+			return errors.Errorf("the clustering key %s at position %d order is not matched: %t vs %t", ck.Name, i, ck.Descending, ack.Descending)
+		}
+	}
+
+	// only allow to add new columns
+	cols := e.Columns
+	acols := aed.Columns
+	if len(cols) < len(acols) {
+		return errors.Errorf("the size of the columns of entity %s is less than entity %s: %d vs %d:", aed.Name, e.Name, len(cols), len(acols))
+	}
+
+	colsMap := e.ColumnTypes()
+	acolsMap := aed.ColumnTypes()
+
+	for name, acol := range acolsMap {
+		col, ok := colsMap[name]
+		if !ok {
+			return errors.Errorf("the column %s in entity %s can't find in entity %s", name, e.Name, aed.Name)
+		}
+		if acol != col {
+			return errors.Errorf("the type for column %s is not matched: %v vs %v", name, acol, col)
+		}
+	}
+
+	return nil
+}
