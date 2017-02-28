@@ -78,6 +78,19 @@ var testEntityRange = &dosa.EntityDefinition{
 	},
 }
 
+var columnToFieldMap = map[string]string{
+	"a": "FieldA",
+	"b": "FieldB",
+	"c": "FieldC",
+	"d": "FieldD",
+	"e": "FieldE",
+	"f": "FieldF",
+}
+
+var simpleTransformer = func(x string) string {
+	return columnToFieldMap[x]
+}
+
 func TestEnsureValidRangeConditions(t *testing.T) {
 	assert.NoError(t, testEntityRange.EnsureValid()) // sanity check
 
@@ -140,9 +153,10 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 	}
 
 	type invalidCase struct {
-		conds  map[string][]dosa.Condition
-		desc   string
-		errMsg string
+		conds    map[string][]dosa.Condition
+		desc     string
+		errMsg   string
+		errField string
 	}
 
 	invalidCases := []invalidCase{
@@ -152,40 +166,45 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 				"b": {{dosa.Eq, int64(100)}},
 				"f": {{dosa.Eq, []byte{1, 2, 3}}},
 			},
-			errMsg: "cannot enforce condition on non-key column",
-			desc:   "conditions on non-key column",
+			errMsg:   "cannot enforce condition on non-key column",
+			desc:     "conditions on non-key column",
+			errField: columnToFieldMap["f"],
 		},
 		{
 			conds: map[string][]dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"c": {{dosa.Gt, int32(100)}},
 			},
-			errMsg: "missing Eq condition on partition keys",
-			desc:   "missing partition key condition",
+			errMsg:   "missing Eq condition on partition keys",
+			desc:     "missing partition key condition",
+			errField: columnToFieldMap["b"],
 		},
 		{
 			conds: map[string][]dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Gt, int64(100)}},
 			},
-			errMsg: "invalid conditions for partition key",
-			desc:   "Gt condition on partition key",
+			errMsg:   "invalid conditions for partition key",
+			desc:     "Gt condition on partition key",
+			errField: columnToFieldMap["b"],
 		},
 		{
 			conds: map[string][]dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
-				"b": {{dosa.Eq, int64(100)}, {dosa.GtOrEq, int64(100)}},
+				"b": {{dosa.Eq, int64(100)}, {dosa.Eq, int64(200)}},
 			},
-			errMsg: "invalid conditions for partition key",
-			desc:   "more than one conditions on partition key",
+			errMsg:   "invalid conditions for partition key",
+			desc:     "more than one conditions on partition key",
+			errField: columnToFieldMap["b"],
 		},
 		{
 			conds: map[string][]dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, "100"}},
 			},
-			errMsg: "does not have expected type",
-			desc:   "wrong value type for partition key",
+			errMsg:   "does not have expected type",
+			desc:     "wrong value type for partition key",
+			errField: columnToFieldMap["b"],
 		},
 		{
 			conds: map[string][]dosa.Condition{
@@ -193,8 +212,9 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Eq, "100"}},
 			},
-			errMsg: "invalid value for",
-			desc:   "wrong value type for clustering key",
+			errMsg:   "invalid value for",
+			desc:     "wrong value type for clustering key",
+			errField: columnToFieldMap["c"],
 		},
 		{
 			conds: map[string][]dosa.Condition{
@@ -202,8 +222,9 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Lt, int32(100)}, {dosa.Gt, int32(200)}},
 			},
-			errMsg: "invalid or unsupported conditions for clustering key",
-			desc:   "invalid range condition on clustering key",
+			errMsg:   "invalid or unsupported conditions for clustering key",
+			desc:     "invalid range condition on clustering key",
+			errField: columnToFieldMap["c"],
 		},
 		{
 			conds: map[string][]dosa.Condition{
@@ -212,8 +233,9 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 				"c": {{dosa.Lt, int32(100)}, {dosa.Gt, int32(200)}},
 				"d": {{dosa.GtOrEq, time.Now()}},
 			},
-			errMsg: "exact one Eq condition can be applied except for the last",
-			desc:   "applying conditions other than eq to clustering keys that's not the last retrained",
+			errMsg:   "exact one Eq condition can be applied except for the last",
+			desc:     "applying conditions other than eq to clustering keys that's not the last retrained",
+			errField: columnToFieldMap["c"],
 		},
 		{
 			conds: map[string][]dosa.Condition{
@@ -226,6 +248,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			errMsg: "exact one Eq condition can be applied except for the last",
 			desc: "applying conditions other than eq to clustering keys that's not the last retrained, " +
 				"different last retained clusterin key",
+			errField: columnToFieldMap["c"],
 		},
 		{
 			conds: map[string][]dosa.Condition{
@@ -234,19 +257,21 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 				"c": {{dosa.Eq, int32(100)}},
 				"e": {{dosa.Eq, "aaa"}},
 			},
-			errMsg: "conditions must be applied consecutively on clustering keys",
-			desc:   "applying conditions non-consecutively to clustering keys",
+			errMsg:   "conditions must be applied consecutively on clustering keys",
+			desc:     "applying conditions non-consecutively to clustering keys",
+			errField: columnToFieldMap["e"],
 		},
 	}
 
 	for _, c := range validCases {
-		assert.NoError(t, dosa.EnsureValidRangeConditions(testEntityRange, c.conds), c.desc)
+		assert.NoError(t, dosa.EnsureValidRangeConditions(testEntityRange, c.conds, simpleTransformer), c.desc)
 	}
 
 	for _, c := range invalidCases {
-		err := dosa.EnsureValidRangeConditions(testEntityRange, c.conds)
+		err := dosa.EnsureValidRangeConditions(testEntityRange, c.conds, simpleTransformer)
 		if assert.Error(t, err, c.desc) {
 			assert.Contains(t, err.Error(), c.errMsg, c.desc)
+			assert.Contains(t, err.Error(), c.errField, c.desc)
 		}
 	}
 }
