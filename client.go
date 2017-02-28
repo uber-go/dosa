@@ -217,10 +217,17 @@ func (c *client) Upsert(ctx context.Context, fieldsToUpdate []string, entity Dom
 	}
 
 	// translate entity field values to a map of primary key name/values pairs
-	// required to perform a read
-	fieldValues := re.KeyFieldValues(entity)
+	keyFieldValues := re.KeyFieldValues(entity)
+
+	// translate remaining entity fields values to map of column name/value pairs
+	fieldValues, err := re.OnlyFieldValues(entity, fieldsToUpdate)
 	if err != nil {
 		return err
+	}
+
+	// merge key and remaining values
+	for k, v := range keyFieldValues {
+		fieldValues[k] = v
 	}
 
 	return c.connector.Upsert(ctx, re.EntityInfo(), fieldValues)

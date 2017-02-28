@@ -115,6 +115,32 @@ func (e *RegisteredEntity) KeyFieldValues(entity DomainObject) map[string]FieldV
 	return fieldValues
 }
 
+// OnlyFieldValues is a helper for generating a map of field values for a
+// a subset of fields. If a field name provided does not map to an entity
+// field, an error will be returned.
+func (e *RegisteredEntity) OnlyFieldValues(entity DomainObject, fieldNames []string) (map[string]FieldValue, error) {
+	// empty should return error
+	if len(fieldNames) == 0 {
+		return nil, fmt.Errorf("Cannot provide empty list to OnlyFieldValues")
+	}
+	v := reflect.ValueOf(entity).Elem()
+	fieldValues := make(map[string]FieldValue)
+
+	for _, fieldName := range fieldNames {
+		columnName, ok := e.table.FieldToCol[fieldName]
+		if !ok {
+			return nil, fmt.Errorf("%s is not a valid field for %s", fieldName, e.table.StructName)
+		}
+		value := v.FieldByName(fieldName)
+		if !value.IsValid() {
+			// this should never happen
+			panic("Field " + fieldName + " is not a valid field for " + e.table.StructName)
+		}
+		fieldValues[columnName] = value.Interface()
+	}
+	return fieldValues, nil
+}
+
 // ColumnNames translates field names to column names.
 func (e *RegisteredEntity) ColumnNames(fieldNames []string) ([]string, error) {
 	// empty should return error

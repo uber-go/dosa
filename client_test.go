@@ -123,12 +123,14 @@ func TestClient_Initialize(t *testing.T) {
 
 func TestClient_Read(t *testing.T) {
 	ctx := context.TODO()
+	scope := "test"
+	namePrefix := "team.service"
 	ctes1 := []dosa.DomainObject{cte1}
 	ctes2 := []dosa.DomainObject{cte1, cte2}
-	reg1, _ := dosa.NewRegistrar("test", "team.service", ctes1...)
-	reg2, _ := dosa.NewRegistrar("test", "team.service", ctes2...)
+	reg1, _ := dosa.NewRegistrar(scope, namePrefix, ctes1...)
+	reg2, _ := dosa.NewRegistrar(scope, namePrefix, ctes2...)
 	conn := &noop.Connector{}
-	fieldsToRead := []string{"ID", "Name", "Email"}
+	fieldsToRead := []string{"ID", "Email"}
 	results := map[string]dosa.FieldValue{
 		"id":    int64(2),
 		"name":  "bar",
@@ -149,11 +151,16 @@ func TestClient_Read(t *testing.T) {
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
 	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
-	mockConn.EXPECT().Read(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(results, nil).AnyTimes()
+	mockConn.EXPECT().Read(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ *dosa.EntityInfo, columnValues map[string]dosa.FieldValue, columnsToRead []string) {
+			fmt.Println("columnValues")
+			fmt.Println(columnValues)
+			assert.Equal(t, columnValues["id"], cte1.ID)
+			assert.Equal(t, columnsToRead, []string{"id", "email"})
 
+		}).Return(results, nil).MinTimes(1)
 	c3, _ := dosa.NewClient(reg2, mockConn)
 	assert.NoError(t, c3.Initialize(ctx))
-
 	assert.NoError(t, c3.Read(ctx, fieldsToRead, cte1))
 	assert.Equal(t, cte1.ID, results["id"])
 	assert.Equal(t, cte1.Name, results["name"])
@@ -168,6 +175,7 @@ func TestClient_Upsert(t *testing.T) {
 	reg2, _ := dosa.NewRegistrar("test", "team.service", ctes2...)
 	noop := &noop.Connector{}
 	fieldsToUpdate := []string{"Email"}
+	updatedEmail := "bar@email.com"
 
 	// uninitialized
 	c1, _ := dosa.NewClient(reg1, noop)
@@ -183,8 +191,15 @@ func TestClient_Upsert(t *testing.T) {
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
 	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
-	mockConn.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockConn.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ *dosa.EntityInfo, columnValues map[string]dosa.FieldValue) {
+			assert.Equal(t, columnValues["id"], cte1.ID)
+			assert.Equal(t, columnValues["email"], cte1.Email)
+			cte1.Email = updatedEmail
+		}).
+		Return(nil).MinTimes(1)
 	c3, _ := dosa.NewClient(reg2, mockConn)
 	assert.NoError(t, c3.Initialize(ctx))
 	assert.NoError(t, c3.Upsert(ctx, fieldsToUpdate, cte1))
+	assert.Equal(t, cte1.Email, updatedEmail)
 }
