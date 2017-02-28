@@ -88,11 +88,12 @@ func TestToAvroSchema(t *testing.T) {
 	ed := createEntityDefinition()
 	fqn, err := dosa.ToFQN("xxx.tt.yy")
 	assert.NoError(t, err)
-	av, err := ToAvro(fqn, ed)
+	av, err := ToAvro(fqn, ed, 0)
 	assert.NoError(t, err)
-	ed1, err := FromAvro(string(av))
+	ed1, version, err := FromAvro(string(av))
 	assert.NoError(t, err)
 	assert.Equal(t, ed, ed1)
+	assert.Equal(t, version, 0)
 }
 
 func TestDecodeFailure(t *testing.T) {
@@ -110,6 +111,7 @@ func TestDecodeFailure(t *testing.T) {
 					{"dosaType":"String","name":"stringcol","type":"string"}
 				],
 				"name":"test",
+				"schemaVersion": "0",
 				"partitionKeys":{},
 				"type":"record"
 			}`,
@@ -125,10 +127,26 @@ func TestDecodeFailure(t *testing.T) {
 					{"dosaType":"String","name":"stringcol","type":"string"}]
 		 		,
 				"name":"test",
+				"schemaVersion": "0",
 				"partitionKeys":[{},"uuidcol"],
 				"type":"record"
 			}`,
 			Err: errors.New("failed to parse partition keys"),
+		},
+		{
+			Schema: `{
+				"clusteringKeys":[
+					{"Name":"doublecol","Descending":false},
+					{"Name":"boolcol","Descending":true}
+				],
+				"fields":[
+					{"dosaType":"String","name":"stringcol","type":"string"}]
+		 		,
+				"name":"test",
+				"partitionKeys":["uuidcol"],
+				"type":"record"
+			}`,
+			Err: errors.New("version"),
 		},
 		{
 			Schema: `{
@@ -137,6 +155,7 @@ func TestDecodeFailure(t *testing.T) {
 					{"dosaType":"String","name":"stringcol","type":"string"}]
 		 		,
 				"name":"test",
+				"schemaVersion": "0",
 				"partitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
@@ -151,6 +170,7 @@ func TestDecodeFailure(t *testing.T) {
 					{"dosaType":"String","name":"stringcol","type":"string"}]
 		 		,
 				"name":"test",
+				"schemaVersion":"1",
 				"partitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
@@ -165,6 +185,7 @@ func TestDecodeFailure(t *testing.T) {
 					{"dosaType":"String","name":"stringcol","type":"string"}]
 		 		,
 				"name":"test",
+				"schemaVersion": "0",
 				"partitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
@@ -179,6 +200,7 @@ func TestDecodeFailure(t *testing.T) {
 					{"dosaType":"String","name":"stringcol","type":"string"}]
 		 		,
 				"name":"test",
+				"schemaVersion": "0",
 				"partitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
@@ -193,6 +215,7 @@ func TestDecodeFailure(t *testing.T) {
 					{"dosaType":"String","name":"stringcol","type":"string"}]
 		 		,
 				"name":"test",
+				"schemaVersion": "0",
 				"p":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
@@ -208,6 +231,7 @@ func TestDecodeFailure(t *testing.T) {
 					{"d":"String","name":"stringcol","type":"string"}
 		 		],
 				"name":"test",
+				"schemaVersion": "0",
 				"partitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
@@ -223,6 +247,7 @@ func TestDecodeFailure(t *testing.T) {
 					{"d":{},"name":"stringcol","type":"string"}
 		 		],
 				"name":"test",
+				"schemaVersion": "0",
 				"partitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
@@ -238,6 +263,7 @@ func TestDecodeFailure(t *testing.T) {
 					{"d":1,"name":"stringcol","type":"string"}
 		 		],
 				"name":"test",
+				"schemaVersion": "0",
 				"partitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
@@ -245,7 +271,7 @@ func TestDecodeFailure(t *testing.T) {
 		},
 	}
 	for _, d := range data {
-		_, err := FromAvro(d.Schema)
+		_, _, err := FromAvro(d.Schema)
 		assert.Contains(t, err.Error(), d.Err.Error())
 	}
 }

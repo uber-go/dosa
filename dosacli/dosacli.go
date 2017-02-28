@@ -131,7 +131,7 @@ func main() {
 		case "uql":
 			fmt.Println(uql.ToUQL(&entity.EntityDefinition))
 		case "avro":
-			fmt.Println(avro.ToAvro("TODO", &entity.EntityDefinition))
+			fmt.Println(avro.ToAvro("TODO", &entity.EntityDefinition, 1))
 		}
 	}
 }
