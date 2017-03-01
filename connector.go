@@ -72,7 +72,7 @@ type FieldValue interface{}
 // FieldValuesOrError either holds a slice of field values for a row, or an error
 type FieldValuesOrError struct {
 	Values map[string]FieldValue
-	Error error
+	Error  error
 }
 
 // Connector is the interface that must be implemented for a backend service

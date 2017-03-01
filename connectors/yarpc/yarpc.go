@@ -120,8 +120,8 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 }
 
 // MultiRead is not yet implemented
-	panic("not implemented")
 func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, fieldsToRead []string) ([]*dosa.FieldValuesOrError, error) {
+	panic("not implemented")
 }
 
 // MultiUpsert is not yet implemented
