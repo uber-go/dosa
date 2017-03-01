@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/connectors/noop"
+	"github.com/uber-go/dosa/connectors/devnull"
 	"github.com/uber-go/dosa/mocks"
 )
 
@@ -63,8 +63,8 @@ func ExampleNewClient() {
 		panic("dosa.NewRegister returned an error")
 	}
 
-	// use a noop connector for example purposes
-	conn := &noop.Connector{}
+	// use a devnull connector for example purposes
+	conn := &devnull.Connector{}
 
 	// initialize a pseudo-connected client
 	client, err := dosa.NewClient(reg, conn)
@@ -85,8 +85,8 @@ func TestNewClient(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, reg)
 
-	// use a noop connector for test test test purposes
-	conn := &noop.Connector{}
+	// use a devnull connector for test test test purposes
+	conn := &devnull.Connector{}
 
 	// initialize a pseudo-connected client
 	client, err := dosa.NewClient(reg, conn)
@@ -101,7 +101,7 @@ func TestClient_Initialize(t *testing.T) {
 	ctx := context.TODO()
 	emptyReg, _ := dosa.NewRegistrar("test", "team.service", []dosa.DomainObject{}...)
 	reg, _ := dosa.NewRegistrar("test", "team.service", []dosa.DomainObject{cte1}...)
-	conn := &noop.Connector{}
+	conn := &devnull.Connector{}
 
 	// find error
 	c1, _ := dosa.NewClient(emptyReg, conn)
@@ -129,7 +129,7 @@ func TestClient_Read(t *testing.T) {
 	ctes2 := []dosa.DomainObject{cte1, cte2}
 	reg1, _ := dosa.NewRegistrar(scope, namePrefix, ctes1...)
 	reg2, _ := dosa.NewRegistrar(scope, namePrefix, ctes2...)
-	conn := &noop.Connector{}
+	conn := &devnull.Connector{}
 	fieldsToRead := []string{"ID", "Email"}
 	results := map[string]dosa.FieldValue{
 		"id":    int64(2),
@@ -173,16 +173,16 @@ func TestClient_Upsert(t *testing.T) {
 	ctes2 := []dosa.DomainObject{cte1, cte2}
 	reg1, _ := dosa.NewRegistrar("test", "team.service", ctes1...)
 	reg2, _ := dosa.NewRegistrar("test", "team.service", ctes2...)
-	noop := &noop.Connector{}
+	conn := &devnull.Connector{}
 	fieldsToUpdate := []string{"Email"}
 	updatedEmail := "bar@email.com"
 
 	// uninitialized
-	c1, _ := dosa.NewClient(reg1, noop)
+	c1, _ := dosa.NewClient(reg1, conn)
 	assert.Error(t, c1.Upsert(ctx, fieldsToUpdate, cte1))
 
 	// find error
-	c2, _ := dosa.NewClient(reg1, noop)
+	c2, _ := dosa.NewClient(reg1, conn)
 	c2.Initialize(ctx)
 	assert.Error(t, c2.Read(ctx, fieldsToUpdate, cte2))
 

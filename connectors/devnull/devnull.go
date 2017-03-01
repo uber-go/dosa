@@ -81,13 +81,13 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiV
 	return makeErrorSlice(len(multiValues), errNotFound), nil
 }
 
-// Range is not yet implemented
-func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, conditions []dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+// Range is not yet implementedS
+func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	return nil, "", errNotFound
 }
 
 // Search is not yet implemented
-func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, FieldNameValuePair []string, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	return nil, "", errNotFound
 }
 

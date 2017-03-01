@@ -10,7 +10,7 @@ import (
 	"github.com/uber-go/dosa"
 )
 
-// Mock of dosa.FieldValue interface
+// Mock of FieldValue interface
 type MockFieldValue struct {
 	ctrl     *gomock.Controller
 	recorder *_MockFieldValueRecorder
@@ -126,8 +126,8 @@ func (_mr *_MockConnectorRecorder) MultiRemove(arg0, arg1, arg2 interface{}) *go
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "MultiRemove", arg0, arg1, arg2)
 }
 
-func (_m *MockConnector) Range(ctx context.Context, ei *dosa.EntityInfo, conditions []dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	ret := _m.ctrl.Call(_m, "Range", ctx, ei, conditions, fieldsToRead, token, limit)
+func (_m *MockConnector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+	ret := _m.ctrl.Call(_m, "Range", ctx, ei, columnConditions, fieldsToRead, token, limit)
 	ret0, _ := ret[0].([]map[string]dosa.FieldValue)
 	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].(error)
@@ -138,8 +138,8 @@ func (_mr *_MockConnectorRecorder) Range(arg0, arg1, arg2, arg3, arg4, arg5 inte
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Range", arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
-func (_m *MockConnector) Search(ctx context.Context, ei *dosa.EntityInfo, FieldNameValuePair []string, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	ret := _m.ctrl.Call(_m, "Search", ctx, ei, FieldNameValuePair, fieldsToRead, token, limit)
+func (_m *MockConnector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+	ret := _m.ctrl.Call(_m, "Search", ctx, ei, fieldPairs, fieldsToRead, token, limit)
 	ret0, _ := ret[0].([]map[string]dosa.FieldValue)
 	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].(error)

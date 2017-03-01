@@ -145,7 +145,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 }
 
 // Search is not yet implemented
-func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, FieldNameValuePair []string, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	panic("not implemented")
 }
 
