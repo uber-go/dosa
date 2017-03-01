@@ -204,3 +204,106 @@ func getValidEntityDefinition() *dosa.EntityDefinition {
 		},
 	}
 }
+
+func TestEntityDefinitionIsCompatible(t *testing.T) {
+	validEd := getValidEntityDefinition()
+	// entity name not match
+	errEd := getValidEntityDefinition()
+	errEd.Name = errEd.Name + "error"
+	err := validEd.IsCompatible(errEd)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "entity name")
+
+	// partition key's size doesn't match
+	// less
+	errEd = getValidEntityDefinition()
+	errEd.Key.PartitionKeys = []string{}
+	err = validEd.IsCompatible(errEd)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "partition")
+
+	// more
+	errEd = getValidEntityDefinition()
+	errEd.Key.PartitionKeys = append(errEd.Key.PartitionKeys, "bar")
+	err = validEd.IsCompatible(errEd)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "partition")
+
+	// not same partition key
+	errEd = getValidEntityDefinition()
+	errEd.Key.PartitionKeys = []string{"bar"}
+	err = validEd.IsCompatible(errEd)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "partition")
+
+	// clustering key's size doesn't match
+	// less
+	errEd = getValidEntityDefinition()
+	errEd.Key.ClusteringKeys = nil
+	err = validEd.IsCompatible(errEd)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "clustering")
+
+	// more
+	errEd = getValidEntityDefinition()
+	errEd.Key.ClusteringKeys = append(errEd.Key.ClusteringKeys, &dosa.ClusteringKey{Name: "qux", Descending: false})
+	err = validEd.IsCompatible(errEd)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "clustering")
+
+	// not same clustering key
+	// name not match
+	errEd = getValidEntityDefinition()
+	errEd.Key.ClusteringKeys[0].Name = "qux"
+	err = validEd.IsCompatible(errEd)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "clustering")
+
+	// decsending not match
+	errEd = getValidEntityDefinition()
+	errEd.Key.ClusteringKeys[0].Descending = !errEd.Key.ClusteringKeys[0].Descending
+	err = validEd.IsCompatible(errEd)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "clustering")
+
+	// column size is less
+	errEd = getValidEntityDefinition()
+	errEd.Columns = append(errEd.Columns, &dosa.ColumnDefinition{Name: "abc", Type: dosa.Bool})
+	err = validEd.IsCompatible(errEd)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "column")
+
+	// column not match
+	// name not match
+	errEd = getValidEntityDefinition()
+	errEd.Columns[0].Name = errEd.Columns[0].Name + "error"
+	err = validEd.IsCompatible(errEd)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "column")
+
+	// type not match
+	errEd = getValidEntityDefinition()
+	errEd.Columns[0].Type = dosa.Invalid
+	err = validEd.IsCompatible(errEd)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "type")
+
+	// same entity
+	// name not match
+	aEd := getValidEntityDefinition()
+	err = validEd.IsCompatible(aEd)
+	assert.NoError(t, err)
+	// reverse
+	err = aEd.IsCompatible(validEd)
+	assert.NoError(t, err)
+
+	// add new column
+	aEd = getValidEntityDefinition()
+	aEd.Columns = append(aEd.Columns, &dosa.ColumnDefinition{Name: "col", Type: dosa.Bool})
+	err = aEd.IsCompatible(validEd)
+	assert.NoError(t, err)
+
+	// reverse
+	err = validEd.IsCompatible(aEd)
+	assert.Error(t, err)
+}

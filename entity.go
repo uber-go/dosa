@@ -24,6 +24,8 @@ import (
 	"bytes"
 	"strings"
 
+	"reflect"
+
 	"github.com/pkg/errors"
 )
 
@@ -206,4 +208,51 @@ func (e *EntityDefinition) KeySet() map[string]struct{} {
 		m[p] = struct{}{}
 	}
 	return m
+}
+
+// IsCompatible checks if two entity definitions are compatible or not.
+// e1.g. edA.IsCompatible(edB) return true, means edA is compatibile with edB.
+// edA is the one to compare and edB is the one to be compared.
+func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
+	// for better naming
+	e1 := e
+
+	// entity name should be the same
+	if e1.Name != e2.Name {
+		return errors.Errorf("entity name mismatch: (%s vs %s)", e1.Name, e2.Name)
+	}
+
+	// primary key should be exactly same
+	pks1 := e1.Key.PartitionKeys
+	pks2 := e2.Key.PartitionKeys
+
+	b := reflect.DeepEqual(pks1, pks2)
+	if !b {
+		return errors.Errorf("partition key mismatch: (%v vs %v)", pks1, pks2)
+	}
+
+	cks1 := e1.Key.ClusteringKeys
+	cks2 := e2.Key.ClusteringKeys
+	b = reflect.DeepEqual(cks1, cks2)
+	if !b {
+		return errors.Errorf("clustering key mismatch: (%v vs %v)", cks1, cks2)
+	}
+
+	// only allow to add new columns
+	colsMap1 := e1.ColumnTypes()
+	colsMap2 := e2.ColumnTypes()
+
+	for name, colType2 := range colsMap2 {
+		colType1, ok := colsMap1[name]
+		if !ok {
+			return errors.Errorf("the column %s in entity %s but not in entity %s", name, e1.Name, e2.Name)
+		}
+		if colType1 != colType2 {
+			return errors.Errorf("the type for column %s mismatch: (%v vs %v)", name, colType1, colType2)
+		}
+	}
+
+	// TODO Handle tags comparison in the future
+
+	return nil
 }
