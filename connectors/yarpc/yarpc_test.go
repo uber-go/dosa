@@ -309,7 +309,7 @@ func TestPanic(t *testing.T) {
 	})
 
 	assert.Panics(t, func() {
-		sut.Search(ctx, testEi, nil, nil, "", 0)
+		sut.Search(ctx, testEi, dosa.FieldNameValuePair{}, nil, "", 0)
 	})
 
 	assert.Panics(t, func() {
