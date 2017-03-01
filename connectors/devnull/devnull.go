@@ -44,10 +44,10 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[st
 }
 
 // MultiRead returns a set of not found errors for each key you specify
-func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToRead []string) ([]dosa.FieldValuesOrError, error) {
-	errors := make([]dosa.FieldValuesOrError, len(values))
+func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToRead []string) ([]*dosa.FieldValuesOrError, error) {
+	errors := make([]*dosa.FieldValuesOrError, len(values))
 	for inx := range values {
-		errors[inx] = dosa.FieldValuesOrError{Error: errNotFound}
+		errors[inx] = &dosa.FieldValuesOrError{Error: errNotFound}
 	}
 	return errors, nil
 }
