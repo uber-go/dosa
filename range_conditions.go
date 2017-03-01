@@ -170,8 +170,9 @@ func ensureValidConditions(t Type, conditions []Condition) error {
 		if compare(t, v0, v1) <= 0 {
 			return errors.Errorf("invalid range: %v", conditions)
 		}
+		// v1 <= fv <= v0   ===> v0 >= v1
 	case op0 == LtOrEq && op1 == GtOrEq:
-		if compare(t, v0, v1) != 0 {
+		if compare(t, v0, v1) < 0 {
 			return errors.Errorf("invalid range: %v", conditions)
 		}
 	default: // invalid combination of operators

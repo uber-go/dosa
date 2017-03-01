@@ -148,7 +148,37 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 				"d": {{dosa.Eq, time.Unix(100, 0)}},
 				"e": {{dosa.Gt, "aaa"}, {dosa.Lt, "zzz"}},
 			},
-			desc: "close range condition on third/last clustering key",
+			desc: "close range condition on third/last clustering key with < and >",
+		},
+		{
+			conds: map[string][]dosa.Condition{
+				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
+				"b": {{dosa.Eq, int64(100)}},
+				"c": {{dosa.Eq, int32(99)}},
+				"d": {{dosa.Eq, time.Unix(100, 0)}},
+				"e": {{dosa.GtOrEq, "aaa"}, {dosa.LtOrEq, "zzz"}},
+			},
+			desc: "close range condition on third/last clustering key with <= and >=",
+		},
+		{
+			conds: map[string][]dosa.Condition{
+				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
+				"b": {{dosa.Eq, int64(100)}},
+				"c": {{dosa.Eq, int32(99)}},
+				"d": {{dosa.Eq, time.Unix(100, 0)}},
+				"e": {{dosa.GtOrEq, "aaa"}, {dosa.Lt, "zzz"}},
+			},
+			desc: "close range condition on third/last clustering key with < and >=",
+		},
+		{
+			conds: map[string][]dosa.Condition{
+				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
+				"b": {{dosa.Eq, int64(100)}},
+				"c": {{dosa.Eq, int32(99)}},
+				"d": {{dosa.Eq, time.Unix(100, 0)}},
+				"e": {{dosa.Gt, "aaa"}, {dosa.LtOrEq, "zzz"}},
+			},
+			desc: "close range condition on third/last clustering key with <= and >",
 		},
 	}
 
