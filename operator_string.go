@@ -24,9 +24,9 @@ package dosa
 
 import "fmt"
 
-const _Operator_name = "EqLtGtLtOrEqGtOrEq"
+const _Operator_name = "EqLtLtOrEqGtGtOrEq"
 
-var _Operator_index = [...]uint8{0, 2, 4, 6, 12, 18}
+var _Operator_index = [...]uint8{0, 2, 4, 10, 12, 18}
 
 func (i Operator) String() string {
 	i -= 1
