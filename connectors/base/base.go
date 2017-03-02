@@ -26,98 +26,154 @@ import (
 	"github.com/uber-go/dosa"
 )
 
-// connector always calls next connector in all the functions
-type connector struct {
-	next dosa.Connector
+// ErrNoMoreConnector is used when there is no more next connector
+type ErrNoMoreConnector struct {
 }
 
-// NewConnector creates new base connector
+// Error satisfies the error interface.
+func (e ErrNoMoreConnector) Error() string {
+	return "no more next connector"
+}
+
+// Connector always calls Next Connector in all the functions
+type Connector struct {
+	Next dosa.Connector
+}
+
+// NewConnector creates new base Connector
 func NewConnector(next dosa.Connector) dosa.Connector {
-	return &connector{next: next}
+	return &Connector{Next: next}
 }
 
-// CreateIfNotExists calls next
-func (c *connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	return c.next.CreateIfNotExists(ctx, ei, values)
+// CreateIfNotExists calls Next
+func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+	if c.Next == nil {
+		return ErrNoMoreConnector{}
+	}
+	return c.Next.CreateIfNotExists(ctx, ei, values)
 }
 
-// Read calls next
-func (c *connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
-	return c.next.Read(ctx, ei, values, fieldsToRead)
+// Read calls Next
+func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
+	if c.Next == nil {
+		return nil, ErrNoMoreConnector{}
+	}
+	return c.Next.Read(ctx, ei, values, fieldsToRead)
 }
 
-// MultiRead calls next
-func (c *connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToRead []string) ([]*dosa.FieldValuesOrError, error) {
-	return c.next.MultiRead(ctx, ei	, values, fieldsToRead)
+// MultiRead calls Next
+func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToRead []string) ([]*dosa.FieldValuesOrError, error) {
+	if c.Next == nil {
+		return nil, ErrNoMoreConnector{}
+	}
+	return c.Next.MultiRead(ctx, ei, values, fieldsToRead)
 }
 
-// Upsert calls next
-func (c *connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	return c.next.Upsert(ctx, ei, values)
+// Upsert calls Next
+func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+	if c.Next == nil {
+		return ErrNoMoreConnector{}
+	}
+	return c.Next.Upsert(ctx, ei, values)
 }
 
-// MultiUpsert calls next
-func (c *connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue) ([]error, error) {
-	return c.next.MultiUpsert(ctx, ei, values)
+// MultiUpsert calls Next
+func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue) ([]error, error) {
+	if c.Next == nil {
+		return nil, ErrNoMoreConnector{}
+	}
+	return c.Next.MultiUpsert(ctx, ei, values)
 }
 
-// Remove calls next
-func (c *connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	return c.next.Remove(ctx, ei, values)
+// Remove calls Next
+func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+	if c.Next == nil {
+		return ErrNoMoreConnector{}
+	}
+	return c.Next.Remove(ctx, ei, values)
 }
 
-// MultiRemove calls next
-func (c *connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
-	return c.next.MultiRemove(ctx, ei, multiValues)
+// MultiRemove calls Next
+func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
+	if c.Next == nil {
+		return nil, ErrNoMoreConnector{}
+	}
+	return c.Next.MultiRemove(ctx, ei, multiValues)
 }
 
-// Range calls next
-func (c *connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	return c.next.Range(ctx, ei, columnConditions, fieldsToRead, token, limit)
+// Range calls Next
+func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+	if c.Next == nil {
+		return nil, "", ErrNoMoreConnector{}
+	}
+	return c.Next.Range(ctx, ei, columnConditions, fieldsToRead, token, limit)
 }
 
-// Search calls next
-func (c *connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	return c.next.Search(ctx, ei, fieldPairs, fieldsToRead, token, limit)
+// Search calls Next
+func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+	if c.Next == nil {
+		return nil, "", ErrNoMoreConnector{}
+	}
+	return c.Next.Search(ctx, ei, fieldPairs, fieldsToRead, token, limit)
 }
 
-// Scan calls next
-func (c *connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	return c.next.Scan(ctx, ei, fieldsToRead, token, limit)
+// Scan calls Next
+func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+	if c.Next == nil {
+		return nil, "", ErrNoMoreConnector{}
+	}
+	return c.Next.Scan(ctx, ei, fieldsToRead, token, limit)
 }
 
-// CheckSchema calls next
-func (c *connector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) ([]int32, error) {
-	return c.next.CheckSchema(ctx, scope, namePrefix, ed)
+// CheckSchema calls Next
+func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) ([]int32, error) {
+	if c.Next == nil {
+		return nil, ErrNoMoreConnector{}
+	}
+	return c.Next.CheckSchema(ctx, scope, namePrefix, ed)
 }
 
-// UpsertSchema calls next
-func (c *connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) ([]int32, error) {
-	return c.next.UpsertSchema(ctx, scope, namePrefix, ed)
+// UpsertSchema calls Next
+func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) ([]int32, error) {
+	if c.Next == nil {
+		return nil, ErrNoMoreConnector{}
+	}
+	return c.Next.UpsertSchema(ctx, scope, namePrefix, ed)
 }
 
-// CreateScope calls next
-func (c *connector) CreateScope(ctx context.Context, scope string) error {
-	return c.next.CreateScope(ctx, scope)
+// CreateScope calls Next
+func (c *Connector) CreateScope(ctx context.Context, scope string) error {
+	if c.Next == nil {
+		return ErrNoMoreConnector{}
+	}
+	return c.Next.CreateScope(ctx, scope)
 }
 
-// TruncateScope calls next
-func (c *connector) TruncateScope(ctx context.Context, scope string) error {
-	return c.next.TruncateScope(ctx, scope)
+// TruncateScope calls Next
+func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
+	if c.Next == nil {
+		return ErrNoMoreConnector{}
+	}
+	return c.Next.TruncateScope(ctx, scope)
 }
 
-// DropScope calls next
-func (c *connector) DropScope(ctx context.Context, scope string) error {
-	return c.next.DropScope(ctx, scope)
+// DropScope calls Next
+func (c *Connector) DropScope(ctx context.Context, scope string) error {
+	if c.Next == nil {
+		return ErrNoMoreConnector{}
+	}
+	return c.Next.DropScope(ctx, scope)
 }
 
-// ScopeExists calls next
-func (c *connector) ScopeExists(ctx context.Context, scope string) (bool, error) {
-	return c.next.ScopeExists(ctx, scope)
+// ScopeExists calls Next
+func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error) {
+	if c.Next == nil {
+		return false, ErrNoMoreConnector{}
+	}
+	return c.Next.ScopeExists(ctx, scope)
 }
 
 // Shutdown always returns nil
-func (c *connector) Shutdown() error {
+func (c *Connector) Shutdown() error {
 	return nil
 }
-
