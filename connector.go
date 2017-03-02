@@ -71,8 +71,8 @@ type FieldValue interface{}
 
 // FieldValuesOrError either holds a slice of field values for a row, or an error
 type FieldValuesOrError struct {
-	Value []FieldValue
-	Error error
+	Values map[string]FieldValue
+	Error  error
 }
 
 // Connector is the interface that must be implemented for a backend service
@@ -86,7 +86,7 @@ type Connector interface {
 	Read(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue, fieldsToRead []string) (values map[string]FieldValue, err error)
 	// MultiRead fetches several rows by primary key
 	// If fieldsToRead is empty or nil, all non-key fields would be fetched.
-	MultiRead(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToRead []string) (result []FieldValuesOrError, err error)
+	MultiRead(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToRead []string) (results []*FieldValuesOrError, err error)
 	// Upsert updates some columns of a row, or creates a new one if it doesn't exist yet.
 	Upsert(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
 	// MultiUpsert updates some columns of several rows, or creates a new ones if they doesn't exist yet

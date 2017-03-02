@@ -22,7 +22,6 @@ package yarpc_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -118,9 +117,8 @@ func TestYaRPCClient_Read(t *testing.T) {
 
 	// perform the read
 	values, err := sut.Read(ctx, testEi, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))}, []string{"f1"})
-	assert.Nil(t, err)       // not an error
-	assert.NotNil(t, values) // found some values
-	fmt.Printf("%v", values)
+	assert.Nil(t, err)                      // not an error
+	assert.NotNil(t, values)                // found some values
 	assert.Equal(t, int64(1), values["c1"]) // the mapped field is found, and is the right type
 	assert.Equal(t, float64(2.2), values["c2"])
 	assert.Equal(t, "f3value", values["c3"])

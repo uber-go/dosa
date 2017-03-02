@@ -87,22 +87,22 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	}
 
 	// convert the key values from interface{} to RPC's Value
-	rpcFields := map[string]*dosarpc.Value{}
+	rpcFields := make(dosarpc.FieldValueMap)
 	for key, value := range keys {
 		rpcValue := &dosarpc.Value{ElemValue: RawValueFromInterface(value)}
 		rpcFields[key] = rpcValue
 	}
 
 	// perform the read request
-	readRequest := dosarpc.ReadRequest{
+	readRequest := &dosarpc.ReadRequest{
 		Ref:          entityInfoToSchemaRef(ei),
 		KeyValues:    rpcFields,
 		FieldsToRead: rpcFieldsToRead,
 	}
 
-	response, err := c.Client.Read(ctx, &readRequest)
+	response, err := c.Client.Read(ctx, readRequest)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to read in yarpc connector")
 	}
 
 	// no error, so for each column, transform it into the map of (col->value) items
@@ -120,7 +120,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 }
 
 // MultiRead is not yet implemented
-func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, fieldsToRead []string) ([]dosa.FieldValuesOrError, error) {
+func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, fieldsToRead []string) ([]*dosa.FieldValuesOrError, error) {
 	panic("not implemented")
 }
 
