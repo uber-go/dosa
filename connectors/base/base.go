@@ -175,5 +175,8 @@ func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error)
 
 // Shutdown always returns nil
 func (c *Connector) Shutdown() error {
-	return nil
+	if c.Next == nil {
+		return ErrNoMoreConnector{}
+	}
+	return c.Next.Shutdown()
 }

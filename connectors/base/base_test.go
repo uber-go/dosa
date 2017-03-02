@@ -176,5 +176,6 @@ func TestBase_DropScope(t *testing.T) {
 }
 
 func TestBase_Shutdown(t *testing.T) {
-	assert.Nil(t, bc.Shutdown())
+	assert.Error(t, bc.Shutdown())
+	assert.NoError(t, bcWNext.Shutdown())
 }
