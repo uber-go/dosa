@@ -131,6 +131,147 @@ func TestYaRPCClient_Read(t *testing.T) {
 	ctrl.Finish()
 }
 
+func TestYaRPCClient_MultiRead(t *testing.T) {
+	// build a mock RPC client
+	ctrl := gomock.NewController(t)
+	mockedClient := dosatest.NewMockClient(ctrl)
+
+	// set up the parameters
+	ctx := context.TODO()
+	// Prepare the dosa client interface using the mocked RPC layer
+	sut := yarpc.Connector{Client: mockedClient}
+
+	data := []struct {
+		Request     *drpc.MultiReadRequest
+		Response    *drpc.MultiReadResponse
+		ResponseErr error
+	}{
+		{
+			Request: &drpc.MultiReadRequest{
+				Ref: &testRPCSchemaRef,
+				KeyValues: []drpc.FieldValueMap{
+					{
+						"f1": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}},
+					},
+					{
+						"f2": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(6)}},
+					},
+				},
+				FieldsToRead: map[string]struct{}{"f1": {}},
+			},
+			Response: &drpc.MultiReadResponse{
+				Results: []*drpc.EntityOrError{
+					{
+						EntityValues: drpc.FieldValueMap{
+							"c1":               {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(1)}},
+							"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}},
+							"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(2.2)}},
+							"c3":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f3value")}},
+							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
+							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(false)}},
+							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(1)}},
+						},
+						Error: nil,
+					},
+					{
+						EntityValues: drpc.FieldValueMap{
+							"c1":               {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(2)}},
+							"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(15)}},
+							"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(12.2)}},
+							"c3":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f3value1")}},
+							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'a', 'i', '1', 'a', 'r', 'y'}}},
+							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(true)}},
+							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(2)}},
+						},
+						Error: nil,
+					},
+				},
+			},
+			ResponseErr: nil,
+		},
+		{
+			Request: &drpc.MultiReadRequest{
+				Ref: &testRPCSchemaRef,
+				KeyValues: []drpc.FieldValueMap{
+					{
+						"f1": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}},
+					},
+					{
+						"f2": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(6)}},
+					},
+				},
+				FieldsToRead: map[string]struct{}{"f1": {}},
+			},
+			Response:    nil,
+			ResponseErr: errors.New("test error"),
+		},
+		{
+			Request: &drpc.MultiReadRequest{
+				Ref: &testRPCSchemaRef,
+				KeyValues: []drpc.FieldValueMap{
+					{
+						"f1": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}},
+					},
+					{
+						"f2": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(6)}},
+					},
+				},
+				FieldsToRead: map[string]struct{}{"f1": {}},
+			},
+			Response: &drpc.MultiReadResponse{
+				Results: []*drpc.EntityOrError{
+					{
+						EntityValues: drpc.FieldValueMap{
+							"c1":               {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(1)}},
+							"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}},
+							"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(2.2)}},
+							"c3":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f3value")}},
+							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
+							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(false)}},
+							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(1)}},
+						},
+						Error: nil,
+					},
+					{
+						Error: &drpc.Error{Msg: testStringPtr("not found")},
+					},
+				},
+			},
+			ResponseErr: nil,
+		},
+	}
+
+	for _, d := range data {
+		mockedClient.EXPECT().MultiRead(ctx, d.Request).Return(d.Response, d.ResponseErr)
+		// perform the multi read
+		values, err := sut.MultiRead(ctx, testEi, []map[string]dosa.FieldValue{{"f1": dosa.FieldValue(int64(5))}, {"f2": dosa.FieldValue(int64(6))}}, []string{"f1"})
+		if d.ResponseErr == nil {
+			assert.Nil(t, err)       // not an error
+			assert.NotNil(t, values) // found some values
+			for i, v := range values {
+				if v.Error != nil {
+					assert.Contains(t, v.Error.Error(), *d.Response.Results[i].Error.Msg)
+					continue
+				}
+				assert.Equal(t, v.Values["c1"], *d.Response.Results[i].EntityValues["c1"].ElemValue.Int64Value)
+				assert.Empty(t, v.Values["fieldNotInSchema"])
+				assert.Equal(t, v.Values["c2"], *d.Response.Results[i].EntityValues["c2"].ElemValue.DoubleValue)
+				assert.Equal(t, v.Values["c3"], *d.Response.Results[i].EntityValues["c3"].ElemValue.StringValue)
+				assert.Equal(t, v.Values["c4"], d.Response.Results[i].EntityValues["c4"].ElemValue.BinaryValue)
+				assert.Equal(t, v.Values["c5"], *d.Response.Results[i].EntityValues["c5"].ElemValue.BoolValue)
+				assert.Equal(t, v.Values["c6"], *d.Response.Results[i].EntityValues["c6"].ElemValue.Int32Value)
+			}
+			continue
+		}
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), d.ResponseErr.Error())
+	}
+
+	// make sure we actually called Read on the interface
+	ctrl.Finish()
+}
+
 func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
@@ -273,10 +414,6 @@ func TestPanic(t *testing.T) {
 	ctx := context.TODO()
 
 	sut := yarpc.Connector{Client: mockedClient}
-
-	assert.Panics(t, func() {
-		sut.MultiRead(ctx, testEi, nil, nil)
-	})
 
 	assert.Panics(t, func() {
 		sut.MultiUpsert(ctx, testEi, nil)
