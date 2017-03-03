@@ -116,12 +116,62 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 			}
 		}
 	}
+
 	return result, nil
 }
 
-// MultiRead is not yet implemented
+// MultiRead reads multiple entities at one time
 func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, fieldsToRead []string) ([]*dosa.FieldValuesOrError, error) {
-	panic("not implemented")
+	// Convert the fields from the client's map to a set of fields to read
+	var rpcFieldsToRead map[string]struct{}
+	if fieldsToRead != nil {
+		rpcFieldsToRead = map[string]struct{}{}
+		for _, field := range fieldsToRead {
+			rpcFieldsToRead[field] = struct{}{}
+		}
+	}
+
+	// convert the keys to RPC's Value
+	rpcFields := make([]dosarpc.FieldValueMap, len(keys))
+	for i, kmap := range keys {
+		rpcFields[i] = make(dosarpc.FieldValueMap)
+		for key, value := range kmap {
+			rpcValue := &dosarpc.Value{ElemValue: RawValueFromInterface(value)}
+			rpcFields[i][key] = rpcValue
+		}
+	}
+
+	// perform the multi read request
+	request := &dosarpc.MultiReadRequest{
+		Ref:          entityInfoToSchemaRef(ei),
+		KeyValues:    rpcFields,
+		FieldsToRead: rpcFieldsToRead,
+	}
+
+	response, err := c.Client.MultiRead(ctx, request)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to multi-read in yarpc connector")
+	}
+
+	rpcResults := response.Results
+	results := make([]*dosa.FieldValuesOrError, len(rpcResults))
+	for i, rpcResult := range rpcResults {
+		results[i] = &dosa.FieldValuesOrError{Values: make(map[string]dosa.FieldValue), Error: nil}
+		for name, value := range rpcResult.EntityValues {
+			for _, col := range ei.Def.Columns {
+				if col.Name == name {
+					results[i].Values[name] = RawValueAsInterface(*value.ElemValue, col.Type)
+					break
+				}
+			}
+		}
+		if rpcResult.Error != nil {
+			// TODO check other fields in the thrift error object such as ShouldRetry
+			results[i].Error = errors.New(*rpcResult.Error.Msg)
+		}
+	}
+
+	return results, nil
 }
 
 // MultiUpsert is not yet implemented
