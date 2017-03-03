@@ -18,21 +18,72 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package dosa_test
+package dosa
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/uber-go/dosa"
 )
 
 func TestNewRangeOp(t *testing.T) {
-	assert.NotNil(t, dosa.NewRangeOp(&dosa.Entity{}))
+	assert.NotNil(t, NewRangeOp(&AllTypes{}))
 }
 
 func TestRangeOpStringer(t *testing.T) {
-	o := dosa.NewRangeOp(&dosa.Entity{})
-	assert.Equal(t, "", o.String())
+	tests := []struct {
+		rop      *RangeOp
+		expected string
+		err      string
+	}{
+		{
+			rop:      NewRangeOp(&AllTypes{}),
+			expected: "<empty>",
+		},
+		{
+			rop:      NewRangeOp(&AllTypes{}).Eq("StringType", "word"),
+			expected: "StringType Eq word",
+		},
+		{
+			rop: NewRangeOp(&AllTypes{}).Eq("badfield", "data"),
+			err: "badfield",
+		},
+		{
+			rop: NewRangeOp(&AllTypes{}).Gt("StringType", 1),
+			err: "StringType: invalid value",
+		},
+		{
+			rop:      NewRangeOp(&AllTypes{}).GtOrEq("Int32Type", int32(5)).LtOrEq("Int32Type", int32(10)),
+			expected: "Int32Type GtOrEq 5, Int32Type LtOrEq 10",
+		},
+		{
+			rop:      NewRangeOp(&AllTypes{}).Limit(10),
+			expected: "<empty> limit 10",
+		},
+		{
+			rop:      NewRangeOp(&AllTypes{}).Offset("toketoketoke"),
+			expected: "<empty> token \"toketoketoke\"",
+		},
+		{
+			rop: NewRangeOp(&AllTypes{}).Lt("badfieldpropogate", "oopsie").Lt("StringType", "42").Limit(10),
+			err: "badfieldpropogate",
+		},
+		{
+			rop:      NewRangeOp(&AllTypes{}).Eq("StringType", "word").Eq("Int32Type", int32(-1)),
+			expected: "StringType Eq word, Int32Type Eq -1",
+		},
+		{
+			// TODO: We could do better here, outputting the field list
+			rop:      NewRangeOp(&AllTypes{}).Fields([]string{"StringType"}),
+			expected: "<empty>",
+		},
+	}
+	for _, test := range tests {
+		if test.err != "" {
+			assert.Contains(t, test.rop.pendingError.Error(), test.err)
+		} else {
+			assert.NoError(t, test.rop.pendingError)
+			assert.Equal(t, test.expected, test.rop.String())
+		}
+	}
 }

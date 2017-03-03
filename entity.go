@@ -256,3 +256,13 @@ func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
 
 	return nil
 }
+
+// FindColumnDefinition finds the column definition by the column name
+func (e *EntityDefinition) FindColumnDefinition(name string) *ColumnDefinition {
+	for _, cd := range e.Columns {
+		if cd.Name == name {
+			return cd
+		}
+	}
+	return nil
+}
