@@ -32,7 +32,7 @@ type ErrNoMoreConnector struct {
 
 // Error satisfies the error interface.
 func (e ErrNoMoreConnector) Error() string {
-	return "no more next connector"
+	return "no more connectors"
 }
 
 // Connector always calls Next Connector in all the functions
