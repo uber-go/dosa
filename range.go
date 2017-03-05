@@ -24,13 +24,12 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/pkg/errors"
+	"sort"
 )
 
 // RangeOp is used to specify constraints to Range calls
 type RangeOp struct {
 	conditions    map[string][]*Condition
-	table         *Table
-	pendingError  error
 	fieldsToFetch []string
 	limit         int
 	token         string
@@ -39,8 +38,6 @@ type RangeOp struct {
 // NewRangeOp returns a new RangeOp instance
 func NewRangeOp(object DomainObject) *RangeOp {
 	rop := &RangeOp{conditions: map[string][]*Condition{}}
-	// TODO: Use the registry to speed this up, which means NewRangeOp is a Registry or Client object method
-	rop.table, rop.pendingError = TableFromInstance(object)
 	return rop
 }
 
@@ -50,7 +47,14 @@ func (r *RangeOp) String() string {
 	if r.conditions == nil || len(r.conditions) == 0 {
 		result.WriteString("<empty>")
 	} else {
-		for field, conds := range r.conditions {
+		// sort the fields by name for deterministic results
+		keys := make([]string, 0, len(r.conditions))
+		for key := range r.conditions {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, field := range keys {
+			conds := r.conditions[field]
 			if result.Len() > 0 {
 				result.WriteString(", ")
 			}
@@ -74,20 +78,6 @@ func (r *RangeOp) String() string {
 }
 
 func (r *RangeOp) appendOp(op Operator, fieldName string, value interface{}) *RangeOp {
-	if r.pendingError != nil {
-		return r
-	}
-	colName := r.table.FieldToCol[fieldName]
-	if colName == "" {
-		r.pendingError = errors.Errorf("Field %s not in entity %s", fieldName, r.table.StructName)
-		return r
-	}
-	fieldInfo := r.table.FindColumnDefinition(colName)
-	if err := ensureTypeMatch(fieldInfo.Type, value); err != nil {
-		r.pendingError = errors.Wrapf(err, "Column %s", fieldName)
-		return r
-	}
-
 	r.conditions[fieldName] = append(r.conditions[fieldName], &Condition{Op: op, Value: value})
 	return r
 }
@@ -137,4 +127,25 @@ func (r *RangeOp) Limit(n int) *RangeOp {
 func (r *RangeOp) Offset(token string) *RangeOp {
 	r.token = token
 	return r
+}
+
+// convertRangeOp converts a list of client field names to server side field names
+//
+func convertRangeOpConditions(r *RangeOp, t *Table) (map[string][]*Condition, error) {
+	serverConditions := map[string][]*Condition{}
+	for colName, conds := range r.conditions {
+		if scolName, ok := t.FieldToCol[colName]; ok {
+			serverConditions[scolName] = conds
+			// we need to be sure each of the types are correct for marshaling
+			cd := t.FindColumnDefinition(scolName)
+			for _, cond := range conds {
+				if err := ensureTypeMatch(cd.Type, cond.Value); err != nil {
+					return nil, errors.Wrapf(err, "column %s", colName)
+				}
+			}
+		} else {
+			return nil, errors.Errorf("Cannot find column %q in struct %q", colName, t.StructName)
+		}
+	}
+	return serverConditions, nil
 }

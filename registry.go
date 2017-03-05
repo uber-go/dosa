@@ -259,7 +259,7 @@ func (r *prefixedRegistrar) Find(entity DomainObject) (*RegisteredEntity, error)
 	t := reflect.TypeOf(entity).Elem()
 	re, ok := r.typeIndex[t]
 	if !ok {
-		return nil, errors.Errorf("failed to find registration for given entity")
+		return nil, errors.Errorf("failed to find registration for entity %q", t.Name())
 	}
 	return re, nil
 }
