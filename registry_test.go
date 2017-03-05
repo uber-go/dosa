@@ -106,9 +106,9 @@ func TestRegisteredEntity_ColumnNames(t *testing.T) {
 	table, _ := dosa.TableFromInstance(entity)
 	re := dosa.NewRegisteredEntity(scope, namePrefix, table)
 
-	// empty
+	// empty, just return an empty set
 	columnNames, err := re.ColumnNames([]string{})
-	assert.Error(t, err)
+	assert.Empty(t, err)
 
 	// invalid
 	columnNames, err = re.ColumnNames([]string{"ID", "foo"})

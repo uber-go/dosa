@@ -22,7 +22,6 @@ package dosa_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -66,7 +65,7 @@ func ExampleNewClient() {
 	// use a devnull connector for example purposes
 	conn := &devnull.Connector{}
 
-	// initialize a pseudo-connected client
+	// create the client using the registry and connector
 	client, err := dosa.NewClient(reg, conn)
 	if err != nil {
 		errors.Wrap(err, "dosa.NewClient returned an error")
@@ -109,7 +108,7 @@ func TestClient_Initialize(t *testing.T) {
 
 	// CheckSchema error
 	errConn := mocks.NewMockConnector(ctrl)
-	errConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("CheckSchema error")).AnyTimes()
+	errConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("CheckSchema error")).AnyTimes()
 	c2, _ := dosa.NewClient(reg, errConn)
 	assert.Error(t, c2.Initialize(ctx))
 
@@ -200,4 +199,74 @@ func TestClient_Upsert(t *testing.T) {
 	assert.NoError(t, c3.Initialize(ctx))
 	assert.NoError(t, c3.Upsert(ctx, fieldsToUpdate, cte1))
 	assert.Equal(t, cte1.Email, updatedEmail)
+}
+
+func TestClient_Range(t *testing.T) {
+	ctx := context.TODO()
+	scope := "test"
+	namePrefix := "team.service"
+	ctes1 := []dosa.DomainObject{cte1}
+	reg1, _ := dosa.NewRegistrar(scope, namePrefix, ctes1...)
+	conn := &devnull.Connector{}
+	fieldsToRead := []string{"ID", "Email"}
+	resultRow := map[string]dosa.FieldValue{
+		"id":    int64(2),
+		"name":  "bar",
+		"email": "bar@email.com",
+	}
+
+	// uninitialized
+	c1, _ := dosa.NewClient(reg1, conn)
+	rop := dosa.NewRangeOp(cte1).Fields(fieldsToRead).Eq("ID", "123").Offset("tokeytoketoke")
+	_, _, err := c1.Range(ctx, rop)
+	assert.Equal(t, dosa.ErrNotInitialized, err)
+
+	c1.Initialize(ctx)
+
+	// bad entity
+	rop = dosa.NewRangeOp(cte2)
+	_, _, err = c1.Range(ctx, rop)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity2")
+
+	// bad column in range
+	// we don't test other failed RangeOpConditions since those are unit tested elsewhere
+	rop = dosa.NewRangeOp(cte1).Eq("borkborkbork", int64(1))
+	_, _, err = c1.Range(ctx, rop)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity1")
+	assert.Contains(t, err.Error(), "borkborkbork")
+
+	// bad projected column
+	rop = dosa.NewRangeOp(cte1).Fields([]string{"borkborkbork"})
+	_, _, err = c1.Range(ctx, rop)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity1")
+	assert.Contains(t, err.Error(), "borkborkbork")
+
+	// success case
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
+	mockConn.EXPECT().Range(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return([]map[string]dosa.FieldValue{resultRow}, "continuation-token", nil)
+	c2, _ := dosa.NewClient(reg1, mockConn)
+	c2.Initialize(ctx)
+	rop = dosa.NewRangeOp(cte1)
+	rows, token, err := c2.Range(ctx, rop)
+	assert.NoError(t, err)
+	assert.NotNil(t, rows)
+	assert.Equal(t, 1, len(rows))
+	for _, obj := range rows {
+		assert.Equal(t, resultRow["id"], obj.(*ClientTestEntity1).ID)
+		assert.Equal(t, resultRow["name"], obj.(*ClientTestEntity1).Name)
+		assert.Equal(t, resultRow["email"], obj.(*ClientTestEntity1).Email)
+	}
+	assert.Equal(t, "continuation-token", token)
+
+	// no resulting rows, just use the devnull connector
+	rop = dosa.NewRangeOp(cte1)
+	_, _, err = c1.Range(ctx, rop)
+	assert.Equal(t, dosa.ErrNotFound, err)
 }

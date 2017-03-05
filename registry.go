@@ -143,11 +143,6 @@ func (e *RegisteredEntity) OnlyFieldValues(entity DomainObject, fieldNames []str
 
 // ColumnNames translates field names to column names.
 func (e *RegisteredEntity) ColumnNames(fieldNames []string) ([]string, error) {
-	// empty should return error
-	if len(fieldNames) == 0 {
-		return nil, fmt.Errorf("Cannot provide empty list to ColumnNames")
-	}
-
 	columnNames := make([]string, len(fieldNames))
 	for i, fieldName := range fieldNames {
 		columnName, ok := e.table.FieldToCol[fieldName]

@@ -22,7 +22,7 @@ package dosa
 
 import (
 	"context"
-	"fmt"
+	"reflect"
 
 	"github.com/pkg/errors"
 )
@@ -40,6 +40,12 @@ type Entity struct{}
 func (*Entity) isDomainObject() bool {
 	return true
 }
+
+// ErrNotInitialized is returned when a user didn't call Initialize
+var ErrNotInitialized = errors.New("client not initialized")
+
+// ErrNotFound is an error when a row is not found (single or multiple)
+var ErrNotFound = errors.New("No rows found")
 
 // Client defines the methods to operate with DOSA entities
 type Client interface {
@@ -159,7 +165,7 @@ func (c *client) CreateIfNotExists(context.Context, DomainObject) error {
 // marshalled onto the given entity
 func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainObject) error {
 	if !c.initialized {
-		return fmt.Errorf("client is not initialized")
+		return ErrNotInitialized
 	}
 
 	// lookup registered entity, registry will return error if registration
@@ -206,7 +212,7 @@ func (c *client) MultiRead(context.Context, []string, ...DomainObject) (MultiRes
 // subset of fields will be updated.
 func (c *client) Upsert(ctx context.Context, fieldsToUpdate []string, entity DomainObject) error {
 	if !c.initialized {
-		return fmt.Errorf("client is not initialized")
+		return ErrNotInitialized
 	}
 
 	// lookup registered entity, registry will return error if registration
@@ -255,8 +261,52 @@ func (c *client) MultiDelete(context.Context, ...DomainObject) (MultiResult, err
 }
 
 // Range uses the connector to fetch DOSA entities for a given range.
-func (c *client) Range(context.Context, *RangeOp) ([]DomainObject, string, error) {
-	panic("not implemented")
+func (c *client) Range(ctx context.Context, r *RangeOp) ([]DomainObject, string, error) {
+	if !c.initialized {
+		return nil, "", ErrNotInitialized
+	}
+	// look up the entity in the registry
+	re, err := c.registrar.Find(r.object)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "Range")
+	}
+
+	// now convert the client range columns to server side column conditions structure
+	columnConditions, err := convertRangeOpConditions(r, re.table)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "Range")
+	}
+
+	// convert the fieldsToRead to the server side equivalent
+	fieldsToRead, err := re.ColumnNames(r.fieldsToFetch)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "Range")
+	}
+
+	// call the server side method
+	values, token, err := c.connector.Range(ctx, re.info, columnConditions, fieldsToRead, r.token, r.limit)
+	if err != nil {
+		// This error should not be wrapped since
+		// it might be a known error
+		return nil, "", err
+	}
+
+	// got some data back, so create some entities for the caller using reflection
+	goType := reflect.TypeOf(r.object).Elem() // get the reflect.Type of the client entity
+	doType := reflect.TypeOf((*DomainObject)(nil)).Elem()
+	slice := reflect.MakeSlice(reflect.SliceOf(doType), 0, len(values)) // make a slice of these
+	elements := reflect.New(slice.Type())
+	elements.Elem().Set(slice)
+
+	for _, flist := range values { // for each row returned
+		newObject := reflect.New(goType).Interface()             // make a new entity
+		err = re.SetFieldValues(newObject.(DomainObject), flist) // fill it in from server values
+		if err != nil {
+			return nil, "", errors.Wrap(err, "Range: unable to create object")
+		}
+		slice = reflect.Append(slice, reflect.ValueOf(newObject.(DomainObject))) // append to slice
+	}
+	return slice.Interface().([]DomainObject), token, nil
 }
 
 // Search uses the connector to fetch DOSA entities by fields that have been marked "searchable".
