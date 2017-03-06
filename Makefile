@@ -91,3 +91,7 @@ fmt:
 	$(ECHO_V)if [ "$$TRAVIS" != "true" ]; then \
 		$(GOIMPORTS) -w $(ALL_SRC) ; \
 	fi
+
+.PHONY: cli
+cli:
+	$(ECHO_V)go build -o cli/dosa ./cli

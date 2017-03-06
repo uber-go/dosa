@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main
+package cmd
 
 import (
 	"errors"
@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExpandDirectories(t *testing.T) {
+func TestSchema_ExpandDirectories(t *testing.T) {
 	assert := assert.New(t)
 	const tmpdir = ".testexpanddirectories"
 	os.RemoveAll(tmpdir)
@@ -46,40 +46,40 @@ func TestExpandDirectories(t *testing.T) {
 	}
 	os.Create("a/b/file")
 
-	testCases := []struct {
-		Argument []string
-		Error    error
-		Expected []string
+	cases := []struct {
+		args []string
+		dirs []string
+		err  error
 	}{
 		{
-			Argument: []string{},
-			Expected: []string{"."},
+			args: []string{},
+			dirs: []string{"."},
 		},
 		{
-			Argument: []string{"."},
-			Expected: []string{"."},
+			args: []string{"."},
+			dirs: []string{"."},
 		},
 		{
-			Argument: []string{"./..."},
-			Expected: append([]string{"."}, dirs...),
+			args: []string{"./..."},
+			dirs: append([]string{"."}, dirs...),
 		},
 		{
-			Argument: []string{"bogus"},
-			Error:    errors.New("no such file or directory"),
+			args: []string{"bogus"},
+			err:  errors.New("no such file or directory"),
 		},
 		{
-			Argument: []string{"a/b/file"},
-			Error:    errors.New("not a directory"),
+			args: []string{"a/b/file"},
+			err:  errors.New("not a directory"),
 		},
 	}
 
-	for _, testCase := range testCases {
-		actual, err := expandDirectories(testCase.Argument)
-		if testCase.Error != nil {
-			assert.Contains(err.Error(), testCase.Error.Error())
+	for _, c := range cases {
+		dirs, err := expandDirectories(c.args)
+		if c.err != nil {
+			assert.Contains(err.Error(), c.err.Error())
 		} else {
 			assert.Nil(err)
-			assert.Equal(testCase.Expected, actual)
+			assert.Equal(c.dirs, dirs)
 		}
 	}
 	os.Chdir("..")

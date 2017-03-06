@@ -352,3 +352,39 @@ func (c *client) ScanEverything(ctx context.Context, sop *ScanOp) ([]DomainObjec
 	return objectArray, token, nil
 
 }
+
+type adminClient struct {
+	connector Connector
+}
+
+// NewAdminClient returns a new DOSA admin client for the connector provided.
+func NewAdminClient(conn Connector) (AdminClient, error) {
+	return &adminClient{
+		connector: conn,
+	}, nil
+}
+
+// CheckSchema checks the compatibility of schemas
+func (c *adminClient) CheckSchema(ctx context.Context, fqns ...FQN) error {
+	panic("not implemented")
+}
+
+// UpsertSchema upserts the schemas
+func (c *adminClient) UpsertSchema(ctx context.Context, fqns ...FQN) error {
+	panic("not implemented")
+}
+
+// CreateScope creates a new scope
+func (c *adminClient) CreateScope(s string) error {
+	panic("not implemented")
+}
+
+// TruncateScope keeps the scope and the schemas, but drops the data associated with the scope
+func (c *adminClient) TruncateScope(s string) error {
+	panic("not implemented")
+}
+
+// DropScope drops the scope and the data and schemas in the scope
+func (c *adminClient) DropScope(s string) error {
+	panic("not implemented")
+}
