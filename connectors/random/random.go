@@ -18,34 +18,96 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package devnull
+package random
 
 import (
 	"context"
 
+	"github.com/pborman/uuid"
 	"github.com/uber-go/dosa"
+	"math/rand"
+	"time"
 )
 
 // Connector is a connector implementation for testing
 type Connector struct{}
 
-// CreateIfNotExists always returns nil
+// CreateIfNotExists always succeeds
 func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	return nil
 }
 
-// Read always returns a not found error
-func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
-	return nil, dosa.ErrNotFound
+const maxBlobSize = 32
+const maxStringSize = 64
+
+func randomString(slen int) string {
+	var validRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_-+={[}];:,.<>/?")
+	str := make([]rune, slen)
+	for i := range str {
+		str[i] = validRunes[rand.Intn(len(validRunes))]
+	}
+	return string(str)
 }
 
-// MultiRead returns a set of not found errors for each key you specify
-func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToRead []string) ([]*dosa.FieldValuesOrError, error) {
-	errors := make([]*dosa.FieldValuesOrError, len(values))
-	for inx := range values {
-		errors[inx] = &dosa.FieldValuesOrError{Error: dosa.ErrNotFound}
+// Data generates some random data. Because our test is blackbox in a different package,
+// we have to export this
+func Data(ei *dosa.EntityInfo, fieldsToRead []string) map[string]dosa.FieldValue {
+	var result = map[string]dosa.FieldValue{}
+	for _, field := range fieldsToRead {
+		var v dosa.FieldValue
+		cd := ei.Def.FindColumnDefinition(field)
+		switch cd.Type {
+		case dosa.Int32:
+			v = dosa.FieldValue(rand.Int31())
+		case dosa.Int64:
+			v = dosa.FieldValue(rand.Int63())
+		case dosa.Bool:
+			if rand.Intn(2) == 0 {
+				v = dosa.FieldValue(false)
+			} else {
+				v = dosa.FieldValue(true)
+			}
+		case dosa.Blob:
+			// Blobs vary in length from 1 to maxBlobSize bytes
+			blen := rand.Intn(maxBlobSize-1) + 1
+			blob := make([]byte, blen)
+			for i := range blob {
+				blob[i] = byte(rand.Intn(256))
+			}
+			v = dosa.FieldValue(blob)
+		case dosa.String:
+			slen := rand.Intn(maxStringSize) + 1
+			v = dosa.FieldValue(randomString(slen))
+		case dosa.Double:
+			v = dosa.FieldValue(rand.Float64())
+		case dosa.Timestamp:
+			v = dosa.FieldValue(time.Unix(0, rand.Int63()/2))
+		case dosa.TUUID:
+			v = dosa.FieldValue(uuid.New())
+		default:
+			panic("invalid type " + cd.Type.String())
+
+		}
+		result[field] = v
 	}
-	return errors, nil
+	return result
+}
+
+// Read always returns random data of the type specified
+func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
+
+	return Data(ei, fieldsToRead), nil
+}
+
+// MultiRead returns a set of random data for each key you specify
+func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToRead []string) ([]*dosa.FieldValuesOrError, error) {
+	vals := make([]*dosa.FieldValuesOrError, len(values))
+	for inx := range values {
+		vals[inx] = &dosa.FieldValuesOrError{
+			Values: Data(ei, fieldsToRead),
+		}
+	}
+	return vals, nil
 }
 
 // Upsert throws away the data you upsert
@@ -77,19 +139,23 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiV
 	return makeErrorSlice(len(multiValues), dosa.ErrNotFound), nil
 }
 
-// Range is not yet implementedS
+// Range returns a random set of data, and a random continuation token
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	return nil, "", dosa.ErrNotFound
+	vals := make([]map[string]dosa.FieldValue, limit)
+	for inx := range vals {
+		vals[inx] = Data(ei, fieldsToRead)
+	}
+	return vals, randomString(32), nil
 }
 
-// Search is not yet implemented
+// Search also returns a random set of data, just like Range
 func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	return nil, "", dosa.ErrNotFound
+	return c.Range(ctx, ei, map[string][]*dosa.Condition{}, fieldsToRead, token, limit)
 }
 
-// Scan is not yet implemented
+// Scan also returns a random set of data, like Range and Search
 func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	return nil, "", dosa.ErrNotFound
+	return c.Range(ctx, ei, map[string][]*dosa.Condition{}, fieldsToRead, token, limit)
 }
 
 // CheckSchema always returns a slice of int32 values that match its index
@@ -121,7 +187,7 @@ func (c *Connector) DropScope(ctx context.Context, scope string) error {
 	return nil
 }
 
-// ScopeExists returns true
+// ScopeExists is not implemented yet
 func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error) {
 	return true, nil
 }
