@@ -153,8 +153,6 @@ func TestClient_Read(t *testing.T) {
 	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
 	mockConn.EXPECT().Read(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, _ *dosa.EntityInfo, columnValues map[string]dosa.FieldValue, columnsToRead []string) {
-			fmt.Println("columnValues")
-			fmt.Println(columnValues)
 			assert.Equal(t, columnValues["id"], cte1.ID)
 			assert.Equal(t, columnsToRead, []string{"id", "email"})
 

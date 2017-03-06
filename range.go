@@ -20,68 +20,132 @@
 
 package dosa
 
+import (
+	"bytes"
+	"fmt"
+	"github.com/pkg/errors"
+	"sort"
+)
+
 // RangeOp is used to specify constraints to Range calls
-type RangeOp struct{}
+type RangeOp struct {
+	conditions    map[string][]*Condition
+	fieldsToFetch []string
+	limit         int
+	token         string
+}
 
 // NewRangeOp returns a new RangeOp instance
-func NewRangeOp(DomainObject) *RangeOp {
-	return &RangeOp{}
+func NewRangeOp(object DomainObject) *RangeOp {
+	rop := &RangeOp{conditions: map[string][]*Condition{}}
+	return rop
 }
 
 // String satisfies the Stringer interface
 func (r *RangeOp) String() string {
-	/* TODO */
-	return ""
+	result := &bytes.Buffer{}
+	if r.conditions == nil || len(r.conditions) == 0 {
+		result.WriteString("<empty>")
+	} else {
+		// sort the fields by name for deterministic results
+		keys := make([]string, 0, len(r.conditions))
+		for key := range r.conditions {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, field := range keys {
+			conds := r.conditions[field]
+			if result.Len() > 0 {
+				result.WriteString(", ")
+			}
+			result.WriteString(field)
+			result.WriteString(" ")
+			for i, cond := range conds {
+				if i > 0 {
+					fmt.Fprintf(result, ", %s ", field)
+				}
+				fmt.Fprintf(result, "%s %v", cond.Op.String(), cond.Value)
+			}
+		}
+	}
+	if r.limit > 0 {
+		fmt.Fprintf(result, " limit %d", r.limit)
+	}
+	if r.token != "" {
+		fmt.Fprintf(result, " token %q", r.token)
+	}
+	return result.String()
+}
+
+func (r *RangeOp) appendOp(op Operator, fieldName string, value interface{}) *RangeOp {
+	r.conditions[fieldName] = append(r.conditions[fieldName], &Condition{Op: op, Value: value})
+	return r
 }
 
 // Eq is used to express an equality constraint for a range query
-func (r *RangeOp) Eq(string, interface{}) *RangeOp {
-	/* TODO */
-	return r
+func (r *RangeOp) Eq(fieldName string, value interface{}) *RangeOp {
+	return r.appendOp(Eq, fieldName, value)
 }
 
 // Gt is used to express an "greater than" constraint for a range query
-func (r *RangeOp) Gt(key string, value interface{}) *RangeOp {
-	/* TODO */
-	return r
+func (r *RangeOp) Gt(fieldName string, value interface{}) *RangeOp {
+	return r.appendOp(Gt, fieldName, value)
 }
 
 // GtOrEq is used to express an "greater than or equal" constraint for a
 // range query
-func (r *RangeOp) GtOrEq(key string, value interface{}) *RangeOp {
-	/* TODO */
-	return r
+func (r *RangeOp) GtOrEq(fieldName string, value interface{}) *RangeOp {
+	return r.appendOp(GtOrEq, fieldName, value)
 }
 
 // Lt is used to express a "less than" constraint for a range query
-func (r *RangeOp) Lt(key string, value interface{}) *RangeOp {
-	/* TODO */
-	return r
+func (r *RangeOp) Lt(fieldName string, value interface{}) *RangeOp {
+	return r.appendOp(Lt, fieldName, value)
 }
 
 // LtOrEq is used to express a "less than or equal" constraint for a
 // range query
-func (r *RangeOp) LtOrEq(key string, value interface{}) *RangeOp {
-	/* TODO */
-	return r
+func (r *RangeOp) LtOrEq(fieldName string, value interface{}) *RangeOp {
+	return r.appendOp(LtOrEq, fieldName, value)
 }
 
 // Fields list the non-key fields users want to fetch. If not set, all fields would be fetched.
 // PrimaryKey fields are always fetched.
-func (r *RangeOp) Fields([]string) *RangeOp {
-	/* TODO */
+func (r *RangeOp) Fields(fieldsToFetch []string) *RangeOp {
+	r.fieldsToFetch = fieldsToFetch
 	return r
 }
 
 // Limit sets the number of rows returned per call. If not set, a default
 // value would be applied
 func (r *RangeOp) Limit(n int) *RangeOp {
-	/* TODO */
+	r.limit = n
 	return r
 }
 
 // Offset sets the pagination token. If not set, an empty token would be used.
 func (r *RangeOp) Offset(token string) *RangeOp {
-	/* TODO */
+	r.token = token
 	return r
+}
+
+// convertRangeOp converts a list of client field names to server side field names
+//
+func convertRangeOpConditions(r *RangeOp, t *Table) (map[string][]*Condition, error) {
+	serverConditions := map[string][]*Condition{}
+	for colName, conds := range r.conditions {
+		if scolName, ok := t.FieldToCol[colName]; ok {
+			serverConditions[scolName] = conds
+			// we need to be sure each of the types are correct for marshaling
+			cd := t.FindColumnDefinition(scolName)
+			for _, cond := range conds {
+				if err := ensureTypeMatch(cd.Type, cond.Value); err != nil {
+					return nil, errors.Wrapf(err, "column %s", colName)
+				}
+			}
+		} else {
+			return nil, errors.Errorf("Cannot find column %q in struct %q", colName, t.StructName)
+		}
+	}
+	return serverConditions, nil
 }

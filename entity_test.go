@@ -307,3 +307,15 @@ func TestEntityDefinitionIsCompatible(t *testing.T) {
 	err = validEd.IsCompatible(aEd)
 	assert.Error(t, err)
 }
+
+func TestEntityDefinition_FindColumnDefinition(t *testing.T) {
+	ed := getValidEntityDefinition()
+
+	// for each known column, make sure we find the column definition with the same name
+	for _, name := range []string{"foo", "bar", "qux"} {
+		assert.Equal(t, name, ed.FindColumnDefinition(name).Name)
+	}
+
+	assert.Nil(t, ed.FindColumnDefinition("notacolumn"))
+
+}
