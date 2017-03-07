@@ -136,8 +136,8 @@ func TestRegisteredEntity_SetFieldValues(t *testing.T) {
 		"email": "bar@email.com",
 	}
 	invalidFieldValues := map[string]dosa.FieldValue{
-		"id":      int64(2),
-		"name":    "bar",
+		"id":      int64(3),
+		"name":    "bar2",
 		"invalid": "invalid",
 	}
 
@@ -146,11 +146,14 @@ func TestRegisteredEntity_SetFieldValues(t *testing.T) {
 		re.SetFieldValues(&RegistryTestInvalid{PrimaryKey: 1}, validFieldValues)
 	})
 
-	// invalid values
-	assert.Error(t, re.SetFieldValues(entity, invalidFieldValues))
+	// invalid values are skipped
+	re.SetFieldValues(entity, invalidFieldValues)
+	assert.Equal(t, entity.ID, invalidFieldValues["id"])
+	assert.Equal(t, entity.Name, invalidFieldValues["name"])
+	assert.Equal(t, entity.Email, "foo@email.com")
 
 	// valid
-	assert.NoError(t, re.SetFieldValues(entity, validFieldValues))
+	re.SetFieldValues(entity, validFieldValues)
 	assert.Equal(t, entity.ID, validFieldValues["id"])
 	assert.Equal(t, entity.Name, validFieldValues["name"])
 	assert.Equal(t, entity.Email, validFieldValues["email"])

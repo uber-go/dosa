@@ -20,35 +20,57 @@
 
 package dosa
 
+import (
+	"fmt"
+	"io"
+	"bytes"
+)
+
 // ScanOp represents the scan query
-type ScanOp struct{}
+type ScanOp struct {
+	object       DomainObject
+	limit        int
+	token        string
+	fieldsToRead []string
+}
 
 // NewScanOp returns a new ScanOp instance
-func NewScanOp(DomainObject) *ScanOp {
-	return &ScanOp{}
+func NewScanOp(obj DomainObject) *ScanOp {
+	return &ScanOp{object: obj}
 }
 
 // String satisfies the Stringer interface
 func (s *ScanOp) String() string {
-	/* TODO */
-	return ""
+	result := &bytes.Buffer{}
+	result.WriteString("ScanOp")
+	addLimitTokenString(result, s.limit, s.token)
+	return result.String()
+}
+
+func addLimitTokenString(w io.Writer, limit int, token string) {
+	if limit > 0 {
+		fmt.Fprintf(w, " limit %d", limit)
+	}
+	if token != "" {
+		fmt.Fprintf(w, " token %q", token)
+	}
 }
 
 // Limit sets the number of rows returned per call. Default is 128.
 func (s *ScanOp) Limit(n int) *ScanOp {
-	/* TODO */
+	s.limit = n
 	return s
 }
 
 // Offset sets the pagination token. If not set, an empty token would be used.
 func (s *ScanOp) Offset(token string) *ScanOp {
-	/* TODO */
+	s.token = token
 	return s
 }
 
 // Fields list the non-key fields users want to fetch.
 // PrimaryKey fields are always fetched.
-func (s *ScanOp) Fields([]string) *ScanOp {
-	/* TODO */
+func (s *ScanOp) Fields(fields []string) *ScanOp {
+	s.fieldsToRead = fields
 	return s
 }

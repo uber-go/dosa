@@ -29,16 +29,13 @@ import (
 
 // RangeOp is used to specify constraints to Range calls
 type RangeOp struct {
-	object        DomainObject
-	conditions    map[string][]*Condition
-	fieldsToFetch []string
-	limit         int
-	token         string
+	sop        ScanOp
+	conditions map[string][]*Condition
 }
 
 // NewRangeOp returns a new RangeOp instance
 func NewRangeOp(object DomainObject) *RangeOp {
-	rop := &RangeOp{conditions: map[string][]*Condition{}, object: object}
+	rop := &RangeOp{conditions: map[string][]*Condition{}, sop: ScanOp{object: object}}
 	return rop
 }
 
@@ -69,12 +66,7 @@ func (r *RangeOp) String() string {
 			}
 		}
 	}
-	if r.limit > 0 {
-		fmt.Fprintf(result, " limit %d", r.limit)
-	}
-	if r.token != "" {
-		fmt.Fprintf(result, " token %q", r.token)
-	}
+	addLimitTokenString(result, r.sop.limit, r.sop.token)
 	return result.String()
 }
 
@@ -112,21 +104,21 @@ func (r *RangeOp) LtOrEq(fieldName string, value interface{}) *RangeOp {
 
 // Fields list the non-key fields users want to fetch. If not set, all fields would be fetched.
 // PrimaryKey fields are always fetched.
-func (r *RangeOp) Fields(fieldsToFetch []string) *RangeOp {
-	r.fieldsToFetch = fieldsToFetch
+func (r *RangeOp) Fields(fieldsToRead []string) *RangeOp {
+	r.sop.fieldsToRead = fieldsToRead
 	return r
 }
 
 // Limit sets the number of rows returned per call. If not set, a default
 // value would be applied
 func (r *RangeOp) Limit(n int) *RangeOp {
-	r.limit = n
+	r.sop.limit = n
 	return r
 }
 
 // Offset sets the pagination token. If not set, an empty token would be used.
 func (r *RangeOp) Offset(token string) *RangeOp {
-	r.token = token
+	r.sop.token = token
 	return r
 }
 

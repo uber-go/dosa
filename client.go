@@ -191,9 +191,7 @@ func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainO
 	}
 
 	// map results to entity fields
-	if err := re.SetFieldValues(entity, results); err != nil {
-		return err
-	}
+	re.SetFieldValues(entity, results)
 
 	return nil
 }
@@ -266,7 +264,7 @@ func (c *client) Range(ctx context.Context, r *RangeOp) ([]DomainObject, string,
 		return nil, "", ErrNotInitialized
 	}
 	// look up the entity in the registry
-	re, err := c.registrar.Find(r.object)
+	re, err := c.registrar.Find(r.sop.object)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Range")
 	}
@@ -278,35 +276,35 @@ func (c *client) Range(ctx context.Context, r *RangeOp) ([]DomainObject, string,
 	}
 
 	// convert the fieldsToRead to the server side equivalent
-	fieldsToRead, err := re.ColumnNames(r.fieldsToFetch)
+	fieldsToRead, err := re.ColumnNames(r.sop.fieldsToRead)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Range")
 	}
 
 	// call the server side method
-	values, token, err := c.connector.Range(ctx, re.info, columnConditions, fieldsToRead, r.token, r.limit)
+	values, token, err := c.connector.Range(ctx, re.info, columnConditions, fieldsToRead, r.sop.token, r.sop.limit)
 	if err != nil {
 		// This error should not be wrapped since
 		// it might be a known error
 		return nil, "", err
 	}
 
-	// got some data back, so create some entities for the caller using reflection
-	goType := reflect.TypeOf(r.object).Elem() // get the reflect.Type of the client entity
+	objectArray := objectsFromValueArray(r.sop.object, values, re)
+	return objectArray, token, nil
+}
+
+func objectsFromValueArray(object DomainObject, values []map[string]FieldValue, re *RegisteredEntity) []DomainObject {
+	goType := reflect.TypeOf(object).Elem() // get the reflect.Type of the client entity
 	doType := reflect.TypeOf((*DomainObject)(nil)).Elem()
 	slice := reflect.MakeSlice(reflect.SliceOf(doType), 0, len(values)) // make a slice of these
 	elements := reflect.New(slice.Type())
 	elements.Elem().Set(slice)
-
 	for _, flist := range values { // for each row returned
-		newObject := reflect.New(goType).Interface()             // make a new entity
-		err = re.SetFieldValues(newObject.(DomainObject), flist) // fill it in from server values
-		if err != nil {
-			return nil, "", errors.Wrap(err, "Range: unable to create object")
-		}
+		newObject := reflect.New(goType).Interface()                             // make a new entity
+		re.SetFieldValues(newObject.(DomainObject), flist)                       // fill it in from server values
 		slice = reflect.Append(slice, reflect.ValueOf(newObject.(DomainObject))) // append to slice
 	}
-	return slice.Interface().([]DomainObject), token, nil
+	return slice.Interface().([]DomainObject)
 }
 
 // Search uses the connector to fetch DOSA entities by fields that have been marked "searchable".
@@ -315,6 +313,27 @@ func (c *client) Search(context.Context, *SearchOp) ([]DomainObject, string, err
 }
 
 // ScanEverything uses the connector to fetch all DOSA entities of the given type.
-func (c *client) ScanEverything(context.Context, *ScanOp) ([]DomainObject, string, error) {
-	panic("not implemented")
+func (c *client) ScanEverything(ctx context.Context, sop *ScanOp) ([]DomainObject, string, error) {
+	if !c.initialized {
+		return nil, "", ErrNotInitialized
+	}
+	// look up the entity in the registry
+	re, err := c.registrar.Find(sop.object)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "Range")
+	}
+	// convert the fieldsToRead to the server side equivalent
+	fieldsToRead, err := re.ColumnNames(sop.fieldsToRead)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "Range")
+	}
+
+	// call the server side method
+	values, token, err := c.connector.Scan(ctx, re.info, fieldsToRead, sop.token, sop.limit)
+	if err != nil {
+		return nil, "", err
+	}
+	objectArray := objectsFromValueArray(sop.object, values, re)
+	return objectArray, token, nil
+
 }
