@@ -24,10 +24,11 @@ import (
 	"context"
 	"testing"
 
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/random"
-	"time"
 )
 
 var sut = random.Connector{}

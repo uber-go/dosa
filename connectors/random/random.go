@@ -23,10 +23,11 @@ package random
 import (
 	"context"
 
-	"github.com/pborman/uuid"
-	"github.com/uber-go/dosa"
 	"math/rand"
 	"time"
+
+	"github.com/pborman/uuid"
+	"github.com/uber-go/dosa"
 )
 
 // Connector is a connector implementation for testing
