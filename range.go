@@ -23,8 +23,9 @@ package dosa
 import (
 	"bytes"
 	"fmt"
-	"github.com/pkg/errors"
 	"sort"
+
+	"github.com/pkg/errors"
 )
 
 // RangeOp is used to specify constraints to Range calls
