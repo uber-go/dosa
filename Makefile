@@ -87,7 +87,7 @@ vendor:
 .PHONY: fmt
 GOIMPORTS=goimports
 fmt:
-				$(ECHO_V)gofmt -s -w $(ALL_SRC)
-ifneq (, $(shell command -v $(GOIMPORTS) 2> /dev/null))
-				$(ECHO_V)$(GOIMPORTS) -w $(ALL_SRC)
-endif
+	$(ECHO_V)gofmt -s -w $(ALL_SRC)
+	$(ECHO_V)if [ "$$TRAVIS" != "true" ]; then \
+		$(GOIMPORTS) -w $(ALL_SRC) ; \
+	fi
