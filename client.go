@@ -247,8 +247,23 @@ func (c *client) MultiUpsert(context.Context, []string, ...DomainObject) (MultiR
 
 // Remove deletes an entity by primary key, The entity provided must contain
 // values for all components of its primary key for the operation to succeed.
-func (c *client) Remove(context.Context, DomainObject) error {
-	panic("not implemented")
+func (c *client) Remove(ctx context.Context, entity DomainObject) error {
+	if !c.initialized {
+		return ErrNotInitialized
+	}
+
+	// lookup registered entity, registry will return error if registration
+	// is not found
+	re, err := c.registrar.Find(entity)
+	if err != nil {
+		return err
+	}
+
+	// translate entity field values to a map of primary key name/values pairs
+	keyFieldValues := re.KeyFieldValues(entity)
+
+	err = c.connector.Remove(ctx, re.EntityInfo(), keyFieldValues)
+	return err
 }
 
 // MultiRemove deletes several entities by primary key, The entities provided
