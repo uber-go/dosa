@@ -22,6 +22,10 @@ package yarpc
 
 import (
 	"context"
+	"fmt"
+
+	rpc "go.uber.org/yarpc"
+	"go.uber.org/yarpc/transport/http"
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
@@ -29,9 +33,47 @@ import (
 	"github.com/uber/dosa-idl/.gen/dosa/dosaclient"
 )
 
+type Config struct {
+	Transport   string
+	Host        string
+	Port        string
+	CallerName  string
+	ServiceName string
+}
+
 // Connector holds the client-side RPC interface and some schema information
 type Connector struct {
 	Client dosaclient.Interface
+}
+
+// NewConnector returns a new YARPC connector with the given configuration.
+// TODO: make smarter to handle more complex YARPC configurations, this only
+// supports the one-way http client case.
+func NewConnector(cfg *Config) (*Connector, error) {
+	ycfg := rpc.Config{Name: cfg.CallerName}
+	if cfg.Transport == "http" {
+		uri := fmt.Sprintf("http://%s:%s", cfg.Host, cfg.Port)
+		transport := http.NewTransport()
+		outbound := transport.NewSingleOutbound(uri)
+		ycfg.Outbounds = rpc.Outbounds{
+			cfg.ServiceName: {
+				Unary: outbound,
+			},
+		}
+	} else {
+		panic("tchannel not yet supported")
+	}
+
+	dispatcher := rpc.NewDispatcher(ycfg)
+	if err := dispatcher.Start(); err != nil {
+		return nil, err
+	}
+	defer dispatcher.Stop()
+
+	conn := &Connector{Client: dosaclient.New(dispatcher.ClientConfig(cfg.ServiceName))}
+	defer conn.Shutdown()
+
+	return conn, nil
 }
 
 func entityInfoToSchemaRef(ei *dosa.EntityInfo) *dosarpc.SchemaRef {
