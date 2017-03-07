@@ -125,7 +125,7 @@ func (_mr *_MockConnectorRecorder) MultiUpsert(arg0, arg1, arg2 interface{}) *go
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "MultiUpsert", arg0, arg1, arg2)
 }
 
-func (_m *MockConnector) Range(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 map[string][]dosa.Condition, _param3 []string, _param4 string, _param5 int) ([]map[string]dosa.FieldValue, string, error) {
+func (_m *MockConnector) Range(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 map[string][]*dosa.Condition, _param3 []string, _param4 string, _param5 int) ([]map[string]dosa.FieldValue, string, error) {
 	ret := _m.ctrl.Call(_m, "Range", _param0, _param1, _param2, _param3, _param4, _param5)
 	ret0, _ := ret[0].([]map[string]dosa.FieldValue)
 	ret1, _ := ret[1].(string)

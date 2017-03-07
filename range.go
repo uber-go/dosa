@@ -29,6 +29,7 @@ import (
 
 // RangeOp is used to specify constraints to Range calls
 type RangeOp struct {
+	object        DomainObject
 	conditions    map[string][]*Condition
 	fieldsToFetch []string
 	limit         int
@@ -37,7 +38,7 @@ type RangeOp struct {
 
 // NewRangeOp returns a new RangeOp instance
 func NewRangeOp(object DomainObject) *RangeOp {
-	rop := &RangeOp{conditions: map[string][]*Condition{}}
+	rop := &RangeOp{conditions: map[string][]*Condition{}, object: object}
 	return rop
 }
 

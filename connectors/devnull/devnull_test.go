@@ -86,7 +86,7 @@ func TestDevNull_MultiRemove(t *testing.T) {
 }
 
 func TestDevNull_Range(t *testing.T) {
-	conditions := make(map[string][]dosa.Condition)
+	conditions := make(map[string][]*dosa.Condition)
 	fieldsToRead := make([]string, 1)
 	vals, _, err := sut.Range(context.TODO(), testInfo, conditions, fieldsToRead, "", 0)
 	assert.Nil(t, vals)

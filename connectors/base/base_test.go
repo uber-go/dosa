@@ -110,7 +110,7 @@ func TestBase_MultiRemove(t *testing.T) {
 }
 
 func TestBase_Range(t *testing.T) {
-	conditions := make(map[string][]dosa.Condition)
+	conditions := make(map[string][]*dosa.Condition)
 	fieldsToRead := make([]string, 1)
 	_, _, err := bc.Range(context.TODO(), testInfo, conditions, fieldsToRead, "", 0)
 	assert.Error(t, err)

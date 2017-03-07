@@ -97,7 +97,7 @@ type Connector interface {
 	MultiRemove(ctx context.Context, ei *EntityInfo, multiKeys []map[string]FieldValue) (result []error, err error)
 	// Range does a range scan using a set of conditions.
 	// If fieldsToRead is empty or nil, all fields (including key fields) would be fetched.
-	Range(ctx context.Context, ei *EntityInfo, columnConditions map[string][]Condition, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
+	Range(ctx context.Context, ei *EntityInfo, columnConditions map[string][]*Condition, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
 	// Search does a search against a field marked 'searchable'
 	// If fieldsToRead is empty or nil, all fields (including key fields) would be fetched.
 	Search(ctx context.Context, ei *EntityInfo, fieldPairs FieldNameValuePair, fieldsToRead []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)
