@@ -369,10 +369,10 @@ func TestUnimplementedFunctionsPanic(t *testing.T) {
 		c.MultiUpsert(ctx, dosa.All(), &ClientTestEntity1{})
 	})
 	assert.Panics(t, func() {
-		c.Delete(ctx, &ClientTestEntity1{})
+		c.Remove(ctx, &ClientTestEntity1{})
 	})
 	assert.Panics(t, func() {
-		c.MultiDelete(ctx, &ClientTestEntity1{})
+		c.MultiRemove(ctx, &ClientTestEntity1{})
 	})
 	assert.Panics(t, func() {
 		c.Search(ctx, &dosa.SearchOp{})

@@ -67,12 +67,12 @@ type Client interface {
 	// MultiUpsert creates or updates multiple rows. A list of fields to
 	// update can be specified. Use All() or nil for all fields.
 	MultiUpsert(context.Context, []string, ...DomainObject) (MultiResult, error)
-	// Delete removes a row by primary key. The passed-in entity should contain
+	// Remove removes a row by primary key. The passed-in entity should contain
 	// the primary key field values.
-	Delete(context.Context, DomainObject) error
-	// MultiDelete removes multiple rows by primary key. The passed-in entity should
+	Remove(context.Context, DomainObject) error
+	// MultiRemove removes multiple rows by primary key. The passed-in entity should
 	// contain the primary key field values.
-	MultiDelete(context.Context, ...DomainObject) (MultiResult, error)
+	MultiRemove(context.Context, ...DomainObject) (MultiResult, error)
 	// Range fetches entities within a range
 	Range(context.Context, *RangeOp) ([]DomainObject, string, error)
 	// Search fetches entities by fields that have been marked "searchable"
@@ -82,7 +82,7 @@ type Client interface {
 }
 
 // MultiResult contains the result for each entity operation in the case of
-// MultiRead, MultiUpsert and MultiDelete. If the operation succeeded for
+// MultiRead, MultiUpsert and MultiRemove. If the operation succeeded for
 // an entity, the value for in the map will be nil; otherwise, the entity is
 // untouched and error is not nil.
 type MultiResult map[DomainObject]error
@@ -245,16 +245,16 @@ func (c *client) MultiUpsert(context.Context, []string, ...DomainObject) (MultiR
 	panic("not implemented")
 }
 
-// Delete deletes an entity by primary key, The entity provided must contain
+// Remove deletes an entity by primary key, The entity provided must contain
 // values for all components of its primary key for the operation to succeed.
-func (c *client) Delete(context.Context, DomainObject) error {
+func (c *client) Remove(context.Context, DomainObject) error {
 	panic("not implemented")
 }
 
-// MultiDelete deletes several entities by primary key, The entities provided
+// MultiRemove deletes several entities by primary key, The entities provided
 // must contain values for all components of its primary key for the operation
 // to succeed.
-func (c *client) MultiDelete(context.Context, ...DomainObject) (MultiResult, error) {
+func (c *client) MultiRemove(context.Context, ...DomainObject) (MultiResult, error) {
 	panic("not implemented")
 }
 
