@@ -43,7 +43,8 @@ type Config struct {
 
 // Connector holds the client-side RPC interface and some schema information
 type Connector struct {
-	Client dosaclient.Interface
+	Client     dosaclient.Interface
+	dispatcher *rpc.Dispatcher
 }
 
 // NewConnector returns a new YARPC connector with the given configuration.
@@ -51,7 +52,18 @@ type Connector struct {
 // supports the one-way http client case.
 func NewConnector(cfg *Config) (*Connector, error) {
 	ycfg := rpc.Config{Name: cfg.CallerName}
-	if cfg.Transport == "http" {
+
+	// host and port are required
+	if cfg.Host == "" {
+		return nil, errors.New("invalid host")
+	}
+
+	if cfg.Port == "" {
+		return nil, errors.New("invalid port")
+	}
+
+	switch cfg.Transport {
+	case "http":
 		uri := fmt.Sprintf("http://%s:%s", cfg.Host, cfg.Port)
 		transport := http.NewTransport()
 		outbound := transport.NewSingleOutbound(uri)
@@ -60,20 +72,22 @@ func NewConnector(cfg *Config) (*Connector, error) {
 				Unary: outbound,
 			},
 		}
-	} else {
-		panic("tchannel not yet supported")
+	default:
+		return nil, errors.New("invalid transport (only http supported)")
 	}
 
+	// important to note that this will panic if config contains invalid
+	// values such as service name containing invalid characters
 	dispatcher := rpc.NewDispatcher(ycfg)
 	if err := dispatcher.Start(); err != nil {
 		return nil, err
 	}
-	defer dispatcher.Stop()
 
-	conn := &Connector{Client: dosaclient.New(dispatcher.ClientConfig(cfg.ServiceName))}
-	defer conn.Shutdown()
-
-	return conn, nil
+	client := dosaclient.New(dispatcher.ClientConfig(cfg.ServiceName))
+	return &Connector{
+		Client:     client,
+		dispatcher: dispatcher,
+	}, nil
 }
 
 func entityInfoToSchemaRef(ei *dosa.EntityInfo) *dosarpc.SchemaRef {
@@ -304,9 +318,9 @@ func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error)
 	panic("not impelmented")
 }
 
-// Shutdown is no-op
+// Shutdown stops the dispatcher and drains client
 func (c *Connector) Shutdown() error {
-	return nil
+	return c.dispatcher.Stop()
 }
 
 func init() {
