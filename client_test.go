@@ -355,6 +355,33 @@ func TestClient_ScanEverything(t *testing.T) {
 	assert.Equal(t, dosa.ErrNotFound, err)
 }
 
+func TestClient_Remove(t *testing.T) {
+	reg1, _ := dosa.NewRegistrar(scope, namePrefix, cte1)
+
+	// uninitialized
+	c1, _ := dosa.NewClient(reg1, nullConnector)
+	err := c1.Remove(ctx, cte1)
+	assert.Equal(t, dosa.ErrNotInitialized, err)
+
+	c1.Initialize(ctx)
+
+	// bad entity
+	err = c1.Remove(ctx, cte2)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity2")
+	// success case
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
+	mockConn.EXPECT().Remove(ctx, gomock.Any(), map[string]dosa.FieldValue{"id": dosa.FieldValue(int64(123))}).Return(nil)
+	c2, _ := dosa.NewClient(reg1, mockConn)
+	c2.Initialize(ctx)
+	err = c2.Remove(ctx, &ClientTestEntity1{ID: int64(123)})
+	assert.NoError(t, err)
+
+}
+
 func TestUnimplementedFunctionsPanic(t *testing.T) {
 	reg1, _ := dosa.NewRegistrar(scope, namePrefix, cte1)
 
@@ -369,10 +396,7 @@ func TestUnimplementedFunctionsPanic(t *testing.T) {
 		c.MultiUpsert(ctx, dosa.All(), &ClientTestEntity1{})
 	})
 	assert.Panics(t, func() {
-		c.Delete(ctx, &ClientTestEntity1{})
-	})
-	assert.Panics(t, func() {
-		c.MultiDelete(ctx, &ClientTestEntity1{})
+		c.MultiRemove(ctx, &ClientTestEntity1{})
 	})
 	assert.Panics(t, func() {
 		c.Search(ctx, &dosa.SearchOp{})
