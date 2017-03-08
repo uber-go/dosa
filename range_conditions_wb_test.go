@@ -108,26 +108,26 @@ func TestCompare(t *testing.T) {
 func TestEnsureValidConditions(t *testing.T) {
 	type testCase struct {
 		tp         Type
-		conditions []Condition
+		conditions []*Condition
 		valid      bool
 		msg        string
 	}
 
 	cases := []testCase{
-		{TUUID, []Condition{{Eq, UUID("267275CD-D312-4EFB-A304-020A43971D68")}}, true, "single condition on UUID"},
-		{String, []Condition{{Lt, "zzz"}, {Gt, "aaa"}}, true, "valid Lt Gt string"},
-		{Timestamp, []Condition{{LtOrEq, time.Now()}, {Gt, time.Unix(0, 0)}}, true, "valid LtOrEq - Gt timestamp"},
-		{Double, []Condition{{GtOrEq, float64(1.0)}, {Lt, float64(100)}}, true, "valid GtOrEq - Lt double"},
-		{Int32, []Condition{{GtOrEq, int32(100)}, {LtOrEq, int32(100)}}, true, "valid GtOrEq - LtOrEq int32"},
-		{TUUID, []Condition{{Eq, "2093-1923829"}}, false, "type mismatch"},
-		{Int64, []Condition{{Eq, int64(100)}, {Eq, int64(99)}}, false, "two Eqs"},
-		{Int64, []Condition{{Lt, int64(100)}, {LtOrEq, int64(99)}}, false, "mutually exclusive Lt - LtOrEq"},
-		{Int32, []Condition{{Lt, int32(100)}, {Gt, int32(2)}, {Gt, int32(0)}}, false, "more than 3 conditions"},
-		{Bool, []Condition{{Eq, true}, {LtOrEq, false}}, false, "Eq excludes any other condition"},
-		{Int32, []Condition{{Lt, int32(100)}, {Gt, int32(200)}}, false, "invalid range <100 && > 200"},
-		{Int32, []Condition{{GtOrEq, int32(200)}, {LtOrEq, int32(100)}}, false, "invalid >=200 && <= 100"},
-		{Int32, []Condition{{GtOrEq, int32(200)}, {Lt, int32(100)}}, false, "invalid >=200 && < 100"},
-		{Int32, []Condition{{LtOrEq, int32(100)}, {Gt, int32(200)}}, false, "invalid <=100 && > 200"},
+		{TUUID, []*Condition{{Eq, UUID("267275CD-D312-4EFB-A304-020A43971D68")}}, true, "single condition on UUID"},
+		{String, []*Condition{{Lt, "zzz"}, {Gt, "aaa"}}, true, "valid Lt Gt string"},
+		{Timestamp, []*Condition{{LtOrEq, time.Now()}, {Gt, time.Unix(0, 0)}}, true, "valid LtOrEq - Gt timestamp"},
+		{Double, []*Condition{{GtOrEq, float64(1.0)}, {Lt, float64(100)}}, true, "valid GtOrEq - Lt double"},
+		{Int32, []*Condition{{GtOrEq, int32(100)}, {LtOrEq, int32(100)}}, true, "valid GtOrEq - LtOrEq int32"},
+		{TUUID, []*Condition{{Eq, "2093-1923829"}}, false, "type mismatch"},
+		{Int64, []*Condition{{Eq, int64(100)}, {Eq, int64(99)}}, false, "two Eqs"},
+		{Int64, []*Condition{{Lt, int64(100)}, {LtOrEq, int64(99)}}, false, "mutually exclusive Lt - LtOrEq"},
+		{Int32, []*Condition{{Lt, int32(100)}, {Gt, int32(2)}, {Gt, int32(0)}}, false, "more than 3 conditions"},
+		{Bool, []*Condition{{Eq, true}, {LtOrEq, false}}, false, "Eq excludes any other condition"},
+		{Int32, []*Condition{{Lt, int32(100)}, {Gt, int32(200)}}, false, "invalid range <100 && > 200"},
+		{Int32, []*Condition{{GtOrEq, int32(200)}, {LtOrEq, int32(100)}}, false, "invalid >=200 && <= 100"},
+		{Int32, []*Condition{{GtOrEq, int32(200)}, {Lt, int32(100)}}, false, "invalid >=200 && < 100"},
+		{Int32, []*Condition{{LtOrEq, int32(100)}, {Gt, int32(200)}}, false, "invalid <=100 && > 200"},
 	}
 
 	for _, c := range cases {

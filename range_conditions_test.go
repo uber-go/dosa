@@ -95,19 +95,19 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 	assert.NoError(t, testEntityRange.EnsureValid()) // sanity check
 
 	type validCase struct {
-		conds map[string][]dosa.Condition
+		conds map[string][]*dosa.Condition
 		desc  string
 	}
 	validCases := []validCase{
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 			},
 			desc: "supply only partition keys is allowed, no conditions on clustering keys",
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Eq, int32(99)}},
@@ -115,7 +115,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			desc: "eq condition on first clustering key, no condition on second and third",
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.GtOrEq, int32(99)}, {dosa.Lt, int32(200)}},
@@ -123,7 +123,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			desc: "close range condition on first clustering key, no condition on second and third",
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Eq, int32(99)}},
@@ -132,7 +132,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			desc: "open range condition on second clustering key, no restaint on third",
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Eq, int32(99)}},
@@ -141,7 +141,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			desc: "eq condition on second clustering key, no restaint on third",
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Eq, int32(99)}},
@@ -151,7 +151,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			desc: "close range condition on third/last clustering key with < and >",
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Eq, int32(99)}},
@@ -161,7 +161,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			desc: "close range condition on third/last clustering key with <= and >=",
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Eq, int32(99)}},
@@ -171,7 +171,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			desc: "close range condition on third/last clustering key with < and >=",
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Eq, int32(99)}},
@@ -183,7 +183,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 	}
 
 	type invalidCase struct {
-		conds    map[string][]dosa.Condition
+		conds    map[string][]*dosa.Condition
 		desc     string
 		errMsg   string
 		errField string
@@ -191,7 +191,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 
 	invalidCases := []invalidCase{
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"f": {{dosa.Eq, []byte{1, 2, 3}}},
@@ -201,7 +201,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			errField: columnToFieldMap["f"],
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"c": {{dosa.Gt, int32(100)}},
 			},
@@ -210,7 +210,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			errField: columnToFieldMap["b"],
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Gt, int64(100)}},
 			},
@@ -219,7 +219,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			errField: columnToFieldMap["b"],
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}, {dosa.Eq, int64(200)}},
 			},
@@ -228,7 +228,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			errField: columnToFieldMap["b"],
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, "100"}},
 			},
@@ -237,7 +237,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			errField: columnToFieldMap["b"],
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Eq, "100"}},
@@ -247,7 +247,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			errField: columnToFieldMap["c"],
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Lt, int32(100)}, {dosa.Gt, int32(200)}},
@@ -257,7 +257,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			errField: columnToFieldMap["c"],
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Lt, int32(100)}, {dosa.Gt, int32(200)}},
@@ -268,7 +268,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			errField: columnToFieldMap["c"],
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Lt, int32(100)}, {dosa.Gt, int32(200)}},
@@ -281,7 +281,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			errField: columnToFieldMap["c"],
 		},
 		{
-			conds: map[string][]dosa.Condition{
+			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Eq, int32(100)}},
