@@ -94,10 +94,6 @@ func (e *RegisteredEntity) KeyFieldValues(entity DomainObject) map[string]FieldV
 	for _, pk := range e.table.Key.PartitionKeys {
 		fieldName := e.table.ColToField[pk]
 		value := v.FieldByName(fieldName)
-		if !value.IsValid() {
-			// this should never happen
-			panic("Field " + fieldName + " is not a valid field for " + e.table.StructName)
-		}
 		fieldValues[pk] = value.Interface()
 	}
 
@@ -143,6 +139,9 @@ func (e *RegisteredEntity) OnlyFieldValues(entity DomainObject, fieldNames []str
 
 // ColumnNames translates field names to column names.
 func (e *RegisteredEntity) ColumnNames(fieldNames []string) ([]string, error) {
+	if fieldNames == nil {
+		return nil, nil
+	}
 	columnNames := make([]string, len(fieldNames))
 	for i, fieldName := range fieldNames {
 		columnName, ok := e.table.FieldToCol[fieldName]
@@ -156,14 +155,14 @@ func (e *RegisteredEntity) ColumnNames(fieldNames []string) ([]string, error) {
 
 // SetFieldValues is a helper for populating a DOSA entity with the given
 // fieldName->value map
-func (e *RegisteredEntity) SetFieldValues(entity DomainObject, fieldValues map[string]FieldValue) error {
+func (e *RegisteredEntity) SetFieldValues(entity DomainObject, fieldValues map[string]FieldValue) {
 	r := reflect.ValueOf(entity).Elem()
 	for columnName, fieldValue := range fieldValues {
 		// column name may be different from the entity's field name, so we
 		// have to look it up along the way.
 		fieldName, ok := e.table.ColToField[columnName]
 		if !ok {
-			return fmt.Errorf("%s does not map to a valid field name in %s", columnName, e.table.StructName)
+			continue // we ignore fields that we don't know about
 		}
 		val := r.FieldByName(fieldName)
 		if !val.IsValid() {
@@ -171,7 +170,6 @@ func (e *RegisteredEntity) SetFieldValues(entity DomainObject, fieldValues map[s
 		}
 		val.Set(reflect.ValueOf(fieldValue))
 	}
-	return nil
 }
 
 // Registrar is the interface to register DOSA entities.

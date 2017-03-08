@@ -59,7 +59,7 @@ func TestParser(t *testing.T) {
 	assert := assert.New(t)
 
 	assert.Equal(13, len(entities), fmt.Sprintf("%s", entities))
-	assert.Equal(12, len(errs), fmt.Sprintf("%s", err))
+	assert.Equal(13, len(errs), fmt.Sprintf("%s", err))
 	assert.Nil(err)
 
 	for _, entity := range entities {

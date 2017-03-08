@@ -26,13 +26,56 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/uber-go/dosa"
+	"time"
 )
+
+type AllTypes struct {
+	dosa.Entity `dosa:"primaryKey=BoolType"`
+	BoolType    bool
+	Int32Type   int32
+	Int64Type   int64
+	DoubleType  float64
+	StringType  string
+	BlobType    []byte
+	TimeType    time.Time
+	UUIDType    dosa.UUID
+}
 
 func TestNewScanOp(t *testing.T) {
 	assert.NotNil(t, dosa.NewScanOp(&dosa.Entity{}))
 }
 
 func TestScanOpStringer(t *testing.T) {
-	o := dosa.NewScanOp(&dosa.Entity{})
-	assert.Equal(t, "", o.String())
+	for _, test := range ScanTestCases {
+		assert.Equal(t, test.stringer, test.sop.String(), test.descript)
+	}
+}
+
+var ScanTestCases = []struct {
+	descript  string
+	sop       *dosa.ScanOp
+	stringer  string
+	converted string
+	err       string
+}{
+	{
+		descript: "empty scanop, valid",
+		sop:      dosa.NewScanOp(&AllTypes{}),
+		stringer: "ScanOp",
+	},
+	{
+		descript: "empty with limit",
+		sop:      dosa.NewScanOp(&AllTypes{}).Limit(10),
+		stringer: "ScanOp limit 10",
+	},
+	{
+		descript: "empty with token",
+		sop:      dosa.NewScanOp(&AllTypes{}).Offset("toketoketoke"),
+		stringer: "ScanOp token \"toketoketoke\"",
+	},
+	{
+		descript: "with valid field list",
+		sop:      dosa.NewScanOp(&AllTypes{}).Fields([]string{"StringType"}),
+		stringer: "ScanOp",
+	},
 }

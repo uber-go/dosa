@@ -49,16 +49,19 @@ type ClientTestEntity2 struct {
 }
 
 var (
-	cte1 = &ClientTestEntity1{ID: int64(1), Name: "foo", Email: "foo@uber.com"}
-	cte2 = &ClientTestEntity2{UUID: "b1f23fa3-f453-45b4-a5d5-6d73078ac3bd", Color: "blue", IsActive: true}
+	cte1          = &ClientTestEntity1{ID: int64(1), Name: "foo", Email: "foo@uber.com"}
+	cte2          = &ClientTestEntity2{UUID: "b1f23fa3-f453-45b4-a5d5-6d73078ac3bd", Color: "blue", IsActive: true}
+	ctx           = context.TODO()
+	scope         = "test"
+	namePrefix    = "team.service"
+	nullConnector = &devnull.Connector{}
 )
 
 func ExampleNewClient() {
 	// initialize registrar
-	entities := []dosa.DomainObject{cte1}
-	reg, err := dosa.NewRegistrar("test", "myteam.myservice", entities...)
+	reg, err := dosa.NewRegistrar("test", "myteam.myservice", cte1)
 	if err != nil {
-		// registration will most likely fail as a result of programmer error
+		// registration will fail if the object is tagged incorrectly
 		panic("dosa.NewRegister returned an error")
 	}
 
@@ -79,31 +82,25 @@ func ExampleNewClient() {
 
 func TestNewClient(t *testing.T) {
 	// initialize registrar
-	entities := []dosa.DomainObject{cte1}
-	reg, err := dosa.NewRegistrar("test", "myteam.myservice", entities...)
+	reg, err := dosa.NewRegistrar("test", "myteam.myservice", cte1)
 	assert.NoError(t, err)
 	assert.NotNil(t, reg)
 
-	// use a devnull connector for test test test purposes
-	conn := &devnull.Connector{}
-
 	// initialize a pseudo-connected client
-	client, err := dosa.NewClient(reg, conn)
+	client, err := dosa.NewClient(reg, nullConnector)
 	assert.NoError(t, err)
-	err = client.Initialize(context.TODO())
+	err = client.Initialize(ctx)
 	assert.NoError(t, err)
 }
 
 func TestClient_Initialize(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	ctx := context.TODO()
-	emptyReg, _ := dosa.NewRegistrar("test", "team.service", []dosa.DomainObject{}...)
-	reg, _ := dosa.NewRegistrar("test", "team.service", []dosa.DomainObject{cte1}...)
-	conn := &devnull.Connector{}
+	emptyReg, _ := dosa.NewRegistrar("test", "team.service")
+	reg, _ := dosa.NewRegistrar("test", "team.service", cte1)
 
 	// find error
-	c1, _ := dosa.NewClient(emptyReg, conn)
+	c1, _ := dosa.NewClient(emptyReg, nullConnector)
 	assert.Error(t, c1.Initialize(ctx))
 
 	// CheckSchema error
@@ -113,7 +110,7 @@ func TestClient_Initialize(t *testing.T) {
 	assert.Error(t, c2.Initialize(ctx))
 
 	// happy path
-	c3, _ := dosa.NewClient(reg, conn)
+	c3, _ := dosa.NewClient(reg, nullConnector)
 	assert.NoError(t, c3.Initialize(ctx))
 
 	// already initialized
@@ -121,14 +118,8 @@ func TestClient_Initialize(t *testing.T) {
 }
 
 func TestClient_Read(t *testing.T) {
-	ctx := context.TODO()
-	scope := "test"
-	namePrefix := "team.service"
-	ctes1 := []dosa.DomainObject{cte1}
-	ctes2 := []dosa.DomainObject{cte1, cte2}
-	reg1, _ := dosa.NewRegistrar(scope, namePrefix, ctes1...)
-	reg2, _ := dosa.NewRegistrar(scope, namePrefix, ctes2...)
-	conn := &devnull.Connector{}
+	reg1, _ := dosa.NewRegistrar(scope, namePrefix, cte1)
+	reg2, _ := dosa.NewRegistrar(scope, namePrefix, cte1, cte2)
 	fieldsToRead := []string{"ID", "Email"}
 	results := map[string]dosa.FieldValue{
 		"id":    int64(2),
@@ -137,13 +128,14 @@ func TestClient_Read(t *testing.T) {
 	}
 
 	// uninitialized
-	c1, _ := dosa.NewClient(reg1, conn)
+	c1, _ := dosa.NewClient(reg1, nullConnector)
 	assert.Error(t, c1.Read(ctx, fieldsToRead, cte1))
 
-	// find error
-	c2, _ := dosa.NewClient(reg1, conn)
-	c2.Initialize(ctx)
-	assert.Error(t, c2.Read(ctx, fieldsToRead, cte2))
+	// unregistered object
+	c1.Initialize(ctx)
+	err := c1.Read(ctx, dosa.All(), cte2)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity2")
 
 	// happy path, mock connector
 	ctrl := gomock.NewController(t)
@@ -164,24 +156,42 @@ func TestClient_Read(t *testing.T) {
 	assert.Equal(t, cte1.Email, results["email"])
 }
 
+func TestClient_Read_Errors(t *testing.T) {
+	reg1, _ := dosa.NewRegistrar(scope, namePrefix, cte1)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	readError := errors.New("oops")
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
+	mockConn.EXPECT().Read(gomock.Any(), gomock.Any(), gomock.Any(), dosa.All()).
+		Do(func(_ context.Context, _ *dosa.EntityInfo, columnValues map[string]dosa.FieldValue, columnsToRead []string) {
+			assert.Equal(t, columnValues["id"], cte1.ID)
+		}).Return(nil, readError)
+
+	c1, _ := dosa.NewClient(reg1, mockConn)
+	assert.NoError(t, c1.Initialize(ctx))
+	err := c1.Read(ctx, dosa.All(), cte1)
+	assert.Error(t, err)
+	assert.Equal(t, err, readError)
+	err = c1.Read(ctx, []string{"badcol"}, cte1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "badcol")
+}
+
 func TestClient_Upsert(t *testing.T) {
-	ctx := context.TODO()
-	ctes1 := []dosa.DomainObject{cte1}
-	ctes2 := []dosa.DomainObject{cte1, cte2}
-	reg1, _ := dosa.NewRegistrar("test", "team.service", ctes1...)
-	reg2, _ := dosa.NewRegistrar("test", "team.service", ctes2...)
-	conn := &devnull.Connector{}
+	reg1, _ := dosa.NewRegistrar("test", "team.service", cte1)
+	reg2, _ := dosa.NewRegistrar("test", "team.service", cte1, cte2)
 	fieldsToUpdate := []string{"Email"}
 	updatedEmail := "bar@email.com"
 
 	// uninitialized
-	c1, _ := dosa.NewClient(reg1, conn)
+	c1, _ := dosa.NewClient(reg1, nullConnector)
 	assert.Error(t, c1.Upsert(ctx, fieldsToUpdate, cte1))
 
-	// find error
-	c2, _ := dosa.NewClient(reg1, conn)
+	// unregistered object error
+	c2, _ := dosa.NewClient(reg1, nullConnector)
 	c2.Initialize(ctx)
-	assert.Error(t, c2.Read(ctx, fieldsToUpdate, cte2))
+	assert.Error(t, c2.Upsert(ctx, fieldsToUpdate, cte2))
 
 	// happy path, mock connector
 	ctrl := gomock.NewController(t)
@@ -201,13 +211,29 @@ func TestClient_Upsert(t *testing.T) {
 	assert.Equal(t, cte1.Email, updatedEmail)
 }
 
+func TestClient_Upsert_Errors(t *testing.T) {
+	reg1, _ := dosa.NewRegistrar(scope, namePrefix, cte1)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	readError := errors.New("oops")
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
+	mockConn.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Return(readError)
+
+	c1, _ := dosa.NewClient(reg1, mockConn)
+	assert.NoError(t, c1.Initialize(ctx))
+	// TODO: This is a bug, fails with Cannot provide empty list to OnlyFieldValues
+	// err := c1.Upsert(ctx, dosa.All(), cte1)
+	err := c1.Upsert(ctx, []string{"ID"}, cte1)
+	assert.Error(t, err)
+	assert.Equal(t, err, readError)
+	err = c1.Upsert(ctx, []string{"badcol"}, cte1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "badcol")
+}
+
 func TestClient_Range(t *testing.T) {
-	ctx := context.TODO()
-	scope := "test"
-	namePrefix := "team.service"
-	ctes1 := []dosa.DomainObject{cte1}
-	reg1, _ := dosa.NewRegistrar(scope, namePrefix, ctes1...)
-	conn := &devnull.Connector{}
+	reg1, _ := dosa.NewRegistrar(scope, namePrefix, cte1)
 	fieldsToRead := []string{"ID", "Email"}
 	resultRow := map[string]dosa.FieldValue{
 		"id":    int64(2),
@@ -216,7 +242,7 @@ func TestClient_Range(t *testing.T) {
 	}
 
 	// uninitialized
-	c1, _ := dosa.NewClient(reg1, conn)
+	c1, _ := dosa.NewClient(reg1, nullConnector)
 	rop := dosa.NewRangeOp(cte1).Fields(fieldsToRead).Eq("ID", "123").Offset("tokeytoketoke")
 	_, _, err := c1.Range(ctx, rop)
 	assert.Equal(t, dosa.ErrNotInitialized, err)
@@ -269,4 +295,86 @@ func TestClient_Range(t *testing.T) {
 	rop = dosa.NewRangeOp(cte1)
 	_, _, err = c1.Range(ctx, rop)
 	assert.Equal(t, dosa.ErrNotFound, err)
+}
+
+func TestClient_ScanEverything(t *testing.T) {
+	reg1, _ := dosa.NewRegistrar(scope, namePrefix, cte1)
+	fieldsToRead := []string{"ID", "Email"}
+	resultRow := map[string]dosa.FieldValue{
+		"id":          int64(2),
+		"name":        "bar",
+		"email":       "bar@email.com",
+		"straycolumn": "this_should_be_discarded",
+	}
+
+	// uninitialized
+	c1, _ := dosa.NewClient(reg1, nullConnector)
+	sop := dosa.NewScanOp(cte1).Fields(fieldsToRead).Offset("tokeytoketoke")
+	_, _, err := c1.ScanEverything(ctx, sop)
+	assert.Equal(t, dosa.ErrNotInitialized, err)
+
+	c1.Initialize(ctx)
+
+	// bad entity
+	sop = dosa.NewScanOp(cte2)
+	_, _, err = c1.ScanEverything(ctx, sop)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity2")
+
+	// bad projected column
+	sop = dosa.NewScanOp(cte1).Fields([]string{"borkborkbork"})
+	_, _, err = c1.ScanEverything(ctx, sop)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity1")
+	assert.Contains(t, err.Error(), "borkborkbork")
+
+	// success case
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
+	mockConn.EXPECT().Scan(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return([]map[string]dosa.FieldValue{resultRow}, "continuation-token", nil)
+	c2, _ := dosa.NewClient(reg1, mockConn)
+	c2.Initialize(ctx)
+	sop = dosa.NewScanOp(cte1)
+	rows, token, err := c2.ScanEverything(ctx, sop)
+	assert.NoError(t, err)
+	assert.NotNil(t, rows)
+	assert.Equal(t, 1, len(rows))
+	for _, obj := range rows {
+		assert.Equal(t, resultRow["id"], obj.(*ClientTestEntity1).ID)
+		assert.Equal(t, resultRow["name"], obj.(*ClientTestEntity1).Name)
+		assert.Equal(t, resultRow["email"], obj.(*ClientTestEntity1).Email)
+	}
+	assert.Equal(t, "continuation-token", token)
+
+	// no resulting rows, just use the devnull connector
+	sop = dosa.NewScanOp(cte1)
+	_, _, err = c1.ScanEverything(ctx, sop)
+	assert.Equal(t, dosa.ErrNotFound, err)
+}
+
+func TestUnimplementedFunctionsPanic(t *testing.T) {
+	reg1, _ := dosa.NewRegistrar(scope, namePrefix, cte1)
+
+	c, _ := dosa.NewClient(reg1, nullConnector)
+	assert.Panics(t, func() {
+		c.CreateIfNotExists(ctx, &ClientTestEntity1{})
+	})
+	assert.Panics(t, func() {
+		c.MultiRead(ctx, dosa.All(), &ClientTestEntity1{})
+	})
+	assert.Panics(t, func() {
+		c.MultiUpsert(ctx, dosa.All(), &ClientTestEntity1{})
+	})
+	assert.Panics(t, func() {
+		c.Delete(ctx, &ClientTestEntity1{})
+	})
+	assert.Panics(t, func() {
+		c.MultiDelete(ctx, &ClientTestEntity1{})
+	})
+	assert.Panics(t, func() {
+		c.Search(ctx, &dosa.SearchOp{})
+	})
 }
