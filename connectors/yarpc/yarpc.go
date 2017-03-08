@@ -320,6 +320,10 @@ func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error)
 
 // Shutdown stops the dispatcher and drains client
 func (c *Connector) Shutdown() error {
+	// instances w/ mocked client shouldn't require a dispatcher
+	if c.dispatcher == nil {
+		return nil
+	}
 	return c.dispatcher.Stop()
 }
 
