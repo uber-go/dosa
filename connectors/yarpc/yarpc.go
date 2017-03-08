@@ -34,11 +34,11 @@ import (
 )
 
 type Config struct {
-	Transport   string
-	Host        string
-	Port        string
-	CallerName  string
-	ServiceName string
+	Transport   string `yaml:"transport"`
+	Host        string `yaml:"host"`
+	Port        string `yaml:"port"`
+	CallerName  string `yaml:"callerName"`
+	ServiceName string `yaml:"serviceName"`
 }
 
 // Connector holds the client-side RPC interface and some schema information
