@@ -33,6 +33,7 @@ import (
 	"github.com/uber/dosa-idl/.gen/dosa/dosaclient"
 )
 
+// Config contains the YARPC client parameters
 type Config struct {
 	Transport   string `yaml:"transport"`
 	Host        string `yaml:"host"`
