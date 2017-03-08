@@ -39,11 +39,11 @@ type Condition struct {
 // The transform arg is a function to transform the column name to a better representation for error message under
 // different circumstances. For example, on client side it can transform the column name to actual go struct field name;
 // and on the server side, an identity transformer func can be used.
-func EnsureValidRangeConditions(ed *EntityDefinition, columnConditions map[string][]Condition, transform func(string) string) error {
+func EnsureValidRangeConditions(ed *EntityDefinition, columnConditions map[string][]*Condition, transform func(string) string) error {
 	unconstrainedPartitionKeySet := ed.PartitionKeySet()
 	columnTypes := ed.ColumnTypes()
 
-	clusteringKeyConditions := make([][]Condition, len(ed.Key.ClusteringKeys))
+	clusteringKeyConditions := make([][]*Condition, len(ed.Key.ClusteringKeys))
 
 COND:
 	for column, conds := range columnConditions {
@@ -80,7 +80,7 @@ COND:
 	return nil
 }
 
-func ensureExactOneEqCondition(t Type, conditions []Condition) error {
+func ensureExactOneEqCondition(t Type, conditions []*Condition) error {
 	if len(conditions) != 1 {
 		return errors.Errorf("expect exact one Eq condition, found: %v", conditions)
 	}
@@ -97,7 +97,7 @@ func ensureExactOneEqCondition(t Type, conditions []Condition) error {
 }
 
 func ensureClusteringKeyConditions(ed *EntityDefinition, columnTypes map[string]Type,
-	clusteringKeyConditions [][]Condition, transform func(string) string) error {
+	clusteringKeyConditions [][]*Condition, transform func(string) string) error {
 	// ensure conditions are applied to consecutive clustering keys
 	lastConstrainedIndex := -1
 	for i, conditions := range clusteringKeyConditions {
@@ -137,7 +137,7 @@ No other combinations of operators are permitted.
 
 // Start with simple rules as specified in `conditionsRule` above.
 // Hence, the length of valid conditions slice is either one or two (won't be called if zero length).
-func ensureValidConditions(t Type, conditions []Condition) error {
+func ensureValidConditions(t Type, conditions []*Condition) error {
 	// check type sanity
 	for _, r := range conditions {
 		if err := ensureTypeMatch(t, r.Value); err != nil {
