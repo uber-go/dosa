@@ -87,6 +87,70 @@ var testRPCSchemaRef = drpc.SchemaRef{
 	Version:    testInt32Ptr(12345),
 }
 
+func TestYaRPCClient_NewConnector(t *testing.T) {
+	cases := []struct {
+		cfg     yarpc.Config
+		isErr   bool
+		isPanic bool
+	}{
+		{
+			// invalid host
+			cfg:   yarpc.Config{},
+			isErr: true,
+		}, {
+			// invalid port
+			cfg: yarpc.Config{
+				Host: "localhost",
+			},
+			isErr: true,
+		}, {
+			// invalid transport
+			cfg: yarpc.Config{
+				Host: "localhost",
+				Port: "8080",
+			},
+			isErr: true,
+		}, {
+			// dispatcher start error (panic)
+			cfg: yarpc.Config{
+				Transport:   "http",
+				Host:        "localhost",
+				Port:        "8080",
+				CallerName:  "-",
+				ServiceName: "dosa-gateway",
+			},
+			isPanic: true,
+		}, {
+			// success
+			cfg: yarpc.Config{
+				Transport:   "http",
+				Host:        "localhost",
+				Port:        "8080",
+				CallerName:  "dosa-test",
+				ServiceName: "dosa-gateway",
+			},
+		},
+	}
+
+	for _, c := range cases {
+		if c.isPanic {
+			assert.Panics(t, func() {
+				yarpc.NewConnector(&c.cfg)
+			})
+			continue
+		}
+
+		conn, err := yarpc.NewConnector(&c.cfg)
+		if c.isErr {
+			assert.Error(t, err)
+			assert.Nil(t, conn)
+			continue
+		}
+		assert.NoError(t, err)
+		assert.NotNil(t, conn)
+	}
+}
+
 // Test a happy path read of one column and specify the primary key
 func TestYaRPCClient_Read(t *testing.T) {
 	// build a mock RPC client

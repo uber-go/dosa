@@ -22,6 +22,10 @@ package yarpc
 
 import (
 	"context"
+	"fmt"
+
+	rpc "go.uber.org/yarpc"
+	"go.uber.org/yarpc/transport/http"
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
@@ -29,9 +33,62 @@ import (
 	"github.com/uber/dosa-idl/.gen/dosa/dosaclient"
 )
 
+// Config contains the YARPC client parameters
+type Config struct {
+	Transport   string `yaml:"transport"`
+	Host        string `yaml:"host"`
+	Port        string `yaml:"port"`
+	CallerName  string `yaml:"callerName"`
+	ServiceName string `yaml:"serviceName"`
+}
+
 // Connector holds the client-side RPC interface and some schema information
 type Connector struct {
-	Client dosaclient.Interface
+	Client     dosaclient.Interface
+	dispatcher *rpc.Dispatcher
+}
+
+// NewConnector returns a new YARPC connector with the given configuration.
+// TODO: make smarter to handle more complex YARPC configurations, this only
+// supports the one-way http client case.
+func NewConnector(cfg *Config) (*Connector, error) {
+	ycfg := rpc.Config{Name: cfg.CallerName}
+
+	// host and port are required
+	if cfg.Host == "" {
+		return nil, errors.New("invalid host")
+	}
+
+	if cfg.Port == "" {
+		return nil, errors.New("invalid port")
+	}
+
+	switch cfg.Transport {
+	case "http":
+		uri := fmt.Sprintf("http://%s:%s", cfg.Host, cfg.Port)
+		transport := http.NewTransport()
+		outbound := transport.NewSingleOutbound(uri)
+		ycfg.Outbounds = rpc.Outbounds{
+			cfg.ServiceName: {
+				Unary: outbound,
+			},
+		}
+	default:
+		return nil, errors.New("invalid transport (only http supported)")
+	}
+
+	// important to note that this will panic if config contains invalid
+	// values such as service name containing invalid characters
+	dispatcher := rpc.NewDispatcher(ycfg)
+	if err := dispatcher.Start(); err != nil {
+		return nil, err
+	}
+
+	client := dosaclient.New(dispatcher.ClientConfig(cfg.ServiceName))
+	return &Connector{
+		Client:     client,
+		dispatcher: dispatcher,
+	}, nil
 }
 
 func entityInfoToSchemaRef(ei *dosa.EntityInfo) *dosarpc.SchemaRef {
@@ -262,9 +319,13 @@ func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error)
 	panic("not impelmented")
 }
 
-// Shutdown is no-op
+// Shutdown stops the dispatcher and drains client
 func (c *Connector) Shutdown() error {
-	return nil
+	// instances w/ mocked client shouldn't require a dispatcher
+	if c.dispatcher == nil {
+		return nil
+	}
+	return c.dispatcher.Stop()
 }
 
 func init() {
