@@ -23,6 +23,7 @@ package yarpc
 import (
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 )
@@ -175,4 +176,76 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 			ClusteringKeys: ck,
 		},
 	}
+}
+func encodeOperator(o dosa.Operator) *dosarpc.Operator {
+	var op dosarpc.Operator
+	switch o {
+	case dosa.Eq:
+		op = dosarpc.OperatorEq
+	case dosa.Gt:
+		op = dosarpc.OperatorGt
+	case dosa.GtOrEq:
+		op = dosarpc.OperatorGtOrEq
+	case dosa.Lt:
+		op = dosarpc.OperatorLt
+	case dosa.LtOrEq:
+		op = dosarpc.OperatorLtOrEq
+	}
+	return &op
+}
+
+func decodeResults(ei *dosa.EntityInfo, invals dosarpc.FieldValueMap) map[string]dosa.FieldValue {
+	result := map[string]dosa.FieldValue{}
+	// TODO: create a typemap to make this faster
+	for name, value := range invals {
+		for _, col := range ei.Def.Columns {
+			if col.Name == name {
+				result[name] = RawValueAsInterface(*value.ElemValue, col.Type)
+				break
+			}
+		}
+	}
+	return result
+}
+
+func makeRPCFieldsToRead(fieldsToRead []string) map[string]struct{} {
+	var rpcFieldsToRead map[string]struct{}
+	if fieldsToRead != nil {
+		rpcFieldsToRead = map[string]struct{}{}
+		for _, field := range fieldsToRead {
+			rpcFieldsToRead[field] = struct{}{}
+		}
+	}
+	return rpcFieldsToRead
+}
+func entityInfoToSchemaRef(ei *dosa.EntityInfo) *dosarpc.SchemaRef {
+	scope := ei.Ref.Scope
+	namePrefix := ei.Ref.NamePrefix
+	entityName := ei.Ref.EntityName
+	version := ei.Ref.Version
+	sr := dosarpc.SchemaRef{
+		Scope:      &scope,
+		NamePrefix: &namePrefix,
+		EntityName: &entityName,
+		Version:    &version,
+	}
+	return &sr
+}
+
+func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) dosarpc.FieldValueMap {
+	fields := dosarpc.FieldValueMap{}
+	for name, value := range values {
+		rpcValue := &dosarpc.Value{ElemValue: RawValueFromInterface(value)}
+		fields[name] = rpcValue
+	}
+	return fields
+}
+
+// decorate an error with a stack trace, but only if it's not a known error
+func errorDecorate(err error) error {
+	switch err {
+	case dosa.ErrNotFound, dosa.ErrNotInitialized:
+		return err
+	}
+	return errors.WithStack(err)
 }
