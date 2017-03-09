@@ -1,5 +1,5 @@
-hash: f7e6b7d849e0f2c3d83ded77a26320370ebaea0c8f76507569f5da7f83f90328
-updated: 2017-03-09T12:00:57.720467238-08:00
+hash: 1b38ff306c1d5c2ac6210a6ce50757c9695de40b5a0dac42657d2c1399508366
+updated: 2017-03-09T12:10:51.081360882-08:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
@@ -43,6 +43,8 @@ imports:
   - tnet
   - trand
   - typed
+- name: github.com/yarpc/yarpc-go
+  version: 6ad92c34d7e982d4bb7299f20e6a27652116cf5d
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: go.uber.org/atomic

@@ -21,7 +21,7 @@ import:
   version: ^1.0.0
 - package: github.com/yookoala/realpath
 - package: github.com/jessevdk/go-flags
-- package: go.uber.org/yarpc
+- package: github.com/yarpc/yarpc-go
   version: ^1.6.0
 testImport:
 - package: golang.org/x/tools
