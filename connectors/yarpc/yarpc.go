@@ -325,9 +325,17 @@ func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
 	return nil
 }
 
-// DropScope is not implemented yet
+// DropScope removes the scope specified
 func (c *Connector) DropScope(ctx context.Context, scope string) error {
-	panic("not implemented")
+	request := &dosarpc.DropScopeRequest{
+		Name: &scope,
+	}
+
+	if err := c.Client.DropScope(ctx, request); err != nil {
+		return errors.Wrap(err, "rpc dropScope failed")
+	}
+
+	return nil
 }
 
 // ScopeExists is not implemented yet
