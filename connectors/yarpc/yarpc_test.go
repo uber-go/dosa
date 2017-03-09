@@ -489,6 +489,24 @@ func TestClient_CreateScope(t *testing.T) {
 	assert.Contains(t, err.Error(), "test error")
 }
 
+func TestClient_TruncateScope(t *testing.T) {
+	// build a mock RPC client
+	ctrl := gomock.NewController(t)
+	mockedClient := dosatest.NewMockClient(ctrl)
+	sut := yarpc.Connector{Client: mockedClient}
+
+	ctx := context.Background()
+
+	mockedClient.EXPECT().TruncateScope(ctx, gomock.Any()).Return(nil)
+	err := sut.TruncateScope(ctx, "scope")
+	assert.NoError(t, err)
+
+	mockedClient.EXPECT().TruncateScope(ctx, gomock.Any()).Return(errors.New("test error"))
+	err = sut.TruncateScope(ctx, "scope")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "test error")
+}
+
 // TestPanic is an unimplemented method test for coverage, remove these as they are implemented
 func TestPanic(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -511,10 +529,6 @@ func TestPanic(t *testing.T) {
 
 	assert.Panics(t, func() {
 		sut.Remove(ctx, testEi, nil)
-	})
-
-	assert.Panics(t, func() {
-		sut.TruncateScope(ctx, "")
 	})
 
 	assert.Panics(t, func() {
