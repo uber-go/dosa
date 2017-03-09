@@ -376,7 +376,7 @@ func (c *adminClient) UpsertSchema(ctx context.Context, fqns ...FQN) error {
 
 // CreateScope creates a new scope
 func (c *adminClient) CreateScope(s string) error {
-	panic("not implemented")
+	return c.connector.CreateScope(context.Background(), s)
 }
 
 // TruncateScope keeps the scope and the schemas, but drops the data associated with the scope
