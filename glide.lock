@@ -1,5 +1,5 @@
-hash: 4b83e4e1aabe0f7dcd9942fbd44b0699c300273ef8af13a2a3b8b26fb48a410c
-updated: 2017-02-24T11:31:28.218389767-08:00
+hash: 2ed65209b5f6c583ec4ee8463cedd220dfcac0a4dc7e60db26164f64494e395b
+updated: 2017-03-02T17:34:12.809305593-08:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
@@ -7,6 +7,8 @@ imports:
   version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
   subpackages:
   - gomock
+- name: github.com/jessevdk/go-flags
+  version: 460c7bb0abd6e927f2767cadc91aa6ef776a98b4
 - name: github.com/opentracing/opentracing-go
   version: 6edb48674bd9467b8e91fda004f2bd7202d60ce4
   subpackages:
@@ -23,6 +25,8 @@ imports:
   subpackages:
   - assert
   - mock
+- name: github.com/uber-go/atomic
+  version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
 - name: github.com/uber/dosa-idl
   version: 5a9c550942325d52b35d108657ebad651e0e1006
   repo: git@github.com:uber/dosa-idl.git
@@ -31,12 +35,20 @@ imports:
   - .gen/dosa
   - .gen/dosa/dosaclient
   - .gen/dosa/dosatest
+- name: github.com/uber/tchannel-go
+  version: fef3a3f5eb009e12c7d4446979a425aa2435a760
+  subpackages:
+  - internal/argreader
+  - relay
+  - tnet
+  - trand
+  - typed
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: go.uber.org/atomic
-  version: 0c9e689d64f004564b79d9a663634756df322902
+  version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
 - name: go.uber.org/thriftrw
-  version: c98a13058faa5dd41584a77221a268d2c72d832d
+  version: 5e9db3910824006b851534a5a414f966f38af4f6
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -46,10 +58,11 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 47ebfe9337d943e637cc1748254727ec1fa89bf4
+  version: 0395e4baff1bd47715510a644c0a3bc5ab384d26
   subpackages:
   - api/encoding
   - api/middleware
+  - api/peer
   - api/transport
   - encoding/thrift
   - encoding/thrift/internal
@@ -59,14 +72,17 @@ imports:
   - internal/errors
   - internal/inboundmiddleware
   - internal/introspection
+  - internal/net
   - internal/outboundmiddleware
   - internal/request
   - internal/sync
+  - peer
+  - peer/hostport
+  - transport/http
 - name: golang.org/x/net
-  version: dd2d9a67c97da0afa00d5726e28086007a0acce5
+  version: 906cda9512f77671ab44f8c8563b13a8e707b230
   subpackages:
   - context
-  - context/ctxhttp
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -81,11 +97,9 @@ testImports:
 - name: github.com/go-playground/overalls
   version: b52dfefba43cf6f75bb177ba45697ed12e0d10a2
 - name: github.com/golang/lint
-  version: b8599f7d71e7fead76b25aeb919c0e2558672f4a
+  version: cb00e5669539f047b2f4c53a421a01b0c8e172c6
   subpackages:
   - golint
-- name: github.com/jessevdk/go-flags
-  version: 460c7bb0abd6e927f2767cadc91aa6ef776a98b4
 - name: github.com/kisielk/errcheck
   version: db0ca22445717d1b2c51ac1034440e0a2a2de645
 - name: github.com/kisielk/gotool
@@ -109,6 +123,6 @@ testImports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: golang.org/x/tools
-  version: 219e654bb7266d3b73c4610ed24c33d12560826a
+  version: f5a6ee1ea9f7b3a91e3e70dc1b9706886d0e0ae3
   subpackages:
   - cover

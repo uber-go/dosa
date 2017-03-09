@@ -20,12 +20,12 @@ import:
 - package: github.com/pborman/uuid
   version: ^1.0.0
 - package: github.com/yookoala/realpath
+- package: github.com/jessevdk/go-flags
 testImport:
 - package: golang.org/x/tools
   subpackages:
   - cover
 - package: github.com/anmitsu/go-shlex
-- package: github.com/jessevdk/go-flags
 - package: github.com/mattn/goveralls
 - package: github.com/golang/lint
   subpackages:
