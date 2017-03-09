@@ -425,6 +425,15 @@ func TestAdminClient_TruncateScope(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAdminClient_DropScope(t *testing.T) {
+	c, err := dosa.NewAdminClient(nullConnector)
+	assert.NoError(t, err)
+	assert.NotNil(t, c)
+
+	err = c.DropScope(scope)
+	assert.NoError(t, err)
+}
+
 func TestAdminClient_Unimplemented(t *testing.T) {
 	c, _ := dosa.NewAdminClient(nullConnector)
 	assert.Panics(t, func() {
@@ -432,8 +441,5 @@ func TestAdminClient_Unimplemented(t *testing.T) {
 	})
 	assert.Panics(t, func() {
 		c.UpsertSchema(ctx, cte1FQN, cte2FQN)
-	})
-	assert.Panics(t, func() {
-		c.DropScope(scope)
 	})
 }
