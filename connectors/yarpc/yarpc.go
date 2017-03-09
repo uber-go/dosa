@@ -24,13 +24,12 @@ import (
 	"context"
 	"fmt"
 
-	rpc "go.uber.org/yarpc"
-	"go.uber.org/yarpc/transport/http"
-
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 	"github.com/uber/dosa-idl/.gen/dosa/dosaclient"
+	rpc "go.uber.org/yarpc"
+	"go.uber.org/yarpc/transport/http"
 )
 
 // Config contains the YARPC client parameters
