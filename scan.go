@@ -21,9 +21,9 @@
 package dosa
 
 import (
+	"bytes"
 	"fmt"
 	"io"
-	"bytes"
 )
 
 // ScanOp represents the scan query

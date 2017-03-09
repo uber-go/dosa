@@ -25,8 +25,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/uber-go/dosa"
 	"time"
+
+	"github.com/uber-go/dosa"
 )
 
 type AllTypes struct {
