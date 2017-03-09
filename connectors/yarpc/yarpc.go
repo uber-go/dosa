@@ -301,7 +301,15 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 
 // CreateScope is not implemented yet
 func (c *Connector) CreateScope(ctx context.Context, scope string) error {
-	panic("not implemented")
+	request := &dosarpc.CreateScopeRequest{
+		Name: &scope,
+	}
+
+	if err := c.Client.CreateScope(ctx, request); err != nil {
+		return errors.Wrap(err, "rpc createScope failed")
+	}
+
+	return nil
 }
 
 // TruncateScope is not implemented yet
