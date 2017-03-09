@@ -55,6 +55,10 @@ var (
 	scope         = "test"
 	namePrefix    = "team.service"
 	nullConnector = &devnull.Connector{}
+	rootFQN, _    = dosa.ToFQN(scope)
+	childFQN, _   = rootFQN.Child(namePrefix)
+	cte1FQN, _    = childFQN.Child("clienttestentity1")
+	cte2FQN, _    = childFQN.Child("clienttestentity2")
 )
 
 func ExampleNewClient() {
@@ -382,7 +386,7 @@ func TestClient_Remove(t *testing.T) {
 
 }
 
-func TestUnimplementedFunctionsPanic(t *testing.T) {
+func TestClient_Unimplemented(t *testing.T) {
 	reg1, _ := dosa.NewRegistrar(scope, namePrefix, cte1)
 
 	c, _ := dosa.NewClient(reg1, nullConnector)
@@ -400,5 +404,24 @@ func TestUnimplementedFunctionsPanic(t *testing.T) {
 	})
 	assert.Panics(t, func() {
 		c.Search(ctx, &dosa.SearchOp{})
+	})
+}
+
+func TestAdminClient_Unimplemented(t *testing.T) {
+	c, _ := dosa.NewAdminClient(nullConnector)
+	assert.Panics(t, func() {
+		c.CheckSchema(ctx, cte1FQN, cte2FQN)
+	})
+	assert.Panics(t, func() {
+		c.UpsertSchema(ctx, cte1FQN, cte2FQN)
+	})
+	assert.Panics(t, func() {
+		c.CreateScope(scope)
+	})
+	assert.Panics(t, func() {
+		c.TruncateScope(scope)
+	})
+	assert.Panics(t, func() {
+		c.DropScope(scope)
 	})
 }
