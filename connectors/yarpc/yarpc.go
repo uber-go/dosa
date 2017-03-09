@@ -299,7 +299,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 	return response.Versions, nil
 }
 
-// CreateScope is not implemented yet
+// CreateScope creates the scope specified
 func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 	request := &dosarpc.CreateScopeRequest{
 		Name: &scope,
