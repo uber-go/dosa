@@ -381,7 +381,7 @@ func (c *adminClient) CreateScope(s string) error {
 
 // TruncateScope keeps the scope and the schemas, but drops the data associated with the scope
 func (c *adminClient) TruncateScope(s string) error {
-	panic("not implemented")
+	return c.connector.TruncateScope(context.Background(), s)
 }
 
 // DropScope drops the scope and the data and schemas in the scope
