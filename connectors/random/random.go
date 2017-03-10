@@ -132,12 +132,12 @@ func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values
 
 // Remove always returns a not found error
 func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	return dosa.ErrNotFound
+	return &dosa.ErrNotFound{}
 }
 
 // MultiRemove returns a not found error for each value
 func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
-	return makeErrorSlice(len(multiValues), dosa.ErrNotFound), nil
+	return makeErrorSlice(len(multiValues), &dosa.ErrNotFound{}), nil
 }
 
 // Range returns a random set of data, and a random continuation token

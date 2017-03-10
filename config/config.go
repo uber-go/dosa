@@ -21,14 +21,14 @@
 package config
 
 import (
-	"github.com/uber-go/dosa/connectors/yarpc"
 	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/connectors/yarpc"
 )
 
 // Config represents the settings for the dosa client
 type Config struct {
-	Scope      string `yaml:"scope"`
-	NamePrefix string `yaml:"namePrefix"`
+	Scope      string       `yaml:"scope"`
+	NamePrefix string       `yaml:"namePrefix"`
 	Yarpc      yarpc.Config `yaml:"yarpc"`
 }
 
