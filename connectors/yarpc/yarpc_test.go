@@ -566,7 +566,7 @@ func TestConnector_Range(t *testing.T) {
 		Return(nil, errors.New("test error")).Times(1)
 	// no results, make sure error is exact
 	mockedClient.EXPECT().Range(ctx, gomock.Any()).
-		Return(nil, dosa.ErrNotFound)
+		Return(nil, &dosa.ErrNotFound{})
 
 	// Prepare the dosa client interface using the mocked RPC layer
 	sut := yarpc.Connector{Client: mockedClient}
@@ -591,7 +591,7 @@ func TestConnector_Range(t *testing.T) {
 	assert.Nil(t, values)
 	assert.Empty(t, token)
 	assert.Error(t, err)
-	assert.Equal(t, dosa.ErrNotFound, err)
+	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	// perform a generic error request
 	values, token, err = sut.Range(ctx, testEi, map[string][]*dosa.Condition{"c2": {&dosa.Condition{
@@ -640,7 +640,7 @@ func TestConnector_Scan(t *testing.T) {
 		Return(nil, errors.New("test error")).Times(1)
 	// no results, make sure error is exact
 	mockedClient.EXPECT().Scan(ctx, gomock.Any()).
-		Return(nil, dosa.ErrNotFound)
+		Return(nil, &dosa.ErrNotFound{})
 
 	// Prepare the dosa client interface using the mocked RPC layer
 	sut := yarpc.Connector{Client: mockedClient}
@@ -659,7 +659,7 @@ func TestConnector_Scan(t *testing.T) {
 	assert.Nil(t, values)
 	assert.Empty(t, token)
 	assert.Error(t, err)
-	assert.Equal(t, dosa.ErrNotFound, err)
+	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	// perform a generic error request
 	values, token, err = sut.Scan(ctx, testEi, nil, "", 64)

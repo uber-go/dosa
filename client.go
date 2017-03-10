@@ -42,10 +42,34 @@ func (*Entity) isDomainObject() bool {
 }
 
 // ErrNotInitialized is returned when a user didn't call Initialize
-var ErrNotInitialized = errors.New("client not initialized")
+type ErrNotInitialized struct{}
+
+// Error returns a constant string "client not initialized"
+func (*ErrNotInitialized) Error() string {
+	return "client not initialized"
+}
+
+// ErrorIsNotInitialized checks if the error is a "ErrNotInitialized"
+// (possibly wrapped)
+func ErrorIsNotInitialized(err error) bool {
+	_, ok := errors.Cause(err).(*ErrNotInitialized)
+	return ok
+}
 
 // ErrNotFound is an error when a row is not found (single or multiple)
-var ErrNotFound = errors.New("No rows found")
+type ErrNotFound struct{}
+
+// Error returns a constant string "Not found" for this error
+func (*ErrNotFound) Error() string {
+	return "Not found"
+}
+
+// ErrorIsNotFound checks if the error is a "ErrNotFound"
+// (possibly wrapped)
+func ErrorIsNotFound(err error) bool {
+	_, ok := errors.Cause(err).(*ErrNotFound)
+	return ok
+}
 
 // Client defines the methods to operate with DOSA entities
 type Client interface {
@@ -165,7 +189,7 @@ func (c *client) CreateIfNotExists(context.Context, DomainObject) error {
 // marshalled onto the given entity
 func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainObject) error {
 	if !c.initialized {
-		return ErrNotInitialized
+		return &ErrNotInitialized{}
 	}
 
 	// lookup registered entity, registry will return error if registration
@@ -210,7 +234,7 @@ func (c *client) MultiRead(context.Context, []string, ...DomainObject) (MultiRes
 // subset of fields will be updated.
 func (c *client) Upsert(ctx context.Context, fieldsToUpdate []string, entity DomainObject) error {
 	if !c.initialized {
-		return ErrNotInitialized
+		return &ErrNotInitialized{}
 	}
 
 	// lookup registered entity, registry will return error if registration
@@ -249,7 +273,7 @@ func (c *client) MultiUpsert(context.Context, []string, ...DomainObject) (MultiR
 // values for all components of its primary key for the operation to succeed.
 func (c *client) Remove(ctx context.Context, entity DomainObject) error {
 	if !c.initialized {
-		return ErrNotInitialized
+		return &ErrNotInitialized{}
 	}
 
 	// lookup registered entity, registry will return error if registration
@@ -276,7 +300,7 @@ func (c *client) MultiRemove(context.Context, ...DomainObject) (MultiResult, err
 // Range uses the connector to fetch DOSA entities for a given range.
 func (c *client) Range(ctx context.Context, r *RangeOp) ([]DomainObject, string, error) {
 	if !c.initialized {
-		return nil, "", ErrNotInitialized
+		return nil, "", &ErrNotInitialized{}
 	}
 	// look up the entity in the registry
 	re, err := c.registrar.Find(r.sop.object)
@@ -330,7 +354,7 @@ func (c *client) Search(context.Context, *SearchOp) ([]DomainObject, string, err
 // ScanEverything uses the connector to fetch all DOSA entities of the given type.
 func (c *client) ScanEverything(ctx context.Context, sop *ScanOp) ([]DomainObject, string, error) {
 	if !c.initialized {
-		return nil, "", ErrNotInitialized
+		return nil, "", &ErrNotInitialized{}
 	}
 	// look up the entity in the registry
 	re, err := c.registrar.Find(sop.object)

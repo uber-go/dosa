@@ -241,11 +241,7 @@ func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) dosarpc.Field
 	return fields
 }
 
-// decorate an error with a stack trace, but only if it's not a known error
+// decorate an error with a stack trace
 func errorDecorate(err error) error {
-	switch err {
-	case dosa.ErrNotFound, dosa.ErrNotInitialized:
-		return err
-	}
 	return errors.WithStack(err)
 }

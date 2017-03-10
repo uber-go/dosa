@@ -249,7 +249,7 @@ func TestClient_Range(t *testing.T) {
 	c1, _ := dosa.NewClient(reg1, nullConnector)
 	rop := dosa.NewRangeOp(cte1).Fields(fieldsToRead).Eq("ID", "123").Offset("tokeytoketoke")
 	_, _, err := c1.Range(ctx, rop)
-	assert.Equal(t, dosa.ErrNotInitialized, err)
+	assert.True(t, dosa.ErrorIsNotInitialized(err))
 
 	c1.Initialize(ctx)
 
@@ -298,7 +298,7 @@ func TestClient_Range(t *testing.T) {
 	// no resulting rows, just use the devnull connector
 	rop = dosa.NewRangeOp(cte1)
 	_, _, err = c1.Range(ctx, rop)
-	assert.Equal(t, dosa.ErrNotFound, err)
+	assert.True(t, dosa.ErrorIsNotFound(err))
 }
 
 func TestClient_ScanEverything(t *testing.T) {
@@ -315,7 +315,7 @@ func TestClient_ScanEverything(t *testing.T) {
 	c1, _ := dosa.NewClient(reg1, nullConnector)
 	sop := dosa.NewScanOp(cte1).Fields(fieldsToRead).Offset("tokeytoketoke")
 	_, _, err := c1.ScanEverything(ctx, sop)
-	assert.Equal(t, dosa.ErrNotInitialized, err)
+	assert.True(t, dosa.ErrorIsNotInitialized(err))
 
 	c1.Initialize(ctx)
 
@@ -356,7 +356,7 @@ func TestClient_ScanEverything(t *testing.T) {
 	// no resulting rows, just use the devnull connector
 	sop = dosa.NewScanOp(cte1)
 	_, _, err = c1.ScanEverything(ctx, sop)
-	assert.Equal(t, dosa.ErrNotFound, err)
+	assert.True(t, dosa.ErrorIsNotFound(err))
 }
 
 func TestClient_Remove(t *testing.T) {
@@ -365,7 +365,7 @@ func TestClient_Remove(t *testing.T) {
 	// uninitialized
 	c1, _ := dosa.NewClient(reg1, nullConnector)
 	err := c1.Remove(ctx, cte1)
-	assert.Equal(t, dosa.ErrNotInitialized, err)
+	assert.True(t, dosa.ErrorIsNotInitialized(err))
 
 	c1.Initialize(ctx)
 
