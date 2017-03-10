@@ -242,9 +242,25 @@ func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs 
 	panic("not implemented")
 }
 
-// Scan is not yet implemented
+// Scan marshals a scan request into YaRPC
 func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	panic("not implemented")
+	limit32 := int32(limit)
+	rpcFieldsToRead := makeRPCFieldsToRead(fieldsToRead)
+	scanRequest := dosarpc.ScanRequest{
+		Ref:          entityInfoToSchemaRef(ei),
+		Token:        &token,
+		Limit:        &limit32,
+		FieldsToRead: rpcFieldsToRead,
+	}
+	response, err := c.Client.Scan(ctx, &scanRequest)
+	if err != nil {
+		return nil, "", errorDecorate(err)
+	}
+	results := []map[string]dosa.FieldValue{}
+	for _, entity := range response.Entities {
+		results = append(results, decodeResults(ei, entity))
+	}
+	return results, *response.NextToken, nil
 }
 
 // CheckSchema is one way to register a set of entities. This can be further validated by
