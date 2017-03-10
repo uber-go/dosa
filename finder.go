@@ -37,14 +37,18 @@ import (
 
 // FindEntities finds all entities in a directory
 // Returns a slice of warnings (or nil)
-func FindEntities(path string, excludes string) ([]*Table, []error, error) {
+func FindEntities(path string, excludes []string) ([]*Table, []error, error) {
 	fileSet := token.NewFileSet()
 	packages, err := parser.ParseDir(fileSet, path, func(fileInfo os.FileInfo) bool {
-		if excludes == "" {
+		if len(excludes) == 0 {
 			return true
 		}
-		matched, _ := filepath.Match(excludes, fileInfo.Name())
-		return !matched
+		for _, exclude := range excludes {
+			if matched, _ := filepath.Match(exclude, fileInfo.Name()); matched {
+				return false
+			}
+		}
+		return true
 	}, 0)
 	if err != nil {
 		return nil, nil, err
