@@ -586,7 +586,7 @@ func TestConnector_Range(t *testing.T) {
 	// perform a not found request
 	values, token, err = sut.Range(ctx, testEi, map[string][]*dosa.Condition{"c2": {&dosa.Condition{
 		Value: float64(3.3),
-		Op: dosa.Eq,
+		Op:    dosa.Eq,
 	}}}, nil, "", 64)
 	assert.Nil(t, values)
 	assert.Empty(t, token)
@@ -596,7 +596,7 @@ func TestConnector_Range(t *testing.T) {
 	// perform a generic error request
 	values, token, err = sut.Range(ctx, testEi, map[string][]*dosa.Condition{"c2": {&dosa.Condition{
 		Value: float64(3.3),
-		Op: dosa.Eq,
+		Op:    dosa.Eq,
 	}}}, nil, "", 64)
 	assert.Nil(t, values)
 	assert.Empty(t, token)
@@ -615,26 +615,26 @@ func TestConnector_Scan(t *testing.T) {
 	// set up the parameters
 	ctx := context.TODO()
 	sr := &drpc.ScanRequest{
-		Ref:   &testRPCSchemaRef,
-		Token: &testToken,
-		Limit: &testLimit,
+		Ref:          &testRPCSchemaRef,
+		Token:        &testToken,
+		Limit:        &testLimit,
 		FieldsToRead: map[string]struct{}{"c1": {}},
 	}
 	// successful call, return results
 	mockedClient.EXPECT().Scan(ctx, sr).
 		Do(func(_ context.Context, r *drpc.ScanRequest) {
 			assert.Equal(t, sr, r)
-	}).
+		}).
 		Return(&drpc.ScanResponse{
-		Entities: []drpc.FieldValueMap{
-			{
-				"c1":               {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(1)}},
-				"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}},
-				"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(2.2)}},
+			Entities: []drpc.FieldValueMap{
+				{
+					"c1":               {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(1)}},
+					"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}},
+					"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(2.2)}},
+				},
 			},
-		},
-		NextToken: &responseToken,
-	}, nil)
+			NextToken: &responseToken,
+		}, nil)
 	// failed call, return error
 	mockedClient.EXPECT().Scan(ctx, gomock.Any()).
 		Return(nil, errors.New("test error")).Times(1)
@@ -669,6 +669,32 @@ func TestConnector_Scan(t *testing.T) {
 	assert.Contains(t, err.Error(), "test error")
 }
 
+func TestConnector_Remove(t *testing.T) {
+	// build a mock RPC client
+	ctrl := gomock.NewController(t)
+	mockedClient := dosatest.NewMockClient(ctrl)
+
+	// set up the parameters
+	ctx := context.TODO()
+	removeRequest := &drpc.RemoveRequest{
+		Ref:       &testRPCSchemaRef,
+		KeyValues: map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}}},
+	}
+
+	// we expect a single call to Read, and we return back two fields, f1 which is in the typemap and another field that is not
+	mockedClient.EXPECT().Remove(ctx, removeRequest).Return(nil)
+
+	// Prepare the dosa client interface using the mocked RPC layer
+	sut := yarpc.Connector{Client: mockedClient}
+
+	// perform the read
+	err := sut.Remove(ctx, testEi, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))})
+	assert.Nil(t, err) // not an error
+
+	// make sure we actually called Read on the interface
+	ctrl.Finish()
+}
+
 // TestPanic is an unimplemented method test for coverage, remove these as they are implemented
 func TestPanic(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -683,10 +709,6 @@ func TestPanic(t *testing.T) {
 
 	assert.Panics(t, func() {
 		sut.MultiRemove(ctx, testEi, nil)
-	})
-
-	assert.Panics(t, func() {
-		sut.Remove(ctx, testEi, nil)
 	})
 
 	assert.Panics(t, func() {

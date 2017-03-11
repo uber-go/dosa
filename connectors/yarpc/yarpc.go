@@ -196,9 +196,27 @@ func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiV
 	panic("not implemented")
 }
 
-// Remove is not yet implemented
+// Remove marshals a request to the YaRPC remove call
 func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue) error {
-	panic("not implemented")
+	// convert the key values from interface{} to RPC's Value
+	rpcFields := make(dosarpc.FieldValueMap)
+	for key, value := range keys {
+		rpcValue := &dosarpc.Value{ElemValue: RawValueFromInterface(value)}
+		rpcFields[key] = rpcValue
+	}
+
+	// perform the remove request
+	removeRequest := &dosarpc.RemoveRequest{
+		Ref:       entityInfoToSchemaRef(ei),
+		KeyValues: rpcFields,
+	}
+
+	err := c.Client.Remove(ctx, removeRequest)
+	if err != nil {
+		return errorDecorate(err)
+	}
+	return nil
+
 }
 
 // MultiRemove is not yet implemented
