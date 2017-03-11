@@ -527,6 +527,7 @@ func TestClient_DropScope(t *testing.T) {
 
 func TestConnector_Range(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	testToken := "testToken"
@@ -603,6 +604,71 @@ func TestConnector_Range(t *testing.T) {
 	assert.Contains(t, err.Error(), "test error")
 }
 
+func TestConnector_Scan(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockedClient := dosatest.NewMockClient(ctrl)
+
+	testToken := "testToken"
+	responseToken := "responseToken"
+	testLimit := int32(32)
+	// set up the parameters
+	ctx := context.TODO()
+	sr := &drpc.ScanRequest{
+		Ref:   &testRPCSchemaRef,
+		Token: &testToken,
+		Limit: &testLimit,
+		FieldsToRead: map[string]struct{}{"c1": {}},
+	}
+	// successful call, return results
+	mockedClient.EXPECT().Scan(ctx, sr).
+		Do(func(_ context.Context, r *drpc.ScanRequest) {
+			assert.Equal(t, sr, r)
+	}).
+		Return(&drpc.ScanResponse{
+		Entities: []drpc.FieldValueMap{
+			{
+				"c1":               {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(1)}},
+				"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}},
+				"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(2.2)}},
+			},
+		},
+		NextToken: &responseToken,
+	}, nil)
+	// failed call, return error
+	mockedClient.EXPECT().Scan(ctx, gomock.Any()).
+		Return(nil, errors.New("test error")).Times(1)
+	// no results, make sure error is exact
+	mockedClient.EXPECT().Scan(ctx, gomock.Any()).
+		Return(nil, dosa.ErrNotFound)
+
+	// Prepare the dosa client interface using the mocked RPC layer
+	sut := yarpc.Connector{Client: mockedClient}
+
+	// perform the successful request
+	values, token, err := sut.Scan(ctx, testEi, []string{"c1"}, testToken, 32)
+	assert.NoError(t, err)
+	assert.Equal(t, responseToken, token)
+	assert.NotNil(t, values)
+	assert.Equal(t, 1, len(values))
+	assert.Equal(t, int64(1), values[0]["c1"])
+	assert.Equal(t, float64(2.2), values[0]["c2"])
+
+	// perform a not found request
+	values, token, err = sut.Scan(ctx, testEi, nil, "", 64)
+	assert.Nil(t, values)
+	assert.Empty(t, token)
+	assert.Error(t, err)
+	assert.Equal(t, dosa.ErrNotFound, err)
+
+	// perform a generic error request
+	values, token, err = sut.Scan(ctx, testEi, nil, "", 64)
+	assert.Nil(t, values)
+	assert.Empty(t, token)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "test error")
+}
+
 // TestPanic is an unimplemented method test for coverage, remove these as they are implemented
 func TestPanic(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -625,10 +691,6 @@ func TestPanic(t *testing.T) {
 
 	assert.Panics(t, func() {
 		sut.Search(ctx, testEi, dosa.FieldNameValuePair{}, nil, "", 0)
-	})
-
-	assert.Panics(t, func() {
-		sut.Scan(ctx, testEi, nil, "", 0)
 	})
 
 	assert.Panics(t, func() {
