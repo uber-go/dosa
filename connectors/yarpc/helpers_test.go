@@ -18,14 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package yarpc_test
+package yarpc
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/connectors/yarpc"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 )
 
@@ -46,19 +45,19 @@ var (
 
 func TestRawValueFromInterfaceBadType(t *testing.T) {
 	assert.Panics(t, func() {
-		yarpc.RawValueFromInterface(func() {})
+		RawValueFromInterface(func() {})
 	})
 }
 
 func TestRawValueAsInterfaceBadType(t *testing.T) {
 	assert.Panics(t, func() {
-		yarpc.RawValueAsInterface(dosarpc.RawValue{}, dosa.Invalid)
+		RawValueAsInterface(dosarpc.RawValue{}, dosa.Invalid)
 	})
 }
 
 func TestRPCTypeFromClientType(t *testing.T) {
 	assert.Panics(t, func() {
-		yarpc.RPCTypeFromClientType(dosa.Invalid)
+		RPCTypeFromClientType(dosa.Invalid)
 	})
 }
 
@@ -130,8 +129,8 @@ var testEntityDefinition = &dosa.EntityDefinition{
 }
 
 func TestEntityDefinitionConvert(t *testing.T) {
-	rpcEd := yarpc.EntityDefinitionToThrift(testEntityDefinition)
-	ed := yarpc.FromThriftToEntityDefinition(rpcEd)
+	rpcEd := EntityDefinitionToThrift(testEntityDefinition)
+	ed := FromThriftToEntityDefinition(rpcEd)
 	assert.Equal(t, testEntityDefinition.Key, ed.Key)
 	assert.Equal(t, testEntityDefinition.Name, ed.Name)
 	edCols := make(map[string]*dosa.ColumnDefinition)
@@ -144,4 +143,21 @@ func TestEntityDefinitionConvert(t *testing.T) {
 		testCols[c.Name] = c
 	}
 	assert.Equal(t, edCols, testCols)
+}
+
+func TestEncodeOperator(t *testing.T) {
+	data := []struct {
+		dop   dosa.Operator
+		rpcop dosarpc.Operator
+	}{
+		{dop: dosa.Eq, rpcop: dosarpc.OperatorEq},
+		{dop: dosa.Gt, rpcop: dosarpc.OperatorGt},
+		{dop: dosa.Lt, rpcop: dosarpc.OperatorLt},
+		{dop: dosa.LtOrEq, rpcop: dosarpc.OperatorLtOrEq},
+		{dop: dosa.GtOrEq, rpcop: dosarpc.OperatorGtOrEq},
+	}
+
+	for _, test := range data {
+		assert.Equal(t, test.rpcop, *encodeOperator(test.dop))
+	}
 }

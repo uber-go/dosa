@@ -90,29 +90,6 @@ func NewConnector(cfg *Config) (*Connector, error) {
 	}, nil
 }
 
-func entityInfoToSchemaRef(ei *dosa.EntityInfo) *dosarpc.SchemaRef {
-	scope := ei.Ref.Scope
-	namePrefix := ei.Ref.NamePrefix
-	entityName := ei.Ref.EntityName
-	version := ei.Ref.Version
-	sr := dosarpc.SchemaRef{
-		Scope:      &scope,
-		NamePrefix: &namePrefix,
-		EntityName: &entityName,
-		Version:    &version,
-	}
-	return &sr
-}
-
-func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) dosarpc.FieldValueMap {
-	fields := dosarpc.FieldValueMap{}
-	for name, value := range values {
-		rpcValue := &dosarpc.Value{ElemValue: RawValueFromInterface(value)}
-		fields[name] = rpcValue
-	}
-	return fields
-}
-
 // CreateIfNotExists ...
 func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	createRequest := dosarpc.CreateRequest{
@@ -162,30 +139,14 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	}
 
 	// no error, so for each column, transform it into the map of (col->value) items
-	result := map[string]dosa.FieldValue{}
-	// TODO: create a typemap to make this faster
-	for name, value := range response.EntityValues {
-		for _, col := range ei.Def.Columns {
-			if col.Name == name {
-				result[name] = RawValueAsInterface(*value.ElemValue, col.Type)
-				break
-			}
-		}
-	}
 
-	return result, nil
+	return decodeResults(ei, response.EntityValues), nil
 }
 
 // MultiRead reads multiple entities at one time
 func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, fieldsToRead []string) ([]*dosa.FieldValuesOrError, error) {
 	// Convert the fields from the client's map to a set of fields to read
-	var rpcFieldsToRead map[string]struct{}
-	if fieldsToRead != nil {
-		rpcFieldsToRead = map[string]struct{}{}
-		for _, field := range fieldsToRead {
-			rpcFieldsToRead[field] = struct{}{}
-		}
-	}
+	rpcFieldsToRead := makeRPCFieldsToRead(fieldsToRead)
 
 	// convert the keys to RPC's Value
 	rpcFields := make([]dosarpc.FieldValueMap, len(keys))
@@ -206,7 +167,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 
 	response, err := c.Client.MultiRead(ctx, request)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to multi-read in yarpc connector")
+		return nil, errorDecorate(err)
 	}
 
 	rpcResults := response.Results
@@ -245,9 +206,35 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiK
 	panic("not implemented")
 }
 
-// Range is not yet implemented
+// Range does a scan across a range
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	panic("not implemented")
+	limit32 := int32(limit)
+	rpcFieldsToRead := makeRPCFieldsToRead(fieldsToRead)
+	rpcConditions := []*dosarpc.Condition{}
+	for field, conditions := range columnConditions {
+		for _, condition := range conditions {
+			rpcConditions = append(rpcConditions, &dosarpc.Condition{
+				Op:    encodeOperator(condition.Op),
+				Field: &dosarpc.Field{Name: &field, Value: &dosarpc.Value{ElemValue: RawValueFromInterface(condition.Value)}},
+			})
+		}
+	}
+	rangeRequest := dosarpc.RangeRequest{
+		Ref:          entityInfoToSchemaRef(ei),
+		Token:        &token,
+		Limit:        &limit32,
+		Conditions:   rpcConditions,
+		FieldsToRead: rpcFieldsToRead,
+	}
+	response, err := c.Client.Range(ctx, &rangeRequest)
+	if err != nil {
+		return nil, "", errorDecorate(err)
+	}
+	results := []map[string]dosa.FieldValue{}
+	for _, entity := range response.Entities {
+		results = append(results, decodeResults(ei, entity))
+	}
+	return results, *response.NextToken, nil
 }
 
 // Search is not yet implemented
@@ -273,7 +260,7 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	response, err := c.Client.CheckSchema(ctx, &csr)
 
 	if err != nil {
-		return nil, err
+		return nil, errorDecorate(err)
 	}
 
 	return response.Versions, nil
@@ -292,7 +279,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 
 	response, err := c.Client.UpsertSchema(ctx, request)
 	if err != nil {
-		return nil, errors.Wrap(err, "rpc upsertSchema failed")
+		return nil, errorDecorate(err)
 	}
 
 	return response.Versions, nil
@@ -305,7 +292,7 @@ func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 	}
 
 	if err := c.Client.CreateScope(ctx, request); err != nil {
-		return errors.Wrap(err, "rpc createScope failed")
+		return errorDecorate(err)
 	}
 
 	return nil
@@ -318,7 +305,7 @@ func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
 	}
 
 	if err := c.Client.TruncateScope(ctx, request); err != nil {
-		return errors.Wrap(err, "rpc truncateScope failed")
+		return errorDecorate(err)
 	}
 
 	return nil
@@ -331,7 +318,7 @@ func (c *Connector) DropScope(ctx context.Context, scope string) error {
 	}
 
 	if err := c.Client.DropScope(ctx, request); err != nil {
-		return errors.Wrap(err, "rpc dropScope failed")
+		return errorDecorate(err)
 	}
 
 	return nil
@@ -339,7 +326,7 @@ func (c *Connector) DropScope(ctx context.Context, scope string) error {
 
 // ScopeExists is not implemented yet
 func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error) {
-	panic("not impelmented")
+	panic("not implemented")
 }
 
 // Shutdown stops the dispatcher and drains client
