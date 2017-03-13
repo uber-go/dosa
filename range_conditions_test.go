@@ -47,6 +47,9 @@ var testEntityRange = &dosa.EntityDefinition{
 				Name:       "e",
 				Descending: true,
 			},
+			{
+				Name: "f",
+			},
 		},
 	},
 	Columns: []*dosa.ColumnDefinition{
@@ -75,6 +78,10 @@ var testEntityRange = &dosa.EntityDefinition{
 			Name: "f",
 			Type: dosa.Blob,
 		},
+		{
+			Name: "g",
+			Type: dosa.Blob,
+		},
 	},
 }
 
@@ -85,10 +92,16 @@ var columnToFieldMap = map[string]string{
 	"d": "FieldD",
 	"e": "FieldE",
 	"f": "FieldF",
+	"g": "FieldG",
+	"h": "h",
 }
 
 var simpleTransformer = func(x string) string {
-	return columnToFieldMap[x]
+	n, ok := columnToFieldMap[x]
+	if ok {
+		return n
+	}
+	return x
 }
 
 func TestEnsureValidRangeConditions(t *testing.T) {
@@ -194,11 +207,21 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			conds: map[string][]*dosa.Condition{
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, int64(100)}},
-				"f": {{dosa.Eq, []byte{1, 2, 3}}},
+				"g": {{dosa.Eq, []byte{1, 2, 3}}},
 			},
 			errMsg:   "cannot enforce condition on non-key column",
 			desc:     "conditions on non-key column",
-			errField: columnToFieldMap["f"],
+			errField: columnToFieldMap["g"],
+		},
+		{
+			conds: map[string][]*dosa.Condition{
+				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
+				"b": {{dosa.Eq, int64(100)}},
+				"h": {{dosa.Eq, []byte{1, 2, 3}}},
+			},
+			errMsg:   "unknown column",
+			desc:     "conditions on unknown column",
+			errField: columnToFieldMap["h"],
 		},
 		{
 			conds: map[string][]*dosa.Condition{
@@ -232,7 +255,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
 				"b": {{dosa.Eq, "100"}},
 			},
-			errMsg:   "does not have expected type",
+			errMsg:   "type mismatch in condition",
 			desc:     "wrong value type for partition key",
 			errField: columnToFieldMap["b"],
 		},
@@ -242,7 +265,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 				"b": {{dosa.Eq, int64(100)}},
 				"c": {{dosa.Eq, "100"}},
 			},
-			errMsg:   "invalid value for",
+			errMsg:   "type mismatch in condition",
 			desc:     "wrong value type for clustering key",
 			errField: columnToFieldMap["c"],
 		},
@@ -290,6 +313,19 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			errMsg:   "conditions must be applied consecutively on clustering keys",
 			desc:     "applying conditions non-consecutively to clustering keys",
 			errField: columnToFieldMap["e"],
+		},
+		{
+			conds: map[string][]*dosa.Condition{
+				"a": {{dosa.Eq, dosa.UUID("66DF78EB-C41D-48EF-B366-0C7F91C5CE43")}},
+				"b": {{dosa.Eq, int64(100)}},
+				"c": {{dosa.Eq, int32(100)}},
+				"d": {{dosa.Eq, time.Unix(100, 0)}},
+				"e": {{dosa.Eq, "aaa"}},
+				"f": {{dosa.LtOrEq, []byte{1, 2, 3}}},
+			},
+			errMsg:   "unsupported operator for type in condition",
+			desc:     "bool can only support Eq operator",
+			errField: columnToFieldMap["f"],
 		},
 	}
 

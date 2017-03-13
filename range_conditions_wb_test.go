@@ -66,6 +66,21 @@ func TestEnsureTypeMatch(t *testing.T) {
 	}
 }
 
+func TestCheckTypeAndOp(t *testing.T) {
+	for _, tp := range []Type{Int32, Int64, String, Double, Timestamp} {
+		for _, op := range []Operator{Eq, Lt, LtOrEq, Gt, GtOrEq} {
+			assert.NoError(t, checkTypeAndOp(tp, op))
+		}
+	}
+
+	for _, tp := range []Type{TUUID, Blob, Bool} {
+		for _, op := range []Operator{Lt, LtOrEq, Gt, GtOrEq} {
+			assert.Error(t, checkTypeAndOp(tp, op))
+		}
+		assert.NoError(t, checkTypeAndOp(tp, Eq))
+	}
+}
+
 func TestCompare(t *testing.T) {
 	type testCase struct {
 		tp       Type
@@ -74,9 +89,6 @@ func TestCompare(t *testing.T) {
 	}
 
 	cases := []testCase{
-		{TUUID, UUID("267275CD-D312-4EFB-A304-020A43971D68"), UUID("4268FCA1-7CE3-4624-AC2B-204F138A81E8"), -1},
-		{TUUID, UUID("4268FCA1-7CE3-4624-AC2B-204F138A81E8"), UUID("267275CD-D312-4EFB-A304-020A43971D68"), 1},
-		{TUUID, UUID("267275CD-D312-4EFB-A304-020A43971D68"), UUID("267275CD-D312-4EFB-A304-020A43971D68"), 0},
 		{Int64, int64(0), int64(1), -1},
 		{Int64, int64(1), int64(0), 1},
 		{Int64, int64(1), int64(1), 0},
@@ -86,12 +98,6 @@ func TestCompare(t *testing.T) {
 		{String, "abc", "defg", -1},
 		{String, "defg", "abc", 1},
 		{String, "abc", "abc", 0},
-		{Blob, []byte{1, 2, 3}, []byte{4, 5}, -1},
-		{Blob, []byte{4, 5}, []byte{1, 2, 3}, 1},
-		{Blob, []byte{1, 2, 3}, []byte{1, 2, 3}, 0},
-		{Bool, false, true, -1},
-		{Bool, true, false, 1},
-		{Bool, true, true, 0},
 		{Double, float64(0.0), float64(1.0), -1},
 		{Double, float64(1.0), float64(0.0), 1},
 		{Double, float64(1.0), float64(1.0), 0},
@@ -119,11 +125,10 @@ func TestEnsureValidConditions(t *testing.T) {
 		{Timestamp, []*Condition{{LtOrEq, time.Now()}, {Gt, time.Unix(0, 0)}}, true, "valid LtOrEq - Gt timestamp"},
 		{Double, []*Condition{{GtOrEq, float64(1.0)}, {Lt, float64(100)}}, true, "valid GtOrEq - Lt double"},
 		{Int32, []*Condition{{GtOrEq, int32(100)}, {LtOrEq, int32(100)}}, true, "valid GtOrEq - LtOrEq int32"},
-		{TUUID, []*Condition{{Eq, "2093-1923829"}}, false, "type mismatch"},
 		{Int64, []*Condition{{Eq, int64(100)}, {Eq, int64(99)}}, false, "two Eqs"},
 		{Int64, []*Condition{{Lt, int64(100)}, {LtOrEq, int64(99)}}, false, "mutually exclusive Lt - LtOrEq"},
 		{Int32, []*Condition{{Lt, int32(100)}, {Gt, int32(2)}, {Gt, int32(0)}}, false, "more than 3 conditions"},
-		{Bool, []*Condition{{Eq, true}, {LtOrEq, false}}, false, "Eq excludes any other condition"},
+		{Int32, []*Condition{{Eq, int32(100)}, {LtOrEq, int32(100)}}, false, "Eq excludes any other condition"},
 		{Int32, []*Condition{{Lt, int32(100)}, {Gt, int32(200)}}, false, "invalid range <100 && > 200"},
 		{Int32, []*Condition{{GtOrEq, int32(200)}, {LtOrEq, int32(100)}}, false, "invalid >=200 && <= 100"},
 		{Int32, []*Condition{{GtOrEq, int32(200)}, {Lt, int32(100)}}, false, "invalid >=200 && < 100"},

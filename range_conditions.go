@@ -23,7 +23,6 @@ package dosa
 import (
 	"time"
 
-	"bytes"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -47,9 +46,23 @@ func EnsureValidRangeConditions(ed *EntityDefinition, columnConditions map[strin
 
 COND:
 	for column, conds := range columnConditions {
+		// sanity check upfront
+		t, ok := columnTypes[column]
+		if !ok {
+			return errors.Errorf("unknown column: %s", transform(column))
+		}
+		for _, cond := range conds {
+			if err := ensureTypeMatch(t, cond.Value); err != nil {
+				return errors.Errorf("type mismatch in condition: %v, column: %s", cond, transform(column))
+			}
+			if err := checkTypeAndOp(t, cond.Op); err != nil {
+				return errors.Errorf("unsupported operator for type in condition: %v, column: %s", cond, transform(column))
+			}
+		}
+
 		if _, ok := unconstrainedPartitionKeySet[column]; ok {
 			delete(unconstrainedPartitionKeySet, column)
-			if err := ensureExactOneEqCondition(columnTypes[column], conds); err != nil {
+			if err := ensureExactOneEqCondition(t, conds); err != nil {
 				return errors.Wrapf(err, "invalid conditions for partition key: %s", transform(column))
 			}
 			continue
@@ -88,10 +101,6 @@ func ensureExactOneEqCondition(t Type, conditions []*Condition) error {
 	r := conditions[0]
 	if r.Op != Eq {
 		return errors.Errorf("only Eq condition is allowed on this column for this query, found: %s", r.Op)
-	}
-
-	if err := ensureTypeMatch(t, r.Value); err != nil {
-		return errors.Wrap(err, "the value in condition does not have expected type")
 	}
 	return nil
 }
@@ -138,13 +147,6 @@ No other combinations of operators are permitted.
 // Start with simple rules as specified in `conditionsRule` above.
 // Hence, the length of valid conditions slice is either one or two (won't be called if zero length).
 func ensureValidConditions(t Type, conditions []*Condition) error {
-	// check type sanity
-	for _, r := range conditions {
-		if err := ensureTypeMatch(t, r.Value); err != nil {
-			return errors.Wrap(err, "invalid condition")
-		}
-	}
-
 	switch {
 	case len(conditions) == 1:
 		return nil // single condition is always valid
@@ -187,27 +189,12 @@ func ensureValidConditions(t Type, conditions []*Condition) error {
 // Assumes args are valid.
 func compare(t Type, a, b interface{}) int {
 	switch t {
-	case TUUID:
-		// TODO: make sure if comparison for UUID like below makes sense.
-		return strings.Compare(string(a.(UUID)), string(b.(UUID)))
 	case Int64:
 		return int(a.(int64) - b.(int64))
 	case Int32:
 		return int(a.(int32) - b.(int32))
 	case String:
 		return strings.Compare(a.(string), b.(string))
-	case Blob:
-		return bytes.Compare(a.([]byte), b.([]byte))
-	case Bool:
-		// TODO: we don't need to order bools for range query and should report error if people do dumb things
-		var ia, ib int
-		if a.(bool) {
-			ia = 1
-		}
-		if b.(bool) {
-			ib = 1
-		}
-		return ia - ib
 	case Double:
 		fa := a.(float64)
 		fb := b.(float64)
@@ -229,7 +216,17 @@ func compare(t Type, a, b interface{}) int {
 		}
 		return 0
 	}
-	panic("invalid type") // shouldn't reach here
+	panic("shouldn't reach here if args are valid")
+}
+
+func checkTypeAndOp(t Type, op Operator) error {
+	switch t {
+	case TUUID, Blob, Bool:
+		if op != Eq {
+			return errors.Errorf("Only Eq operator can be applied to type: %s, found: %s", t, op)
+		}
+	}
+	return nil
 }
 
 func ensureTypeMatch(t Type, v FieldValue) error {
