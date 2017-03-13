@@ -30,20 +30,20 @@ import (
 )
 
 type SinglePartitionKey struct {
-	dosa.Entity     `dosa:"primaryKey=PrimaryKey"`
-	PrimaryKey int64
-	data       string
+	dosa.Entity `dosa:"primaryKey=PrimaryKey"`
+	PrimaryKey  int64
+	data        string
 }
 
 func TestConfig_NewClient(t *testing.T) {
 	cases := []struct {
-		cfg     config.Config
-		isErr   bool
+		cfg   config.Config
+		isErr bool
 	}{
 		{
 			// success
-			cfg:    config.Config{
-				Scope: "test",
+			cfg: config.Config{
+				Scope:      "test",
 				NamePrefix: "namePrefix",
 				Yarpc: yarpc.Config{
 					Transport:   "http",
@@ -57,8 +57,8 @@ func TestConfig_NewClient(t *testing.T) {
 		},
 		{
 			// registrar fail
-			cfg:    config.Config{
-				Scope: "test",
+			cfg: config.Config{
+				Scope:      "test",
 				NamePrefix: "name*(Prefix",
 				Yarpc: yarpc.Config{
 					Transport:   "http",
@@ -72,13 +72,13 @@ func TestConfig_NewClient(t *testing.T) {
 		},
 		{
 			// yarpc fail
-			cfg:    config.Config{
-				Scope: "test",
+			cfg: config.Config{
+				Scope:      "test",
 				NamePrefix: "name*(Prefix",
 				Yarpc: yarpc.Config{
-					Transport:   "http",
-					Host:        "localhost",
-					Port:        "8080",
+					Transport: "http",
+					Host:      "localhost",
+					Port:      "8080",
 				},
 			},
 			isErr: true,
