@@ -362,17 +362,27 @@ func TestRenameToInvalidName(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid name tag: name=ABădNăme")
 }
 
-type BadNameButRenamed struct {
+type BadColNameButRenamed struct {
 	Entity   `dosa:"primaryKey=(ABădNăme)"`
 	ABădNăme bool `dosa:"name=goodname"`
 }
 
-func TestRenameToValidName(t *testing.T) {
-	table, err := TableFromInstance(&BadNameButRenamed{})
+func TestRenameColumnToValidName(t *testing.T) {
+	table, err := TableFromInstance(&BadColNameButRenamed{})
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"goodname"}, table.Key.PartitionKeys)
 }
 
 type StructWithUnannotatedEntity struct {
 	Entity `notdosa:"covers a rare test case"`
+}
+
+func TestRenameStructToValidName(t *testing.T) {
+	type ABădNăme struct {
+		Entity `dosa:"name=agoodname,primaryKey=Dummy"`
+		Dummy  bool
+	}
+	table, err := TableFromInstance(&ABădNăme{})
+	assert.NotNil(t, table)
+	assert.NoError(t, err)
 }
