@@ -59,7 +59,7 @@ func TestParser(t *testing.T) {
 	assert := assert.New(t)
 
 	assert.Equal(13, len(entities), fmt.Sprintf("%s", entities))
-	assert.Equal(13, len(errs), fmt.Sprintf("%s", err))
+	assert.Equal(14, len(errs), fmt.Sprintf("%v", errs))
 	assert.Nil(err)
 
 	for _, entity := range entities {
@@ -83,8 +83,8 @@ func TestParser(t *testing.T) {
 			e, _ = TableFromInstance(&UnexportedFieldType{})
 		case "ignoretagtype":
 			e, _ = TableFromInstance(&IgnoreTagType{})
-		case "badnamebutrenamed":
-			e, _ = TableFromInstance(&BadNameButRenamed{})
+		case "badcolnamebutrenamed":
+			e, _ = TableFromInstance(&BadColNameButRenamed{})
 		case "clienttestentity1": // skip, see https://jira.uberinternal.com/browse/DOSA-788
 			continue
 		case "clienttestentity2": // skip, same as above

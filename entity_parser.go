@@ -165,18 +165,12 @@ func parsePrimaryKey(tableName, pkStr string) (*PrimaryKey, error) {
 // Table instances. It is recommended to only be called once and cache results.
 func TableFromInstance(object DomainObject) (*Table, error) {
 	elem := reflect.TypeOf(object).Elem()
-	name, err := NormalizeName(elem.Name())
-	if err != nil {
-		// TODO: This isn't correct, someone could override the name later
-		return nil, errors.Wrapf(err, "struct name is invalid")
-	}
 
 	t := &Table{
 		StructName: elem.Name(),
 		ColToField: map[string]string{},
 		FieldToCol: map[string]string{},
 		EntityDefinition: EntityDefinition{
-			Name:    name,
 			Columns: []*ColumnDefinition{},
 		},
 	}
@@ -191,6 +185,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		}
 		name := structField.Name
 		if name == entityName {
+			var err error
 			if t.EntityDefinition.Name, t.Key, err = parseEntityTag(t.StructName, tag); err != nil {
 				return nil, err
 			}
@@ -206,6 +201,14 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 	}
 
 	translateKeyName(t)
+	// if no name specified yet, derive it from the structure name
+	if t.EntityDefinition.Name == "" {
+		var err error
+		t.EntityDefinition.Name, err = NormalizeName(elem.Name())
+		if err != nil {
+			return nil, errors.Wrapf(err, "struct name is invalid")
+		}
+	}
 	if err := t.EnsureValid(); err != nil {
 		return nil, errors.Wrap(err, "failed to parse dosa object")
 	}
