@@ -122,11 +122,11 @@ type AdminClient interface {
 	// UpsertSchema upserts the schemas
 	UpsertSchema(ctx context.Context, fqns ...FQN) error
 	// CreateScope creates a new scope
-	CreateScope(s string) error
+	CreateScope(ctx context.Context, s string) error
 	// TruncateScope keeps the scope and the schemas, but drops the data associated with the scope
-	TruncateScope(s string) error
+	TruncateScope(ctx context.Context, s string) error
 	// DropScope drops the scope and the data and schemas in the scope
-	DropScope(s string) error
+	DropScope(ctx context.Context, s string) error
 }
 
 type client struct {
@@ -138,12 +138,11 @@ type client struct {
 // NewClient returns a new DOSA client for the registry and connector
 // provided. This is currently only a partial implementation to demonstrate
 // basic CRUD functionality.
-// TODO: implement entire interface
-func NewClient(reg Registrar, conn Connector) (Client, error) {
+func NewClient(reg Registrar, conn Connector) Client {
 	return &client{
 		registrar: reg,
 		connector: conn,
-	}, nil
+	}
 }
 
 // Initialize performs initial schema checks against all registered entities.
@@ -382,10 +381,10 @@ type adminClient struct {
 }
 
 // NewAdminClient returns a new DOSA admin client for the connector provided.
-func NewAdminClient(conn Connector) (AdminClient, error) {
+func NewAdminClient(conn Connector) AdminClient {
 	return &adminClient{
 		connector: conn,
-	}, nil
+	}
 }
 
 // CheckSchema checks the compatibility of schemas
@@ -399,16 +398,16 @@ func (c *adminClient) UpsertSchema(ctx context.Context, fqns ...FQN) error {
 }
 
 // CreateScope creates a new scope
-func (c *adminClient) CreateScope(s string) error {
-	return c.connector.CreateScope(context.Background(), s)
+func (c *adminClient) CreateScope(ctx context.Context, s string) error {
+	return c.connector.CreateScope(ctx, s)
 }
 
 // TruncateScope keeps the scope and the schemas, but drops the data associated with the scope
-func (c *adminClient) TruncateScope(s string) error {
-	return c.connector.TruncateScope(context.Background(), s)
+func (c *adminClient) TruncateScope(ctx context.Context, s string) error {
+	return c.connector.TruncateScope(ctx, s)
 }
 
 // DropScope drops the scope and the data and schemas in the scope
-func (c *adminClient) DropScope(s string) error {
-	return c.connector.DropScope(context.Background(), s)
+func (c *adminClient) DropScope(ctx context.Context, s string) error {
+	return c.connector.DropScope(ctx, s)
 }
