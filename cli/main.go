@@ -76,10 +76,7 @@ func getClient(opts *BaseOptions) (dosa.AdminClient, error) {
 		return nil, err
 	}
 
-	client, err := dosa.NewAdminClient(conn)
-	if err != nil {
-		return nil, err
-	}
+	client := dosa.NewAdminClient(conn)
 
 	return client, nil
 }

@@ -44,5 +44,5 @@ func (c Config) NewClient(entities ...dosa.DomainObject) (dosa.Client, error) {
 		return nil, err
 	}
 
-	return dosa.NewClient(reg, conn)
+	return dosa.NewClient(reg, conn), nil
 }

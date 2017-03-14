@@ -73,10 +73,7 @@ func ExampleNewClient() {
 	conn := &devnull.Connector{}
 
 	// create the client using the registry and connector
-	client, err := dosa.NewClient(reg, conn)
-	if err != nil {
-		errors.Wrap(err, "dosa.NewClient returned an error")
-	}
+	client := dosa.NewClient(reg, conn)
 
 	err = client.Initialize(context.Background())
 	if err != nil {
@@ -91,8 +88,7 @@ func TestNewClient(t *testing.T) {
 	assert.NotNil(t, reg)
 
 	// initialize a pseudo-connected client
-	client, err := dosa.NewClient(reg, nullConnector)
-	assert.NoError(t, err)
+	client := dosa.NewClient(reg, nullConnector)
 	err = client.Initialize(ctx)
 	assert.NoError(t, err)
 }
@@ -104,17 +100,17 @@ func TestClient_Initialize(t *testing.T) {
 	reg, _ := dosa.NewRegistrar("test", "team.service", cte1)
 
 	// find error
-	c1, _ := dosa.NewClient(emptyReg, nullConnector)
+	c1 := dosa.NewClient(emptyReg, nullConnector)
 	assert.Error(t, c1.Initialize(ctx))
 
 	// CheckSchema error
 	errConn := mocks.NewMockConnector(ctrl)
 	errConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("CheckSchema error")).AnyTimes()
-	c2, _ := dosa.NewClient(reg, errConn)
+	c2 := dosa.NewClient(reg, errConn)
 	assert.Error(t, c2.Initialize(ctx))
 
 	// happy path
-	c3, _ := dosa.NewClient(reg, nullConnector)
+	c3 := dosa.NewClient(reg, nullConnector)
 	assert.NoError(t, c3.Initialize(ctx))
 
 	// already initialized
@@ -132,7 +128,7 @@ func TestClient_Read(t *testing.T) {
 	}
 
 	// uninitialized
-	c1, _ := dosa.NewClient(reg1, nullConnector)
+	c1 := dosa.NewClient(reg1, nullConnector)
 	assert.Error(t, c1.Read(ctx, fieldsToRead, cte1))
 
 	// unregistered object
@@ -152,7 +148,7 @@ func TestClient_Read(t *testing.T) {
 			assert.Equal(t, columnsToRead, []string{"id", "email"})
 
 		}).Return(results, nil).MinTimes(1)
-	c3, _ := dosa.NewClient(reg2, mockConn)
+	c3 := dosa.NewClient(reg2, mockConn)
 	assert.NoError(t, c3.Initialize(ctx))
 	assert.NoError(t, c3.Read(ctx, fieldsToRead, cte1))
 	assert.Equal(t, cte1.ID, results["id"])
@@ -172,7 +168,7 @@ func TestClient_Read_Errors(t *testing.T) {
 			assert.Equal(t, columnValues["id"], cte1.ID)
 		}).Return(nil, readError)
 
-	c1, _ := dosa.NewClient(reg1, mockConn)
+	c1 := dosa.NewClient(reg1, mockConn)
 	assert.NoError(t, c1.Initialize(ctx))
 	err := c1.Read(ctx, dosa.All(), cte1)
 	assert.Error(t, err)
@@ -189,11 +185,11 @@ func TestClient_Upsert(t *testing.T) {
 	updatedEmail := "bar@email.com"
 
 	// uninitialized
-	c1, _ := dosa.NewClient(reg1, nullConnector)
+	c1 := dosa.NewClient(reg1, nullConnector)
 	assert.Error(t, c1.Upsert(ctx, fieldsToUpdate, cte1))
 
 	// unregistered object error
-	c2, _ := dosa.NewClient(reg1, nullConnector)
+	c2 := dosa.NewClient(reg1, nullConnector)
 	c2.Initialize(ctx)
 	assert.Error(t, c2.Upsert(ctx, fieldsToUpdate, cte2))
 
@@ -209,7 +205,7 @@ func TestClient_Upsert(t *testing.T) {
 			cte1.Email = updatedEmail
 		}).
 		Return(nil).MinTimes(1)
-	c3, _ := dosa.NewClient(reg2, mockConn)
+	c3 := dosa.NewClient(reg2, mockConn)
 	assert.NoError(t, c3.Initialize(ctx))
 	assert.NoError(t, c3.Upsert(ctx, fieldsToUpdate, cte1))
 	assert.Equal(t, cte1.Email, updatedEmail)
@@ -224,7 +220,7 @@ func TestClient_Upsert_Errors(t *testing.T) {
 	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
 	mockConn.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Return(readError)
 
-	c1, _ := dosa.NewClient(reg1, mockConn)
+	c1 := dosa.NewClient(reg1, mockConn)
 	assert.NoError(t, c1.Initialize(ctx))
 	// TODO: This is a bug, fails with Cannot provide empty list to OnlyFieldValues
 	// err := c1.Upsert(ctx, dosa.All(), cte1)
@@ -246,7 +242,7 @@ func TestClient_Range(t *testing.T) {
 	}
 
 	// uninitialized
-	c1, _ := dosa.NewClient(reg1, nullConnector)
+	c1 := dosa.NewClient(reg1, nullConnector)
 	rop := dosa.NewRangeOp(cte1).Fields(fieldsToRead).Eq("ID", "123").Offset("tokeytoketoke")
 	_, _, err := c1.Range(ctx, rop)
 	assert.True(t, dosa.ErrorIsNotInitialized(err))
@@ -281,7 +277,7 @@ func TestClient_Range(t *testing.T) {
 	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
 	mockConn.EXPECT().Range(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return([]map[string]dosa.FieldValue{resultRow}, "continuation-token", nil)
-	c2, _ := dosa.NewClient(reg1, mockConn)
+	c2 := dosa.NewClient(reg1, mockConn)
 	c2.Initialize(ctx)
 	rop = dosa.NewRangeOp(cte1)
 	rows, token, err := c2.Range(ctx, rop)
@@ -312,7 +308,7 @@ func TestClient_ScanEverything(t *testing.T) {
 	}
 
 	// uninitialized
-	c1, _ := dosa.NewClient(reg1, nullConnector)
+	c1 := dosa.NewClient(reg1, nullConnector)
 	sop := dosa.NewScanOp(cte1).Fields(fieldsToRead).Offset("tokeytoketoke")
 	_, _, err := c1.ScanEverything(ctx, sop)
 	assert.True(t, dosa.ErrorIsNotInitialized(err))
@@ -339,7 +335,7 @@ func TestClient_ScanEverything(t *testing.T) {
 	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
 	mockConn.EXPECT().Scan(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return([]map[string]dosa.FieldValue{resultRow}, "continuation-token", nil)
-	c2, _ := dosa.NewClient(reg1, mockConn)
+	c2 := dosa.NewClient(reg1, mockConn)
 	c2.Initialize(ctx)
 	sop = dosa.NewScanOp(cte1)
 	rows, token, err := c2.ScanEverything(ctx, sop)
@@ -363,7 +359,7 @@ func TestClient_Remove(t *testing.T) {
 	reg1, _ := dosa.NewRegistrar(scope, namePrefix, cte1)
 
 	// uninitialized
-	c1, _ := dosa.NewClient(reg1, nullConnector)
+	c1 := dosa.NewClient(reg1, nullConnector)
 	err := c1.Remove(ctx, cte1)
 	assert.True(t, dosa.ErrorIsNotInitialized(err))
 
@@ -379,7 +375,7 @@ func TestClient_Remove(t *testing.T) {
 	mockConn := mocks.NewMockConnector(ctrl)
 	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
 	mockConn.EXPECT().Remove(ctx, gomock.Any(), map[string]dosa.FieldValue{"id": dosa.FieldValue(int64(123))}).Return(nil)
-	c2, _ := dosa.NewClient(reg1, mockConn)
+	c2 := dosa.NewClient(reg1, mockConn)
 	c2.Initialize(ctx)
 	err = c2.Remove(ctx, &ClientTestEntity1{ID: int64(123)})
 	assert.NoError(t, err)
@@ -389,7 +385,7 @@ func TestClient_Remove(t *testing.T) {
 func TestClient_Unimplemented(t *testing.T) {
 	reg1, _ := dosa.NewRegistrar(scope, namePrefix, cte1)
 
-	c, _ := dosa.NewClient(reg1, nullConnector)
+	c := dosa.NewClient(reg1, nullConnector)
 	assert.Panics(t, func() {
 		c.CreateIfNotExists(ctx, &ClientTestEntity1{})
 	})
@@ -408,34 +404,31 @@ func TestClient_Unimplemented(t *testing.T) {
 }
 
 func TestAdminClient_CreateScope(t *testing.T) {
-	c, err := dosa.NewAdminClient(nullConnector)
-	assert.NoError(t, err)
+	c := dosa.NewAdminClient(nullConnector)
 	assert.NotNil(t, c)
 
-	err = c.CreateScope(scope)
+	err := c.CreateScope(context.TODO(), scope)
 	assert.NoError(t, err)
 }
 
 func TestAdminClient_TruncateScope(t *testing.T) {
-	c, err := dosa.NewAdminClient(nullConnector)
-	assert.NoError(t, err)
+	c := dosa.NewAdminClient(nullConnector)
 	assert.NotNil(t, c)
 
-	err = c.TruncateScope(scope)
+	err := c.TruncateScope(context.TODO(), scope)
 	assert.NoError(t, err)
 }
 
 func TestAdminClient_DropScope(t *testing.T) {
-	c, err := dosa.NewAdminClient(nullConnector)
-	assert.NoError(t, err)
+	c := dosa.NewAdminClient(nullConnector)
 	assert.NotNil(t, c)
 
-	err = c.DropScope(scope)
+	err := c.DropScope(context.TODO(), scope)
 	assert.NoError(t, err)
 }
 
 func TestAdminClient_Unimplemented(t *testing.T) {
-	c, _ := dosa.NewAdminClient(nullConnector)
+	c := dosa.NewAdminClient(nullConnector)
 	assert.Panics(t, func() {
 		c.CheckSchema(ctx, cte1FQN, cte2FQN)
 	})
