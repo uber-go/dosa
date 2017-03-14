@@ -30,7 +30,6 @@ import (
 )
 
 func TestUnparseableGoCode(t *testing.T) {
-	assert := assert.New(t)
 	const tmpdir = ".testgen"
 	defer os.RemoveAll(tmpdir)
 	if err := os.Mkdir(tmpdir, 0770); err != nil {
@@ -39,28 +38,25 @@ func TestUnparseableGoCode(t *testing.T) {
 	if err := ioutil.WriteFile(tmpdir+"/broken.go", []byte("package broken\nfunc broken\n"), 0644); err != nil {
 		t.Fatalf("can't create %s/broken.go: %s", tmpdir, err)
 	}
-	entities, errs, err := FindEntities(tmpdir, "")
-	assert.Nil(entities)
-	assert.Nil(errs)
-	assert.Contains(err.Error(), "expected '('")
+	entities, errs, err := FindEntities(tmpdir, []string{})
+	assert.Nil(t, entities)
+	assert.Nil(t, errs)
+	assert.Contains(t, err.Error(), "expected '('")
 }
 
 func TestNonExistentDirectory(t *testing.T) {
 	const nonExistentDirectory = "ThisDirectoryBetterNotExist"
-	entities, errs, err := FindEntities(nonExistentDirectory, "")
-	assert := assert.New(t)
-	assert.Nil(entities)
-	assert.Nil(errs)
-	assert.Contains(err.Error(), nonExistentDirectory)
+	entities, errs, err := FindEntities(nonExistentDirectory, []string{})
+	assert.Nil(t, entities)
+	assert.Nil(t, errs)
+	assert.Contains(t, err.Error(), nonExistentDirectory)
 }
 
 func TestParser(t *testing.T) {
-	entities, errs, err := FindEntities(".", "")
-	assert := assert.New(t)
-
-	assert.Equal(13, len(entities), fmt.Sprintf("%s", entities))
-	assert.Equal(14, len(errs), fmt.Sprintf("%v", errs))
-	assert.Nil(err)
+	entities, errs, err := FindEntities(".", []string{})
+	assert.Equal(t, 13, len(entities), fmt.Sprintf("%s", entities))
+	assert.Equal(t, 14, len(errs), fmt.Sprintf("%v", errs))
+	assert.Nil(t, err)
 
 	for _, entity := range entities {
 		var e *Table
@@ -95,20 +91,19 @@ func TestParser(t *testing.T) {
 			t.Errorf("entity %s not expected", entity.Name)
 			continue
 		}
-		assert.Equal(e, entity)
+		assert.Equal(t, e, entity)
 	}
 }
 
 func TestExclusion(t *testing.T) {
-	entities, errs, err := FindEntities(".", "*_test.go")
-	assert := assert.New(t)
-	assert.Equal(0, len(entities))
-	assert.Equal(0, len(errs))
-	assert.Nil(err)
+	entities, errs, err := FindEntities(".", []string{"*_test.go"})
+	assert.Equal(t, 0, len(entities))
+	assert.Equal(t, 0, len(errs))
+	assert.Nil(t, err)
 }
 
 func BenchmarkFinder(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		FindEntities(".", "")
+		FindEntities(".", []string{})
 	}
 }

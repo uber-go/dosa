@@ -22,6 +22,9 @@ package dosa_test
 
 import (
 	"context"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -54,11 +57,9 @@ var (
 	ctx           = context.TODO()
 	scope         = "test"
 	namePrefix    = "team.service"
+	cte1name      = "clienttestentity1"
+	cte2name      = "clienttestentity2"
 	nullConnector = &devnull.Connector{}
-	rootFQN, _    = dosa.ToFQN(scope)
-	childFQN, _   = rootFQN.Child(namePrefix)
-	cte1FQN, _    = childFQN.Child("clienttestentity1")
-	cte2FQN, _    = childFQN.Child("clienttestentity2")
 )
 
 func ExampleNewClient() {
@@ -427,12 +428,140 @@ func TestAdminClient_DropScope(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAdminClient_CheckSchema(t *testing.T) {
+	// write some entities to disk
+	tmpdir0 := ".testcheckschema"
+	tmpdir1 := filepath.Join(tmpdir0, "a")
+	tmpdir2 := filepath.Join(tmpdir0, "b")
+	tmpdir3 := filepath.Join(tmpdir0, "c")
+	os.RemoveAll(tmpdir0)
+	defer os.RemoveAll(tmpdir0)
+	path1 := filepath.Join(tmpdir1, "f1.go")
+	path2 := filepath.Join(tmpdir2, "f2.go")
+	path3 := filepath.Join(tmpdir3, "f3.go")
+	content := `
+package main
+
+import "github.com/uber-go/dosa"
+
+type TestEntityA struct {
+	dosa.Entity ` + "`dosa:\"primaryKey=(ID)\"`" + `
+	ID int32
+}
+type TestEntityB struct {
+	dosa.Entity ` + "`dosa:\"primaryKey=(ID)\"`" + `
+	ID int32
+}
+`
+	assert.NoError(t, os.MkdirAll(tmpdir1, 0770))
+	assert.NoError(t, os.MkdirAll(tmpdir2, 0770))
+	assert.NoError(t, os.MkdirAll(tmpdir3, 0770))
+	assert.NoError(t, ioutil.WriteFile(path1, []byte(content), 0755))
+	assert.NoError(t, ioutil.WriteFile(path2, []byte(content), 0755))
+	assert.NoError(t, ioutil.WriteFile(path3, []byte("package broken\nfunc broken"), 0755))
+
+	data := []struct {
+		dirs       []string
+		excludes   []string
+		scope      string
+		namePrefix string
+		names      []string
+		err        error
+		isErr      bool
+	}{
+		// invalid scope
+		{
+			isErr: true,
+		},
+		// names empty
+		{
+			scope: scope,
+			isErr: true,
+		},
+		// cannot stat dir
+		{
+			dirs:  []string{"./foo/bar/baz"},
+			scope: scope,
+			names: []string{"a", "b", "c"},
+			isErr: true,
+		},
+		// path exists, but not directory
+		{
+			dirs:  []string{path1},
+			scope: scope,
+			names: []string{"a", "b", "c"},
+			isErr: true,
+		},
+		// path exists, but unparseable
+		{
+			dirs:  []string{tmpdir3},
+			scope: scope,
+			names: []string{"a", "b", "c"},
+			isErr: true,
+		},
+		// collision
+		{
+			dirs:       []string{tmpdir1, tmpdir2},
+			scope:      scope,
+			namePrefix: namePrefix,
+			names:      []string{"testentitya"},
+			isErr:      true,
+		},
+		// collision in excluded file (ok)
+		{
+			dirs:       []string{tmpdir1, tmpdir2},
+			excludes:   []string{"f1.go"},
+			scope:      scope,
+			namePrefix: namePrefix,
+			names:      []string{"testentitya"},
+		},
+		// connector error
+		{
+			dirs:       []string{tmpdir1},
+			scope:      scope,
+			namePrefix: "error",
+			names:      []string{"testentitya", "testentityb"},
+			isErr:      true,
+		},
+		// found, skipped (ok)
+		{
+			dirs:       []string{tmpdir1, tmpdir2},
+			excludes:   []string{"f1.go"},
+			scope:      scope,
+			namePrefix: namePrefix,
+			names:      []string{"testentitya"},
+		},
+		// happy path
+		{
+			dirs:       []string{tmpdir1},
+			scope:      scope,
+			namePrefix: namePrefix,
+			names:      []string{"testentitya", "testentityb"},
+		},
+	}
+
+	// calls with "error" prefix will fail, rest succeed
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(ctx, scope, "error", gomock.Any()).Return(nil, errors.New("connector error")).Times(1)
+	mockConn.EXPECT().CheckSchema(ctx, scope, namePrefix, gomock.Any()).Return([]int32{1}, nil).Times(3)
+
+	for _, d := range data {
+		c1 := dosa.NewAdminClient(mockConn)
+		c1.Directories(d.dirs).Excludes(d.excludes).Scope(d.scope)
+		err := c1.CheckSchema(ctx, d.namePrefix, d.names...)
+		if d.isErr {
+			assert.Error(t, err)
+			continue
+		}
+		assert.NoError(t, err)
+	}
+}
+
 func TestAdminClient_Unimplemented(t *testing.T) {
 	c := dosa.NewAdminClient(nullConnector)
 	assert.Panics(t, func() {
-		c.CheckSchema(ctx, cte1FQN, cte2FQN)
-	})
-	assert.Panics(t, func() {
-		c.UpsertSchema(ctx, cte1FQN, cte2FQN)
+		c.UpsertSchema(ctx, namePrefix, cte1name, cte2name)
 	})
 }

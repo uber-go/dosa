@@ -22,6 +22,8 @@ package dosa
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -117,10 +119,16 @@ func All() []string { return nil }
 
 // AdminClient has methods to manage schemas and scopes
 type AdminClient interface {
+	// Directories sets admin client search path
+	Directories(dirs []string) AdminClient
+	// Excludes sets patters to exclude when searching for entities
+	Excludes(excludes []string) AdminClient
+	// Scope sets the admin client scope
+	Scope(scope string) AdminClient
 	// CheckSchema checks the compatibility of schemas
-	CheckSchema(ctx context.Context, fqns ...FQN) error
+	CheckSchema(ctx context.Context, namePrefix string, names ...string) error
 	// UpsertSchema upserts the schemas
-	UpsertSchema(ctx context.Context, fqns ...FQN) error
+	UpsertSchema(ctx context.Context, namePrefix string, names ...string) error
 	// CreateScope creates a new scope
 	CreateScope(ctx context.Context, s string) error
 	// TruncateScope keeps the scope and the schemas, but drops the data associated with the scope
@@ -377,23 +385,125 @@ func (c *client) ScanEverything(ctx context.Context, sop *ScanOp) ([]DomainObjec
 }
 
 type adminClient struct {
+	scope     string
+	dirs      []string
+	excludes  []string
 	connector Connector
 }
 
 // NewAdminClient returns a new DOSA admin client for the connector provided.
 func NewAdminClient(conn Connector) AdminClient {
 	return &adminClient{
+		scope:     os.Getenv("USER"),
+		dirs:      []string{"."},
+		excludes:  []string{"_test.go"},
 		connector: conn,
 	}
 }
 
-// CheckSchema checks the compatibility of schemas
-func (c *adminClient) CheckSchema(ctx context.Context, fqns ...FQN) error {
-	panic("not implemented")
+// Directories sets the given paths to the client's list of file paths to scan
+// during schema operations. Defaults to ["."].
+func (c *adminClient) Directories(dirs []string) AdminClient {
+	c.dirs = dirs
+	return c
 }
 
-// UpsertSchema upserts the schemas
-func (c *adminClient) UpsertSchema(ctx context.Context, fqns ...FQN) error {
+// Excludes sets the substrings used when considering filenames for inclusion
+// when searching for DOSA entities. Defaults to ["_test.go"]
+func (c *adminClient) Excludes(excludes []string) AdminClient {
+	c.excludes = excludes
+	return c
+}
+
+// Scope sets the scope used for schema operations. Defaults to $USER
+func (c *adminClient) Scope(scope string) AdminClient {
+	c.scope = scope
+	return c
+}
+
+// CheckSchema checks the compatibility of schemas with the namespace defined
+// by the given prefix and names in the context of the client's scope. For
+// example, given a prefix of "uber.dosa" and a DOSA entities with types called
+// User, Location and Restaurant, the call to CheckSchema would resemble:
+//
+//     CheckSchema("uber.dosa", "user", "location", "restaurant")
+//
+// The client's scope should be configured on initialization and be non-empty
+// when CheckSchema is called. See the Scope method for more info. An error is
+// returned if client is misconfigured (eg. invalid scope) or if any schema
+// in the namespaces were incompatible, not found or not uniquely named.
+//
+// For the given example, that would be schemas in the namespaces:
+//
+//		"uber.dosa.user"
+//		"uber.dosa.location"
+//		"uber.dosa.restaurant"
+//
+// The definition of "incompatible" and "not found" may vary but is ultimately
+// defined by the client connector implementation.
+func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string, names ...string) error {
+	// this should only happen if caller has inadvertently called Scope("")
+	// prior to calling CheckSchema.
+	if c.scope == "" {
+		return errors.New("invalid scope")
+	}
+	if len(names) == 0 {
+		return errors.New("invalid schema names")
+	}
+
+	// final list of derived entity definitions
+	defs := make([]*EntityDefinition, len(names))
+
+	// lookup table, there can be only one definition for any (prefix + name)
+	nameIdx := make(map[string]bool)
+	for _, n := range names {
+		nameIdx[n] = false
+	}
+
+	// search in all directories
+	for _, dir := range c.dirs {
+		info, err := os.Stat(dir)
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("%q is not a directory", dir)
+		}
+		// ignore warnings
+		entities, _, err := FindEntities(dir, c.excludes)
+		if err != nil {
+			return err
+		}
+
+		i := 0
+		for _, entity := range entities {
+			isRegistered, exists := nameIdx[entity.Name]
+			// found a definition, but skip
+			if !exists {
+				continue
+			}
+			// naming collision
+			if isRegistered {
+				return fmt.Errorf("multiple %s definitions for %s prefix", entity.Name, namePrefix)
+			}
+			// record discovery
+			nameIdx[entity.Name] = true
+			defs[i] = &entity.EntityDefinition
+			i++
+		}
+	}
+
+	// should we check for len(versions) != len(defs) ?
+	if _, err := c.connector.CheckSchema(ctx, c.scope, namePrefix, defs); err != nil {
+		return errors.Wrapf(err, "CheckSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
+	}
+
+	return nil
+}
+
+// UpsertSchema creates or updates the schema for entities in the given
+// namespace. See CheckSchema for more detail about scope, prefix and names.
+func (c *adminClient) UpsertSchema(ctx context.Context, namePrefix string, names ...string) error {
 	panic("not implemented")
 }
 

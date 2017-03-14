@@ -174,7 +174,7 @@ func expandDirectories(dirs []string) ([]string, error) {
 func findEntities(dirs []string, exclude string, pedantic bool) ([]*dosa.Table, error) {
 	entities := make([]*dosa.Table, 0)
 	for _, dir := range dirs {
-		ents, errs, err := dosa.FindEntities(dir, exclude)
+		ents, errs, err := dosa.FindEntities(dir, []string{exclude})
 		if err != nil {
 			fmt.Fprint(os.Stderr, err)
 			return nil, err
