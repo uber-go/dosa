@@ -126,9 +126,11 @@ type AdminClient interface {
 	// Scope sets the admin client scope
 	Scope(scope string) AdminClient
 	// CheckSchema checks the compatibility of schemas
-	CheckSchema(ctx context.Context, namePrefix string, names ...string) error
+	CheckSchema(ctx context.Context, namePrefix string) error
 	// UpsertSchema upserts the schemas
-	UpsertSchema(ctx context.Context, namePrefix string, names ...string) error
+	UpsertSchema(ctx context.Context, namePrefix string) error
+	// FindEntities returns derived entity definitions
+	FindEntities() ([]*EntityDefinition, error)
 	// CreateScope creates a new scope
 	CreateScope(ctx context.Context, s string) error
 	// TruncateScope keeps the scope and the schemas, but drops the data associated with the scope
@@ -421,76 +423,24 @@ func (c *adminClient) Scope(scope string) AdminClient {
 	return c
 }
 
-// CheckSchema checks the compatibility of schemas with the namespace defined
-// by the given prefix and names in the context of the client's scope. For
-// example, given a prefix of "uber.dosa" and a DOSA entities with types called
-// User, Location and Restaurant, the call to CheckSchema would resemble:
-//
-//     CheckSchema("uber.dosa", "user", "location", "restaurant")
-//
-// The client's scope should be configured on initialization and be non-empty
-// when CheckSchema is called. See the Scope method for more info. An error is
-// returned if client is misconfigured (eg. invalid scope) or if any schema
-// in the namespaces were incompatible, not found or not uniquely named.
-//
-// For the given example, that would be schemas in the namespaces:
-//
-//		"uber.dosa.user"
-//		"uber.dosa.location"
-//		"uber.dosa.restaurant"
-//
+// CheckSchema first searches for entity definitions within configured
+// directories before checking the compatibility of each entity for the givena
+// the namePrefix. The client's scope and search directories should be
+// configured on initialization and be non-empty when CheckSchema is called.
+// An error is returned if client is misconfigured (eg. invalid scope) or if
+// any of the entities found are incompatible, not found or not uniquely named.
 // The definition of "incompatible" and "not found" may vary but is ultimately
 // defined by the client connector implementation.
-func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string, names ...string) error {
+func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) error {
 	// this should only happen if caller has inadvertently called Scope("")
 	// prior to calling CheckSchema.
 	if c.scope == "" {
 		return errors.New("invalid scope")
 	}
-	if len(names) == 0 {
-		return errors.New("invalid schema names")
-	}
 
-	// final list of derived entity definitions
-	defs := make([]*EntityDefinition, len(names))
-
-	// lookup table, there can be only one definition for any (prefix + name)
-	nameIdx := make(map[string]bool)
-	for _, n := range names {
-		nameIdx[n] = false
-	}
-
-	// search in all directories
-	for _, dir := range c.dirs {
-		info, err := os.Stat(dir)
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			return fmt.Errorf("%q is not a directory", dir)
-		}
-		// ignore warnings
-		entities, _, err := FindEntities(dir, c.excludes)
-		if err != nil {
-			return err
-		}
-
-		i := 0
-		for _, entity := range entities {
-			isRegistered, exists := nameIdx[entity.Name]
-			// found a definition, but skip
-			if !exists {
-				continue
-			}
-			// naming collision
-			if isRegistered {
-				return fmt.Errorf("multiple %s definitions for %s prefix", entity.Name, namePrefix)
-			}
-			// record discovery
-			nameIdx[entity.Name] = true
-			defs[i] = &entity.EntityDefinition
-			i++
-		}
+	defs, err := c.FindEntities()
+	if err != nil {
+		return errors.Wrap(err, "CheckSchema failed")
 	}
 
 	// should we check for len(versions) != len(defs) ?
@@ -502,9 +452,65 @@ func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string, names 
 }
 
 // UpsertSchema creates or updates the schema for entities in the given
-// namespace. See CheckSchema for more detail about scope, prefix and names.
-func (c *adminClient) UpsertSchema(ctx context.Context, namePrefix string, names ...string) error {
-	panic("not implemented")
+// namespace. See CheckSchema for more detail about scope and namePrefix.
+func (c *adminClient) UpsertSchema(ctx context.Context, namePrefix string) error {
+	// this should only happen if caller has inadvertently called Scope("")
+	// prior to calling CheckSchema.
+	if c.scope == "" {
+		return errors.New("invalid scope")
+	}
+
+	defs, err := c.FindEntities()
+	if err != nil {
+		return errors.Wrap(err, "UpsertSchema failed")
+	}
+
+	// should we check for len(versions) != len(defs) ?
+	if _, err := c.connector.UpsertSchema(ctx, c.scope, namePrefix, defs); err != nil {
+		return errors.Wrapf(err, "UpsertSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
+	}
+
+	return nil
+}
+
+// FindEntities returns all valid entity definitions defined within client
+// directories. An error is returned if any of the directories do not exist
+// or if any duplicates are found along the way.
+func (c *adminClient) FindEntities() ([]*EntityDefinition, error) {
+	// final list of derived entity definitions
+	var defs []*EntityDefinition
+
+	// lookup table, names have to be unique
+	nameIdx := make(map[string]bool)
+
+	// search in all directories
+	for _, dir := range c.dirs {
+		info, err := os.Stat(dir)
+		if err != nil {
+			return nil, err
+		}
+		if !info.IsDir() {
+			return nil, fmt.Errorf("%q is not a directory", dir)
+		}
+		// ignore warnings
+		entities, _, err := FindEntities(dir, c.excludes)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, entity := range entities {
+			isRegistered, _ := nameIdx[entity.Name]
+
+			// naming collision
+			if isRegistered {
+				return nil, fmt.Errorf("found multiple definitions of %s", entity.Name)
+			}
+			// record discovery
+			nameIdx[entity.Name] = true
+			defs = append(defs, &entity.EntityDefinition)
+		}
+	}
+	return defs, nil
 }
 
 // CreateScope creates a new scope
