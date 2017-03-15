@@ -172,30 +172,26 @@ func expandDirectories(dirs []string) ([]string, error) {
 // findEntities visits each directory to generate entity table definitions.
 // An error is returned if no entities are found
 func findEntities(dirs []string, exclude string, pedantic bool) ([]*dosa.Table, error) {
-	entities := make([]*dosa.Table, 0)
-	for _, dir := range dirs {
-		ents, errs, err := dosa.FindEntities(dir, []string{exclude})
-		if err != nil {
-			fmt.Fprint(os.Stderr, err)
-			return nil, err
-		}
+	defs, errs, err := dosa.FindEntities(dirs, []string{exclude})
+	if err != nil {
+		fmt.Fprint(os.Stderr, err)
+		return nil, err
+	}
 
-		if errs != nil && len(errs) > 0 {
-			for _, err := range errs {
-				fmt.Fprintf(os.Stderr, "warning: %s\n", err)
-			}
-			if pedantic {
-				fmt.Fprint(os.Stderr, "Failed (warnings are errors in pedantic mode)")
-				os.Exit(1)
-			}
+	if errs != nil && len(errs) > 0 {
+		for _, err := range errs {
+			fmt.Fprintf(os.Stderr, "warning: %s\n", err)
 		}
-		entities = append(entities, ents...)
+		if pedantic {
+			fmt.Fprint(os.Stderr, "Failed (warnings are errors in pedantic mode)")
+			os.Exit(1)
+		}
 	}
 
 	// if nothing was found, return an error
-	if len(entities) == 0 {
+	if len(defs) == 0 {
 		return nil, fmt.Errorf("no valid DOSA-annotated entities were found in the directories %s", dirs)
 	}
 
-	return entities, nil
+	return defs, nil
 }
