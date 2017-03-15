@@ -126,11 +126,9 @@ type AdminClient interface {
 	// Scope sets the admin client scope
 	Scope(scope string) AdminClient
 	// CheckSchema checks the compatibility of schemas
-	CheckSchema(ctx context.Context, namePrefix string) error
+	CheckSchema(ctx context.Context, namePrefix string) ([]int32, error)
 	// UpsertSchema upserts the schemas
-	UpsertSchema(ctx context.Context, namePrefix string) error
-	// FindEntities returns derived entity definitions
-	FindEntities() ([]*EntityDefinition, error)
+	UpsertSchema(ctx context.Context, namePrefix string) ([]int32, error)
 	// CreateScope creates a new scope
 	CreateScope(ctx context.Context, s string) error
 	// TruncateScope keeps the scope and the schemas, but drops the data associated with the scope
@@ -431,85 +429,53 @@ func (c *adminClient) Scope(scope string) AdminClient {
 // any of the entities found are incompatible, not found or not uniquely named.
 // The definition of "incompatible" and "not found" may vary but is ultimately
 // defined by the client connector implementation.
-func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) error {
-	// this should only happen if caller has inadvertently called Scope("")
-	// prior to calling CheckSchema.
-	if c.scope == "" {
-		return errors.New("invalid scope")
-	}
-
-	defs, err := c.FindEntities()
+func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) ([]int32, error) {
+	defs, err := findEntityDefinitions(c.scope, c.dirs, c.excludes)
 	if err != nil {
-		return errors.Wrap(err, "CheckSchema failed")
+		return nil, errors.Wrap(err, "failed to find entities")
 	}
-
-	// should we check for len(versions) != len(defs) ?
-	if _, err := c.connector.CheckSchema(ctx, c.scope, namePrefix, defs); err != nil {
-		return errors.Wrapf(err, "CheckSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
+	versions, err := c.connector.CheckSchema(ctx, c.scope, namePrefix, defs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "CheckSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
 	}
-
-	return nil
+	return versions, nil
 }
 
 // UpsertSchema creates or updates the schema for entities in the given
 // namespace. See CheckSchema for more detail about scope and namePrefix.
-func (c *adminClient) UpsertSchema(ctx context.Context, namePrefix string) error {
-	// this should only happen if caller has inadvertently called Scope("")
-	// prior to calling CheckSchema.
-	if c.scope == "" {
-		return errors.New("invalid scope")
-	}
-
-	defs, err := c.FindEntities()
+func (c *adminClient) UpsertSchema(ctx context.Context, namePrefix string) ([]int32, error) {
+	defs, err := findEntityDefinitions(c.scope, c.dirs, c.excludes)
 	if err != nil {
-		return errors.Wrap(err, "UpsertSchema failed")
+		return nil, errors.Wrap(err, "failed to find entities")
 	}
-
-	// should we check for len(versions) != len(defs) ?
-	if _, err := c.connector.UpsertSchema(ctx, c.scope, namePrefix, defs); err != nil {
-		return errors.Wrapf(err, "UpsertSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
+	versions, err := c.connector.UpsertSchema(ctx, c.scope, namePrefix, defs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "UpsertSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
 	}
-
-	return nil
+	return versions, nil
 }
 
-// FindEntities returns all valid entity definitions defined within client
-// directories. An error is returned if any of the directories do not exist
-// or if any duplicates are found along the way.
-func (c *adminClient) FindEntities() ([]*EntityDefinition, error) {
-	// final list of derived entity definitions
-	var defs []*EntityDefinition
-
-	// lookup table, names have to be unique
-	nameIdx := make(map[string]bool)
-
-	// search in all directories
-	for _, dir := range c.dirs {
-		info, err := os.Stat(dir)
-		if err != nil {
-			return nil, err
-		}
-		if !info.IsDir() {
-			return nil, fmt.Errorf("%q is not a directory", dir)
-		}
-		// ignore warnings
-		entities, _, err := FindEntities(dir, c.excludes)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, entity := range entities {
-			isRegistered, _ := nameIdx[entity.Name]
-
-			// naming collision
-			if isRegistered {
-				return nil, fmt.Errorf("found multiple definitions of %s", entity.Name)
-			}
-			// record discovery
-			nameIdx[entity.Name] = true
-			defs = append(defs, &entity.EntityDefinition)
-		}
+// findEntityDefinitions searches for entities in given directories, excluding
+// files that match any patterns in excludes. It is shared by CheckSchema and
+// UpsertSchema.
+func findEntityDefinitions(scope string, dirs, excludes []string) ([]*EntityDefinition, error) {
+	if err := IsValidName(scope); err != nil {
+		return nil, errors.Wrapf(err, "invalid scope name %s", scope)
 	}
+
+	entities, warns, err := FindEntities(dirs, excludes)
+	if len(warns) > 0 {
+		return nil, fmt.Errorf("FindEntities failed: %s", warns)
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "FindEntities failed")
+	}
+
+	defs := make([]*EntityDefinition, len(entities))
+	for idx, e := range entities {
+		defs[idx] = e.ToEntityDefinition()
+	}
+
 	return defs, nil
 }
 
