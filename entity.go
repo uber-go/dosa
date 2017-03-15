@@ -38,6 +38,7 @@ type Table struct {
 	FieldToCol map[string]string // map from field name -> column name
 }
 
+// ToEntityDefinition translates instance to EntityDefinition
 func (t *Table) ToEntityDefinition() *EntityDefinition {
 	return &EntityDefinition{
 		Name:    t.Name,
