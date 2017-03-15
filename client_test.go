@@ -436,3 +436,20 @@ func TestAdminClient_Unimplemented(t *testing.T) {
 		c.UpsertSchema(ctx, cte1FQN, cte2FQN)
 	})
 }
+
+func TestErrorIsNotFound(t *testing.T) {
+	assert.False(t, dosa.ErrorIsNotFound(errors.New("not a IsNotFound error")))
+	assert.False(t, dosa.ErrorIsNotFound(&dosa.ErrNotInitialized{}))
+	assert.True(t, dosa.ErrorIsNotFound(&dosa.ErrNotFound{}))
+	assert.True(t, dosa.ErrorIsNotFound(errors.Wrap(&dosa.ErrNotFound{}, "wrapped")))
+	assert.Equal(t, (&dosa.ErrNotFound{}).Error(), "not found")
+}
+
+func TestErrNotInitialized_Error(t *testing.T) {
+	assert.False(t, dosa.ErrorIsNotInitialized(errors.New("not a IsNotInitializedError")))
+	assert.False(t, dosa.ErrorIsNotInitialized(&dosa.ErrNotFound{}))
+	assert.True(t, dosa.ErrorIsNotInitialized(&dosa.ErrNotInitialized{}))
+	assert.True(t, dosa.ErrorIsNotInitialized(errors.Wrap(&dosa.ErrNotInitialized{}, "wrapped")))
+	assert.Equal(t, (&dosa.ErrNotInitialized{}).Error(), "client not initialized")
+
+}
