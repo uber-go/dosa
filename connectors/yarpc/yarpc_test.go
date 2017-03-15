@@ -438,17 +438,25 @@ func TestClient_CheckSchema(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
 	ctx := context.TODO()
-
-	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any()).Return(&drpc.CheckSchemaResponse{[]int32{}}, nil)
+	sp := "scope"
+	prefix := "prefix"
 
 	sut := yarpc.Connector{Client: mockedClient}
 
 	ed, err := dosa.TableFromInstance(&TestDosaObject{})
 	assert.NoError(t, err)
+	expectedRequest := &drpc.CheckSchemaRequest{
+		Scope:      &sp,
+		NamePrefix: &prefix,
+		EntityDefs: []*drpc.EntityDefinition{yarpc.EntityDefinitionToThrift(&ed.EntityDefinition)},
+	}
+	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.CheckSchemaRequest) {
+		assert.Equal(t, expectedRequest, request)
+	}).Return(&drpc.CheckSchemaResponse{[]int32{1}}, nil)
 
-	sr, err := sut.CheckSchema(ctx, "scope", "prefix", []*dosa.EntityDefinition{&ed.EntityDefinition})
+	sr, err := sut.CheckSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
-	assert.NotNil(t, sr)
+	assert.Equal(t, []int32{1}, sr)
 }
 
 func TestClient_UpsertSchema(t *testing.T) {
@@ -461,12 +469,24 @@ func TestClient_UpsertSchema(t *testing.T) {
 
 	ed, err := dosa.TableFromInstance(&TestDosaObject{})
 	assert.NoError(t, err)
-	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Return(&drpc.UpsertSchemaResponse{Versions: []int32{1, 2, 3}}, nil)
-	_, err = sut.UpsertSchema(ctx, "scope", "prefix", []*dosa.EntityDefinition{&ed.EntityDefinition})
+	sp := "scope"
+	prefix := "prefix"
+
+	expectedRequest := &drpc.UpsertSchemaRequest{
+		Scope:      &sp,
+		NamePrefix: &prefix,
+		EntityDefs: []*drpc.EntityDefinition{yarpc.EntityDefinitionToThrift(&ed.EntityDefinition)},
+	}
+
+	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.UpsertSchemaRequest) {
+		assert.Equal(t, expectedRequest, request)
+	}).Return(&drpc.UpsertSchemaResponse{Versions: []int32{1}}, nil)
+	result, err := sut.UpsertSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
+	assert.Equal(t, []int32{1}, result)
 
 	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Return(nil, errors.New("test error"))
-	_, err = sut.UpsertSchema(ctx, "scope", "prefix", []*dosa.EntityDefinition{&ed.EntityDefinition})
+	_, err = sut.UpsertSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
 }

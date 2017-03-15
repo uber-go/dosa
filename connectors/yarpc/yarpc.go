@@ -308,6 +308,8 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 	}
 
 	request := &dosarpc.UpsertSchemaRequest{
+		Scope:      &scope,
+		NamePrefix: &namePrefix,
 		EntityDefs: rpcEds,
 	}
 
