@@ -639,3 +639,11 @@ func TestErrNotInitialized_Error(t *testing.T) {
 	assert.Equal(t, (&dosa.ErrNotInitialized{}).Error(), "client not initialized")
 
 }
+
+func TestErrorIsAlreadyExists(t *testing.T) {
+	assert.False(t, dosa.ErrorIsAlreadyExists(errors.New("not an already exists error")))
+	assert.False(t, dosa.ErrorIsAlreadyExists(&dosa.ErrNotInitialized{}))
+	assert.False(t, dosa.ErrorIsAlreadyExists(&dosa.ErrNotFound{}))
+	assert.True(t, dosa.ErrorIsAlreadyExists(errors.Wrap(&dosa.ErrAlreadyExists{}, "wrapped")))
+	assert.Equal(t, "already exists", (&dosa.ErrAlreadyExists{}).Error())
+}
