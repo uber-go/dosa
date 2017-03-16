@@ -115,9 +115,10 @@ func (e *RegisteredEntity) KeyFieldValues(entity DomainObject) map[string]FieldV
 // a subset of fields. If a field name provided does not map to an entity
 // field, an error will be returned.
 func (e *RegisteredEntity) OnlyFieldValues(entity DomainObject, fieldNames []string) (map[string]FieldValue, error) {
-	// empty should return error
-	if len(fieldNames) == 0 {
-		return nil, fmt.Errorf("Cannot provide empty list to OnlyFieldValues")
+	if fieldNames == nil || len(fieldNames) == 0 {
+		for _, field := range e.table.ColToField {
+			fieldNames = append(fieldNames, field)
+		}
 	}
 	v := reflect.ValueOf(entity).Elem()
 	fieldValues := make(map[string]FieldValue)
@@ -139,8 +140,10 @@ func (e *RegisteredEntity) OnlyFieldValues(entity DomainObject, fieldNames []str
 
 // ColumnNames translates field names to column names.
 func (e *RegisteredEntity) ColumnNames(fieldNames []string) ([]string, error) {
-	if fieldNames == nil {
-		return nil, nil
+	if fieldNames == nil || len(fieldNames) == 0 {
+		for _, field := range e.table.ColToField {
+			fieldNames = append(fieldNames, field)
+		}
 	}
 	columnNames := make([]string, len(fieldNames))
 	for i, fieldName := range fieldNames {
