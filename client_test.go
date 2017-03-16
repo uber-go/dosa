@@ -163,10 +163,11 @@ func TestClient_Read_Errors(t *testing.T) {
 	defer ctrl.Finish()
 	readError := errors.New("oops")
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
-	mockConn.EXPECT().Read(gomock.Any(), gomock.Any(), gomock.Any(), dosa.All()).
+	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
+	mockConn.EXPECT().Read(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, _ *dosa.EntityInfo, columnValues map[string]dosa.FieldValue, columnsToRead []string) {
 			assert.Equal(t, columnValues["id"], cte1.ID)
+			assert.NotEmpty(t, columnsToRead)
 		}).Return(nil, readError)
 
 	c1 := dosa.NewClient(reg1, mockConn)
