@@ -96,7 +96,15 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 		Ref:          entityInfoToSchemaRef(ei),
 		EntityValues: fieldValueMapFromClientMap(values),
 	}
-	return c.Client.CreateIfNotExists(ctx, &createRequest)
+	err := c.Client.CreateIfNotExists(ctx, &createRequest)
+	if err != nil {
+		if be, ok := err.(*dosarpc.BadRequestError); ok {
+			if be.ErrorCode != nil && *be.ErrorCode == errCodeAlreadyExists {
+				return errors.Wrap(&dosa.ErrAlreadyExists{}, "failed to create")
+			}
+		}
+	}
+	return errors.Wrap(err, "failed to create")
 }
 
 // Upsert inserts or updates your data
@@ -135,6 +143,11 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 
 	response, err := c.Client.Read(ctx, readRequest)
 	if err != nil {
+		if be, ok := err.(*dosarpc.BadRequestError); ok {
+			if be.ErrorCode != nil && *be.ErrorCode == errCodeNotFound {
+				return nil, errors.Wrap(&dosa.ErrNotFound{}, "failed to read in yarpc connector")
+			}
+		}
 		return nil, errors.Wrap(err, "failed to read in yarpc connector")
 	}
 
@@ -382,3 +395,8 @@ func init() {
 		return c, nil
 	})
 }
+
+const (
+	errCodeNotFound      int32 = 404
+	errCodeAlreadyExists int32 = 409
+)

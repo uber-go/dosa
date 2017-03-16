@@ -191,6 +191,11 @@ func TestYaRPCClient_Read(t *testing.T) {
 	assert.Equal(t, int32(1), values["c6"])
 	assert.Empty(t, values["fieldNotInSchema"]) // the unknown field is not present
 
+	errCode := int32(404)
+	mockedClient.EXPECT().Read(ctx, readRequest).Return(nil, &drpc.BadRequestError{ErrorCode: &errCode})
+	_, err = sut.Read(ctx, testEi, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))}, []string{"f1"})
+	assert.True(t, dosa.ErrorIsNotFound(err))
+
 	// make sure we actually called Read on the interface
 	ctrl.Finish()
 }
@@ -375,6 +380,14 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	err := sut.CreateIfNotExists(ctx, testEi, inFields)
 	assert.Nil(t, err)
 
+	errCode := int32(409)
+	mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields}).Return(
+		&drpc.BadRequestError{ErrorCode: &errCode},
+	)
+
+	err = sut.CreateIfNotExists(ctx, testEi, inFields)
+	t.Log(err)
+	assert.True(t, dosa.ErrorIsAlreadyExists(err))
 	// make sure we actually called CreateIfNotExists on the interface
 	ctrl.Finish()
 
