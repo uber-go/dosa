@@ -233,10 +233,10 @@ func TestClient_CreateIfNotExists(t *testing.T) {
 	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
 	mockConn.EXPECT().CreateIfNotExists(gomock.Any(), gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, _ *dosa.EntityInfo, columnValues map[string]dosa.FieldValue) {
-		assert.Equal(t, columnValues["id"], cte1.ID)
-		assert.Equal(t, columnValues["email"], cte1.Email)
-		cte1.Email = updatedEmail
-	}).
+			assert.Equal(t, columnValues["id"], cte1.ID)
+			assert.Equal(t, columnValues["email"], cte1.Email)
+			cte1.Email = updatedEmail
+		}).
 		Return(nil).MinTimes(1)
 	c3 := dosa.NewClient(reg2, mockConn)
 	assert.NoError(t, c3.Initialize(ctx))

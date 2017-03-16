@@ -227,7 +227,7 @@ func stringToDosaType(inType string) Type {
 		return Double
 	case "time.Time":
 		return Timestamp
-	case "UUID":
+	case "dosa.UUID":
 		return TUUID
 	default:
 		return Invalid

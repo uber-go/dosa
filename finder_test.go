@@ -102,6 +102,12 @@ func TestExclusion(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestFindEntitiesInOtherPkg(t *testing.T) {
+	_, warnings, err := FindEntities([]string{"testentity"}, []string{})
+	assert.NoError(t, err)
+	assert.Empty(t, warnings)
+}
+
 func BenchmarkFinder(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		FindEntities([]string{"."}, []string{})
