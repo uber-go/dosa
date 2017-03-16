@@ -431,15 +431,11 @@ func TestAdminClient_DropScope(t *testing.T) {
 
 func TestAdminClient_CheckSchema(t *testing.T) {
 	// write some entities to disk
-	tmpdir0 := ".testcheckschema"
-	tmpdir1 := filepath.Join(tmpdir0, "a")
-	tmpdir2 := filepath.Join(tmpdir0, "b")
-	tmpdir3 := filepath.Join(tmpdir0, "c")
-	os.RemoveAll(tmpdir0)
-	defer os.RemoveAll(tmpdir0)
-	path1 := filepath.Join(tmpdir1, "f1.go")
-	path2 := filepath.Join(tmpdir2, "f2.go")
-	path3 := filepath.Join(tmpdir3, "f3.go")
+	tmpdir := ".testcheckschema"
+	os.RemoveAll(tmpdir)
+	defer os.RemoveAll(tmpdir)
+	path1 := filepath.Join(tmpdir, "f1.go")
+	path2 := filepath.Join(tmpdir, "f2.go")
 	content := `
 package main
 
@@ -454,90 +450,58 @@ type TestEntityB struct {
 	ID int32
 }
 `
-	assert.NoError(t, os.MkdirAll(tmpdir1, 0770))
-	assert.NoError(t, os.MkdirAll(tmpdir2, 0770))
-	assert.NoError(t, os.MkdirAll(tmpdir3, 0770))
-	assert.NoError(t, ioutil.WriteFile(path1, []byte(content), 0755))
-	assert.NoError(t, ioutil.WriteFile(path2, []byte(content), 0755))
-	assert.NoError(t, ioutil.WriteFile(path3, []byte("package broken\nfunc broken"), 0755))
+	invalid := `
+package main
+
+import "github.com/uber-go/dosa"
+
+type TestEntityC struct {
+	dosa.Entity ` + "`dosa:\"invalidtag\"`" + `
+	ID int32
+}
+`
+	assert.NoError(t, os.MkdirAll(tmpdir, 0770))
+	assert.NoError(t, ioutil.WriteFile(path1, []byte(content), 0700))
+	assert.NoError(t, ioutil.WriteFile(path2, []byte(invalid), 0700))
 
 	data := []struct {
-		dirs       []string
-		excludes   []string
-		scope      string
-		namePrefix string
-		names      []string
-		err        error
-		isErr      bool
+		dirs        []string
+		excludes    []string
+		scope       string
+		namePrefix  string
+		errContains string
 	}{
 		// invalid scope
 		{
-			isErr: true,
+			scope:       "***",
+			errContains: "invalid scope name",
 		},
-		// names empty
+		// invalid directory
 		{
-			scope: scope,
-			isErr: true,
+			dirs:        []string{"/foo/bar/baz"},
+			scope:       scope,
+			errContains: "/foo/bar/baz",
 		},
-		// cannot stat dir
+		// invalid struct tag
 		{
-			dirs:  []string{"./foo/bar/baz"},
-			scope: scope,
-			names: []string{"a", "b", "c"},
-			isErr: true,
-		},
-		// path exists, but not directory
-		{
-			dirs:  []string{path1},
-			scope: scope,
-			names: []string{"a", "b", "c"},
-			isErr: true,
-		},
-		// path exists, but unparseable
-		{
-			dirs:  []string{tmpdir3},
-			scope: scope,
-			names: []string{"a", "b", "c"},
-			isErr: true,
-		},
-		// collision
-		{
-			dirs:       []string{tmpdir1, tmpdir2},
-			scope:      scope,
-			namePrefix: namePrefix,
-			names:      []string{"testentitya"},
-			isErr:      true,
-		},
-		// collision in excluded file (ok)
-		{
-			dirs:       []string{tmpdir1, tmpdir2},
-			excludes:   []string{"f1.go"},
-			scope:      scope,
-			namePrefix: namePrefix,
-			names:      []string{"testentitya"},
+			dirs:        []string{tmpdir},
+			scope:       scope,
+			errContains: "failed to find entities",
 		},
 		// connector error
 		{
-			dirs:       []string{tmpdir1},
-			scope:      scope,
-			namePrefix: "error",
-			names:      []string{"testentitya", "testentityb"},
-			isErr:      true,
-		},
-		// found, skipped (ok)
-		{
-			dirs:       []string{tmpdir1, tmpdir2},
-			excludes:   []string{"f1.go"},
-			scope:      scope,
-			namePrefix: namePrefix,
-			names:      []string{"testentitya"},
+			dirs:        []string{tmpdir},
+			excludes:    []string{"f2.go"},
+			scope:       scope,
+			namePrefix:  "error",
+			errContains: "connector error",
 		},
 		// happy path
 		{
-			dirs:       []string{tmpdir1},
+			dirs:       []string{tmpdir},
+			excludes:   []string{"f2.go"},
 			scope:      scope,
 			namePrefix: namePrefix,
-			names:      []string{"testentitya", "testentityb"},
 		},
 	}
 
@@ -546,25 +510,117 @@ type TestEntityB struct {
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
 	mockConn.EXPECT().CheckSchema(ctx, scope, "error", gomock.Any()).Return(nil, errors.New("connector error")).Times(1)
-	mockConn.EXPECT().CheckSchema(ctx, scope, namePrefix, gomock.Any()).Return([]int32{1}, nil).Times(3)
+	mockConn.EXPECT().CheckSchema(ctx, scope, namePrefix, gomock.Any()).Return([]int32{1, 1}, nil).Times(1)
 
 	for _, d := range data {
-		c1 := dosa.NewAdminClient(mockConn)
-		c1.Directories(d.dirs).Excludes(d.excludes).Scope(d.scope)
-		err := c1.CheckSchema(ctx, d.namePrefix, d.names...)
-		if d.isErr {
-			assert.Error(t, err)
+		_, err := dosa.NewAdminClient(mockConn).
+			Directories(d.dirs).
+			Excludes(d.excludes).
+			Scope(d.scope).
+			CheckSchema(ctx, d.namePrefix)
+		if d.errContains != "" {
+			assert.Contains(t, err.Error(), d.errContains)
 			continue
 		}
 		assert.NoError(t, err)
 	}
 }
 
-func TestAdminClient_Unimplemented(t *testing.T) {
-	c := dosa.NewAdminClient(nullConnector)
-	assert.Panics(t, func() {
-		c.UpsertSchema(ctx, namePrefix, cte1name, cte2name)
-	})
+func TestAdminClient_UpsertSchema(t *testing.T) {
+	// write some entities to disk
+	tmpdir := ".testupsertschema"
+	os.RemoveAll(tmpdir)
+	defer os.RemoveAll(tmpdir)
+	path1 := filepath.Join(tmpdir, "f1.go")
+	path2 := filepath.Join(tmpdir, "f2.go")
+	content := `
+package main
+
+import "github.com/uber-go/dosa"
+
+type TestEntityA struct {
+	dosa.Entity ` + "`dosa:\"primaryKey=(ID)\"`" + `
+	ID int32
+}
+type TestEntityB struct {
+	dosa.Entity ` + "`dosa:\"primaryKey=(ID)\"`" + `
+	ID int32
+}
+`
+	invalid := `
+package main
+
+import "github.com/uber-go/dosa"
+
+type TestEntityC struct {
+	dosa.Entity ` + "`dosa:\"invalidtag\"`" + `
+	ID int32
+}
+`
+	assert.NoError(t, os.MkdirAll(tmpdir, 0770))
+	assert.NoError(t, ioutil.WriteFile(path1, []byte(content), 0700))
+	assert.NoError(t, ioutil.WriteFile(path2, []byte(invalid), 0700))
+
+	data := []struct {
+		dirs        []string
+		excludes    []string
+		scope       string
+		namePrefix  string
+		errContains string
+	}{
+		// invalid scope
+		{
+			scope:       "***",
+			errContains: "invalid scope name",
+		},
+		// invalid directory
+		{
+			dirs:        []string{"/foo/bar/baz"},
+			scope:       scope,
+			errContains: "/foo/bar/baz",
+		},
+		// invalid struct tag
+		{
+			dirs:        []string{tmpdir},
+			scope:       scope,
+			errContains: "failed to find entities",
+		},
+		// connector error
+		{
+			dirs:        []string{tmpdir},
+			excludes:    []string{"f2.go"},
+			scope:       scope,
+			namePrefix:  "error",
+			errContains: "connector error",
+		},
+		// happy path
+		{
+			dirs:       []string{tmpdir},
+			excludes:   []string{"f2.go"},
+			scope:      scope,
+			namePrefix: namePrefix,
+		},
+	}
+
+	// calls with "error" prefix will fail, rest succeed
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().UpsertSchema(ctx, scope, "error", gomock.Any()).Return(nil, errors.New("connector error")).Times(1)
+	mockConn.EXPECT().UpsertSchema(ctx, scope, namePrefix, gomock.Any()).Return([]int32{1, 1}, nil).Times(1)
+
+	for _, d := range data {
+		_, err := dosa.NewAdminClient(mockConn).
+			Directories(d.dirs).
+			Excludes(d.excludes).
+			Scope(d.scope).
+			UpsertSchema(ctx, d.namePrefix)
+		if d.errContains != "" {
+			assert.Contains(t, err.Error(), d.errContains)
+			continue
+		}
+		assert.NoError(t, err)
+	}
 }
 
 func TestErrorIsNotFound(t *testing.T) {

@@ -35,33 +35,41 @@ import (
 	"github.com/pkg/errors"
 )
 
-// FindEntities finds all entities in a directory
-// Returns a slice of warnings (or nil)
-func FindEntities(path string, excludes []string) ([]*Table, []error, error) {
-	fileSet := token.NewFileSet()
-	packages, err := parser.ParseDir(fileSet, path, func(fileInfo os.FileInfo) bool {
-		if len(excludes) == 0 {
+// FindEntities finds all entities in the given file paths. An error is
+// returned if there are naming colisions, otherwise, return a slice of
+// warnings (or nil).
+func FindEntities(paths, excludes []string) ([]*Table, []error, error) {
+	var entities []*Table
+	var warnings []error
+	for _, path := range paths {
+		fileSet := token.NewFileSet()
+		packages, err := parser.ParseDir(fileSet, path, func(fileInfo os.FileInfo) bool {
+			if len(excludes) == 0 {
+				return true
+			}
+			for _, exclude := range excludes {
+				if matched, _ := filepath.Match(exclude, fileInfo.Name()); matched {
+					return false
+				}
+			}
 			return true
+		}, 0)
+		if err != nil {
+			return nil, nil, err
 		}
-		for _, exclude := range excludes {
-			if matched, _ := filepath.Match(exclude, fileInfo.Name()); matched {
-				return false
+		erv := new(EntityRecordingVisitor)
+		for _, pkg := range packages { // go through all the packages
+			for _, file := range pkg.Files { // go through all the files
+				for _, decl := range file.Decls { // go through all the declarations
+					ast.Walk(erv, decl)
+				}
 			}
 		}
-		return true
-	}, 0)
-	if err != nil {
-		return nil, nil, err
+		entities = append(entities, erv.Entities...)
+		warnings = append(warnings, erv.Warnings...)
 	}
-	erv := new(EntityRecordingVisitor)
-	for _, pkg := range packages { // go through all the packages
-		for _, file := range pkg.Files { // go through all the files
-			for _, decl := range file.Decls { // go through all the declarations
-				ast.Walk(erv, decl)
-			}
-		}
-	}
-	return erv.Entities, erv.Warnings, nil
+
+	return entities, warnings, nil
 }
 
 // EntityRecordingVisitor is a visitor that records entities it finds
