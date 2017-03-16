@@ -212,6 +212,37 @@ func TestClient_Upsert(t *testing.T) {
 	assert.NoError(t, c3.Upsert(ctx, fieldsToUpdate, cte1))
 	assert.Equal(t, cte1.Email, updatedEmail)
 }
+func TestClient_CreateIfNotExists(t *testing.T) {
+	reg1, _ := dosa.NewRegistrar("test", "team.service", cte1)
+	reg2, _ := dosa.NewRegistrar("test", "team.service", cte1, cte2)
+	updatedEmail := "bar@email.com"
+
+	// uninitialized
+	c1 := dosa.NewClient(reg1, nullConnector)
+	assert.Error(t, c1.CreateIfNotExists(ctx, cte1))
+
+	// unregistered object error
+	c2 := dosa.NewClient(reg1, nullConnector)
+	c2.Initialize(ctx)
+	assert.Error(t, c2.CreateIfNotExists(ctx, cte2))
+
+	// happy path, mock connector
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]int32{1}, nil).AnyTimes()
+	mockConn.EXPECT().CreateIfNotExists(gomock.Any(), gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ *dosa.EntityInfo, columnValues map[string]dosa.FieldValue) {
+		assert.Equal(t, columnValues["id"], cte1.ID)
+		assert.Equal(t, columnValues["email"], cte1.Email)
+		cte1.Email = updatedEmail
+	}).
+		Return(nil).MinTimes(1)
+	c3 := dosa.NewClient(reg2, mockConn)
+	assert.NoError(t, c3.Initialize(ctx))
+	assert.NoError(t, c3.CreateIfNotExists(ctx, cte1))
+	assert.Equal(t, cte1.Email, updatedEmail)
+}
 
 func TestClient_Upsert_Errors(t *testing.T) {
 	reg1, _ := dosa.NewRegistrar(scope, namePrefix, cte1)
@@ -388,9 +419,6 @@ func TestClient_Unimplemented(t *testing.T) {
 	reg1, _ := dosa.NewRegistrar(scope, namePrefix, cte1)
 
 	c := dosa.NewClient(reg1, nullConnector)
-	assert.Panics(t, func() {
-		c.CreateIfNotExists(ctx, &ClientTestEntity1{})
-	})
 	assert.Panics(t, func() {
 		c.MultiRead(ctx, dosa.All(), &ClientTestEntity1{})
 	})
