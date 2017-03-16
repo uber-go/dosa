@@ -165,7 +165,7 @@ func TestEntityDefinitionEnsureValid(t *testing.T) {
 			msg:   "no clustering key is ok",
 		},
 		{
-			e:	nilClusteringKey,
+			e:     nilClusteringKey,
 			valid: false,
 			msg:   "nil clustering key",
 		},
