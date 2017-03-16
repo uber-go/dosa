@@ -64,6 +64,9 @@ func TestEnsureTypeMatch(t *testing.T) {
 			assert.NoError(t, ensureTypeMatch(c.tp, c.v))
 		}
 	}
+	assert.Panics(t, func() {
+		ensureTypeMatch(Invalid, false)
+	})
 }
 
 func TestCompare(t *testing.T) {
@@ -103,6 +106,9 @@ func TestCompare(t *testing.T) {
 	for _, c := range cases {
 		assert.Equal(t, c.expected, compare(c.tp, c.a, c.b), fmt.Sprintf("%v", c))
 	}
+	assert.Panics(t, func() {
+		compare(Invalid, 0, 0)
+	})
 }
 
 func TestEnsureValidConditions(t *testing.T) {

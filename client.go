@@ -63,7 +63,7 @@ type ErrNotFound struct{}
 
 // Error returns a constant string "Not found" for this error
 func (*ErrNotFound) Error() string {
-	return "Not found"
+	return "not found"
 }
 
 // ErrorIsNotFound checks if the error is a "ErrNotFound"

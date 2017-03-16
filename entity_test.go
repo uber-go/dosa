@@ -77,62 +77,82 @@ func TestEntityDefinitionEnsureValid(t *testing.T) {
 		{
 			e:     nil,
 			valid: false,
-			msg:   "nil EntityDefinition is invalid",
+			msg:   "EntityDefinition is nil",
 		},
 		{
 			e:     invalidName,
 			valid: false,
-			msg:   "invalid name of EntityDefinition",
+			msg:   "name must contain only",
 		},
 		{
 			e:     nilColumn,
 			valid: false,
-			msg:   "nil column is invalid",
+			msg:   "has nil column",
 		},
 		{
 			e:     invalidColumnName,
 			valid: false,
-			msg:   "invalid column name is not allowed",
+			msg:   "has invalid column name",
 		},
 		{
 			e:     dupColumnNames,
 			valid: false,
-			msg:   "duplicated column names not allowed",
+			msg:   "duplicated column found",
 		},
 		{
 			e:     invalidColumnType,
 			valid: false,
-			msg:   "invalid column type is not allowed",
+			msg:   "invalid type for column",
+		},
+		{
+			e:     invalidColumnType,
+			valid: false,
+			msg:   "\"foo\"",
 		},
 		{
 			e:     nilPK,
 			valid: false,
-			msg:   "nil primary key is not allowed",
+			msg:   "nil primary key",
 		},
 		{
 			e:     noPartitionKey,
 			valid: false,
-			msg:   "partition key is required",
+			msg:   "does not have partition key",
 		},
 		{
 			e:     invalidPartitionKeyName,
 			valid: false,
-			msg:   "partition key must be a valid column name",
+			msg:   "partition key does not refer to a column",
+		},
+		{
+			e:     invalidPartitionKeyName,
+			valid: false,
+			msg:   "\"fox\"",
 		},
 		{
 			e:     dupParitionKeyNames,
 			valid: false,
-			msg:   "a column cannot be used twiced in key",
+			msg:   "a column cannot be used twice in key",
+		},
+		{
+			e:     dupParitionKeyNames,
+			valid: false,
+			msg:   "\"foo\"",
 		},
 		{
 			e:     invalidClusteringKeyName,
 			valid: false,
-			msg:   "clustering key must be a valid column name",
+			msg:   "\"fox\"",
+		},
+		{
+			e:     invalidClusteringKeyName,
+			valid: false,
+			msg:   "does not refer to",
 		},
 		{
 			e:     dupClusteringKeyName,
 			valid: false,
-			msg:   "a column cannot be used twiced in key",
+			msg:   "a column cannot be used twice in key",
 		},
 		{
 			e:     getValidEntityDefinition(),
@@ -144,6 +164,11 @@ func TestEntityDefinitionEnsureValid(t *testing.T) {
 			valid: true,
 			msg:   "no clustering key is ok",
 		},
+		{
+			e:	nilClusteringKey,
+			valid: false,
+			msg:   "nil clustering key",
+		},
 	}
 
 	for _, entry := range data {
@@ -152,6 +177,7 @@ func TestEntityDefinitionEnsureValid(t *testing.T) {
 			assert.NoError(t, err, entry.msg)
 		} else {
 			assert.Error(t, err, entry.msg)
+			assert.Contains(t, err.Error(), entry.msg)
 		}
 	}
 }

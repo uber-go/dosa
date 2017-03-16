@@ -201,14 +201,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 	}
 
 	translateKeyName(t)
-	// if no name specified yet, derive it from the structure name
-	if t.EntityDefinition.Name == "" {
-		var err error
-		t.EntityDefinition.Name, err = NormalizeName(elem.Name())
-		if err != nil {
-			return nil, errors.Wrapf(err, "struct name is invalid")
-		}
-	}
+
 	if err := t.EnsureValid(); err != nil {
 		return nil, errors.Wrap(err, "failed to parse dosa object")
 	}
