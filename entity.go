@@ -38,15 +38,6 @@ type Table struct {
 	FieldToCol map[string]string // map from field name -> column name
 }
 
-// ToEntityDefinition translates instance to EntityDefinition
-func (t *Table) ToEntityDefinition() *EntityDefinition {
-	return &EntityDefinition{
-		Name:    t.Name,
-		Key:     t.Key,
-		Columns: t.Columns,
-	}
-}
-
 // ClusteringKey stores name and ordering of a clustering key
 type ClusteringKey struct {
 	Name       string

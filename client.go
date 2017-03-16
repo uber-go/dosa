@@ -473,7 +473,7 @@ func findEntityDefinitions(scope string, dirs, excludes []string) ([]*EntityDefi
 
 	defs := make([]*EntityDefinition, len(entities))
 	for idx, e := range entities {
-		defs[idx] = e.ToEntityDefinition()
+		defs[idx] = &e.EntityDefinition
 	}
 
 	return defs, nil
