@@ -186,8 +186,8 @@ func (c *client) Initialize(ctx context.Context) error {
 // CreateIfNotExists creates a row, but only if it does not exist. The entity
 // provided must contain values for all components of its primary key for the
 // operation to succeed.
-func (c *client) CreateIfNotExists(context.Context, DomainObject) error {
-	panic("not implemented")
+func (c *client) CreateIfNotExists(ctx context.Context, entity DomainObject) error {
+	return c.createOrUpsert(ctx, nil, entity, c.connector.CreateIfNotExists)
 }
 
 // Read fetches an entity by primary key, The entity provided must contain
@@ -235,11 +235,17 @@ func (c *client) MultiRead(context.Context, []string, ...DomainObject) (MultiRes
 	panic("not implemented")
 }
 
+type createOrUpsertType func(context.Context, *EntityInfo, map[string]FieldValue) error
+
 // Upsert updates some values of an entity, or creates it if it doesn't exist.
 // The entity provided must contain values for all components of its primary
 // key for the operation to succeed. If `fieldsToUpdate` is provided, only a
 // subset of fields will be updated.
 func (c *client) Upsert(ctx context.Context, fieldsToUpdate []string, entity DomainObject) error {
+	return c.createOrUpsert(ctx, fieldsToUpdate, entity, c.connector.Upsert)
+}
+
+func (c *client) createOrUpsert(ctx context.Context, fieldsToUpdate []string, entity DomainObject, fn createOrUpsertType) error {
 	if !c.initialized {
 		return &ErrNotInitialized{}
 	}
@@ -265,7 +271,7 @@ func (c *client) Upsert(ctx context.Context, fieldsToUpdate []string, entity Dom
 		fieldValues[k] = v
 	}
 
-	return c.connector.Upsert(ctx, re.EntityInfo(), fieldValues)
+	return fn(ctx, re.EntityInfo(), fieldValues)
 }
 
 // MultiUpsert updates several entities by primary key, The entities provided
