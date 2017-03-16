@@ -73,6 +73,19 @@ func ErrorIsNotFound(err error) bool {
 	return ok
 }
 
+// ErrAlreadyExists is an error returned when CreateIfNotExists but a row already exists
+type ErrAlreadyExists struct{}
+
+func (*ErrAlreadyExists) Error() string {
+	return "already exists"
+}
+
+// ErrorIsAlreadyExists checks if the error is caused by "ErrAlreadyExists"
+func ErrorIsAlreadyExists(err error) bool {
+	_, ok := errors.Cause(err).(*ErrAlreadyExists)
+	return ok
+}
+
 // Client defines the methods to operate with DOSA entities
 type Client interface {
 	// Initialize must be called before any data operation
