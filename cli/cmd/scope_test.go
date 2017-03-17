@@ -19,3 +19,14 @@
 // THE SOFTWARE.
 
 package cmd_test
+
+import "testing"
+
+// TODO: unit tests
+func TestScope_Create(t *testing.T) {}
+
+// TODO: unit tests
+func TestScope_Drop(t *testing.T) {}
+
+// TODO: unit tests
+func TestScope_Truncate(t *testing.T) {}

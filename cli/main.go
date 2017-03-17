@@ -21,10 +21,12 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 
+	flags "github.com/jessevdk/go-flags"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/cli/cmd"
 	"github.com/uber-go/dosa/connectors/yarpc"
@@ -33,38 +35,30 @@ import (
 var errExit = errors.New("sentinel error used to exit cleanly")
 
 func main() {
-	opts, err := getOptions(os.Args[1:], os.Stdout)
+	opts := Options{}
+	parser := flags.NewParser(&opts, flags.PassDoubleDash)
+	// parser.Usage = "[scope | schema] [OPTIONS]"
+	parser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
+	parser.LongDescription = `
+dosa is the command-line tool for common tasks related to storing data with the DOSA client.`
+
+	// ignore resulting args, need to populate base options first
+	_, err := parser.Parse()
 	if err != nil {
-		if err == errExit {
-			return
-		}
-		fmt.Printf("Failed to parse options: %v", err)
+		fmt.Printf("Failed to parse options: %v\n\n", err)
+		parser.WriteHelp(os.Stdout)
 		os.Exit(1)
 	}
 
-	client, err := getClient(&opts.Base)
-	if err != nil {
-		fmt.Printf("Failed to create new client with options: %v\n", err)
-		os.Exit(1)
+	// defaults
+	if opts.ServiceName == "" {
+		opts.ServiceName = "dosa-gateway"
+	}
+	if opts.CallerName == "" || opts.CallerName == "dosacli-$USER" {
+		opts.CallerName = fmt.Sprintf("dosacli-%s", os.Getenv("USER"))
 	}
 
-	// getOptions should guarantee that there is always a subcommand
-	// however, there still may not be any arguments, but subcommands should
-	// implement that behavior, presumably by using flags.NewNamedParser
-	subargs := os.Args[1:]
-	switch opts.Base.subcmd {
-	case "scope":
-		os.Exit(cmd.Scope(subargs[1:], &opts.Scope, client))
-	case "schema":
-		os.Exit(cmd.Schema(subargs[1:], &opts.Schema, client))
-	case "help":
-		os.Exit(0)
-	default:
-		os.Exit(1)
-	}
-}
-
-func getClient(opts *BaseOptions) (dosa.AdminClient, error) {
+	// create YARPC connector
 	conn, err := yarpc.NewConnector(&yarpc.Config{
 		Transport:   opts.Transport,
 		Host:        opts.Host,
@@ -73,10 +67,35 @@ func getClient(opts *BaseOptions) (dosa.AdminClient, error) {
 		ServiceName: opts.ServiceName,
 	})
 	if err != nil {
-		return nil, err
+		fmt.Printf("Failed to create connector: %v\n\n", err)
+		os.Exit(1)
 	}
 
+	ctx, _ := context.WithTimeout(context.Background(), opts.Timeout.Duration())
 	client := dosa.NewAdminClient(conn)
+	cmds := &Commands{
+		Scope: &cmd.ScopeCommands{
+			Create:   cmd.NewScopeCreate(ctx, client),
+			Drop:     cmd.NewScopeDrop(ctx, client),
+			Truncate: cmd.NewScopeTruncate(ctx, client),
+		},
+		Schema: &cmd.SchemaCommands{
+			Check:  cmd.NewSchemaCheck(ctx, client),
+			Upsert: cmd.NewSchemaUpsert(ctx, client),
+		},
+	}
 
-	return client, nil
+	// populate subcommand options and args
+	subparser := flags.NewParser(cmds, flags.PassDoubleDash)
+
+	// try to execute subcommand
+	_, err = subparser.Parse()
+	if err != nil {
+		fmt.Printf("Failed to parse options: %v\n\n", err)
+		subparser.WriteHelp(os.Stdout)
+		os.Exit(1)
+	}
+
+	// subcommand executed successfully
+	os.Exit(0)
 }

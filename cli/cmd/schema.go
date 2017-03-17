@@ -21,15 +21,10 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/schema/avro"
-	"github.com/uber-go/dosa/schema/cql"
-	"github.com/uber-go/dosa/schema/uql"
 )
 
 var (
@@ -40,158 +35,88 @@ var (
 	}
 )
 
-// SchemaOptions are options specific to the schema command.
+// SchemaOptions contains configuration for schema command flags.
 type SchemaOptions struct {
-	Scope  string `short:"s" long:"scope" description:"Storage scope for the given operation."`
-	Format string `long:"format" default:"cql" descrption:"The format for schema to be encoded as. Options: avro, uql, cql."`
+	NamePrefix string   `long:"prefix" description:"Name prefix for schema types."`
+	Excludes   []string `short:"e" long:"exclude" description:"Exclude files matching pattern."`
+	Scope      string   `short:"s" long:"scope" description:"Storage scope for the given operation."`
+	Pedantic   bool     `long:"pedantic"`
 }
 
-// Schema is the entrypoint for the schema subcommand
-func Schema(args []string, opts *SchemaOptions, client dosa.AdminClient) int {
-	if len(args) == 0 {
-		return schemaUsage()
-	}
-
-	// dispatch sub-command
-	// TODO: refactor to use flags.NewNamedParser
-	switch args[0] {
-	case "check":
-		return schemaCheck(args[1:], opts, client)
-	case "dump":
-		return schemaDump(args[1:], opts, client)
-	default:
-		return schemaUsage()
-	}
+// SchemaCommands contains schema subcommand configuration.
+type SchemaCommands struct {
+	Check  *SchemaCheck  `command:"check"`
+	Upsert *SchemaUpsert `command:"upsert"`
 }
 
-// schemaCheck is the entrypoint for the `schema check` subcommand.
-func schemaCheck(args []string, opts *SchemaOptions, client dosa.AdminClient) int {
-	// stat search paths, return list of absolute paths to look for entities
-	dirs, err := expandDirectories(args)
-	if err != nil {
-		fmt.Fprint(os.Stderr, err)
-		return 1
-	}
-
-	for _, dir := range dirs {
-		fmt.Println(dir)
-	}
-
-	// TODO: call connector.CheckSchema()
-	fmt.Println("schema check")
-	return 0
+// SchemaCheck contains data for executing schema check command.
+type SchemaCheck struct {
+	*SchemaOptions
+	context context.Context
+	client  dosa.AdminClient
 }
 
-// schemaDump is the entrypoint for the `schema dump` subcommand. Given an slice
-// of table definitions, write definitions to stdout in the given output format.
-func schemaDump(args []string, opts *SchemaOptions, client dosa.AdminClient) int {
-	// TODO: use opts
-	exclude := "_test.go"
-	outputFormat := "cql"
-	pedantic := false
+// NewSchemaCheck returns a new schema check command.
+func NewSchemaCheck(ctx context.Context, client dosa.AdminClient) *SchemaCheck {
+	return &SchemaCheck{context: ctx, client: client}
+}
 
-	dirs, err := expandDirectories(args)
-	if err != nil {
-		fmt.Fprint(os.Stderr, err)
-		return 1
-	}
-
-	// validate output format
-	if !validOutputFormat(outputFormat) {
-		fmt.Fprintf(os.Stderr, "Unknown output format %q\n", outputFormat)
-		return 1
-	}
-
-	// try to parse entities in each directory
-	entities, err := findEntities(dirs, exclude, pedantic)
-	if err != nil {
-		fmt.Fprint(os.Stderr, err)
-		return 1
-	}
-
-	// for each of those entities, format it in the specified way
-	for _, entity := range entities {
-		switch outputFormat {
-		case "cql":
-			fmt.Println(cql.ToCQL(&entity.EntityDefinition))
-		case "uql":
-			fmt.Println(uql.ToUQL(&entity.EntityDefinition))
-		case "avro":
-			fmt.Println(avro.ToAvro("TODO", &entity.EntityDefinition))
+// Execute satisfies flags.Commander interface.
+func (c *SchemaCheck) Execute(args []string) error {
+	if c.client != nil {
+		if len(args) == 0 {
+			c.client.Directories(args)
+		}
+		if c.Scope != "" {
+			c.client.Scope(c.Scope)
+		}
+		if len(c.Excludes) != 0 {
+			c.client.Excludes(c.Excludes)
+		}
+		versions, err := c.client.CheckSchema(context.Background(), c.NamePrefix)
+		if err != nil {
+			return fmt.Errorf("check schema failed: %v", err)
+		}
+		fmt.Println("versions")
+		for _, v := range versions {
+			fmt.Println(v)
 		}
 	}
-	return 0
+	return nil
 }
 
-// schemaUsage prints schema subcommand usage
-func schemaUsage() int {
-	fmt.Println("schema usage")
-	return 0
+// SchemaUpsert contains data for executing schema upsert command.
+type SchemaUpsert struct {
+	*SchemaOptions
+	context context.Context
+	client  dosa.AdminClient
 }
 
-func validOutputFormat(outputFormat string) bool {
-	return schemaDumpOutputTypes[outputFormat]
+// NewSchemaUpsert returns a new schema upsert command.
+func NewSchemaUpsert(ctx context.Context, client dosa.AdminClient) *SchemaUpsert {
+	return &SchemaUpsert{context: ctx, client: client}
 }
 
-// expandDirectory verifies that each argument is actually a directory or
-// uses the special go suffix of /... to mean recursively walk from here
-// example: ./... means the current directory and all subdirectories
-func expandDirectories(dirs []string) ([]string, error) {
-	const recursiveMarker = "/..."
-	resultSet := make([]string, 0)
-	for _, dir := range dirs {
-		if strings.HasSuffix(dir, recursiveMarker) {
-			err := filepath.Walk(strings.TrimSuffix(dir, recursiveMarker), func(path string, info os.FileInfo, err error) error {
-				if info.IsDir() {
-					resultSet = append(resultSet, path)
-				}
-				return nil
-			})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			info, err := os.Stat(dir)
-			if err != nil {
-				return nil, err
-			}
-			if !info.IsDir() {
-				return nil, fmt.Errorf("%q is not a directory", dir)
-			}
-			resultSet = append(resultSet, dir)
+// Execute satisfies flags.Commander interface.
+func (c *SchemaUpsert) Execute(args []string) error {
+	if c.client != nil {
+		if len(args) == 0 {
+			c.client.Directories(args)
+		}
+		if c.Scope != "" {
+			c.client.Scope(c.Scope)
+		}
+		if len(c.Excludes) != 0 {
+			c.client.Excludes(c.Excludes)
+		}
+		versions, err := c.client.UpsertSchema(context.Background(), c.NamePrefix)
+		if err != nil {
+			return fmt.Errorf("upsert schema failed: %v", err)
+		}
+		fmt.Println("versions")
+		for _, v := range versions {
+			fmt.Println(v)
 		}
 	}
-	if len(resultSet) == 0 {
-		// treat an empty list as a search in the current directory (think "ls")
-		return []string{"."}, nil
-	}
-
-	return resultSet, nil
-}
-
-// findEntities visits each directory to generate entity table definitions.
-// An error is returned if no entities are found
-func findEntities(dirs []string, exclude string, pedantic bool) ([]*dosa.Table, error) {
-	defs, errs, err := dosa.FindEntities(dirs, []string{exclude})
-	if err != nil {
-		fmt.Fprint(os.Stderr, err)
-		return nil, err
-	}
-
-	if errs != nil && len(errs) > 0 {
-		for _, err := range errs {
-			fmt.Fprintf(os.Stderr, "warning: %s\n", err)
-		}
-		if pedantic {
-			fmt.Fprint(os.Stderr, "Failed (warnings are errors in pedantic mode)")
-			os.Exit(1)
-		}
-	}
-
-	// if nothing was found, return an error
-	if len(defs) == 0 {
-		return nil, fmt.Errorf("no valid DOSA-annotated entities were found in the directories %s", dirs)
-	}
-
-	return defs, nil
+	return nil
 }

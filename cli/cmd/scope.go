@@ -21,47 +21,88 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/uber-go/dosa"
 )
 
-// ScopeOptions are options specific to the scope subcommand.
-type ScopeOptions struct {
-	// empty for now
+// ScopeCommands contains scope subcommand configuration.
+type ScopeCommands struct {
+	Create   *ScopeCreate   `command:"create"`
+	Drop     *ScopeDrop     `command:"drop"`
+	Truncate *ScopeTruncate `command:"truncate"`
 }
 
-// Scope is the entrypoint for the scope command
-func Scope(args []string, opts *ScopeOptions, client dosa.AdminClient) int {
-	if len(args) == 0 {
-		return scopeUsage()
+// ScopeCreate contains data for executing scope create command.
+type ScopeCreate struct {
+	context context.Context
+	client  dosa.AdminClient
+}
+
+// NewScopeCreate returns a new scope create command.
+func NewScopeCreate(ctx context.Context, client dosa.AdminClient) *ScopeCreate {
+	return &ScopeCreate{context: ctx, client: client}
+}
+
+// Execute satisfies flags.Commander interface.
+func (c *ScopeCreate) Execute(args []string) error {
+	if c.client != nil {
+		fmt.Printf("creating scope(s): %v\n", args)
+		for _, s := range args {
+			if err := c.client.CreateScope(context.Background(), s); err != nil {
+				return fmt.Errorf("create scope failed: %v", err)
+			}
+		}
 	}
+	return nil
+}
 
-	// dispatch sub-command
-	// TODO: refactor to use flags.NewNamedParser
-	switch args[0] {
-	case "create":
-		return scopeCreate(args[1], client)
-	case "list":
-		return scopeList(client)
-	default:
-		return scopeUsage()
+// ScopeDrop contains data for executing scope drop command.
+type ScopeDrop struct {
+	context context.Context
+	client  dosa.AdminClient
+}
+
+// NewScopeDrop returns a new scope drop command.
+func NewScopeDrop(ctx context.Context, client dosa.AdminClient) *ScopeDrop {
+	return &ScopeDrop{context: ctx, client: client}
+}
+
+// Execute satisfies flags.Commander interface.
+func (c *ScopeDrop) Execute(args []string) error {
+	if c.client != nil {
+		for _, s := range args {
+			if err := c.client.DropScope(context.Background(), s); err != nil {
+				return fmt.Errorf("drop scope failed: %v", err)
+			}
+		}
 	}
+	return nil
 }
 
-// TODO: not implemented
-func scopeCreate(scopeName string, client dosa.AdminClient) int {
-	fmt.Printf("create scope %s\n", scopeName)
-	return 0
+// ScopeTruncate contains data for executing scope truncate command.
+type ScopeTruncate struct {
+	context context.Context
+	client  dosa.AdminClient
 }
 
-// TODO: not implemented
-func scopeList(client dosa.AdminClient) int {
-	fmt.Println("scope list")
-	return 0
+// NewScopeTruncate returns a new scope create command.
+func NewScopeTruncate(ctx context.Context, client dosa.AdminClient) *ScopeTruncate {
+	return &ScopeTruncate{context: ctx, client: client}
 }
 
-func scopeUsage() int {
-	fmt.Println("scope usage")
-	return 0
+// Execute satisfies flags.Commander interface.
+func (c *ScopeTruncate) Execute(args []string) error {
+	if c.client != nil {
+		for _, s := range args {
+			fmt.Printf("truncating scope %s\n", s)
+			/*
+				if err := c.client.TruncateScope(context.Background(), s); err != nil {
+					return fmt.Errorf("truncate scope failed: %v\n", err)
+				}
+			*/
+		}
+	}
+	return nil
 }
