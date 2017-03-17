@@ -243,10 +243,13 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 	rpcFieldsToRead := makeRPCFieldsToRead(fieldsToRead)
 	rpcConditions := []*dosarpc.Condition{}
 	for field, conditions := range columnConditions {
+		// Warning: Don't remove this line.
+		// field variable always has the same address. If we want to dereference it, we have to assign the value to a new variable.
+		fieldName := field
 		for _, condition := range conditions {
 			rpcConditions = append(rpcConditions, &dosarpc.Condition{
 				Op:    encodeOperator(condition.Op),
-				Field: &dosarpc.Field{Name: &field, Value: &dosarpc.Value{ElemValue: RawValueFromInterface(condition.Value)}},
+				Field: &dosarpc.Field{Name: &fieldName, Value: &dosarpc.Value{ElemValue: RawValueFromInterface(condition.Value)}},
 			})
 		}
 	}
