@@ -570,7 +570,9 @@ func TestConnector_Range(t *testing.T) {
 	ctx := context.TODO()
 	op := drpc.OperatorEq
 	fieldName := "c1"
+	fieldName1 := "c2"
 	field := drpc.Field{&fieldName, &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}}}
+	field1 := drpc.Field{&fieldName1, &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}}}
 	rr := &drpc.RangeRequest{
 		Ref:   &testRPCSchemaRef,
 		Token: &testToken,
@@ -578,9 +580,16 @@ func TestConnector_Range(t *testing.T) {
 		Conditions: []*drpc.Condition{{
 			Op:    &op,
 			Field: &field,
+		}, {
+			Op:    &op,
+			Field: &field1,
 		}},
 		FieldsToRead: map[string]struct{}{"c1": {}},
 	}
+
+	// Prepare the dosa client interface using the mocked RPC layer
+	sut := yarpc.Connector{Client: mockedClient}
+
 	// successful call, return results
 	mockedClient.EXPECT().Range(ctx, rr).
 		Return(&drpc.RangeResponse{
@@ -594,21 +603,16 @@ func TestConnector_Range(t *testing.T) {
 			NextToken: &responseToken,
 		}, nil)
 
-	// failed call, return error
-	mockedClient.EXPECT().Range(ctx, gomock.Any()).
-		Return(nil, errors.New("test error")).Times(1)
-	// no results, make sure error is exact
-	mockedClient.EXPECT().Range(ctx, gomock.Any()).
-		Return(nil, &dosa.ErrNotFound{})
-
-	// Prepare the dosa client interface using the mocked RPC layer
-	sut := yarpc.Connector{Client: mockedClient}
-
-	// perform the successful request
-	values, token, err := sut.Range(ctx, testEi, map[string][]*dosa.Condition{"c1": {&dosa.Condition{
-		Value: int64(10),
-		Op:    dosa.Eq,
-	}}}, []string{"c1"}, testToken, 32)
+	values, token, err := sut.Range(ctx, testEi, map[string][]*dosa.Condition{
+		"c1": {&dosa.Condition{
+			Value: int64(10),
+			Op:    dosa.Eq,
+		}},
+		"c2": {&dosa.Condition{
+			Value: int64(10),
+			Op:    dosa.Eq,
+		}},
+	}, []string{"c1"}, testToken, 32)
 	assert.NoError(t, err)
 	assert.Equal(t, responseToken, token)
 	assert.NotNil(t, values)
@@ -617,6 +621,8 @@ func TestConnector_Range(t *testing.T) {
 	assert.Equal(t, float64(2.2), values[0]["c2"])
 
 	// perform a not found request
+	mockedClient.EXPECT().Range(ctx, gomock.Any()).
+		Return(nil, &dosa.ErrNotFound{}).Times(1)
 	values, token, err = sut.Range(ctx, testEi, map[string][]*dosa.Condition{"c2": {&dosa.Condition{
 		Value: float64(3.3),
 		Op:    dosa.Eq,
@@ -627,6 +633,8 @@ func TestConnector_Range(t *testing.T) {
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	// perform a generic error request
+	mockedClient.EXPECT().Range(ctx, gomock.Any()).
+		Return(nil, errors.New("test error")).Times(1)
 	values, token, err = sut.Range(ctx, testEi, map[string][]*dosa.Condition{"c2": {&dosa.Condition{
 		Value: float64(3.3),
 		Op:    dosa.Eq,
