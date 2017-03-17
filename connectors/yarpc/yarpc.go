@@ -28,10 +28,10 @@ import (
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 	"github.com/uber/dosa-idl/.gen/dosa/dosaclient"
+	"github.com/yarpc/yarpc-go/transport/tchannel"
 	rpc "go.uber.org/yarpc"
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/transport/http"
-	"go.uber.org/yarpc/transport/tchannel"
 )
 
 // Config contains the YARPC client parameters
@@ -46,9 +46,9 @@ type Config struct {
 // Option describes a func that can modify opts
 type Option func(*options) error
 
-type options struct {
+type options struct{
 	configProvider transport.ClientConfigProvider
-	config         *Config
+	config *Config
 }
 
 // Connector holds the client-side RPC interface and some schema information
@@ -57,7 +57,6 @@ type Connector struct {
 	dispatcher *rpc.Dispatcher
 }
 
-// NewConnectorWithTransport creates a new instance with user provided transport
 func NewConnectorWithTransport(configProvider transport.ClientConfigProvider) *Connector {
 	client := dosaclient.New(configProvider.ClientConfig("dosa-gateway"))
 	return &Connector{
