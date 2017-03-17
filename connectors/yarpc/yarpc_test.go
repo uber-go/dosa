@@ -87,6 +87,8 @@ var testRPCSchemaRef = drpc.SchemaRef{
 	Version:    testInt32Ptr(12345),
 }
 
+var ctx = context.Background()
+
 func TestYaRPCClient_NewConnector(t *testing.T) {
 	cases := []struct {
 		cfg     yarpc.Config
@@ -158,7 +160,6 @@ func TestYaRPCClient_Read(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	// set up the parameters
-	ctx := context.TODO()
 	readRequest := &drpc.ReadRequest{
 		Ref:          &testRPCSchemaRef,
 		KeyValues:    map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}}},
@@ -205,8 +206,6 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
 
-	// set up the parameters
-	ctx := context.TODO()
 	// Prepare the dosa client interface using the mocked RPC layer
 	sut := yarpc.Connector{Client: mockedClient}
 
@@ -345,7 +344,6 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
-	ctx := context.TODO()
 
 	// here are the data types to test; the names are random
 	vals := []struct {
@@ -398,7 +396,6 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
-	ctx := context.TODO()
 
 	// here are the data types to test; the names are random
 	vals := []struct {
@@ -450,7 +447,6 @@ func TestClient_CheckSchema(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
-	ctx := context.TODO()
 	sp := "scope"
 	prefix := "prefix"
 
@@ -477,8 +473,6 @@ func TestClient_UpsertSchema(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
 	sut := yarpc.Connector{Client: mockedClient}
-
-	ctx := context.Background()
 
 	ed, err := dosa.TableFromInstance(&TestDosaObject{})
 	assert.NoError(t, err)
@@ -510,8 +504,6 @@ func TestClient_CreateScope(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 	sut := yarpc.Connector{Client: mockedClient}
 
-	ctx := context.Background()
-
 	mockedClient.EXPECT().CreateScope(ctx, gomock.Any()).Return(nil)
 	err := sut.CreateScope(ctx, "scope")
 	assert.NoError(t, err)
@@ -528,8 +520,6 @@ func TestClient_TruncateScope(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 	sut := yarpc.Connector{Client: mockedClient}
 
-	ctx := context.Background()
-
 	mockedClient.EXPECT().TruncateScope(ctx, gomock.Any()).Return(nil)
 	err := sut.TruncateScope(ctx, "scope")
 	assert.NoError(t, err)
@@ -545,8 +535,6 @@ func TestClient_DropScope(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
 	sut := yarpc.Connector{Client: mockedClient}
-
-	ctx := context.Background()
 
 	mockedClient.EXPECT().DropScope(ctx, gomock.Any()).Return(nil)
 	err := sut.DropScope(ctx, "scope")
@@ -567,7 +555,6 @@ func TestConnector_Range(t *testing.T) {
 	responseToken := "responseToken"
 	testLimit := int32(32)
 	// set up the parameters
-	ctx := context.TODO()
 	op := drpc.OperatorEq
 	fieldName := "c1"
 	fieldName1 := "c2"
@@ -654,7 +641,6 @@ func TestConnector_Scan(t *testing.T) {
 	responseToken := "responseToken"
 	testLimit := int32(32)
 	// set up the parameters
-	ctx := context.TODO()
 	sr := &drpc.ScanRequest{
 		Ref:          &testRPCSchemaRef,
 		Token:        &testToken,
@@ -716,7 +702,6 @@ func TestConnector_Remove(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	// set up the parameters
-	ctx := context.TODO()
 	removeRequest := &drpc.RemoveRequest{
 		Ref:       &testRPCSchemaRef,
 		KeyValues: map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}}},
@@ -740,7 +725,6 @@ func TestConnector_Remove(t *testing.T) {
 func TestPanic(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
-	ctx := context.TODO()
 
 	sut := yarpc.Connector{Client: mockedClient}
 

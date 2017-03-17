@@ -59,14 +59,15 @@ var (
 	testValues      = make(map[string]dosa.FieldValue)
 	testMultiValues = make([]map[string]dosa.FieldValue, 50)
 	fieldsToRead    = []string{"booltype", "int32type", "int64type", "doubletype", "stringtype", "blobtype", "timetype", "uuidtype"}
+	ctx             = context.Background()
 )
 
 func TestRandom_CreateIfNotExists(t *testing.T) {
-	assert.NoError(t, sut.CreateIfNotExists(context.TODO(), testInfo, testValues))
+	assert.NoError(t, sut.CreateIfNotExists(ctx, testInfo, testValues))
 }
 
 func TestRandom_Read(t *testing.T) {
-	val, err := sut.Read(context.TODO(), testInfo, testValues, fieldsToRead)
+	val, err := sut.Read(ctx, testInfo, testValues, fieldsToRead)
 	assert.NoError(t, err)
 	assert.NotNil(t, val)
 	for _, field := range fieldsToRead {
@@ -75,7 +76,7 @@ func TestRandom_Read(t *testing.T) {
 }
 
 func TestRandom_MultiRead(t *testing.T) {
-	v, e := sut.MultiRead(context.TODO(), testInfo, testMultiValues, fieldsToRead)
+	v, e := sut.MultiRead(ctx, testInfo, testMultiValues, fieldsToRead)
 	assert.NotNil(t, v)
 	assert.Nil(t, e)
 	assert.Equal(t, len(testMultiValues), len(v))
@@ -87,74 +88,74 @@ func TestRandom_MultiRead(t *testing.T) {
 }
 
 func TestRandom_Upsert(t *testing.T) {
-	err := sut.Upsert(context.TODO(), testInfo, testValues)
+	err := sut.Upsert(ctx, testInfo, testValues)
 	assert.Nil(t, err)
 }
 
 func TestRandom_MultiUpsert(t *testing.T) {
-	errs, err := sut.MultiUpsert(context.TODO(), testInfo, testMultiValues)
+	errs, err := sut.MultiUpsert(ctx, testInfo, testMultiValues)
 	assert.NotNil(t, errs)
 	assert.Nil(t, err)
 }
 
 func TestRandom_Remove(t *testing.T) {
-	err := sut.Remove(context.TODO(), testInfo, testValues)
+	err := sut.Remove(ctx, testInfo, testValues)
 	assert.Error(t, err)
 }
 
 func TestRandom_MultiRemove(t *testing.T) {
-	errs, err := sut.MultiRemove(context.TODO(), testInfo, testMultiValues)
+	errs, err := sut.MultiRemove(ctx, testInfo, testMultiValues)
 	assert.NotNil(t, errs)
 	assert.Nil(t, err)
 }
 
 func TestRandom_Range(t *testing.T) {
 	conditions := make(map[string][]*dosa.Condition)
-	vals, _, err := sut.Range(context.TODO(), testInfo, conditions, fieldsToRead, "", 32)
+	vals, _, err := sut.Range(ctx, testInfo, conditions, fieldsToRead, "", 32)
 	assert.NotNil(t, vals)
 	assert.NoError(t, err)
 }
 
 func TestRandom_Search(t *testing.T) {
-	vals, _, err := sut.Search(context.TODO(), testInfo, testPairs, fieldsToRead, "", 32)
+	vals, _, err := sut.Search(ctx, testInfo, testPairs, fieldsToRead, "", 32)
 	assert.NotNil(t, vals)
 	assert.NoError(t, err)
 }
 
 func TestRandom_Scan(t *testing.T) {
-	vals, _, err := sut.Scan(context.TODO(), testInfo, fieldsToRead, "", 32)
+	vals, _, err := sut.Scan(ctx, testInfo, fieldsToRead, "", 32)
 	assert.NotNil(t, vals)
 	assert.NoError(t, err)
 }
 
 func TestRandom_CheckSchema(t *testing.T) {
 	defs := make([]*dosa.EntityDefinition, 4)
-	versions, err := sut.CheckSchema(context.TODO(), "testScope", "testPrefix", defs)
+	versions, err := sut.CheckSchema(ctx, "testScope", "testPrefix", defs)
 	assert.NotNil(t, versions)
 	assert.NoError(t, err)
 }
 
 func TestRandom_UpsertSchema(t *testing.T) {
 	defs := make([]*dosa.EntityDefinition, 4)
-	versions, err := sut.UpsertSchema(context.TODO(), "testScope", "testPrefix", defs)
+	versions, err := sut.UpsertSchema(ctx, "testScope", "testPrefix", defs)
 	assert.NotNil(t, versions)
 	assert.NoError(t, err)
 }
 
 func TestRandom_CreateScope(t *testing.T) {
-	assert.NoError(t, sut.CreateScope(context.TODO(), ""))
+	assert.NoError(t, sut.CreateScope(ctx, ""))
 }
 
 func TestRandom_TruncateScope(t *testing.T) {
-	assert.NoError(t, sut.TruncateScope(context.TODO(), ""))
+	assert.NoError(t, sut.TruncateScope(ctx, ""))
 }
 
 func TestRandom_DropScope(t *testing.T) {
-	assert.NoError(t, sut.DropScope(context.TODO(), ""))
+	assert.NoError(t, sut.DropScope(ctx, ""))
 }
 
 func TestRandom_ScopeExists(t *testing.T) {
-	exists, err := sut.ScopeExists(context.TODO(), "")
+	exists, err := sut.ScopeExists(ctx, "")
 	assert.NoError(t, err)
 	assert.True(t, exists)
 }
