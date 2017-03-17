@@ -129,7 +129,7 @@ func TestYaRPCClient_NewConnector(t *testing.T) {
 				CallerName:  "dosa-test",
 				ServiceName: "dosa-gateway",
 			},
-		},{
+		}, {
 			// success
 			cfg: yarpc.Config{
 				Transport:   "tchannel",
