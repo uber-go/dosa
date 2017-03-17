@@ -1,5 +1,5 @@
 hash: 1b38ff306c1d5c2ac6210a6ce50757c9695de40b5a0dac42657d2c1399508366
-updated: 2017-03-09T12:10:51.081360882-08:00
+updated: 2017-03-17T16:15:35.137239189-07:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
@@ -45,10 +45,12 @@ imports:
   - typed
 - name: github.com/yarpc/yarpc-go
   version: 6ad92c34d7e982d4bb7299f20e6a27652116cf5d
+  subpackages:
+  - transport/tchannel
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: go.uber.org/atomic
-  version: 0c9e689d64f004564b79d9a663634756df322902
+  version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
 - name: go.uber.org/thriftrw
   version: c98a13058faa5dd41584a77221a268d2c72d832d
   subpackages:
@@ -83,11 +85,11 @@ imports:
   - peer
   - peer/hostport
   - transport/http
+  - transport/tchannel/internal
 - name: golang.org/x/net
   version: a6577fac2d73be281a500b310739095313165611
   subpackages:
   - context
-  - context/ctxhttp
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -106,13 +108,13 @@ testImports:
   subpackages:
   - golint
 - name: github.com/kisielk/errcheck
-  version: db0ca22445717d1b2c51ac1034440e0a2a2de645
+  version: 23699b7e2cbfdb89481023524954ba2aeff6be90
 - name: github.com/kisielk/gotool
   version: 0de1eaf82fa3f583ce21fde859f1e7e0c5e9b220
 - name: github.com/matm/gocov-html
   version: f6dd0fd0ebc7c8cff8b24c0a585caeef250627a3
 - name: github.com/mattn/goveralls
-  version: 8482d0ebd2a64f95ce02d2b9b7065b0d6fe9151b
+  version: a99c5ee06aeeca2a2befc7e90b99061b1180850c
 - name: github.com/mvdan/interfacer
   version: 049d0176189d83d4e2535611f0253b6f1db487ad
   subpackages:
@@ -128,6 +130,6 @@ testImports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: golang.org/x/tools
-  version: f60b69ed8cd7a29e91f87050ae23a29581a0f367
+  version: 2946dd1f77e693e136d9ed202ba093bb4a3ea761
   subpackages:
   - cover
