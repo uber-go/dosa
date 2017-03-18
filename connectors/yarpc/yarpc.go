@@ -43,14 +43,6 @@ type Config struct {
 	ServiceName string `yaml:"serviceName"`
 }
 
-// Option describes a func that can modify opts
-type Option func(*options) error
-
-type options struct {
-	configProvider transport.ClientConfigProvider
-	config         *Config
-}
-
 // Connector holds the client-side RPC interface and some schema information
 type Connector struct {
 	Client     dosaclient.Interface
