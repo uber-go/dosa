@@ -91,13 +91,13 @@ func (c *SchemaCheck) Execute(args []string) error {
 // SchemaUpsert contains data for executing schema upsert command.
 type SchemaUpsert struct {
 	*SchemaOptions
-	context context.Context
+	timeout time.Duration
 	client  dosa.AdminClient
 }
 
 // NewSchemaUpsert returns a new schema upsert command.
-func NewSchemaUpsert(ctx context.Context, client dosa.AdminClient) *SchemaUpsert {
-	return &SchemaUpsert{context: ctx, client: client}
+func NewSchemaUpsert(timeout time.Duration, client dosa.AdminClient) *SchemaUpsert {
+	return &SchemaUpsert{timeout: timeout, client: client}
 }
 
 // Execute satisfies flags.Commander interface.
