@@ -31,6 +31,8 @@ import (
 
 var sut = devnull.Connector{}
 
+var ctx = context.Background()
+
 var (
 	testInfo = &dosa.EntityInfo{
 		Ref: &dosa.SchemaRef{
@@ -46,41 +48,41 @@ var (
 )
 
 func TestDevNull_CreateIfNotExists(t *testing.T) {
-	assert.NoError(t, sut.CreateIfNotExists(context.TODO(), testInfo, testValues))
+	assert.NoError(t, sut.CreateIfNotExists(ctx, testInfo, testValues))
 }
 
 func TestDevNull_Read(t *testing.T) {
 	fieldsToRead := make([]string, 1)
-	val, err := sut.Read(context.TODO(), testInfo, testValues, fieldsToRead)
+	val, err := sut.Read(ctx, testInfo, testValues, fieldsToRead)
 	assert.Nil(t, val)
 	assert.Error(t, err)
 }
 
 func TestDevNull_MultiRead(t *testing.T) {
 	fieldsToRead := make([]string, 1)
-	v, e := sut.MultiRead(context.TODO(), testInfo, testMultiValues, fieldsToRead)
+	v, e := sut.MultiRead(ctx, testInfo, testMultiValues, fieldsToRead)
 	assert.NotNil(t, v)
 	assert.Nil(t, e)
 }
 
 func TestDevNull_Upsert(t *testing.T) {
-	err := sut.Upsert(context.TODO(), testInfo, testValues)
+	err := sut.Upsert(ctx, testInfo, testValues)
 	assert.Nil(t, err)
 }
 
 func TestDevNull_MultiUpsert(t *testing.T) {
-	errs, err := sut.MultiUpsert(context.TODO(), testInfo, testMultiValues)
+	errs, err := sut.MultiUpsert(ctx, testInfo, testMultiValues)
 	assert.NotNil(t, errs)
 	assert.Nil(t, err)
 }
 
 func TestDevNull_Remove(t *testing.T) {
-	err := sut.Remove(context.TODO(), testInfo, testValues)
+	err := sut.Remove(ctx, testInfo, testValues)
 	assert.Error(t, err)
 }
 
 func TestDevNull_MultiRemove(t *testing.T) {
-	errs, err := sut.MultiRemove(context.TODO(), testInfo, testMultiValues)
+	errs, err := sut.MultiRemove(ctx, testInfo, testMultiValues)
 	assert.NotNil(t, errs)
 	assert.Nil(t, err)
 }
@@ -88,53 +90,53 @@ func TestDevNull_MultiRemove(t *testing.T) {
 func TestDevNull_Range(t *testing.T) {
 	conditions := make(map[string][]*dosa.Condition)
 	fieldsToRead := make([]string, 1)
-	vals, _, err := sut.Range(context.TODO(), testInfo, conditions, fieldsToRead, "", 0)
+	vals, _, err := sut.Range(ctx, testInfo, conditions, fieldsToRead, "", 0)
 	assert.Nil(t, vals)
 	assert.Error(t, err)
 }
 
 func TestDevNull_Search(t *testing.T) {
 	fieldsToRead := make([]string, 1)
-	vals, _, err := sut.Search(context.TODO(), testInfo, testPairs, fieldsToRead, "", 0)
+	vals, _, err := sut.Search(ctx, testInfo, testPairs, fieldsToRead, "", 0)
 	assert.Nil(t, vals)
 	assert.Error(t, err)
 }
 
 func TestDevNull_Scan(t *testing.T) {
 	fieldsToRead := make([]string, 1)
-	vals, _, err := sut.Scan(context.TODO(), testInfo, fieldsToRead, "", 0)
+	vals, _, err := sut.Scan(ctx, testInfo, fieldsToRead, "", 0)
 	assert.Nil(t, vals)
 	assert.Error(t, err)
 }
 
 func TestDevNull_CheckSchema(t *testing.T) {
 	defs := make([]*dosa.EntityDefinition, 4)
-	versions, err := sut.CheckSchema(context.TODO(), "testScope", "testPrefix", defs)
+	versions, err := sut.CheckSchema(ctx, "testScope", "testPrefix", defs)
 	assert.NotNil(t, versions)
 	assert.NoError(t, err)
 }
 
 func TestDevNull_UpsertSchema(t *testing.T) {
 	defs := make([]*dosa.EntityDefinition, 4)
-	versions, err := sut.UpsertSchema(context.TODO(), "testScope", "testPrefix", defs)
+	versions, err := sut.UpsertSchema(ctx, "testScope", "testPrefix", defs)
 	assert.NotNil(t, versions)
 	assert.NoError(t, err)
 }
 
 func TestDevNull_CreateScope(t *testing.T) {
-	assert.NoError(t, sut.CreateScope(context.TODO(), ""))
+	assert.NoError(t, sut.CreateScope(ctx, ""))
 }
 
 func TestDevNull_TruncateScope(t *testing.T) {
-	assert.NoError(t, sut.TruncateScope(context.TODO(), ""))
+	assert.NoError(t, sut.TruncateScope(ctx, ""))
 }
 
 func TestDevNull_DropScope(t *testing.T) {
-	assert.NoError(t, sut.DropScope(context.TODO(), ""))
+	assert.NoError(t, sut.DropScope(ctx, ""))
 }
 
 func TestDevNull_ScopeExists(t *testing.T) {
-	e, err := sut.ScopeExists(context.TODO(), "")
+	e, err := sut.ScopeExists(ctx, "")
 	assert.NoError(t, err)
 	assert.True(t, e)
 }

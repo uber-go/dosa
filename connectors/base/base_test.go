@@ -50,61 +50,63 @@ var (
 	testMultiValues = make([]map[string]dosa.FieldValue, 1)
 )
 
+var ctx = context.Background()
+
 func TestBase_CreateIfNotExists(t *testing.T) {
-	assert.Error(t, bc.CreateIfNotExists(context.TODO(), testInfo, testValues))
-	assert.NoError(t, bcWNext.CreateIfNotExists(context.TODO(), testInfo, testValues))
+	assert.Error(t, bc.CreateIfNotExists(ctx, testInfo, testValues))
+	assert.NoError(t, bcWNext.CreateIfNotExists(ctx, testInfo, testValues))
 }
 
 func TestBase_Read(t *testing.T) {
 	fieldsToRead := make([]string, 1)
-	_, err := bc.Read(context.TODO(), testInfo, testValues, fieldsToRead)
+	_, err := bc.Read(ctx, testInfo, testValues, fieldsToRead)
 	assert.Error(t, err)
 
-	val, err := bcWNext.Read(context.TODO(), testInfo, testValues, fieldsToRead)
+	val, err := bcWNext.Read(ctx, testInfo, testValues, fieldsToRead)
 	assert.Nil(t, val)
 	assert.Error(t, err)
 }
 
 func TestBase_MultiRead(t *testing.T) {
 	fieldsToRead := make([]string, 1)
-	_, e := bc.MultiRead(context.TODO(), testInfo, testMultiValues, fieldsToRead)
+	_, e := bc.MultiRead(ctx, testInfo, testMultiValues, fieldsToRead)
 	assert.Error(t, e)
 
-	v, e := bcWNext.MultiRead(context.TODO(), testInfo, testMultiValues, fieldsToRead)
+	v, e := bcWNext.MultiRead(ctx, testInfo, testMultiValues, fieldsToRead)
 	assert.NotNil(t, v)
 	assert.Nil(t, e)
 }
 
 func TestBase_Upsert(t *testing.T) {
-	err := bc.Upsert(context.TODO(), testInfo, testValues)
+	err := bc.Upsert(ctx, testInfo, testValues)
 	assert.Error(t, err)
 
-	err = bcWNext.Upsert(context.TODO(), testInfo, testValues)
+	err = bcWNext.Upsert(ctx, testInfo, testValues)
 	assert.Nil(t, err)
 }
 
 func TestBase_MultiUpsert(t *testing.T) {
-	_, err := bc.MultiUpsert(context.TODO(), testInfo, testMultiValues)
+	_, err := bc.MultiUpsert(ctx, testInfo, testMultiValues)
 	assert.Error(t, err)
 
-	errs, err := bcWNext.MultiUpsert(context.TODO(), testInfo, testMultiValues)
+	errs, err := bcWNext.MultiUpsert(ctx, testInfo, testMultiValues)
 	assert.NotNil(t, errs)
 	assert.Nil(t, err)
 }
 
 func TestBase_Remove(t *testing.T) {
-	err := bc.Remove(context.TODO(), testInfo, testValues)
+	err := bc.Remove(ctx, testInfo, testValues)
 	assert.Error(t, err)
 
-	err = bcWNext.Remove(context.TODO(), testInfo, testValues)
+	err = bcWNext.Remove(ctx, testInfo, testValues)
 	assert.Error(t, err)
 }
 
 func TestBase_MultiRemove(t *testing.T) {
-	_, err := bc.MultiRemove(context.TODO(), testInfo, testMultiValues)
+	_, err := bc.MultiRemove(ctx, testInfo, testMultiValues)
 	assert.Error(t, err)
 
-	errs, err := bcWNext.MultiRemove(context.TODO(), testInfo, testMultiValues)
+	errs, err := bcWNext.MultiRemove(ctx, testInfo, testMultiValues)
 	assert.NotNil(t, errs)
 	assert.Nil(t, err)
 }
@@ -112,67 +114,67 @@ func TestBase_MultiRemove(t *testing.T) {
 func TestBase_Range(t *testing.T) {
 	conditions := make(map[string][]*dosa.Condition)
 	fieldsToRead := make([]string, 1)
-	_, _, err := bc.Range(context.TODO(), testInfo, conditions, fieldsToRead, "", 0)
+	_, _, err := bc.Range(ctx, testInfo, conditions, fieldsToRead, "", 0)
 	assert.Error(t, err)
 
-	vals, _, err := bcWNext.Range(context.TODO(), testInfo, conditions, fieldsToRead, "", 0)
+	vals, _, err := bcWNext.Range(ctx, testInfo, conditions, fieldsToRead, "", 0)
 	assert.Nil(t, vals)
 	assert.Error(t, err)
 }
 
 func TestBase_Search(t *testing.T) {
 	fieldsToRead := make([]string, 1)
-	_, _, err := bc.Search(context.TODO(), testInfo, testPairs, fieldsToRead, "", 0)
+	_, _, err := bc.Search(ctx, testInfo, testPairs, fieldsToRead, "", 0)
 	assert.Error(t, err)
 
-	vals, _, err := bcWNext.Search(context.TODO(), testInfo, testPairs, fieldsToRead, "", 0)
+	vals, _, err := bcWNext.Search(ctx, testInfo, testPairs, fieldsToRead, "", 0)
 	assert.Nil(t, vals)
 	assert.Error(t, err)
 }
 
 func TestBase_Scan(t *testing.T) {
 	fieldsToRead := make([]string, 1)
-	_, _, err := bc.Scan(context.TODO(), testInfo, fieldsToRead, "", 0)
+	_, _, err := bc.Scan(ctx, testInfo, fieldsToRead, "", 0)
 	assert.Error(t, err)
 
-	vals, _, err := bcWNext.Scan(context.TODO(), testInfo, fieldsToRead, "", 0)
+	vals, _, err := bcWNext.Scan(ctx, testInfo, fieldsToRead, "", 0)
 	assert.Nil(t, vals)
 	assert.Error(t, err)
 }
 
 func TestBase_CheckSchema(t *testing.T) {
 	defs := make([]*dosa.EntityDefinition, 4)
-	_, err := bc.CheckSchema(context.TODO(), "testScope", "testPrefix", defs)
+	_, err := bc.CheckSchema(ctx, "testScope", "testPrefix", defs)
 	assert.Error(t, err)
 
-	versions, err := bcWNext.CheckSchema(context.TODO(), "testScope", "testPrefix", defs)
+	versions, err := bcWNext.CheckSchema(ctx, "testScope", "testPrefix", defs)
 	assert.NotNil(t, versions)
 	assert.NoError(t, err)
 }
 
 func TestBase_UpsertSchema(t *testing.T) {
 	defs := make([]*dosa.EntityDefinition, 4)
-	_, err := bc.UpsertSchema(context.TODO(), "testScope", "testPrefix", defs)
+	_, err := bc.UpsertSchema(ctx, "testScope", "testPrefix", defs)
 	assert.Error(t, err)
 
-	versions, err := bcWNext.UpsertSchema(context.TODO(), "testScope", "testPrefix", defs)
+	versions, err := bcWNext.UpsertSchema(ctx, "testScope", "testPrefix", defs)
 	assert.NotNil(t, versions)
 	assert.NoError(t, err)
 }
 
 func TestBase_CreateScope(t *testing.T) {
-	assert.Error(t, bc.CreateScope(context.TODO(), ""))
-	assert.NoError(t, bcWNext.CreateScope(context.TODO(), ""))
+	assert.Error(t, bc.CreateScope(ctx, ""))
+	assert.NoError(t, bcWNext.CreateScope(ctx, ""))
 }
 
 func TestBase_TruncateScope(t *testing.T) {
-	assert.Error(t, bc.TruncateScope(context.TODO(), ""))
-	assert.NoError(t, bcWNext.TruncateScope(context.TODO(), ""))
+	assert.Error(t, bc.TruncateScope(ctx, ""))
+	assert.NoError(t, bcWNext.TruncateScope(ctx, ""))
 }
 
 func TestBase_DropScope(t *testing.T) {
-	assert.Error(t, bc.DropScope(context.TODO(), ""))
-	assert.NoError(t, bcWNext.DropScope(context.TODO(), ""))
+	assert.Error(t, bc.DropScope(ctx, ""))
+	assert.NoError(t, bcWNext.DropScope(ctx, ""))
 }
 
 func TestBase_Shutdown(t *testing.T) {
