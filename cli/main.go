@@ -30,12 +30,9 @@ import (
 	"github.com/uber-go/dosa/connectors/yarpc"
 )
 
-var errExit = errors.New("sentinel error used to exit cleanly")
-
 func main() {
 	opts := Options{}
 	parser := flags.NewParser(&opts, flags.PassDoubleDash)
-	// parser.Usage = "[scope | schema] [OPTIONS]"
 	parser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
 	parser.LongDescription = `
 dosa is the command-line tool for common tasks related to storing data with the DOSA client.`
