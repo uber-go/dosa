@@ -50,8 +50,8 @@ type Connector struct {
 }
 
 // NewConnectorWithTransport creates a new instance with user provided transport
-func NewConnectorWithTransport(configProvider transport.ClientConfigProvider) *Connector {
-	client := dosaclient.New(configProvider.ClientConfig("dosa-gateway"))
+func NewConnectorWithTransport(cc transport.ClientConfig) *Connector {
+	client := dosaclient.New(cc)
 	return &Connector{
 		Client: client,
 	}
