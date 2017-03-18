@@ -21,8 +21,6 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"os"
 
@@ -70,18 +68,18 @@ dosa is the command-line tool for common tasks related to storing data with the 
 		fmt.Printf("Failed to create connector: %v\n\n", err)
 		os.Exit(1)
 	}
-
-	ctx, _ := context.WithTimeout(context.Background(), opts.Timeout.Duration())
 	client := dosa.NewAdminClient(conn)
+
+	// subcommand setup after initial options are parsed
 	cmds := &Commands{
 		Scope: &cmd.ScopeCommands{
-			Create:   cmd.NewScopeCreate(ctx, client),
-			Drop:     cmd.NewScopeDrop(ctx, client),
-			Truncate: cmd.NewScopeTruncate(ctx, client),
+			Create:   cmd.NewScopeCreate(opts.Timeout.Duration(), client),
+			Drop:     cmd.NewScopeDrop(opts.Timeout.Duration(), client),
+			Truncate: cmd.NewScopeTruncate(opts.Timeout.Duration(), client),
 		},
 		Schema: &cmd.SchemaCommands{
-			Check:  cmd.NewSchemaCheck(ctx, client),
-			Upsert: cmd.NewSchemaUpsert(ctx, client),
+			Check:  cmd.NewSchemaCheck(opts.Timeout.Duration(), client),
+			Upsert: cmd.NewSchemaUpsert(opts.Timeout.Duration(), client),
 		},
 	}
 

@@ -23,6 +23,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/uber-go/dosa"
 )
@@ -36,13 +37,13 @@ type ScopeCommands struct {
 
 // ScopeCreate contains data for executing scope create command.
 type ScopeCreate struct {
-	context context.Context
+	timeout time.Duration
 	client  dosa.AdminClient
 }
 
 // NewScopeCreate returns a new scope create command.
-func NewScopeCreate(ctx context.Context, client dosa.AdminClient) *ScopeCreate {
-	return &ScopeCreate{context: ctx, client: client}
+func NewScopeCreate(timeout time.Duration, client dosa.AdminClient) *ScopeCreate {
+	return &ScopeCreate{timeout: timeout, client: client}
 }
 
 // Execute satisfies flags.Commander interface.
@@ -50,7 +51,9 @@ func (c *ScopeCreate) Execute(args []string) error {
 	if c.client != nil {
 		fmt.Printf("creating scope(s): %v\n", args)
 		for _, s := range args {
-			if err := c.client.CreateScope(context.Background(), s); err != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+			defer cancel()
+			if err := c.client.CreateScope(ctx, s); err != nil {
 				return fmt.Errorf("create scope failed: %v", err)
 			}
 		}
@@ -60,20 +63,23 @@ func (c *ScopeCreate) Execute(args []string) error {
 
 // ScopeDrop contains data for executing scope drop command.
 type ScopeDrop struct {
-	context context.Context
+	timeout time.Duration
 	client  dosa.AdminClient
 }
 
 // NewScopeDrop returns a new scope drop command.
-func NewScopeDrop(ctx context.Context, client dosa.AdminClient) *ScopeDrop {
-	return &ScopeDrop{context: ctx, client: client}
+func NewScopeDrop(timeout time.Duration, client dosa.AdminClient) *ScopeDrop {
+	return &ScopeDrop{timeout: timeout, client: client}
 }
 
 // Execute satisfies flags.Commander interface.
 func (c *ScopeDrop) Execute(args []string) error {
 	if c.client != nil {
 		for _, s := range args {
-			if err := c.client.DropScope(context.Background(), s); err != nil {
+			fmt.Printf("dropping scope %s\n", s)
+			ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+			defer cancel()
+			if err := c.client.DropScope(ctx, s); err != nil {
 				return fmt.Errorf("drop scope failed: %v", err)
 			}
 		}
@@ -83,13 +89,13 @@ func (c *ScopeDrop) Execute(args []string) error {
 
 // ScopeTruncate contains data for executing scope truncate command.
 type ScopeTruncate struct {
-	context context.Context
+	timeout time.Duration
 	client  dosa.AdminClient
 }
 
 // NewScopeTruncate returns a new scope create command.
-func NewScopeTruncate(ctx context.Context, client dosa.AdminClient) *ScopeTruncate {
-	return &ScopeTruncate{context: ctx, client: client}
+func NewScopeTruncate(timeout time.Duration, client dosa.AdminClient) *ScopeTruncate {
+	return &ScopeTruncate{timeout: timeout, client: client}
 }
 
 // Execute satisfies flags.Commander interface.
@@ -97,11 +103,11 @@ func (c *ScopeTruncate) Execute(args []string) error {
 	if c.client != nil {
 		for _, s := range args {
 			fmt.Printf("truncating scope %s\n", s)
-			/*
-				if err := c.client.TruncateScope(context.Background(), s); err != nil {
-					return fmt.Errorf("truncate scope failed: %v\n", err)
-				}
-			*/
+			ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+			defer cancel()
+			if err := c.client.TruncateScope(ctx, s); err != nil {
+				return fmt.Errorf("truncate scope failed: %v", err)
+			}
 		}
 	}
 	return nil

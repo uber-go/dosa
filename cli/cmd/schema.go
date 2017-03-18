@@ -23,6 +23,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/uber-go/dosa"
 )
@@ -52,13 +53,13 @@ type SchemaCommands struct {
 // SchemaCheck contains data for executing schema check command.
 type SchemaCheck struct {
 	*SchemaOptions
-	context context.Context
+	timeout time.Duration
 	client  dosa.AdminClient
 }
 
 // NewSchemaCheck returns a new schema check command.
-func NewSchemaCheck(ctx context.Context, client dosa.AdminClient) *SchemaCheck {
-	return &SchemaCheck{context: ctx, client: client}
+func NewSchemaCheck(timeout time.Duration, client dosa.AdminClient) *SchemaCheck {
+	return &SchemaCheck{timeout: timeout, client: client}
 }
 
 // Execute satisfies flags.Commander interface.
@@ -73,7 +74,9 @@ func (c *SchemaCheck) Execute(args []string) error {
 		if len(c.Excludes) != 0 {
 			c.client.Excludes(c.Excludes)
 		}
-		versions, err := c.client.CheckSchema(context.Background(), c.NamePrefix)
+		ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+		defer cancel()
+		versions, err := c.client.CheckSchema(ctx, c.NamePrefix)
 		if err != nil {
 			return fmt.Errorf("check schema failed: %v", err)
 		}
@@ -109,7 +112,9 @@ func (c *SchemaUpsert) Execute(args []string) error {
 		if len(c.Excludes) != 0 {
 			c.client.Excludes(c.Excludes)
 		}
-		versions, err := c.client.UpsertSchema(context.Background(), c.NamePrefix)
+		ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+		defer cancel()
+		versions, err := c.client.UpsertSchema(ctx, c.NamePrefix)
 		if err != nil {
 			return fmt.Errorf("upsert schema failed: %v", err)
 		}
