@@ -65,7 +65,7 @@ func NewSchemaCheck(timeout time.Duration, client dosa.AdminClient) *SchemaCheck
 // Execute satisfies flags.Commander interface.
 func (c *SchemaCheck) Execute(args []string) error {
 	if c.client != nil {
-		if len(args) == 0 {
+		if len(args) != 0 {
 			c.client.Directories(args)
 		}
 		if c.Scope != "" {
@@ -103,7 +103,7 @@ func NewSchemaUpsert(timeout time.Duration, client dosa.AdminClient) *SchemaUpse
 // Execute satisfies flags.Commander interface.
 func (c *SchemaUpsert) Execute(args []string) error {
 	if c.client != nil {
-		if len(args) == 0 {
+		if len(args) != 0 {
 			c.client.Directories(args)
 		}
 		if c.Scope != "" {
