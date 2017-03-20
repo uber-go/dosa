@@ -84,14 +84,10 @@ func (c *SchemaCheck) Execute(args []string) error {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 		defer cancel()
-		versions, err := c.client.CheckSchema(ctx, c.NamePrefix)
-		if err != nil {
+		if _, err := c.client.CheckSchema(ctx, c.NamePrefix); err != nil {
 			return fmt.Errorf("check schema failed: %v", err)
 		}
-		fmt.Println("versions")
-		for _, v := range versions {
-			fmt.Println(v)
-		}
+		// check succeeded
 	}
 	return nil
 }
@@ -126,14 +122,10 @@ func (c *SchemaUpsert) Execute(args []string) error {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 		defer cancel()
-		versions, err := c.client.UpsertSchema(ctx, c.NamePrefix)
-		if err != nil {
+		if _, err := c.client.UpsertSchema(ctx, c.NamePrefix); err != nil {
 			return fmt.Errorf("upsert schema failed: %v", err)
 		}
-		fmt.Println("versions")
-		for _, v := range versions {
-			fmt.Println(v)
-		}
+		// upsert succeeded
 	}
 	return nil
 }
