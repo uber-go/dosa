@@ -86,7 +86,7 @@ dosa is the command-line tool for common tasks related to storing data with the 
 	// try to execute subcommand
 	_, err = subparser.Parse()
 	if err != nil {
-		fmt.Printf("Failed to parse options: %v\n\n", err)
+		fmt.Printf("Error: %v\n\n", err)
 		subparser.WriteHelp(os.Stdout)
 		os.Exit(1)
 	}
