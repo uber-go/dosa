@@ -45,10 +45,7 @@ dosa is the command-line tool for common tasks related to storing data with the 
 		os.Exit(1)
 	}
 
-	// defaults
-	if opts.ServiceName == "" {
-		opts.ServiceName = "dosa-gateway"
-	}
+	// coerce caller name from $USER env var if not provided
 	if opts.CallerName == "" || opts.CallerName == "dosacli-$USER" {
 		opts.CallerName = fmt.Sprintf("dosacli-%s", os.Getenv("USER"))
 	}
