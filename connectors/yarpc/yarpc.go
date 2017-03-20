@@ -29,7 +29,9 @@ import (
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 	"github.com/uber/dosa-idl/.gen/dosa/dosaclient"
 	rpc "go.uber.org/yarpc"
+	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/transport/http"
+	"go.uber.org/yarpc/transport/tchannel"
 )
 
 // Config contains the YARPC client parameters
@@ -45,6 +47,14 @@ type Config struct {
 type Connector struct {
 	Client     dosaclient.Interface
 	dispatcher *rpc.Dispatcher
+}
+
+// NewConnectorWithTransport creates a new instance with user provided transport
+func NewConnectorWithTransport(cc transport.ClientConfig) *Connector {
+	client := dosaclient.New(cc)
+	return &Connector{
+		Client: client,
+	}
 }
 
 // NewConnector returns a new YARPC connector with the given configuration.
@@ -65,11 +75,21 @@ func NewConnector(cfg *Config) (*Connector, error) {
 	switch cfg.Transport {
 	case "http":
 		uri := fmt.Sprintf("http://%s:%s", cfg.Host, cfg.Port)
-		transport := http.NewTransport()
-		outbound := transport.NewSingleOutbound(uri)
+		ts := http.NewTransport()
 		ycfg.Outbounds = rpc.Outbounds{
 			cfg.ServiceName: {
-				Unary: outbound,
+				Unary: ts.NewSingleOutbound(uri),
+			},
+		}
+	case "tchannel":
+		hostPort := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
+		ts, err := tchannel.NewChannelTransport(tchannel.ServiceName(cfg.ServiceName))
+		if err != nil {
+			return nil, err
+		}
+		ycfg.Outbounds = rpc.Outbounds{
+			cfg.ServiceName: {
+				Unary: ts.NewSingleOutbound(hostPort),
 			},
 		}
 	default:

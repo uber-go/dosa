@@ -131,6 +131,15 @@ func TestYaRPCClient_NewConnector(t *testing.T) {
 				CallerName:  "dosa-test",
 				ServiceName: "dosa-gateway",
 			},
+		}, {
+			// success
+			cfg: yarpc.Config{
+				Transport:   "tchannel",
+				Host:        "localhost",
+				Port:        "8080",
+				CallerName:  "dosa-test",
+				ServiceName: "dosa-gateway",
+			},
 		},
 	}
 
@@ -560,35 +569,35 @@ func TestConnector_Range(t *testing.T) {
 	fieldName1 := "c2"
 	field := drpc.Field{&fieldName, &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}}}
 	field1 := drpc.Field{&fieldName1, &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}}}
-	rr := &drpc.RangeRequest{
-		Ref:   &testRPCSchemaRef,
-		Token: &testToken,
-		Limit: &testLimit,
-		Conditions: []*drpc.Condition{{
-			Op:    &op,
-			Field: &field,
-		}, {
-			Op:    &op,
-			Field: &field1,
-		}},
-		FieldsToRead: map[string]struct{}{"c1": {}},
-	}
 
 	// Prepare the dosa client interface using the mocked RPC layer
 	sut := yarpc.Connector{Client: mockedClient}
 
 	// successful call, return results
-	mockedClient.EXPECT().Range(ctx, rr).
-		Return(&drpc.RangeResponse{
-			Entities: []drpc.FieldValueMap{
-				{
-					"c1":               {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(1)}},
-					"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}},
-					"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(2.2)}},
-				},
+	mockedClient.EXPECT().Range(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.RangeRequest) {
+		assert.Equal(t, map[string]struct{}{"c1": {}}, request.FieldsToRead)
+		assert.Equal(t, testLimit, *request.Limit)
+		assert.Equal(t, testRPCSchemaRef, *request.Ref)
+		assert.Equal(t, testToken, *request.Token)
+		for _, c := range request.Conditions {
+			assert.Equal(t, c.Op, &op)
+			if *c.Field.Name == fieldName {
+				assert.Equal(t, c.Field, &field)
+			} else {
+				assert.Equal(t, c.Field, &field1)
+			}
+		}
+		assert.Equal(t, len(request.Conditions), 2)
+	}).Return(&drpc.RangeResponse{
+		Entities: []drpc.FieldValueMap{
+			{
+				"c1":               {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(1)}},
+				"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(5)}},
+				"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(2.2)}},
 			},
-			NextToken: &responseToken,
-		}, nil)
+		},
+		NextToken: &responseToken,
+	}, nil)
 
 	values, token, err := sut.Range(ctx, testEi, map[string][]*dosa.Condition{
 		"c1": {&dosa.Condition{
