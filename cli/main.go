@@ -40,7 +40,7 @@ dosa is the command-line tool for common tasks related to storing data with the 
 	// ignore resulting args, need to populate base options first
 	_, err := parser.Parse()
 	if err != nil {
-		fmt.Printf("Failed to parse options: %v\n\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to parse options: %v", err)
 		parser.WriteHelp(os.Stdout)
 		os.Exit(1)
 	}
@@ -62,7 +62,7 @@ dosa is the command-line tool for common tasks related to storing data with the 
 		ServiceName: opts.ServiceName,
 	})
 	if err != nil {
-		fmt.Printf("Failed to create connector: %v\n\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to create connector: %v", err)
 		os.Exit(1)
 	}
 	client := dosa.NewAdminClient(conn)
@@ -86,7 +86,7 @@ dosa is the command-line tool for common tasks related to storing data with the 
 	// try to execute subcommand
 	_, err = subparser.Parse()
 	if err != nil {
-		fmt.Printf("Error: %v\n\n", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n\n", err)
 		subparser.WriteHelp(os.Stdout)
 		os.Exit(1)
 	}
