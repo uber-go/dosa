@@ -50,6 +50,7 @@ type SchemaOptions struct {
 
 // SchemaCommands contains schema subcommand configuration.
 type SchemaCommands struct {
+	*SchemaOptions
 	Check  *SchemaCheck  `command:"check"`
 	Upsert *SchemaUpsert `command:"upsert"`
 }

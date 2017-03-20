@@ -27,21 +27,21 @@ import (
 	"github.com/uber-go/dosa/cli/cmd"
 )
 
-// Commands contains subcommand configuration
-type Commands struct {
-	Scope  *cmd.ScopeCommands  `command:"scope"`
-	Schema *cmd.SchemaCommands `command:"schema"`
-}
-
 // Options are options for all subcommands
 type Options struct {
-	*Commands
 	Host        string   `short:"h" long:"host" default:"127.0.0.1" description:"The hostname or IP for the gateway."`
-	Port        string   `short:"p" long:"port" default:"6708" description:"The hostname or IP for the gateway."`
-	Transport   string   `long:"transport" default:"http" description:"TCP Transport to use. Options: http, tchannel."`
+	Port        string   `short:"p" long:"port" default:"6707" description:"The hostname or IP for the gateway."`
+	Transport   string   `long:"transport" default:"tchannel" description:"TCP Transport to use. Options: http, tchannel."`
 	ServiceName string   `long:"service" default:"dosa-gateway" description:"The TChannel service name for the gateway."`
 	CallerName  string   `long:"caller" default:"dosacli-$USER" description:"Caller will override the default caller name (which is dosacli-$USER)."`
 	Timeout     timeFlag `long:"timeout" default:"1s" description:"The timeout for gateway requests. E.g., 100ms, 0.5s, 1s. If no unit is specified, milliseconds are assumed."`
+}
+
+// Commands contains subcommand configuration
+type Commands struct {
+	*Options
+	Scope  *cmd.ScopeCommands  `command:"scope"`
+	Schema *cmd.SchemaCommands `command:"schema"`
 }
 
 type timeFlag time.Duration

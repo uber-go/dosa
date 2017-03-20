@@ -32,7 +32,7 @@ import (
 
 func main() {
 	opts := Options{}
-	parser := flags.NewParser(&opts, flags.PassDoubleDash)
+	parser := flags.NewParser(&opts, flags.IgnoreUnknown)
 	parser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
 	parser.LongDescription = `
 dosa is the command-line tool for common tasks related to storing data with the DOSA client.`
@@ -78,7 +78,7 @@ dosa is the command-line tool for common tasks related to storing data with the 
 	}
 
 	// populate subcommand options and args
-	subparser := flags.NewParser(cmds, flags.PassDoubleDash)
+	subparser := flags.NewParser(cmds, flags.IgnoreUnknown)
 
 	// try to execute subcommand
 	_, err = subparser.Parse()
