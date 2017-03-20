@@ -23,8 +23,12 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 )
 
@@ -66,7 +70,11 @@ func NewSchemaCheck(timeout time.Duration, client dosa.AdminClient) *SchemaCheck
 func (c *SchemaCheck) Execute(args []string) error {
 	if c.client != nil {
 		if len(args) != 0 {
-			c.client.Directories(args)
+			dirs, err := expandDirectories(args)
+			if err != nil {
+				return errors.Wrap(err, "could not expand directories")
+			}
+			c.client.Directories(dirs)
 		}
 		if c.Scope != "" {
 			c.client.Scope(c.Scope)
@@ -104,7 +112,11 @@ func NewSchemaUpsert(timeout time.Duration, client dosa.AdminClient) *SchemaUpse
 func (c *SchemaUpsert) Execute(args []string) error {
 	if c.client != nil {
 		if len(args) != 0 {
-			c.client.Directories(args)
+			dirs, err := expandDirectories(args)
+			if err != nil {
+				return errors.Wrap(err, "could not expand directories")
+			}
+			c.client.Directories(dirs)
 		}
 		if c.Scope != "" {
 			c.client.Scope(c.Scope)
@@ -124,4 +136,40 @@ func (c *SchemaUpsert) Execute(args []string) error {
 		}
 	}
 	return nil
+}
+
+// expandDirectory verifies that each argument is actually a directory or
+// uses the special go suffix of /... to mean recursively walk from here
+// example: ./... means the current directory and all subdirectories
+func expandDirectories(dirs []string) ([]string, error) {
+	const recursiveMarker = "/..."
+	resultSet := make([]string, 0)
+	for _, dir := range dirs {
+		if strings.HasSuffix(dir, recursiveMarker) {
+			err := filepath.Walk(strings.TrimSuffix(dir, recursiveMarker), func(path string, info os.FileInfo, err error) error {
+				if info.IsDir() {
+					resultSet = append(resultSet, path)
+				}
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			info, err := os.Stat(dir)
+			if err != nil {
+				return nil, err
+			}
+			if !info.IsDir() {
+				return nil, fmt.Errorf("%q is not a directory", dir)
+			}
+			resultSet = append(resultSet, dir)
+		}
+	}
+	if len(resultSet) == 0 {
+		// treat an empty list as a search in the current directory (think "ls")
+		return []string{"."}, nil
+	}
+
+	return resultSet, nil
 }

@@ -20,10 +20,73 @@
 
 package cmd
 
-import "testing"
+import (
+	"errors"
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 // TODO: unit tests
 func TestSchema_Check(t *testing.T) {}
 
 // TODO: unit tests
 func TestSchema_Upsert(t *testing.T) {}
+
+func TestSchema_ExpandDirectories(t *testing.T) {
+	assert := assert.New(t)
+	const tmpdir = ".testexpanddirectories"
+	os.RemoveAll(tmpdir)
+	defer os.RemoveAll(tmpdir)
+
+	if err := os.Mkdir(tmpdir, 0770); err != nil {
+		t.Fatalf("can't create %s: %s", tmpdir, err)
+	}
+	// note: these must be in lexical order :(
+	dirs := []string{"a", "a/b", "c", "c/d", "c/e"}
+
+	os.Chdir(tmpdir)
+	for _, dirToCreate := range dirs {
+		os.Mkdir(dirToCreate, 0770)
+	}
+	os.Create("a/b/file")
+
+	cases := []struct {
+		args []string
+		dirs []string
+		err  error
+	}{
+		{
+			args: []string{},
+			dirs: []string{"."},
+		},
+		{
+			args: []string{"."},
+			dirs: []string{"."},
+		},
+		{
+			args: []string{"./..."},
+			dirs: append([]string{"."}, dirs...),
+		},
+		{
+			args: []string{"bogus"},
+			err:  errors.New("no such file or directory"),
+		},
+		{
+			args: []string{"a/b/file"},
+			err:  errors.New("not a directory"),
+		},
+	}
+
+	for _, c := range cases {
+		dirs, err := expandDirectories(c.args)
+		if c.err != nil {
+			assert.Contains(err.Error(), c.err.Error())
+		} else {
+			assert.Nil(err)
+			assert.Equal(c.dirs, dirs)
+		}
+	}
+	os.Chdir("..")
+}
