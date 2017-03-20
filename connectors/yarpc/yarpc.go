@@ -71,10 +71,10 @@ func NewConnector(cfg *Config) (*Connector, error) {
 	if cfg.Port == "" {
 		return nil, errors.New("invalid port")
 	}
-	uri := fmt.Sprintf("http://%s:%s", cfg.Host, cfg.Port)
 
 	switch cfg.Transport {
 	case "http":
+		uri := fmt.Sprintf("http://%s:%s", cfg.Host, cfg.Port)
 		ts := http.NewTransport()
 		ycfg.Outbounds = rpc.Outbounds{
 			cfg.ServiceName: {
@@ -82,13 +82,14 @@ func NewConnector(cfg *Config) (*Connector, error) {
 			},
 		}
 	case "tchannel":
-		ts, err := tchannel.NewChannelTransport(tchannel.ServiceName("dosa-gateway"))
+		hostPort := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
+		ts, err := tchannel.NewChannelTransport(tchannel.ServiceName(cfg.ServiceName))
 		if err != nil {
 			return nil, err
 		}
 		ycfg.Outbounds = rpc.Outbounds{
 			cfg.ServiceName: {
-				Unary: ts.NewSingleOutbound(uri),
+				Unary: ts.NewSingleOutbound(hostPort),
 			},
 		}
 	default:
