@@ -23,6 +23,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/uber-go/dosa"
@@ -49,13 +50,13 @@ func NewScopeCreate(timeout time.Duration, client dosa.AdminClient) *ScopeCreate
 // Execute satisfies flags.Commander interface.
 func (c *ScopeCreate) Execute(args []string) error {
 	if c.client != nil {
-		fmt.Printf("creating scope(s): %v\n", args)
 		for _, s := range args {
 			ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 			defer cancel()
 			if err := c.client.CreateScope(ctx, s); err != nil {
 				return fmt.Errorf("create scope failed: %v", err)
 			}
+			fmt.Fprintf(os.Stdout, "created scope: %v\n", s)
 		}
 	}
 	return nil
@@ -76,12 +77,12 @@ func NewScopeDrop(timeout time.Duration, client dosa.AdminClient) *ScopeDrop {
 func (c *ScopeDrop) Execute(args []string) error {
 	if c.client != nil {
 		for _, s := range args {
-			fmt.Printf("dropping scope %s\n", s)
 			ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 			defer cancel()
 			if err := c.client.DropScope(ctx, s); err != nil {
 				return fmt.Errorf("drop scope failed: %v", err)
 			}
+			fmt.Fprintf(os.Stdout, "dropped scope: %v\n", s)
 		}
 	}
 	return nil
@@ -102,12 +103,12 @@ func NewScopeTruncate(timeout time.Duration, client dosa.AdminClient) *ScopeTrun
 func (c *ScopeTruncate) Execute(args []string) error {
 	if c.client != nil {
 		for _, s := range args {
-			fmt.Printf("truncating scope %s\n", s)
 			ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 			defer cancel()
 			if err := c.client.TruncateScope(ctx, s); err != nil {
 				return fmt.Errorf("truncate scope failed: %v", err)
 			}
+			fmt.Fprintf(os.Stdout, "truncated scope: %v\n", s)
 		}
 	}
 	return nil
