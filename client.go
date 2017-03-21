@@ -476,16 +476,21 @@ func (c *adminClient) UpsertSchema(ctx context.Context, namePrefix string) ([]in
 	return versions, nil
 }
 
+// EntityErrors is a container for parse errors/warning.
 type EntityErrors struct {
 	warns []error
 }
 
 func (ee *EntityErrors) Error() string {
 	var str bytes.Buffer
-	io.WriteString(&str, "The following entities had warnings/errors:")
+	if _, err := io.WriteString(&str, "The following entities had warnings/errors:"); err != nil {
+		return "could not write errors to output buffer"
+	}
 	for _, err := range ee.warns {
 		str.WriteByte('\n')
-		io.WriteString(&str, err.Error())
+		if _, err := io.WriteString(&str, err.Error()); err != nil {
+			return "could not write errors to output buffer"
+		}
 	}
 	return str.String()
 }
