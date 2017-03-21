@@ -43,7 +43,7 @@ type SchemaCmd struct{}
 
 // SchemaOptions contains configuration for schema command flags.
 type SchemaOptions struct {
-	NamePrefix string   `long:"prefix" description:"Name prefix for schema types."`
+	NamePrefix string   `long:"prefix" description:"Name prefix for schema types." required:"true"`
 	Excludes   []string `short:"e" long:"exclude" description:"Exclude files matching pattern."`
 	Scope      string   `short:"s" long:"scope" description:"Storage scope for the given operation."`
 	Verbose    bool     `short:"v" long:"verbose"`
@@ -76,13 +76,12 @@ func (c *SchemaCheck) Execute(args []string) error {
 		}
 		client.Directories(dirs)
 	}
-	// default the scope to the current username
-	if len(c.Scope) == 0 {
-		c.Scope = "scope_" + os.Getenv("USER")
+	if len(c.Excludes) != 0 {
+		client.Excludes(c.Excludes)
 	}
-	client.Scope(c.Scope)
-	client.Excludes(c.Excludes)
-
+	if c.Scope != "" {
+		client.Scope(c.Scope)
+	}
 	if _, err := client.CheckSchema(ctx, c.NamePrefix); err != nil {
 		return err
 	}
@@ -120,11 +119,12 @@ func (c *SchemaUpsert) Execute(args []string) error {
 		}
 		client.Directories(dirs)
 	}
-	if len(c.Scope) == 0 {
-		c.Scope = "scope_" + os.Getenv("USER")
+	if len(c.Excludes) != 0 {
+		client.Excludes(c.Excludes)
 	}
-	client.Scope(c.Scope)
-	client.Excludes(c.Excludes)
+	if c.Scope != "" {
+		client.Scope(c.Scope)
+	}
 
 	if _, err := client.UpsertSchema(ctx, c.NamePrefix); err != nil {
 		return err

@@ -45,23 +45,23 @@ func TestMissingSubcommands(t *testing.T) {
 	assert.Contains(t, c.stop(true), "check, dump or upsert")
 }
 
+func TestHostOptionButNothingElse(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "--host", "10.10.10.10"}
+	main()
+	assert.Contains(t, c.stop(true), "schema or scope")
+}
+
 // this test uses a trailing dot in the hostname to avoid multiple DNS lookups
 func TestInvalidHost(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "--host", "invalid-hostname.", "schema", "check"}
+	os.Args = []string{"dosa", "--host", "invalid-hostname.", "schema", "check", "--prefix", "foo"}
 	main()
 	output := c.stop(true)
 	assert.Contains(t, output, "invalid-hostname")
 	assert.Contains(t, output, "no such host")
-}
-
-func TestHostOptionButNothingElse(t *testing.T) {
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "--host=10.10.10.10"}
-	main()
-	assert.Contains(t, c.stop(true), "schema or scope")
 }
 
 // this error message is a bit strange, but is caused because the port could be a
@@ -69,7 +69,7 @@ func TestHostOptionButNothingElse(t *testing.T) {
 func TestInvalidPort(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "-p", "invalid-port", "schema", "check"}
+	os.Args = []string{"dosa", "-p", "invalid-port", "schema", "check", "--prefix", "foo"}
 	main()
 	output := c.stop(true)
 	assert.Contains(t, output, "invalid-port")
@@ -80,7 +80,7 @@ func TestInvalidPort(t *testing.T) {
 func TestInvalidTransport(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "--transport", "invalid-transport", "schema", "check"}
+	os.Args = []string{"dosa", "--transport", "invalid-transport", "schema", "check", "--prefix", "foo"}
 	main()
 	output := c.stop(true)
 	assert.Contains(t, output, "invalid transport")

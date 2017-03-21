@@ -94,11 +94,19 @@ func TestSchema_ExpandDirectories(t *testing.T) {
 func TestSchemaDump(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "../testentity"}
+	os.Args = []string{"dosa", "schema", "dump", "--prefix", "foo", "../testentity"}
 	main()
 	output := c.stop(false)
 	t.Skip("TODO This functionality is not implemented yet")
 	assert.Contains(t, output, "create table awesome_test_entity (")
+}
+
+func TestPrefixRequire(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "check", "../testentity"}
+	main()
+	assert.Contains(t, c.stop(true), "--prefix' was not specified")
 }
 
 func TestHappyMockeryCheckSchema(t *testing.T) {
@@ -110,7 +118,7 @@ func TestHappyMockeryCheckSchema(t *testing.T) {
 	}
 	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().CheckSchema(gomock.Any(), "scope_"+os.Getenv("USER"), "", gomock.Any()).
+		mc.EXPECT().CheckSchema(gomock.Any(), os.Getenv("USER"), "foo", gomock.Any()).
 			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)
@@ -120,7 +128,7 @@ func TestHappyMockeryCheckSchema(t *testing.T) {
 			}).Return([]int32{1}, nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "../testentity"}
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "../testentity"}
 	main()
 }
 func TestHappyMockeryUpsertSchema(t *testing.T) {
@@ -132,7 +140,7 @@ func TestHappyMockeryUpsertSchema(t *testing.T) {
 	}
 	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().UpsertSchema(gomock.Any(), "scope_"+os.Getenv("USER"), "", gomock.Any()).
+		mc.EXPECT().UpsertSchema(gomock.Any(), os.Getenv("USER"), "foo", gomock.Any()).
 			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)
@@ -142,6 +150,6 @@ func TestHappyMockeryUpsertSchema(t *testing.T) {
 			}).Return([]int32{1}, nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "../testentity"}
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "--prefix", "foo", "../testentity"}
 	main()
 }
