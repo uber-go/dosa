@@ -516,7 +516,7 @@ type TestEntityC struct {
 		{
 			dirs:        []string{tmpdir},
 			scope:       scope,
-			errContains: "failed to find entities",
+			errContains: "failed ",
 		},
 		// connector error
 		{
@@ -613,7 +613,7 @@ type TestEntityC struct {
 		{
 			dirs:        []string{tmpdir},
 			scope:       scope,
-			errContains: "failed to find entities",
+			errContains: "failed ",
 		},
 		// connector error
 		{

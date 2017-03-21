@@ -18,4 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main_test
+package main
+
+import (
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestTimeFlag_Duration(t *testing.T) {
+	sut := timeFlag(0)
+	sut.setDuration(time.Minute)
+	assert.Equal(t, time.Minute, sut.Duration())
+
+	err := sut.UnmarshalFlag("100")
+	assert.NoError(t, err)
+	assert.Equal(t, 100*time.Millisecond, sut.Duration())
+
+	err = sut.UnmarshalFlag("do_this_dont_do_that_cant_you_read_the_time")
+	assert.Error(t, err)
+}

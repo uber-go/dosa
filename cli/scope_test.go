@@ -18,12 +18,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main_test
+package main
 
-import "testing"
+import (
+	"os"
+	"testing"
 
-// TODO: unit tests
-func TestScope_Create(t *testing.T) {}
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/mocks"
+)
+
+func TestScope_Create(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	exit = func(r int) {
+		assert.Equal(t, 0, r)
+	}
+	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
+		mc := mocks.NewMockConnector(ctrl)
+		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
+		return mc, nil
+	})
+	os.Args = []string{"dosa", "--connector", "mock", "scope", "create", "one_scope", "two_scope", "three_scope", "four"}
+	main()
+}
 
 // TODO: unit tests
 func TestScope_Drop(t *testing.T) {}

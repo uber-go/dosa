@@ -46,7 +46,6 @@ type SchemaOptions struct {
 	NamePrefix string   `long:"prefix" description:"Name prefix for schema types."`
 	Excludes   []string `short:"e" long:"exclude" description:"Exclude files matching pattern."`
 	Scope      string   `short:"s" long:"scope" description:"Storage scope for the given operation."`
-	Pedantic   bool     `long:"pedantic"`
 	Verbose    bool     `short:"v" long:"verbose"`
 }
 

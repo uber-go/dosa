@@ -22,9 +22,11 @@ package dosa
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"reflect"
+
+	"bytes"
+	"io"
 
 	"github.com/pkg/errors"
 )
@@ -451,7 +453,7 @@ func (c *adminClient) Scope(scope string) AdminClient {
 func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) ([]int32, error) {
 	defs, err := findEntityDefinitions(c.scope, c.dirs, c.excludes)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to find entities")
+		return nil, errors.Wrapf(err, "failed to read entity definitions in %q", c.dirs)
 	}
 	versions, err := c.connector.CheckSchema(ctx, c.scope, namePrefix, defs)
 	if err != nil {
@@ -465,13 +467,27 @@ func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) ([]int
 func (c *adminClient) UpsertSchema(ctx context.Context, namePrefix string) ([]int32, error) {
 	defs, err := findEntityDefinitions(c.scope, c.dirs, c.excludes)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to find entities")
+		return nil, errors.Wrapf(err, "failed to read entity definitions in %q", c.dirs)
 	}
 	versions, err := c.connector.UpsertSchema(ctx, c.scope, namePrefix, defs)
 	if err != nil {
 		return nil, errors.Wrapf(err, "UpsertSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
 	}
 	return versions, nil
+}
+
+type EntityErrors struct {
+	warns []error
+}
+
+func (ee *EntityErrors) Error() string {
+	var str bytes.Buffer
+	io.WriteString(&str, "The following entities had warnings/errors:")
+	for _, err := range ee.warns {
+		str.WriteByte('\n')
+		io.WriteString(&str, err.Error())
+	}
+	return str.String()
 }
 
 // findEntityDefinitions searches for entities in given directories, excluding
@@ -484,7 +500,7 @@ func findEntityDefinitions(scope string, dirs, excludes []string) ([]*EntityDefi
 
 	entities, warns, err := FindEntities(dirs, excludes)
 	if len(warns) > 0 {
-		return nil, fmt.Errorf("FindEntities failed: %s", warns)
+		return nil, &EntityErrors{warns: warns}
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "FindEntities failed")
