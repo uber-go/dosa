@@ -21,62 +21,46 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
-	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/cli/cmd"
-	"github.com/uber-go/dosa/connectors/yarpc"
+	flags "github.com/jessevdk/go-flags"
+	_ "github.com/uber-go/dosa/connectors/yarpc"
 )
 
-var errExit = errors.New("sentinel error used to exit cleanly")
+// for testing, we make exit an overridable routine
+type exiter func(int)
 
-func main() {
-	opts, err := getOptions(os.Args[1:], os.Stdout)
-	if err != nil {
-		if err == errExit {
-			return
-		}
-		fmt.Printf("Failed to parse options: %v", err)
-		os.Exit(1)
-	}
+var exit = os.Exit
 
-	client, err := getClient(&opts.Base)
-	if err != nil {
-		fmt.Printf("Failed to create new client with options: %v\n", err)
-		os.Exit(1)
-	}
-
-	// getOptions should guarantee that there is always a subcommand
-	// however, there still may not be any arguments, but subcommands should
-	// implement that behavior, presumably by using flags.NewNamedParser
-	subargs := os.Args[1:]
-	switch opts.Base.subcmd {
-	case "scope":
-		os.Exit(cmd.Scope(subargs[1:], &opts.Scope, client))
-	case "schema":
-		os.Exit(cmd.Schema(subargs[1:], &opts.Schema, client))
-	case "help":
-		os.Exit(0)
-	default:
-		os.Exit(1)
-	}
+// GlobalOptions are options for all subcommands
+type GlobalOptions struct {
+	Host        string   `short:"h" long:"host" default:"127.0.0.1" description:"The hostname or IP for the gateway."`
+	Port        string   `short:"p" long:"port" default:"5437" description:"The hostname or IP for the gateway."`
+	Transport   string   `long:"transport" default:"tchannel" description:"TCP Transport to use. Options: http, tchannel."`
+	ServiceName string   `long:"service" default:"dosa-gateway" description:"The TChannel service name for the gateway."`
+	CallerName  string   `long:"caller" default:"dosacli-$USER" description:"Caller will override the default caller name (which is dosacli-$USER)."`
+	Timeout     timeFlag `long:"timeout" default:"60s" description:"The timeout for gateway requests. E.g., 100ms, 0.5s, 1s. If no unit is specified, milliseconds are assumed."`
+	Connector   string   `long:"connector" default:"yarpc" description:"Name of connector to use"`
 }
 
-func getClient(opts *BaseOptions) (dosa.AdminClient, error) {
-	conn, err := yarpc.NewConnector(&yarpc.Config{
-		Transport:   opts.Transport,
-		Host:        opts.Host,
-		Port:        opts.Port,
-		CallerName:  opts.CallerName,
-		ServiceName: opts.ServiceName,
-	})
+var options GlobalOptions
+
+// OptionsParser holds the global parser
+var OptionsParser = flags.NewParser(&options, flags.IgnoreUnknown)
+
+func main() {
+	OptionsParser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
+	OptionsParser.LongDescription = `
+dosa manages your schema both in production and development scopes`
+
+	_, err := OptionsParser.Parse()
 	if err != nil {
-		return nil, err
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		OptionsParser.WriteHelp(os.Stderr)
+		exit(1)
+		return
 	}
 
-	client := dosa.NewAdminClient(conn)
-
-	return client, nil
+	exit(0)
 }

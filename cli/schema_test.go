@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package cmd
+package main
 
 import (
 	"errors"
@@ -27,6 +27,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+// TODO: unit tests
+func TestSchema_Check(t *testing.T) {}
+
+// TODO: unit tests
+func TestSchema_Upsert(t *testing.T) {}
 
 func TestSchema_ExpandDirectories(t *testing.T) {
 	assert := assert.New(t)

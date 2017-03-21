@@ -1,5 +1,5 @@
 hash: 1b38ff306c1d5c2ac6210a6ce50757c9695de40b5a0dac42657d2c1399508366
-updated: 2017-03-17T16:15:35.137239189-07:00
+updated: 2017-03-21T09:25:26.393598798-07:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
@@ -45,8 +45,6 @@ imports:
   - typed
 - name: github.com/yarpc/yarpc-go
   version: 6ad92c34d7e982d4bb7299f20e6a27652116cf5d
-  subpackages:
-  - transport/tchannel
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: go.uber.org/atomic
@@ -85,11 +83,13 @@ imports:
   - peer
   - peer/hostport
   - transport/http
+  - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: a6577fac2d73be281a500b310739095313165611
+  version: 6b27048ae5e6ad1ef927e72e437531493de612fe
   subpackages:
   - context
+  - context/ctxhttp
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4

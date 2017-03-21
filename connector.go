@@ -20,7 +20,11 @@
 
 package dosa
 
-import "context"
+import (
+	"context"
+
+	"github.com/pkg/errors"
+)
 
 //go:generate stringer -type=Operator
 
@@ -140,4 +144,12 @@ func init() {
 // RegisterConnector registers a connector given a name
 func RegisterConnector(name string, creationFunc func(map[string]interface{}) (Connector, error)) {
 	registeredConnectors[name] = creationFunc
+}
+
+// GetConnector gets a connector by name, along with some options
+func GetConnector(name string, opts map[string]interface{}) (Connector, error) {
+	if creationFunc, ok := registeredConnectors[name]; ok {
+		return creationFunc(opts)
+	}
+	return nil, errors.Errorf("No such connector %q", name)
 }
