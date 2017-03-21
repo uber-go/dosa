@@ -24,6 +24,8 @@ import (
 	"context"
 	"fmt"
 
+	"os"
+
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
@@ -93,7 +95,7 @@ func NewConnector(cfg *Config) (*Connector, error) {
 			},
 		}
 	default:
-		return nil, errors.New("invalid transport (only http supported)")
+		return nil, errors.New("invalid transport (only http or tchannel supported)")
 	}
 
 	// important to note that this will panic if config contains invalid
@@ -410,12 +412,40 @@ func (c *Connector) Shutdown() error {
 	return c.dispatcher.Stop()
 }
 
+func getWithDefault(args map[string]interface{}, elem string, def string) string {
+	v, ok := args[elem]
+	if ok {
+		return v.(string)
+	}
+	return def
+
+}
+
 func init() {
-	// TODO: Actually create one of these connectors
-	dosa.RegisterConnector("yarpc", func(map[string]interface{}) (dosa.Connector, error) {
-		c := new(Connector)
-		c.Client = dosaclient.New(nil)
-		return c, nil
+	dosa.RegisterConnector("yarpc", func(args map[string]interface{}) (dosa.Connector, error) {
+		// richest way is with a transport client configuration
+		if tc, ok := args["config"]; ok {
+			if transportConfig, ok := tc.(transport.ClientConfig); ok {
+				return NewConnectorWithTransport(transportConfig), nil
+			}
+			return nil, errors.Errorf("Invalid transport configuration type (%T)", tc)
+		}
+		if host, ok := args["host"]; ok {
+			if port, ok := args["port"]; ok {
+				trans := getWithDefault(args, "transport", "tchannel")
+				callername := getWithDefault(args, "callername", os.Getenv("USER"))
+				servicename := getWithDefault(args, "servicename", "test")
+				cfg := Config{
+					Transport:   trans,
+					Host:        host.(string),
+					Port:        port.(string),
+					CallerName:  callername,
+					ServiceName: servicename,
+				}
+				return NewConnector(&cfg)
+			}
+		}
+		return nil, errors.New("both host and port must be specified")
 	})
 }
 

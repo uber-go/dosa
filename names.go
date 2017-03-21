@@ -79,12 +79,16 @@ func isInvalidOtherRune(r rune) bool {
 // 2. the rest of name can contain only [a-z0-9_]
 // 3. the length of name must be greater than 0 and less than or equal to maxNameLen
 func IsValidName(name string) error {
-	if len(name) == 0 || len(name) > maxNameLen {
-		return errors.Errorf("name must not be empty and cannot have a length "+
-			"greater than %d. Actual len= %d", maxNameLen, len(name))
-	} else if strings.IndexFunc(name[:1], isInvalidFirstRune) != -1 {
+	if len(name) == 0 {
+		return errors.Errorf("cannot be empty")
+	}
+	if len(name) > maxNameLen {
+		return errors.Errorf("too long: %v has length %d, max allowed is %d", name, maxNameLen, len(name))
+	}
+	if strings.IndexFunc(name[:1], isInvalidFirstRune) != -1 {
 		return errors.Errorf("name must start with [a-z_]. Actual='%s'", name)
-	} else if strings.IndexFunc(name[1:], isInvalidOtherRune) != -1 {
+	}
+	if strings.IndexFunc(name[1:], isInvalidOtherRune) != -1 {
 		return errors.Errorf("name must contain only [a-z0-9_], Actual='%s'", name)
 	}
 	return nil

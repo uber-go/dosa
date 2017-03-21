@@ -21,28 +21,13 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"strconv"
 	"time"
 
-	"github.com/uber-go/dosa/cli/cmd"
+	"github.com/uber-go/dosa"
 )
-
-// Options are options for all subcommands
-type Options struct {
-	Host        string   `short:"h" long:"host" default:"127.0.0.1" description:"The hostname or IP for the gateway."`
-	Port        string   `short:"p" long:"port" default:"6707" description:"The hostname or IP for the gateway."`
-	Transport   string   `long:"transport" default:"tchannel" description:"TCP Transport to use. Options: http, tchannel."`
-	ServiceName string   `long:"service" default:"dosa-gateway" description:"The TChannel service name for the gateway."`
-	CallerName  string   `long:"caller" default:"dosacli-$USER" description:"Caller will override the default caller name (which is dosacli-$USER)."`
-	Timeout     timeFlag `long:"timeout" default:"1s" description:"The timeout for gateway requests. E.g., 100ms, 0.5s, 1s. If no unit is specified, milliseconds are assumed."`
-}
-
-// Commands contains subcommand configuration
-type Commands struct {
-	*Options
-	Scope  *cmd.ScopeCommands  `command:"scope"`
-	Schema *cmd.SchemaCommands `command:"schema"`
-}
 
 type timeFlag time.Duration
 
@@ -71,4 +56,26 @@ func (t *timeFlag) UnmarshalFlag(value string) error {
 
 	t.setDuration(d)
 	return nil
+}
+
+func getAdminClient(opts GlobalOptions) (dosa.AdminClient, error) {
+	// fix up the callername
+	if opts.CallerName == "" || opts.CallerName == "dosacli-$USER" {
+		opts.CallerName = fmt.Sprintf("dosacli-%s", os.Getenv("USER"))
+	}
+
+	// create connector
+	conn, err := dosa.GetConnector(opts.Connector, map[string]interface{}{
+		"transport":   opts.Transport,
+		"host":        opts.Host,
+		"port":        opts.Port,
+		"callername":  opts.CallerName,
+		"servicename": opts.ServiceName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	client := dosa.NewAdminClient(conn)
+
+	return client, nil
 }

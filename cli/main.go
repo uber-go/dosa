@@ -25,69 +25,42 @@ import (
 	"os"
 
 	flags "github.com/jessevdk/go-flags"
-	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/cli/cmd"
-	"github.com/uber-go/dosa/connectors/yarpc"
+	_ "github.com/uber-go/dosa/connectors/yarpc"
 )
 
+// for testing, we make exit an overridable routine
+type exiter func(int)
+
+var exit = os.Exit
+
+// GlobalOptions are options for all subcommands
+type GlobalOptions struct {
+	Host        string   `short:"h" long:"host" default:"127.0.0.1" description:"The hostname or IP for the gateway."`
+	Port        string   `short:"p" long:"port" default:"6707" description:"The hostname or IP for the gateway."`
+	Transport   string   `long:"transport" default:"tchannel" description:"TCP Transport to use. Options: http, tchannel."`
+	ServiceName string   `long:"service" default:"dosa-gateway" description:"The TChannel service name for the gateway."`
+	CallerName  string   `long:"caller" default:"dosacli-$USER" description:"Caller will override the default caller name (which is dosacli-$USER)."`
+	Timeout     timeFlag `long:"timeout" default:"60s" description:"The timeout for gateway requests. E.g., 100ms, 0.5s, 1s. If no unit is specified, milliseconds are assumed."`
+	Connector   string   `long:"connector" default:"yarpc" description:"Name of connector to use"`
+}
+
+var options GlobalOptions
+
+// OptionsParser holds the global parser
+var OptionsParser = flags.NewParser(&options, flags.IgnoreUnknown)
+
 func main() {
-	opts := Options{}
-	parser := flags.NewParser(&opts, flags.IgnoreUnknown)
-	parser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
-	parser.LongDescription = `
-dosa is the command-line tool for common tasks related to storing data with the DOSA client.`
+	OptionsParser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
+	OptionsParser.LongDescription = `
+dosa manages your schema both in production and development scopes`
 
-	// ignore resulting args, need to populate base options first
-	_, err := parser.Parse()
+	_, err := OptionsParser.Parse()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse options: %v", err)
-		parser.WriteHelp(os.Stdout)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		OptionsParser.WriteHelp(os.Stderr)
+		exit(1)
+		return
 	}
 
-	// coerce caller name from $USER env var if not provided
-	if opts.CallerName == "" || opts.CallerName == "dosacli-$USER" {
-		opts.CallerName = fmt.Sprintf("dosacli-%s", os.Getenv("USER"))
-	}
-
-	// create YARPC connector
-	conn, err := yarpc.NewConnector(&yarpc.Config{
-		Transport:   opts.Transport,
-		Host:        opts.Host,
-		Port:        opts.Port,
-		CallerName:  opts.CallerName,
-		ServiceName: opts.ServiceName,
-	})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create connector: %v", err)
-		os.Exit(1)
-	}
-	client := dosa.NewAdminClient(conn)
-
-	// subcommand setup after initial options are parsed
-	cmds := &Commands{
-		Scope: &cmd.ScopeCommands{
-			Create:   cmd.NewScopeCreate(opts.Timeout.Duration(), client),
-			Drop:     cmd.NewScopeDrop(opts.Timeout.Duration(), client),
-			Truncate: cmd.NewScopeTruncate(opts.Timeout.Duration(), client),
-		},
-		Schema: &cmd.SchemaCommands{
-			Check:  cmd.NewSchemaCheck(opts.Timeout.Duration(), client),
-			Upsert: cmd.NewSchemaUpsert(opts.Timeout.Duration(), client),
-		},
-	}
-
-	// populate subcommand options and args
-	subparser := flags.NewParser(cmds, flags.IgnoreUnknown)
-
-	// try to execute subcommand
-	_, err = subparser.Parse()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n\n", err)
-		subparser.WriteHelp(os.Stdout)
-		os.Exit(1)
-	}
-
-	// subcommand executed successfully
-	os.Exit(0)
+	exit(0)
 }

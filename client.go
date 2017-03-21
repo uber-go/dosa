@@ -479,7 +479,7 @@ func (c *adminClient) UpsertSchema(ctx context.Context, namePrefix string) ([]in
 // UpsertSchema.
 func findEntityDefinitions(scope string, dirs, excludes []string) ([]*EntityDefinition, error) {
 	if err := IsValidName(scope); err != nil {
-		return nil, errors.Wrapf(err, "invalid scope name %s", scope)
+		return nil, errors.Wrapf(err, "invalid scope name %q", scope)
 	}
 
 	entities, warns, err := FindEntities(dirs, excludes)

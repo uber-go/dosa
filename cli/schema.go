@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package cmd
+package main
 
 import (
 	"context"
@@ -26,10 +26,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
-	"github.com/uber-go/dosa"
 )
 
 var (
@@ -40,55 +38,58 @@ var (
 	}
 )
 
+// SchemaCmd is a placeholder for all schema commands
+type SchemaCmd struct{}
+
 // SchemaOptions contains configuration for schema command flags.
 type SchemaOptions struct {
 	NamePrefix string   `long:"prefix" description:"Name prefix for schema types."`
 	Excludes   []string `short:"e" long:"exclude" description:"Exclude files matching pattern."`
 	Scope      string   `short:"s" long:"scope" description:"Storage scope for the given operation."`
 	Pedantic   bool     `long:"pedantic"`
+	Verbose    bool     `short:"v" long:"verbose"`
 }
 
-// SchemaCommands contains schema subcommand configuration.
-type SchemaCommands struct {
-	*SchemaOptions
-	Check  *SchemaCheck  `command:"check"`
-	Upsert *SchemaUpsert `command:"upsert"`
-}
-
-// SchemaCheck contains data for executing schema check command.
+// SchemaCheck holds the options for 'schema check'
 type SchemaCheck struct {
 	*SchemaOptions
-	timeout time.Duration
-	client  dosa.AdminClient
 }
 
-// NewSchemaCheck returns a new schema check command.
-func NewSchemaCheck(timeout time.Duration, client dosa.AdminClient) *SchemaCheck {
-	return &SchemaCheck{timeout: timeout, client: client}
-}
-
-// Execute satisfies flags.Commander interface.
+// Execute executes a schema check command
 func (c *SchemaCheck) Execute(args []string) error {
-	if c.client != nil {
-		if len(args) != 0 {
-			dirs, err := expandDirectories(args)
-			if err != nil {
-				return errors.Wrap(err, "could not expand directories")
-			}
-			c.client.Directories(dirs)
+	if c.Verbose {
+		fmt.Printf("executing schema check with %v\n", args)
+		fmt.Printf("options is %+v\n", *c.SchemaOptions)
+		fmt.Printf("global options is %v\n", options)
+	}
+	client, err := getAdminClient(options)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
+	defer cancel()
+
+	if len(args) != 0 {
+		dirs, err := expandDirectories(args)
+		if err != nil {
+			return errors.Wrap(err, "could not expand directories")
 		}
-		if c.Scope != "" {
-			c.client.Scope(c.Scope)
-		}
-		if len(c.Excludes) != 0 {
-			c.client.Excludes(c.Excludes)
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-		defer cancel()
-		if _, err := c.client.CheckSchema(ctx, c.NamePrefix); err != nil {
-			return fmt.Errorf("check schema failed: %v", err)
-		}
-		// check succeeded
+		client.Directories(dirs)
+	}
+	// default the scope to the current username
+	if len(c.Scope) == 0 {
+		c.Scope = "scope_" + os.Getenv("USER")
+	}
+	client.Scope(c.Scope)
+	client.Excludes(c.Excludes)
+
+	if _, err := client.CheckSchema(ctx, c.NamePrefix); err != nil {
+		return err
+	}
+
+	if c.Verbose {
+		fmt.Printf("%s\n", "schema check successful")
 	}
 	return nil
 }
@@ -96,37 +97,42 @@ func (c *SchemaCheck) Execute(args []string) error {
 // SchemaUpsert contains data for executing schema upsert command.
 type SchemaUpsert struct {
 	*SchemaOptions
-	timeout time.Duration
-	client  dosa.AdminClient
 }
 
-// NewSchemaUpsert returns a new schema upsert command.
-func NewSchemaUpsert(timeout time.Duration, client dosa.AdminClient) *SchemaUpsert {
-	return &SchemaUpsert{timeout: timeout, client: client}
-}
-
-// Execute satisfies flags.Commander interface.
+// Execute executes a schema upsert command
 func (c *SchemaUpsert) Execute(args []string) error {
-	if c.client != nil {
-		if len(args) != 0 {
-			dirs, err := expandDirectories(args)
-			if err != nil {
-				return errors.Wrap(err, "could not expand directories")
-			}
-			c.client.Directories(dirs)
+	if c.Verbose {
+		fmt.Printf("executing schema upsert with %v\n", args)
+		fmt.Printf("options is %+v\n", *c.SchemaOptions)
+		fmt.Printf("global options is %v\n", options)
+	}
+	client, err := getAdminClient(options)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
+	defer cancel()
+
+	if len(args) != 0 {
+		dirs, err := expandDirectories(args)
+		if err != nil {
+			return errors.Wrap(err, "could not expand directories")
 		}
-		if c.Scope != "" {
-			c.client.Scope(c.Scope)
-		}
-		if len(c.Excludes) != 0 {
-			c.client.Excludes(c.Excludes)
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-		defer cancel()
-		if _, err := c.client.UpsertSchema(ctx, c.NamePrefix); err != nil {
-			return fmt.Errorf("upsert schema failed: %v", err)
-		}
-		// upsert succeeded
+		client.Directories(dirs)
+	}
+	if len(c.Scope) == 0 {
+		c.Scope = "scope_" + os.Getenv("USER")
+	}
+	client.Scope(c.Scope)
+	client.Excludes(c.Excludes)
+
+	if _, err := client.UpsertSchema(ctx, c.NamePrefix); err != nil {
+		return err
+	}
+
+	if c.Verbose {
+		fmt.Printf("%s\n", "schema upsert successful")
 	}
 	return nil
 }
@@ -165,4 +171,22 @@ func expandDirectories(dirs []string) ([]string, error) {
 	}
 
 	return resultSet, nil
+}
+
+// SchemaDump contains data for executing the schema dump command
+type SchemaDump struct {
+	Format string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
+}
+
+// Execute executes a schema dump command
+func (c *SchemaDump) Execute(args []string) error {
+	fmt.Printf("dump schema in format %s TODO\n", c.Format)
+	return nil
+}
+
+func init() {
+	c, _ := OptionsParser.AddCommand("schema", "commands to manage schemas", "check or update schemas", &SchemaCmd{})
+	_, _ = c.AddCommand("check", "Check schema", "check the schema", &SchemaCheck{})
+	_, _ = c.AddCommand("upsert", "Upsert schema", "insert or update the schema", &SchemaUpsert{})
+	_, _ = c.AddCommand("dump", "Dump schema", "display the schema in a given format", &SchemaDump{})
 }

@@ -393,7 +393,6 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	)
 
 	err = sut.CreateIfNotExists(ctx, testEi, inFields)
-	t.Log(err)
 	assert.True(t, dosa.ErrorIsAlreadyExists(err))
 	// make sure we actually called CreateIfNotExists on the interface
 	ctrl.Finish()
