@@ -36,7 +36,7 @@ var exit = os.Exit
 // GlobalOptions are options for all subcommands
 type GlobalOptions struct {
 	Host        string   `short:"h" long:"host" default:"127.0.0.1" description:"The hostname or IP for the gateway."`
-	Port        string   `short:"p" long:"port" default:"6707" description:"The hostname or IP for the gateway."`
+	Port        string   `short:"p" long:"port" default:"5437" description:"The hostname or IP for the gateway."`
 	Transport   string   `long:"transport" default:"tchannel" description:"TCP Transport to use. Options: http, tchannel."`
 	ServiceName string   `long:"service" default:"dosa-gateway" description:"The TChannel service name for the gateway."`
 	CallerName  string   `long:"caller" default:"dosacli-$USER" description:"Caller will override the default caller name (which is dosacli-$USER)."`
