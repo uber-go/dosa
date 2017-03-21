@@ -94,4 +94,4 @@ fmt:
 
 .PHONY: cli
 cli:
-	$(ECHO_V)go build -o cli/dosa ./cli
+	$(ECHO_V)go build -o $$GOPATH/bin/dosa ./cli
