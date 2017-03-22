@@ -29,6 +29,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/connectors/devnull"
+	"github.com/uber-go/dosa/schema/avro"
+	"github.com/uber-go/dosa/schema/cql"
+	"github.com/uber-go/dosa/schema/uql"
 )
 
 var (
@@ -39,18 +43,20 @@ var (
 	}
 )
 
-// SchemaCmd is a placeholder for all schema commands
-type SchemaCmd struct{}
-
 // SchemaOptions contains configuration for schema command flags.
 type SchemaOptions struct {
-	NamePrefix string   `long:"prefix" description:"Name prefix for schema types." required:"true"`
-	Excludes   []string `short:"e" long:"exclude" description:"Exclude files matching pattern."`
-	Scope      string   `short:"s" long:"scope" description:"Storage scope for the given operation."`
-	Verbose    bool     `short:"v" long:"verbose"`
+	Excludes []string `short:"e" long:"exclude" description:"Exclude files matching pattern."`
+	Verbose  bool     `short:"v" long:"verbose"`
 }
 
-func (c *SchemaOptions) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) ([]int32, error), args []string) error {
+// SchemaCmd is a placeholder for all schema commands
+type SchemaCmd struct {
+	*SchemaOptions
+	Scope      string `short:"s" long:"scope" description:"Storage scope for the given operation."`
+	NamePrefix string `long:"prefix" description:"Name prefix for schema types." required:"true"`
+}
+
+func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) ([]int32, error), args []string) error {
 	if c.Verbose {
 		fmt.Printf("executing %s with %v\n", name, args)
 		fmt.Printf("options are %+v\n", *c)
@@ -89,7 +95,7 @@ func (c *SchemaOptions) doSchemaOp(name string, f func(dosa.AdminClient, context
 
 // SchemaCheck holds the options for 'schema check'
 type SchemaCheck struct {
-	*SchemaOptions
+	*SchemaCmd
 }
 
 // Execute executes a schema check command
@@ -99,12 +105,60 @@ func (c *SchemaCheck) Execute(args []string) error {
 
 // SchemaUpsert contains data for executing schema upsert command.
 type SchemaUpsert struct {
-	*SchemaOptions
+	*SchemaCmd
 }
 
 // Execute executes a schema upsert command
 func (c *SchemaUpsert) Execute(args []string) error {
 	return c.doSchemaOp("schema upsert", dosa.AdminClient.UpsertSchema, args)
+}
+
+// SchemaDump contains data for executing the schema dump command
+type SchemaDump struct {
+	*SchemaOptions
+	Format string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
+}
+
+// Execute executes a schema dump command
+func (c *SchemaDump) Execute(args []string) error {
+	if c.Verbose {
+		fmt.Printf("executing schema dump with %v\n", args)
+		fmt.Printf("options are %+v\n", *c)
+		fmt.Printf("global options are %+v\n", options)
+	}
+
+	// no connection necessary
+	client := dosa.NewAdminClient(&devnull.Connector{})
+	if len(args) != 0 {
+		dirs, err := expandDirectories(args)
+		if err != nil {
+			return errors.Wrap(err, "could not expand directories")
+		}
+		client.Directories(dirs)
+	}
+	if len(c.Excludes) != 0 {
+		client.Excludes(c.Excludes)
+	}
+
+	// try to parse entities in each directory
+	defs, err := client.GetSchema()
+	if err != nil {
+		return err
+	}
+
+	// for each of those entities, format it in the specified way
+	for _, d := range defs {
+		switch c.Format {
+		case "cql":
+			fmt.Println(cql.ToCQL(d))
+		case "uql":
+			fmt.Println(uql.ToUQL(d))
+		case "avro":
+			fmt.Println(avro.ToAvro("TODO", d))
+		}
+	}
+
+	return nil
 }
 
 // expandDirectory verifies that each argument is actually a directory or
@@ -141,15 +195,4 @@ func expandDirectories(dirs []string) ([]string, error) {
 	}
 
 	return resultSet, nil
-}
-
-// SchemaDump contains data for executing the schema dump command
-type SchemaDump struct {
-	Format string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
-}
-
-// Execute executes a schema dump command
-func (c *SchemaDump) Execute(args []string) error {
-	fmt.Printf("dump schema in format %s TODO\n", c.Format)
-	return nil
 }

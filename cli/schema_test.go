@@ -123,6 +123,14 @@ func TestSchema_Upsert_InvalidDirectory(t *testing.T) {
 	assert.Contains(t, c.stop(true), "is not a directory")
 }
 
+func TestSchema_Dump_InvalidDirectory(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "dump", "../testentity", "/dev/null"}
+	main()
+	assert.Contains(t, c.stop(true), "is not a directory")
+}
+
 func TestSchema_Check_NoEntitiesFound(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
@@ -137,6 +145,22 @@ func TestSchema_Upsert_NoEntitiesFound(t *testing.T) {
 	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "-e", "testentity.go", "../testentity"}
 	main()
 	assert.Contains(t, c.stop(true), "no entities found")
+}
+
+func TestSchema_Dump_NoEntitiesFound(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "dump", "-e", "testentity.go", "../testentity"}
+	main()
+	assert.Contains(t, c.stop(true), "no entities found")
+}
+
+func TestSchema_Dump_InvalidFormat(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "dump", "-f", "invalid", "../testentity"}
+	main()
+	assert.Contains(t, c.stop(true), "Invalid value")
 }
 
 // There are 4 tests to perform against each operation
@@ -191,12 +215,35 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 	main()
 }
 
-func TestSchema_Dump_NotImplemented(t *testing.T) {
+func TestSchema_Dump_CQL(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "--prefix", "foo", "../testentity"}
+	os.Args = []string{"dosa", "schema", "dump", "-v", "../testentity"}
 	main()
 	output := c.stop(false)
-	t.Skip("TODO This functionality is not implemented yet")
-	assert.Contains(t, output, "create table awesome_test_entity (")
+	assert.Contains(t, output, "executing schema dump")
+	assert.Contains(t, output, "create table \"awesome_test_entity\" (\"an_uuid_key\" uuid, \"strkey\" text, \"int64key\" bigint")
+}
+
+func TestSchema_Dump_UQL(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "dump", "-f", "uql", "-v", "../testentity"}
+	main()
+	output := c.stop(false)
+	assert.Contains(t, output, "executing schema dump")
+	assert.Contains(t, output, "CREATE TABLE awesome_test_entity")
+	assert.Contains(t, output, "an_int64_value int64;")
+	assert.Contains(t, output, "PRIMARY KEY (an_uuid_key, strkey ASC, int64key DESC);")
+}
+
+func TestSchema_Dump_Avro(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "dump", "-f", "avro", "-v", "../testentity"}
+	main()
+	output := c.stop(false)
+	assert.Contains(t, output, "executing schema dump")
+	assert.Contains(t, output, "123 34 99 108 117 115")
+	assert.Contains(t, output, "99 111 114 100 34 125")
 }
