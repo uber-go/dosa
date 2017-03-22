@@ -91,17 +91,7 @@ func TestSchema_ExpandDirectories(t *testing.T) {
 	os.Chdir("..")
 }
 
-func TestSchemaDump(t *testing.T) {
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "--prefix", "foo", "../testentity"}
-	main()
-	output := c.stop(false)
-	t.Skip("TODO This functionality is not implemented yet")
-	assert.Contains(t, output, "create table awesome_test_entity (")
-}
-
-func TestPrefixRequired(t *testing.T) {
+func TestSchemaCheck_PrefixRequired(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema", "check", "../testentity"}
@@ -109,7 +99,15 @@ func TestPrefixRequired(t *testing.T) {
 	assert.Contains(t, c.stop(true), "--prefix' was not specified")
 }
 
-func TestDirectoryError(t *testing.T) {
+func TestSchemaUpsert_PrefixRequired(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "upsert", "../testentity"}
+	main()
+	assert.Contains(t, c.stop(true), "--prefix' was not specified")
+}
+
+func TestSchemaCheck_InvalidDirectory(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "../testentity", "/dev/null"}
@@ -117,7 +115,31 @@ func TestDirectoryError(t *testing.T) {
 	assert.Contains(t, c.stop(true), "is not a directory")
 }
 
-func TestHappyMockeryCheckSchema(t *testing.T) {
+func TestSchemaUpsert_InvalidDirectory(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "../testentity", "/dev/null"}
+	main()
+	assert.Contains(t, c.stop(true), "is not a directory")
+}
+
+func TestSchemaCheck_NoEntitiesFound(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "-e", "testentity.go", "../testentity"}
+	main()
+	assert.Contains(t, c.stop(true), "no entities found")
+}
+
+func TestSchemaUpsert_NoEntitiesFound(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "-e", "testentity.go", "../testentity"}
+	main()
+	assert.Contains(t, c.stop(true), "no entities found")
+}
+
+func TestSchemaCheck_Happy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -136,11 +158,11 @@ func TestHappyMockeryCheckSchema(t *testing.T) {
 			}).Return([]int32{1}, nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../testentity", "/dev/null"}
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../testentity"}
 	main()
 }
 
-func TestHappyMockeryUpsertSchema(t *testing.T) {
+func TestSchemaUpsert_Happy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -161,4 +183,14 @@ func TestHappyMockeryUpsertSchema(t *testing.T) {
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../testentity"}
 	main()
+}
+
+func TestSchemaDump_NotImplemented(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "dump", "--prefix", "foo", "../testentity"}
+	main()
+	output := c.stop(false)
+	t.Skip("TODO This functionality is not implemented yet")
+	assert.Contains(t, output, "create table awesome_test_entity (")
 }

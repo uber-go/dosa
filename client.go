@@ -22,6 +22,7 @@ package dosa
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"reflect"
 
@@ -508,7 +509,10 @@ func findEntityDefinitions(scope string, dirs, excludes []string) ([]*EntityDefi
 		return nil, &EntityErrors{warns: warns}
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "FindEntities failed")
+		return nil, err
+	}
+	if len(entities) == 0 {
+		return nil, fmt.Errorf("no entities found")
 	}
 
 	defs := make([]*EntityDefinition, len(entities))
