@@ -91,7 +91,7 @@ func TestSchema_ExpandDirectories(t *testing.T) {
 	os.Chdir("..")
 }
 
-func TestSchemaCheck_PrefixRequired(t *testing.T) {
+func TestSchema_Check_PrefixRequired(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema", "check", "../testentity"}
@@ -99,7 +99,7 @@ func TestSchemaCheck_PrefixRequired(t *testing.T) {
 	assert.Contains(t, c.stop(true), "--prefix' was not specified")
 }
 
-func TestSchemaUpsert_PrefixRequired(t *testing.T) {
+func TestSchema_Upsert_PrefixRequired(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema", "upsert", "../testentity"}
@@ -107,7 +107,7 @@ func TestSchemaUpsert_PrefixRequired(t *testing.T) {
 	assert.Contains(t, c.stop(true), "--prefix' was not specified")
 }
 
-func TestSchemaCheck_InvalidDirectory(t *testing.T) {
+func TestSchema_Check_InvalidDirectory(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "../testentity", "/dev/null"}
@@ -115,7 +115,7 @@ func TestSchemaCheck_InvalidDirectory(t *testing.T) {
 	assert.Contains(t, c.stop(true), "is not a directory")
 }
 
-func TestSchemaUpsert_InvalidDirectory(t *testing.T) {
+func TestSchema_Upsert_InvalidDirectory(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "../testentity", "/dev/null"}
@@ -123,7 +123,7 @@ func TestSchemaUpsert_InvalidDirectory(t *testing.T) {
 	assert.Contains(t, c.stop(true), "is not a directory")
 }
 
-func TestSchemaCheck_NoEntitiesFound(t *testing.T) {
+func TestSchema_Check_NoEntitiesFound(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "-e", "testentity.go", "../testentity"}
@@ -131,7 +131,7 @@ func TestSchemaCheck_NoEntitiesFound(t *testing.T) {
 	assert.Contains(t, c.stop(true), "no entities found")
 }
 
-func TestSchemaUpsert_NoEntitiesFound(t *testing.T) {
+func TestSchema_Upsert_NoEntitiesFound(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "-e", "testentity.go", "../testentity"}
@@ -139,7 +139,7 @@ func TestSchemaUpsert_NoEntitiesFound(t *testing.T) {
 	assert.Contains(t, c.stop(true), "no entities found")
 }
 
-func TestSchemaCheck_Happy(t *testing.T) {
+func TestSchema_Check_Happy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -162,7 +162,7 @@ func TestSchemaCheck_Happy(t *testing.T) {
 	main()
 }
 
-func TestSchemaUpsert_Happy(t *testing.T) {
+func TestSchema_Upsert_Happy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -185,7 +185,7 @@ func TestSchemaUpsert_Happy(t *testing.T) {
 	main()
 }
 
-func TestSchemaDump_NotImplemented(t *testing.T) {
+func TestSchema_Dump_NotImplemented(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema", "dump", "--prefix", "foo", "../testentity"}
