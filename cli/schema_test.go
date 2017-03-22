@@ -101,12 +101,20 @@ func TestSchemaDump(t *testing.T) {
 	assert.Contains(t, output, "create table awesome_test_entity (")
 }
 
-func TestPrefixRequire(t *testing.T) {
+func TestPrefixRequired(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema", "check", "../testentity"}
 	main()
 	assert.Contains(t, c.stop(true), "--prefix' was not specified")
+}
+
+func TestDirectoryError(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "../testentity", "/dev/null"}
+	main()
+	assert.Contains(t, c.stop(true), "is not a directory")
 }
 
 func TestHappyMockeryCheckSchema(t *testing.T) {
@@ -128,7 +136,7 @@ func TestHappyMockeryCheckSchema(t *testing.T) {
 			}).Return([]int32{1}, nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../testentity"}
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../testentity", "/dev/null"}
 	main()
 }
 
