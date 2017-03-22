@@ -139,6 +139,12 @@ func TestSchema_Upsert_NoEntitiesFound(t *testing.T) {
 	assert.Contains(t, c.stop(true), "no entities found")
 }
 
+// There are 4 tests to perform against each operation
+// 1 - success case, displays scope
+// 2 - failure case, couldn't initialize the connector
+// 3 - failure case, the connector API call fails
+// 4 - failure case, problems with the directories on the command line or the entities
+
 func TestSchema_Check_Happy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

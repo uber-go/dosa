@@ -24,6 +24,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
 // ScopeCmd holds options for scope commands (there aren't any)
@@ -43,7 +45,7 @@ func (c *ScopeCreate) Execute(args []string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 		defer cancel()
 		if err := client.CreateScope(ctx, s); err != nil {
-			return fmt.Errorf("create scope failed: %v", err)
+			return errors.Wrapf(err, "create scope on %q", s)
 		}
 		fmt.Printf("created scope %q\n", s)
 	}
@@ -65,7 +67,7 @@ func (c *ScopeDrop) Execute(args []string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 		defer cancel()
 		if err := client.DropScope(ctx, s); err != nil {
-			return fmt.Errorf("drop scope failed: %v", err)
+			return errors.Wrapf(err, "drop scope on %q", s)
 		}
 		fmt.Printf("dropped scope %q\n", s)
 	}
@@ -88,9 +90,9 @@ func (c *ScopeTruncate) Execute(args []string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 		defer cancel()
 		if err := client.TruncateScope(ctx, s); err != nil {
-			return fmt.Errorf("truncate scope failed: %v", err)
+			return errors.Wrapf(err, "truncate scope on %q", s)
 		}
-		fmt.Fprintf(os.Stdout, "truncated scope: %v\n", s)
+		fmt.Fprintf(os.Stdout, "truncated scope %q\n", s)
 	}
 	return nil
 }

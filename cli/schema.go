@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/uber-go/dosa"
 )
 
 var (
@@ -49,26 +50,16 @@ type SchemaOptions struct {
 	Verbose    bool     `short:"v" long:"verbose"`
 }
 
-// SchemaCheck holds the options for 'schema check'
-type SchemaCheck struct {
-	*SchemaOptions
-}
-
-// Execute executes a schema check command
-func (c *SchemaCheck) Execute(args []string) error {
+func (c *SchemaOptions) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) ([]int32, error), args []string) error {
 	if c.Verbose {
-		fmt.Printf("executing schema check with %v\n", args)
-		fmt.Printf("options is %+v\n", *c.SchemaOptions)
-		fmt.Printf("global options is %v\n", options)
+		fmt.Printf("executing %s with %v\n", name, args)
+		fmt.Printf("options are %+v\n", *c)
+		fmt.Printf("global options are %+v\n", options)
 	}
 	client, err := getAdminClient(options)
 	if err != nil {
 		return err
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
-	defer cancel()
-
 	if len(args) != 0 {
 		dirs, err := expandDirectories(args)
 		if err != nil {
@@ -82,14 +73,28 @@ func (c *SchemaCheck) Execute(args []string) error {
 	if c.Scope != "" {
 		client.Scope(c.Scope)
 	}
-	if _, err := client.CheckSchema(ctx, c.NamePrefix); err != nil {
+
+	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
+	defer cancel()
+
+	if _, err := f(client, ctx, c.NamePrefix); err != nil {
 		return err
 	}
 
 	if c.Verbose {
-		fmt.Printf("%s\n", "schema check successful")
+		fmt.Printf("%s successful\n", name)
 	}
 	return nil
+}
+
+// SchemaCheck holds the options for 'schema check'
+type SchemaCheck struct {
+	*SchemaOptions
+}
+
+// Execute executes a schema check command
+func (c *SchemaCheck) Execute(args []string) error {
+	return c.doSchemaOp("schema check", dosa.AdminClient.CheckSchema, args)
 }
 
 // SchemaUpsert contains data for executing schema upsert command.
@@ -99,41 +104,7 @@ type SchemaUpsert struct {
 
 // Execute executes a schema upsert command
 func (c *SchemaUpsert) Execute(args []string) error {
-	if c.Verbose {
-		fmt.Printf("executing schema upsert with %v\n", args)
-		fmt.Printf("options is %+v\n", *c.SchemaOptions)
-		fmt.Printf("global options is %v\n", options)
-	}
-	client, err := getAdminClient(options)
-	if err != nil {
-		return err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
-	defer cancel()
-
-	if len(args) != 0 {
-		dirs, err := expandDirectories(args)
-		if err != nil {
-			return errors.Wrap(err, "could not expand directories")
-		}
-		client.Directories(dirs)
-	}
-	if len(c.Excludes) != 0 {
-		client.Excludes(c.Excludes)
-	}
-	if c.Scope != "" {
-		client.Scope(c.Scope)
-	}
-
-	if _, err := client.UpsertSchema(ctx, c.NamePrefix); err != nil {
-		return err
-	}
-
-	if c.Verbose {
-		fmt.Printf("%s\n", "schema upsert successful")
-	}
-	return nil
+	return c.doSchemaOp("schema upsert", dosa.AdminClient.UpsertSchema, args)
 }
 
 // expandDirectory verifies that each argument is actually a directory or
