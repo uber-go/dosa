@@ -112,7 +112,7 @@ func TestSchema_Check_InvalidDirectory(t *testing.T) {
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "../testentity", "/dev/null"}
 	main()
-	assert.Contains(t, c.stop(true), "is not a directory")
+	assert.Contains(t, c.stop(true), "\"/dev/null\" is not a directory")
 }
 
 func TestSchema_Upsert_InvalidDirectory(t *testing.T) {
@@ -120,7 +120,7 @@ func TestSchema_Upsert_InvalidDirectory(t *testing.T) {
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "../testentity", "/dev/null"}
 	main()
-	assert.Contains(t, c.stop(true), "is not a directory")
+	assert.Contains(t, c.stop(true), "\"/dev/null\" is not a directory")
 }
 
 func TestSchema_Dump_InvalidDirectory(t *testing.T) {
@@ -128,7 +128,7 @@ func TestSchema_Dump_InvalidDirectory(t *testing.T) {
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema", "dump", "../testentity", "/dev/null"}
 	main()
-	assert.Contains(t, c.stop(true), "is not a directory")
+	assert.Contains(t, c.stop(true), "\"/dev/null\" is not a directory")
 }
 
 func TestSchema_Check_NoEntitiesFound(t *testing.T) {
