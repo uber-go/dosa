@@ -118,7 +118,7 @@ func TestHappyMockeryCheckSchema(t *testing.T) {
 	}
 	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().CheckSchema(gomock.Any(), os.Getenv("USER"), "foo", gomock.Any()).
+		mc.EXPECT().CheckSchema(gomock.Any(), "scope", "foo", gomock.Any()).
 			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)
@@ -128,9 +128,10 @@ func TestHappyMockeryCheckSchema(t *testing.T) {
 			}).Return([]int32{1}, nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "../testentity"}
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../testentity"}
 	main()
 }
+
 func TestHappyMockeryUpsertSchema(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -140,7 +141,7 @@ func TestHappyMockeryUpsertSchema(t *testing.T) {
 	}
 	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().UpsertSchema(gomock.Any(), os.Getenv("USER"), "foo", gomock.Any()).
+		mc.EXPECT().UpsertSchema(gomock.Any(), "scope", "foo", gomock.Any()).
 			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)
@@ -150,6 +151,6 @@ func TestHappyMockeryUpsertSchema(t *testing.T) {
 			}).Return([]int32{1}, nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "--prefix", "foo", "../testentity"}
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../testentity"}
 	main()
 }
