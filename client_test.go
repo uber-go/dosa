@@ -512,6 +512,13 @@ type TestEntityC struct {
 			scope:       scope,
 			errContains: "/foo/bar/baz",
 		},
+		// no entities found
+		{
+			dirs:        []string{tmpdir},
+			excludes:    []string{"f1.go", "f2.go", "f3.go"},
+			scope:       scope,
+			errContains: "no entities found",
+		},
 		// invalid struct tag
 		{
 			dirs:        []string{tmpdir},
@@ -608,6 +615,13 @@ type TestEntityC struct {
 			dirs:        []string{"/foo/bar/baz"},
 			scope:       scope,
 			errContains: "/foo/bar/baz",
+		},
+		// no entities found
+		{
+			dirs:        []string{tmpdir},
+			excludes:    []string{"f1.go", "f2.go", "f3.go"},
+			scope:       scope,
+			errContains: "no entities found",
 		},
 		// invalid struct tag
 		{
