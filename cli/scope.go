@@ -94,10 +94,3 @@ func (c *ScopeTruncate) Execute(args []string) error {
 	}
 	return nil
 }
-
-func init() {
-	c, _ := OptionsParser.AddCommand("scope", "commands to manage scope", "create, drop, or truncate development scopes", &ScopeCmd{})
-	_, _ = c.AddCommand("create", "Create scope", "creates a new scope", &ScopeCreate{})
-	_, _ = c.AddCommand("drop", "Drop scope", "drops a scope", &ScopeDrop{})
-	_, _ = c.AddCommand("truncate", "Truncate scope", "truncates a scope", &ScopeTruncate{})
-}

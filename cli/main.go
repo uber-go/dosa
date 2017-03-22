@@ -47,12 +47,21 @@ type GlobalOptions struct {
 var options GlobalOptions
 
 // OptionsParser holds the global parser
-var OptionsParser = flags.NewParser(&options, flags.PassAfterNonOption|flags.HelpFlag)
 
 func main() {
+	OptionsParser := flags.NewParser(&options, flags.PassAfterNonOption|flags.HelpFlag)
 	OptionsParser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
 	OptionsParser.LongDescription = `
 dosa manages your schema both in production and development scopes`
+	c, _ := OptionsParser.AddCommand("scope", "commands to manage scope", "create, drop, or truncate development scopes", &ScopeCmd{})
+	_, _ = c.AddCommand("create", "Create scope", "creates a new scope", &ScopeCreate{})
+	_, _ = c.AddCommand("drop", "Drop scope", "drops a scope", &ScopeDrop{})
+	_, _ = c.AddCommand("truncate", "Truncate scope", "truncates a scope", &ScopeTruncate{})
+
+	c, _ = OptionsParser.AddCommand("schema", "commands to manage schemas", "check or update schemas", &SchemaCmd{})
+	_, _ = c.AddCommand("check", "Check schema", "check the schema", &SchemaCheck{})
+	_, _ = c.AddCommand("upsert", "Upsert schema", "insert or update the schema", &SchemaUpsert{})
+	_, _ = c.AddCommand("dump", "Dump schema", "display the schema in a given format", &SchemaDump{})
 
 	_, err := OptionsParser.Parse()
 	if err != nil {
