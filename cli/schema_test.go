@@ -25,14 +25,14 @@ import (
 	"os"
 	"testing"
 
+	"context"
+	"time"
+
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/mocks"
 )
-
-// TODO: unit tests
-func TestSchema_Check(t *testing.T) {}
-
-// TODO: unit tests
-func TestSchema_Upsert(t *testing.T) {}
 
 func TestSchema_ExpandDirectories(t *testing.T) {
 	assert := assert.New(t)
@@ -89,4 +89,161 @@ func TestSchema_ExpandDirectories(t *testing.T) {
 		}
 	}
 	os.Chdir("..")
+}
+
+func TestSchema_Check_PrefixRequired(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "check", "../testentity"}
+	main()
+	assert.Contains(t, c.stop(true), "--prefix' was not specified")
+}
+
+func TestSchema_Upsert_PrefixRequired(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "upsert", "../testentity"}
+	main()
+	assert.Contains(t, c.stop(true), "--prefix' was not specified")
+}
+
+func TestSchema_Check_InvalidDirectory(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "../testentity", "/dev/null"}
+	main()
+	assert.Contains(t, c.stop(true), "\"/dev/null\" is not a directory")
+}
+
+func TestSchema_Upsert_InvalidDirectory(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "../testentity", "/dev/null"}
+	main()
+	assert.Contains(t, c.stop(true), "\"/dev/null\" is not a directory")
+}
+
+func TestSchema_Dump_InvalidDirectory(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "dump", "../testentity", "/dev/null"}
+	main()
+	assert.Contains(t, c.stop(true), "\"/dev/null\" is not a directory")
+}
+
+func TestSchema_Check_NoEntitiesFound(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "-e", "testentity.go", "../testentity"}
+	main()
+	assert.Contains(t, c.stop(true), "no entities found")
+}
+
+func TestSchema_Upsert_NoEntitiesFound(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "-e", "testentity.go", "../testentity"}
+	main()
+	assert.Contains(t, c.stop(true), "no entities found")
+}
+
+func TestSchema_Dump_NoEntitiesFound(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "dump", "-e", "testentity.go", "../testentity"}
+	main()
+	assert.Contains(t, c.stop(true), "no entities found")
+}
+
+func TestSchema_Dump_InvalidFormat(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "dump", "-f", "invalid", "../testentity"}
+	main()
+	assert.Contains(t, c.stop(true), "Invalid value")
+}
+
+// There are 4 tests to perform against each operation
+// 1 - success case, displays scope
+// 2 - failure case, couldn't initialize the connector
+// 3 - failure case, the connector API call fails
+// 4 - failure case, problems with the directories on the command line or the entities
+
+func TestSchema_Check_Happy(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	exit = func(r int) {
+		assert.Equal(t, 0, r)
+	}
+	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
+		mc := mocks.NewMockConnector(ctrl)
+		mc.EXPECT().CheckSchema(gomock.Any(), "scope", "foo", gomock.Any()).
+			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
+				dl, ok := ctx.Deadline()
+				assert.True(t, ok)
+				assert.True(t, dl.After(time.Now()))
+				assert.Equal(t, 1, len(ed))
+				assert.Equal(t, "awesome_test_entity", ed[0].Name)
+			}).Return([]int32{1}, nil)
+		return mc, nil
+	})
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../testentity"}
+	main()
+}
+
+func TestSchema_Upsert_Happy(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	exit = func(r int) {
+		assert.Equal(t, 0, r)
+	}
+	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
+		mc := mocks.NewMockConnector(ctrl)
+		mc.EXPECT().UpsertSchema(gomock.Any(), "scope", "foo", gomock.Any()).
+			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
+				dl, ok := ctx.Deadline()
+				assert.True(t, ok)
+				assert.True(t, dl.After(time.Now()))
+				assert.Equal(t, 1, len(ed))
+				assert.Equal(t, "awesome_test_entity", ed[0].Name)
+			}).Return([]int32{1}, nil)
+		return mc, nil
+	})
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../testentity"}
+	main()
+}
+
+func TestSchema_Dump_CQL(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "dump", "-v", "../testentity"}
+	main()
+	output := c.stop(false)
+	assert.Contains(t, output, "executing schema dump")
+	assert.Contains(t, output, "create table \"awesome_test_entity\" (\"an_uuid_key\" uuid, \"strkey\" text, \"int64key\" bigint")
+}
+
+func TestSchema_Dump_UQL(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "dump", "-f", "uql", "-v", "../testentity"}
+	main()
+	output := c.stop(false)
+	assert.Contains(t, output, "executing schema dump")
+	assert.Contains(t, output, "CREATE TABLE awesome_test_entity")
+	assert.Contains(t, output, "an_int64_value int64;")
+	assert.Contains(t, output, "PRIMARY KEY (an_uuid_key, strkey ASC, int64key DESC);")
+}
+
+func TestSchema_Dump_Avro(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "dump", "-f", "avro", "-v", "../testentity"}
+	main()
+	output := c.stop(false)
+	assert.Contains(t, output, "executing schema dump")
+	assert.Contains(t, output, "123 34 99 108 117 115")
+	assert.Contains(t, output, "99 111 114 100 34 125")
 }

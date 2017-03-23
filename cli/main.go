@@ -35,29 +35,37 @@ var exit = os.Exit
 
 // GlobalOptions are options for all subcommands
 type GlobalOptions struct {
-	Host        string   `short:"h" long:"host" default:"127.0.0.1" description:"The hostname or IP for the gateway."`
-	Port        string   `short:"p" long:"port" default:"5437" description:"The hostname or IP for the gateway."`
+	Host        string   `long:"host" default:"127.0.0.1" description:"The hostname or IP for the gateway."`
+	Port        string   `short:"p" long:"port" default:"21300" description:"The hostname or IP for the gateway."`
 	Transport   string   `long:"transport" default:"tchannel" description:"TCP Transport to use. Options: http, tchannel."`
 	ServiceName string   `long:"service" default:"dosa-gateway" description:"The TChannel service name for the gateway."`
 	CallerName  string   `long:"caller" default:"dosacli-$USER" description:"Caller will override the default caller name (which is dosacli-$USER)."`
 	Timeout     timeFlag `long:"timeout" default:"60s" description:"The timeout for gateway requests. E.g., 100ms, 0.5s, 1s. If no unit is specified, milliseconds are assumed."`
-	Connector   string   `long:"connector" default:"yarpc" description:"Name of connector to use"`
+	Connector   string   `hidden:"true" long:"connector" default:"yarpc" description:"Name of connector to use"`
 }
 
 var options GlobalOptions
 
 // OptionsParser holds the global parser
-var OptionsParser = flags.NewParser(&options, flags.IgnoreUnknown)
 
 func main() {
+	OptionsParser := flags.NewParser(&options, flags.PassAfterNonOption|flags.HelpFlag)
 	OptionsParser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
 	OptionsParser.LongDescription = `
 dosa manages your schema both in production and development scopes`
+	c, _ := OptionsParser.AddCommand("scope", "commands to manage scope", "create, drop, or truncate development scopes", &ScopeCmd{})
+	_, _ = c.AddCommand("create", "Create scope", "creates a new scope", &ScopeCreate{})
+	_, _ = c.AddCommand("drop", "Drop scope", "drops a scope", &ScopeDrop{})
+	_, _ = c.AddCommand("truncate", "Truncate scope", "truncates a scope", &ScopeTruncate{})
+
+	c, _ = OptionsParser.AddCommand("schema", "commands to manage schemas", "check or update schemas", &SchemaOptions{})
+	_, _ = c.AddCommand("check", "Check schema", "check the schema", &SchemaCheck{})
+	_, _ = c.AddCommand("upsert", "Upsert schema", "insert or update the schema", &SchemaUpsert{})
+	_, _ = c.AddCommand("dump", "Dump schema", "display the schema in a given format", &SchemaDump{})
 
 	_, err := OptionsParser.Parse()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		OptionsParser.WriteHelp(os.Stderr)
 		exit(1)
 		return
 	}

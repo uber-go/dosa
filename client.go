@@ -26,6 +26,9 @@ import (
 	"os"
 	"reflect"
 
+	"bytes"
+	"io"
+
 	"github.com/pkg/errors"
 )
 
@@ -142,6 +145,8 @@ type AdminClient interface {
 	CheckSchema(ctx context.Context, namePrefix string) ([]int32, error)
 	// UpsertSchema upserts the schemas
 	UpsertSchema(ctx context.Context, namePrefix string) ([]int32, error)
+	// GetSchema finds entity definitions
+	GetSchema() ([]*EntityDefinition, error)
 	// CreateScope creates a new scope
 	CreateScope(ctx context.Context, s string) error
 	// TruncateScope keeps the scope and the schemas, but drops the data associated with the scope
@@ -449,9 +454,9 @@ func (c *adminClient) Scope(scope string) AdminClient {
 // The definition of "incompatible" and "not found" may vary but is ultimately
 // defined by the client connector implementation.
 func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) ([]int32, error) {
-	defs, err := findEntityDefinitions(c.scope, c.dirs, c.excludes)
+	defs, err := c.GetSchema()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to find entities")
+		return nil, errors.Wrapf(err, "GetSchema failed")
 	}
 	versions, err := c.connector.CheckSchema(ctx, c.scope, namePrefix, defs)
 	if err != nil {
@@ -463,9 +468,9 @@ func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) ([]int
 // UpsertSchema creates or updates the schema for entities in the given
 // namespace. See CheckSchema for more detail about scope and namePrefix.
 func (c *adminClient) UpsertSchema(ctx context.Context, namePrefix string) ([]int32, error) {
-	defs, err := findEntityDefinitions(c.scope, c.dirs, c.excludes)
+	defs, err := c.GetSchema()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to find entities")
+		return nil, errors.Wrapf(err, "GetSchema failed")
 	}
 	versions, err := c.connector.UpsertSchema(ctx, c.scope, namePrefix, defs)
 	if err != nil {
@@ -474,28 +479,61 @@ func (c *adminClient) UpsertSchema(ctx context.Context, namePrefix string) ([]in
 	return versions, nil
 }
 
-// findEntityDefinitions searches for entities in given directories, excluding
-// files that match any patterns in excludes. It is shared by CheckSchema and
-// UpsertSchema.
-func findEntityDefinitions(scope string, dirs, excludes []string) ([]*EntityDefinition, error) {
-	if err := IsValidName(scope); err != nil {
-		return nil, errors.Wrapf(err, "invalid scope name %q", scope)
+// GetSchema returns the derived entity definitions that are found within the
+// current search path of the client. GetSchema can be used to introspect the
+// state of schema before further operations are performed. For example,
+// GetSchema is called by both CheckSchema and UpsertSchema before their
+// respective operations are performed. An error is returned when:
+//   - invalid scope name (eg. length, invalid characters, see names.go)
+//   - invalid directory (eg. path does not exist, is not a directory)
+//   - unparseable entity (eg. invalid primary key)
+//   - no entities were found
+func (c *adminClient) GetSchema() ([]*EntityDefinition, error) {
+	// prevent bogus scope names from reaching connectors
+	if err := IsValidName(c.scope); err != nil {
+		return nil, errors.Wrapf(err, "invalid scope name %q", c.scope)
 	}
-
-	entities, warns, err := FindEntities(dirs, excludes)
+	// "warnings" mean entity was found but contained invalid annotations
+	entities, warns, err := FindEntities(c.dirs, c.excludes)
 	if len(warns) > 0 {
-		return nil, fmt.Errorf("FindEntities failed: %s", warns)
+		return nil, &EntityErrors{warns: warns}
 	}
+	// I/O and AST parsing errors
 	if err != nil {
-		return nil, errors.Wrap(err, "FindEntities failed")
+		return nil, err
+	}
+	// prevent unnecessary connector calls when nothing was found
+	if len(entities) == 0 {
+		return nil, fmt.Errorf("no entities found")
 	}
 
 	defs := make([]*EntityDefinition, len(entities))
 	for idx, e := range entities {
 		defs[idx] = &e.EntityDefinition
 	}
-
 	return defs, nil
+}
+
+// EntityErrors is a container for parse errors/warning.
+type EntityErrors struct {
+	warns []error
+}
+
+// Error makes parse errors discernable to end-user.
+func (ee *EntityErrors) Error() string {
+	var str bytes.Buffer
+	if _, err := io.WriteString(&str, "The following entities had warnings/errors:"); err != nil {
+		// for linting, WriteString will never return error
+		return "could not write errors to output buffer"
+	}
+	for _, err := range ee.warns {
+		str.WriteByte('\n')
+		if _, err := io.WriteString(&str, err.Error()); err != nil {
+			// for linting, WriteString will never return error
+			return "could not write errors to output buffer"
+		}
+	}
+	return str.String()
 }
 
 // CreateScope creates a new scope

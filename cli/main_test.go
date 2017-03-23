@@ -24,13 +24,7 @@ import (
 	"os"
 	"testing"
 
-	"context"
-	"time"
-
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/mocks"
 )
 
 func TestNoSubcommand(t *testing.T) {
@@ -51,23 +45,23 @@ func TestMissingSubcommands(t *testing.T) {
 	assert.Contains(t, c.stop(true), "check, dump or upsert")
 }
 
+func TestHostOptionButNothingElse(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "--host", "10.10.10.10"}
+	main()
+	assert.Contains(t, c.stop(true), "schema or scope")
+}
+
 // this test uses a trailing dot in the hostname to avoid multiple DNS lookups
 func TestInvalidHost(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "-h", "invalid-hostname.", "schema", "check"}
+	os.Args = []string{"dosa", "--host", "invalid-hostname.", "schema", "check", "--prefix", "foo", "../testentity"}
 	main()
 	output := c.stop(true)
 	assert.Contains(t, output, "invalid-hostname")
 	assert.Contains(t, output, "no such host")
-}
-
-func TestHostOptionButNothingElse(t *testing.T) {
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "--host=10.10.10.10"}
-	main()
-	assert.Contains(t, c.stop(true), "schema or scope")
 }
 
 // this error message is a bit strange, but is caused because the port could be a
@@ -75,7 +69,7 @@ func TestHostOptionButNothingElse(t *testing.T) {
 func TestInvalidPort(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "-p", "invalid-port", "schema", "check"}
+	os.Args = []string{"dosa", "-p", "invalid-port", "schema", "check", "--prefix", "foo", "../testentity"}
 	main()
 	output := c.stop(true)
 	assert.Contains(t, output, "invalid-port")
@@ -86,66 +80,10 @@ func TestInvalidPort(t *testing.T) {
 func TestInvalidTransport(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "--transport", "invalid-transport", "schema", "check"}
+	os.Args = []string{"dosa", "--transport", "invalid-transport", "schema", "check", "--prefix", "foo", "../testentity"}
 	main()
 	output := c.stop(true)
 	assert.Contains(t, output, "invalid transport")
-}
-
-// TODO This test and functionality needs to be completed
-func TestSchemaDump(t *testing.T) {
-	t.Skip("TODO This functionality is not implemented yet")
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "../testentity"}
-	main()
-	output := c.stop(false)
-	assert.Contains(t, output, "create table awesome_test_entity (")
-}
-
-func TestHappyMockeryCheckSchema(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	exit = func(r int) {
-		assert.Equal(t, 0, r)
-	}
-	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
-		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().CheckSchema(gomock.Any(), "scope_"+os.Getenv("USER"), "", gomock.Any()).
-			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
-				dl, ok := ctx.Deadline()
-				assert.True(t, ok)
-				assert.True(t, dl.After(time.Now()))
-				assert.Equal(t, 1, len(ed))
-				assert.Equal(t, "awesome_test_entity", ed[0].Name)
-			}).Return([]int32{1}, nil)
-		return mc, nil
-	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "../testentity"}
-	main()
-}
-func TestHappyMockeryUpsertSchema(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	exit = func(r int) {
-		assert.Equal(t, 0, r)
-	}
-	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
-		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().UpsertSchema(gomock.Any(), "scope_"+os.Getenv("USER"), "", gomock.Any()).
-			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
-				dl, ok := ctx.Deadline()
-				assert.True(t, ok)
-				assert.True(t, dl.After(time.Now()))
-				assert.Equal(t, 1, len(ed))
-				assert.Equal(t, "awesome_test_entity", ed[0].Name)
-			}).Return([]int32{1}, nil)
-		return mc, nil
-	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "../testentity"}
-	main()
 }
 
 /* TODO: implement these integration test cases
