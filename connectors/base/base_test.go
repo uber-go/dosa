@@ -181,3 +181,12 @@ func TestBase_Shutdown(t *testing.T) {
 	assert.Error(t, bc.Shutdown())
 	assert.NoError(t, bcWNext.Shutdown())
 }
+
+func TestBase_CheckSchemaStatus(t *testing.T) {
+	_, err := bc.CheckSchemaStatus(ctx, "testScope", "testPrefix", int32(1))
+	assert.Error(t, err)
+
+	versions, err := bcWNext.CheckSchemaStatus(ctx, "testScope", "testPrefix", int32(1))
+	assert.NotNil(t, versions)
+	assert.NoError(t, err)
+}

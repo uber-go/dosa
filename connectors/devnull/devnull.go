@@ -106,6 +106,14 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 	return c.CheckSchema(ctx, scope, namePrefix, ed)
 }
 
+// CheckSchemaStatus always returns a SchemaStatus with version 1 and ACCEPTED status
+func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
+	return &dosa.SchemaStatus{
+		Version: int32(1),
+		Status:  "ACCEPTED",
+	}, nil
+}
+
 // CreateScope returns success
 func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 	return nil

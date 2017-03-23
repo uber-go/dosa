@@ -79,6 +79,14 @@ type FieldValuesOrError struct {
 	Error  error
 }
 
+// SchemaStatus saves the version and application status of a schema
+type SchemaStatus struct {
+	// the version of the schema
+	Version int32
+	// the application status of the schema
+	Status string
+}
+
 // Connector is the interface that must be implemented for a backend service
 // It can also be implemented using an RPC such as thrift (dosa-idl)
 type Connector interface {
@@ -115,6 +123,8 @@ type Connector interface {
 	CheckSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (versions []int32, err error)
 	// UpsertSchema updates the schema to match what you provide as entities, if possible
 	UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (versions []int32, err error)
+	// CheckSchemaStatus checks the status of the schema whether it is accepted or in progress of application.
+	CheckSchemaStatus(ctx context.Context, scope string, namePrefix string, version int32) (*SchemaStatus, error)
 
 	// Datastore management
 	// CreateScope creates a scope for storage of data, usually implemented by a keyspace for this data

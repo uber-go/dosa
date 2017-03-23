@@ -141,6 +141,14 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 	return c.Next.UpsertSchema(ctx, scope, namePrefix, ed)
 }
 
+// CheckSchemaStatus calls Next
+func (c *Connector) CheckSchemaStatus(ctx context.Context, scope string, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
+	if c.Next == nil {
+		return nil, ErrNoMoreConnector{}
+	}
+	return c.Next.CheckSchemaStatus(ctx, scope, namePrefix, version)
+}
+
 // CreateScope calls Next
 func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 	if c.Next == nil {

@@ -21,11 +21,10 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"os"
 	"testing"
-
-	"context"
 	"time"
 
 	"github.com/golang/mock/gomock"
