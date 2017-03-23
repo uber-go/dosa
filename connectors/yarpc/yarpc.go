@@ -323,7 +323,7 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead 
 
 // CheckSchema is one way to register a set of entities. This can be further validated by
 // a schema service downstream.
-func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) ([]int32, error) {
+func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (int32, error) {
 	// convert the client EntityDefinition to the RPC EntityDefinition
 	rpcEntityDefinition := make([]*dosarpc.EntityDefinition, len(eds))
 	for i, ed := range eds {
@@ -334,14 +334,14 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	response, err := c.Client.CheckSchema(ctx, &csr)
 
 	if err != nil {
-		return nil, errorDecorate(err)
+		return -1, errorDecorate(err)
 	}
 
-	return response.Versions, nil
+	return *response.Version, nil
 }
 
 // UpsertSchema upserts the schema through RPC
-func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) ([]int32, error) {
+func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (int32, error) {
 	rpcEds := make([]*dosarpc.EntityDefinition, len(eds))
 	for i, ed := range eds {
 		rpcEds[i] = EntityDefinitionToThrift(ed)
@@ -355,10 +355,15 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 
 	response, err := c.Client.UpsertSchema(ctx, request)
 	if err != nil {
-		return nil, errorDecorate(err)
+		return -1, errorDecorate(err)
 	}
 
-	return response.Versions, nil
+	return *response.Version, nil
+}
+
+// CheckSchemaStatus checks the status of specific version of schema
+func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
+	panic("not implemented")
 }
 
 // CreateScope creates the scope specified

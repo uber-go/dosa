@@ -467,13 +467,14 @@ func TestClient_CheckSchema(t *testing.T) {
 		NamePrefix: &prefix,
 		EntityDefs: []*drpc.EntityDefinition{yarpc.EntityDefinitionToThrift(&ed.EntityDefinition)},
 	}
+	v := int32(1)
 	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.CheckSchemaRequest) {
 		assert.Equal(t, expectedRequest, request)
-	}).Return(&drpc.CheckSchemaResponse{[]int32{1}}, nil)
+	}).Return(&drpc.CheckSchemaResponse{Version: &v}, nil)
 
 	sr, err := sut.CheckSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
-	assert.Equal(t, []int32{1}, sr)
+	assert.Equal(t, v, sr)
 }
 
 func TestClient_UpsertSchema(t *testing.T) {
@@ -492,13 +493,13 @@ func TestClient_UpsertSchema(t *testing.T) {
 		NamePrefix: &prefix,
 		EntityDefs: []*drpc.EntityDefinition{yarpc.EntityDefinitionToThrift(&ed.EntityDefinition)},
 	}
-
+	v := int32(1)
 	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.UpsertSchemaRequest) {
 		assert.Equal(t, expectedRequest, request)
-	}).Return(&drpc.UpsertSchemaResponse{Versions: []int32{1}}, nil)
+	}).Return(&drpc.UpsertSchemaResponse{Version: &v}, nil)
 	result, err := sut.UpsertSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
-	assert.Equal(t, []int32{1}, result)
+	assert.Equal(t, v, result)
 
 	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Return(nil, errors.New("test error"))
 	_, err = sut.UpsertSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
@@ -750,5 +751,9 @@ func TestPanic(t *testing.T) {
 
 	assert.Panics(t, func() {
 		sut.ScopeExists(ctx, "")
+	})
+
+	assert.Panics(t, func() {
+		sut.CheckSchemaStatus(ctx, "", "", 1)
 	})
 }

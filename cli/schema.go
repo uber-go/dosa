@@ -56,7 +56,7 @@ type SchemaCmd struct {
 	NamePrefix string `long:"prefix" description:"Name prefix for schema types." required:"true"`
 }
 
-func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) ([]int32, error), args []string) error {
+func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) (int32, error), args []string) error {
 	if c.Verbose {
 		fmt.Printf("executing %s with %v\n", name, args)
 		fmt.Printf("options are %+v\n", *c)
