@@ -134,9 +134,9 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 }
 
 // UpsertSchema calls Next
-func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
+func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
 	if c.Next == nil {
-		return -1, ErrNoMoreConnector{}
+		return nil, ErrNoMoreConnector{}
 	}
 	return c.Next.UpsertSchema(ctx, scope, namePrefix, ed)
 }

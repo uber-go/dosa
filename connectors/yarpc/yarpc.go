@@ -341,7 +341,7 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 }
 
 // UpsertSchema upserts the schema through RPC
-func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (int32, error) {
+func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
 	rpcEds := make([]*dosarpc.EntityDefinition, len(eds))
 	for i, ed := range eds {
 		rpcEds[i] = EntityDefinitionToThrift(ed)
@@ -355,10 +355,21 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 
 	response, err := c.Client.UpsertSchema(ctx, request)
 	if err != nil {
-		return -1, errorDecorate(err)
+		return nil, errorDecorate(err)
+	}
+	status := ""
+	if response.Status != nil {
+		status = *response.Status
 	}
 
-	return *response.Version, nil
+	if response.Version == nil {
+		return nil, errorDecorate(errors.New("server returns version nil"))
+	}
+
+	return &dosa.SchemaStatus{
+		Version: *response.Version,
+		Status:  status,
+	}, nil
 }
 
 // CheckSchemaStatus checks the status of specific version of schema

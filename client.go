@@ -144,7 +144,7 @@ type AdminClient interface {
 	// CheckSchema checks the compatibility of schemas
 	CheckSchema(ctx context.Context, namePrefix string) (int32, error)
 	// UpsertSchema upserts the schemas
-	UpsertSchema(ctx context.Context, namePrefix string) (int32, error)
+	UpsertSchema(ctx context.Context, namePrefix string) (*SchemaStatus, error)
 	// GetSchema finds entity definitions
 	GetSchema() ([]*EntityDefinition, error)
 	// CreateScope creates a new scope
@@ -467,16 +467,16 @@ func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) (int32
 
 // UpsertSchema creates or updates the schema for entities in the given
 // namespace. See CheckSchema for more detail about scope and namePrefix.
-func (c *adminClient) UpsertSchema(ctx context.Context, namePrefix string) (int32, error) {
+func (c *adminClient) UpsertSchema(ctx context.Context, namePrefix string) (*SchemaStatus, error) {
 	defs, err := c.GetSchema()
 	if err != nil {
-		return -1, errors.Wrapf(err, "GetSchema failed")
+		return nil, errors.Wrapf(err, "GetSchema failed")
 	}
-	version, err := c.connector.UpsertSchema(ctx, c.scope, namePrefix, defs)
+	status, err := c.connector.UpsertSchema(ctx, c.scope, namePrefix, defs)
 	if err != nil {
-		return -1, errors.Wrapf(err, "UpsertSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
+		return nil, errors.Wrapf(err, "UpsertSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
 	}
-	return version, nil
+	return status, nil
 }
 
 // GetSchema returns the derived entity definitions that are found within the

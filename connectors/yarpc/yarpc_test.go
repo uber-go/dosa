@@ -499,7 +499,7 @@ func TestClient_UpsertSchema(t *testing.T) {
 	}).Return(&drpc.UpsertSchemaResponse{Version: &v}, nil)
 	result, err := sut.UpsertSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
-	assert.Equal(t, v, result)
+	assert.Equal(t, &dosa.SchemaStatus{Version: v}, result)
 
 	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Return(nil, errors.New("test error"))
 	_, err = sut.UpsertSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})

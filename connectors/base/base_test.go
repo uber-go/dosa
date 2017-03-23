@@ -157,8 +157,8 @@ func TestBase_UpsertSchema(t *testing.T) {
 	_, err := bc.UpsertSchema(ctx, "testScope", "testPrefix", defs)
 	assert.Error(t, err)
 
-	versions, err := bcWNext.UpsertSchema(ctx, "testScope", "testPrefix", defs)
-	assert.NotNil(t, versions)
+	status, err := bcWNext.UpsertSchema(ctx, "testScope", "testPrefix", defs)
+	assert.NotNil(t, status)
 	assert.NoError(t, err)
 }
 

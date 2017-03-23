@@ -214,9 +214,9 @@ func (_mr *_MockConnectorRecorder) Upsert(arg0, arg1, arg2 interface{}) *gomock.
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Upsert", arg0, arg1, arg2)
 }
 
-func (_m *MockConnector) UpsertSchema(_param0 context.Context, _param1 string, _param2 string, _param3 []*dosa.EntityDefinition) (int32, error) {
+func (_m *MockConnector) UpsertSchema(_param0 context.Context, _param1 string, _param2 string, _param3 []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
 	ret := _m.ctrl.Call(_m, "UpsertSchema", _param0, _param1, _param2, _param3)
-	ret0, _ := ret[0].(int32)
+	ret0, _ := ret[0].(*dosa.SchemaStatus)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

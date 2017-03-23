@@ -124,8 +124,8 @@ func TestDevNull_CheckSchemaStatus(t *testing.T) {
 
 func TestDevNull_UpsertSchema(t *testing.T) {
 	defs := make([]*dosa.EntityDefinition, 4)
-	versions, err := sut.UpsertSchema(ctx, "testScope", "testPrefix", defs)
-	assert.NotNil(t, versions)
+	status, err := sut.UpsertSchema(ctx, "testScope", "testPrefix", defs)
+	assert.NotNil(t, status)
 	assert.NoError(t, err)
 }
 

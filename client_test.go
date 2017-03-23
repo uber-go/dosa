@@ -582,8 +582,8 @@ type TestEntityB struct {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().UpsertSchema(ctx, scope, "error", gomock.Any()).Return(int32(-1), errors.New("connector error")).Times(1)
-	mockConn.EXPECT().UpsertSchema(ctx, scope, namePrefix, gomock.Any()).Return(int32(1), nil).Times(1)
+	mockConn.EXPECT().UpsertSchema(ctx, scope, "error", gomock.Any()).Return(nil, errors.New("connector error")).Times(1)
+	mockConn.EXPECT().UpsertSchema(ctx, scope, namePrefix, gomock.Any()).Return(&dosa.SchemaStatus{Version: int32(1)}, nil).Times(1)
 
 	for _, d := range data {
 		_, err := dosa.NewAdminClient(mockConn).
