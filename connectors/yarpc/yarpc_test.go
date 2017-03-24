@@ -477,6 +477,30 @@ func TestClient_CheckSchema(t *testing.T) {
 	assert.Equal(t, v, sr)
 }
 
+func TestClient_CheckSchemaStatus(t *testing.T) {
+	// build a mock RPC client
+	ctrl := gomock.NewController(t)
+	mockedClient := dosatest.NewMockClient(ctrl)
+	sp := "scope"
+	prefix := "prefix"
+	version := int32(1)
+	sut := yarpc.Connector{Client: mockedClient}
+
+	expectedRequest := &drpc.CheckSchemaStatusRequest{
+		Scope:      &sp,
+		NamePrefix: &prefix,
+		Version:    &version,
+	}
+
+	mockedClient.EXPECT().CheckSchemaStatus(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.CheckSchemaStatusRequest) {
+		assert.Equal(t, expectedRequest, request)
+	}).Return(&drpc.CheckSchemaStatusResponse{Version: &version}, nil)
+
+	sr, err := sut.CheckSchemaStatus(ctx, sp, prefix, version)
+	assert.NoError(t, err)
+	assert.Equal(t, version, sr.Version)
+}
+
 func TestClient_UpsertSchema(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
@@ -751,9 +775,5 @@ func TestPanic(t *testing.T) {
 
 	assert.Panics(t, func() {
 		sut.ScopeExists(ctx, "")
-	})
-
-	assert.Panics(t, func() {
-		sut.CheckSchemaStatus(ctx, "", "", 1)
 	})
 }

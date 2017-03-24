@@ -143,6 +143,8 @@ type AdminClient interface {
 	Scope(scope string) AdminClient
 	// CheckSchema checks the compatibility of schemas
 	CheckSchema(ctx context.Context, namePrefix string) (int32, error)
+	// CheckSchemaStatus checks the status of schema application
+	CheckSchemaStatus(ctx context.Context, namePrefix string, version int32) (*SchemaStatus, error)
 	// UpsertSchema upserts the schemas
 	UpsertSchema(ctx context.Context, namePrefix string) (*SchemaStatus, error)
 	// GetSchema finds entity definitions
@@ -463,6 +465,14 @@ func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) (int32
 		return -1, errors.Wrapf(err, "CheckSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
 	}
 	return version, nil
+}
+
+func (c *adminClient) CheckSchemaStatus(ctx context.Context, namePrefix string, version int32) (*SchemaStatus, error) {
+	status, err := c.connector.CheckSchemaStatus(ctx, c.scope, namePrefix, version)
+	if err != nil {
+		return nil, errors.Wrapf(err, "CheckSchemaStatus status failed")
+	}
+	return status, nil
 }
 
 // UpsertSchema creates or updates the schema for entities in the given

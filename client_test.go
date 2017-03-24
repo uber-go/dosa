@@ -529,6 +529,47 @@ type TestEntityB struct {
 	}
 }
 
+func TestAdminClient_CheckSchemaStatus(t *testing.T) {
+	data := []struct {
+		version     int32
+		scope       string
+		namePrefix  string
+		errContains string
+	}{
+		{ // connector error
+			version:     int32(1),
+			scope:       scope,
+			namePrefix:  "error",
+			errContains: "connector error",
+		},
+		// happy path
+		{
+			version:    int32(1),
+			scope:      scope,
+			namePrefix: namePrefix,
+		},
+	}
+
+	// calls with "error" prefix will fail, rest succeed
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchemaStatus(ctx, scope, "error", int32(1)).Return(nil, errors.New("connector error")).Times(1)
+	mockConn.EXPECT().CheckSchemaStatus(ctx, scope, namePrefix, gomock.Any()).Return(&dosa.SchemaStatus{Version: int32(1)}, nil).Times(1)
+
+	for _, d := range data {
+		status, err := dosa.NewAdminClient(mockConn).
+			Scope(d.scope).
+			CheckSchemaStatus(ctx, d.namePrefix, d.version)
+		if d.errContains != "" {
+			assert.Contains(t, err.Error(), d.errContains)
+			continue
+		}
+		assert.NoError(t, err)
+		assert.Equal(t, d.version, status.Version)
+	}
+}
+
 func TestAdminClient_UpsertSchema(t *testing.T) {
 	// write some entities to disk
 	tmpdir := ".testupsertschema"

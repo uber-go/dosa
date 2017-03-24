@@ -357,6 +357,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 	if err != nil {
 		return nil, errorDecorate(err)
 	}
+
 	status := ""
 	if response.Status != nil {
 		status = *response.Status
@@ -374,7 +375,27 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 
 // CheckSchemaStatus checks the status of specific version of schema
 func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
-	panic("not implemented")
+	request := dosarpc.CheckSchemaStatusRequest{Scope: &scope, NamePrefix: &namePrefix, Version: &version}
+
+	response, err := c.Client.CheckSchemaStatus(ctx, &request)
+
+	if err != nil {
+		return nil, errorDecorate(err)
+	}
+
+	status := ""
+	if response.Status != nil {
+		status = *response.Status
+	}
+
+	if response.Version == nil {
+		return nil, errorDecorate(errors.New("server returns version nil"))
+	}
+
+	return &dosa.SchemaStatus{
+		Version: *response.Version,
+		Status:  status,
+	}, nil
 }
 
 // CreateScope creates the scope specified
