@@ -1,5 +1,5 @@
-hash: 66f7b69a1d0e3181fbc593584abb6faaf2ed8dabfa2018ec9fab161930c8d045
-updated: 2017-03-24T15:15:18.906337005-07:00
+hash: 765d314a0f7239af84d3b47e0b9444e074e8d669e2ff77df94f582038fcb69bb
+updated: 2017-03-24T15:42:46.143264072-07:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
@@ -86,7 +86,7 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 78ebe5c8b6a27ec13109c73c22193d618270e1e1
+  version: 6c23252515492caf9b228a9d5cabcdbde29f7f82
   subpackages:
   - context
   - context/ctxhttp
@@ -119,7 +119,8 @@ testImports:
   version: 17c838aea007c18c5c137250e615dc9309e0caf0
   subpackages:
   - cmd/interfacer
-  - lint
+- name: github.com/mvdan/lint
+  version: 8349bd8248c3cc6c5f3b61086b37fbb76628f1a9
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
