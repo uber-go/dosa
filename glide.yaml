@@ -44,7 +44,7 @@ testImport:
 - package: github.com/russross/blackfriday
   version: "2"
 - package: github.com/shurcooL/sanitized_anchor_name
+- package: github.com/mvdan/lint
 - package: github.com/mvdan/interfacer
   subpackages:
   - cmd/interfacer
-  - lint
