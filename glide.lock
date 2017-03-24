@@ -1,5 +1,5 @@
-hash: 1b38ff306c1d5c2ac6210a6ce50757c9695de40b5a0dac42657d2c1399508366
-updated: 2017-03-24T14:48:23.528129595-07:00
+hash: 66f7b69a1d0e3181fbc593584abb6faaf2ed8dabfa2018ec9fab161930c8d045
+updated: 2017-03-24T15:15:18.906337005-07:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
@@ -119,6 +119,7 @@ testImports:
   version: 17c838aea007c18c5c137250e615dc9309e0caf0
   subpackages:
   - cmd/interfacer
+  - lint
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
