@@ -47,6 +47,9 @@ const (
 
 	// GtOrEq is the greater than or equal operator
 	GtOrEq
+
+	// InvalidVersion is version which is less than 1
+	InvalidVersion = 1
 )
 
 // FieldNameValuePair is a field name and value

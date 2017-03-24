@@ -334,7 +334,7 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	response, err := c.Client.CheckSchema(ctx, &csr)
 
 	if err != nil {
-		return -1, errorDecorate(err)
+		return dosa.InvalidVersion, errorDecorate(err)
 	}
 
 	return *response.Version, nil

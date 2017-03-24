@@ -99,7 +99,7 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 
 // UpsertSchema always returns a slice of int32 values that match its index
 func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
-	return &dosa.SchemaStatus{Version: int32(1), Status: "ACCEPTED"}, nil
+	return &dosa.SchemaStatus{Version: int32(1), Status: "COMPLETED"}, nil
 }
 
 // CheckSchemaStatus always returns a SchemaStatus with version 1 and ACCEPTED status

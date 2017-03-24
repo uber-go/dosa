@@ -93,6 +93,7 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	return nil
 }
 
+// TODO make doSchema and doSchemaStatusOp better code
 func (c *SchemaCmd) doSchemaStatusOp(name string, f func(dosa.AdminClient, context.Context, string) (*dosa.SchemaStatus, error), args []string) error {
 	if c.Verbose {
 		fmt.Printf("executing %s with %v\n", name, args)

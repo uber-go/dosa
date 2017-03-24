@@ -128,7 +128,7 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead 
 // CheckSchema calls Next
 func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
 	if c.Next == nil {
-		return -1, ErrNoMoreConnector{}
+		return dosa.InvalidVersion, ErrNoMoreConnector{}
 	}
 	return c.Next.CheckSchema(ctx, scope, namePrefix, ed)
 }
