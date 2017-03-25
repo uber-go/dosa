@@ -160,17 +160,21 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead 
 }
 
 // CheckSchema always returns a slice of int32 values that match its index
-func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) ([]int32, error) {
-	versions := make([]int32, len(ed))
-	for idx := range versions {
-		versions[idx] = int32(idx)
-	}
-	return versions, nil
+func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
+	return int32(1), nil
 }
 
 // UpsertSchema always returns a slice of int32 values that match its index
-func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) ([]int32, error) {
-	return c.CheckSchema(ctx, scope, namePrefix, ed)
+func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
+	return &dosa.SchemaStatus{Version: int32(1), Status: "ACCEPTED"}, nil
+}
+
+// CheckSchemaStatus always returns a schema status with version 1 and ACCEPTED
+func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
+	return &dosa.SchemaStatus{
+		Version: int32(1),
+		Status:  "ACCEPTED",
+	}, nil
 }
 
 // CreateScope returns success

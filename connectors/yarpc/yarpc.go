@@ -28,6 +28,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/connectors/base"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 	"github.com/uber/dosa-idl/.gen/dosa/dosaclient"
 	rpc "go.uber.org/yarpc"
@@ -47,6 +48,7 @@ type Config struct {
 
 // Connector holds the client-side RPC interface and some schema information
 type Connector struct {
+	base.Connector
 	Client     dosaclient.Interface
 	dispatcher *rpc.Dispatcher
 }
@@ -321,7 +323,7 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead 
 
 // CheckSchema is one way to register a set of entities. This can be further validated by
 // a schema service downstream.
-func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) ([]int32, error) {
+func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (int32, error) {
 	// convert the client EntityDefinition to the RPC EntityDefinition
 	rpcEntityDefinition := make([]*dosarpc.EntityDefinition, len(eds))
 	for i, ed := range eds {
@@ -332,14 +334,14 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	response, err := c.Client.CheckSchema(ctx, &csr)
 
 	if err != nil {
-		return nil, errorDecorate(err)
+		return dosa.InvalidVersion, errorDecorate(err)
 	}
 
-	return response.Versions, nil
+	return *response.Version, nil
 }
 
 // UpsertSchema upserts the schema through RPC
-func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) ([]int32, error) {
+func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
 	rpcEds := make([]*dosarpc.EntityDefinition, len(eds))
 	for i, ed := range eds {
 		rpcEds[i] = EntityDefinitionToThrift(ed)
@@ -356,7 +358,44 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 		return nil, errorDecorate(err)
 	}
 
-	return response.Versions, nil
+	status := ""
+	if response.Status != nil {
+		status = *response.Status
+	}
+
+	if response.Version == nil {
+		return nil, errorDecorate(errors.New("server returns version nil"))
+	}
+
+	return &dosa.SchemaStatus{
+		Version: *response.Version,
+		Status:  status,
+	}, nil
+}
+
+// CheckSchemaStatus checks the status of specific version of schema
+func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
+	request := dosarpc.CheckSchemaStatusRequest{Scope: &scope, NamePrefix: &namePrefix, Version: &version}
+
+	response, err := c.Client.CheckSchemaStatus(ctx, &request)
+
+	if err != nil {
+		return nil, errorDecorate(err)
+	}
+
+	status := ""
+	if response.Status != nil {
+		status = *response.Status
+	}
+
+	if response.Version == nil {
+		return nil, errorDecorate(errors.New("server returns version nil"))
+	}
+
+	return &dosa.SchemaStatus{
+		Version: *response.Version,
+		Status:  status,
+	}, nil
 }
 
 // CreateScope creates the scope specified

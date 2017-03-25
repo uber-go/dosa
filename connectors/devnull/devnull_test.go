@@ -116,10 +116,16 @@ func TestDevNull_CheckSchema(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestDevNull_CheckSchemaStatus(t *testing.T) {
+	status, err := sut.CheckSchemaStatus(ctx, "testScope", "testPrefix", int32(1))
+	assert.NotNil(t, status)
+	assert.NoError(t, err)
+}
+
 func TestDevNull_UpsertSchema(t *testing.T) {
 	defs := make([]*dosa.EntityDefinition, 4)
-	versions, err := sut.UpsertSchema(ctx, "testScope", "testPrefix", defs)
-	assert.NotNil(t, versions)
+	status, err := sut.UpsertSchema(ctx, "testScope", "testPrefix", defs)
+	assert.NotNil(t, status)
 	assert.NoError(t, err)
 }
 

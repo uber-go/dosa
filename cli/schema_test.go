@@ -21,11 +21,10 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"os"
 	"testing"
-
-	"context"
 	"time"
 
 	"github.com/golang/mock/gomock"
@@ -185,7 +184,7 @@ func TestSchema_Check_Happy(t *testing.T) {
 				assert.True(t, dl.After(time.Now()))
 				assert.Equal(t, 1, len(ed))
 				assert.Equal(t, "awesome_test_entity", ed[0].Name)
-			}).Return([]int32{1}, nil)
+			}).Return(int32(1), nil)
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../testentity"}
@@ -208,7 +207,7 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 				assert.True(t, dl.After(time.Now()))
 				assert.Equal(t, 1, len(ed))
 				assert.Equal(t, "awesome_test_entity", ed[0].Name)
-			}).Return([]int32{1}, nil)
+			}).Return(&dosa.SchemaStatus{Version: int32(1)}, nil)
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../testentity"}

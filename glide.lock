@@ -1,5 +1,5 @@
-hash: 1b38ff306c1d5c2ac6210a6ce50757c9695de40b5a0dac42657d2c1399508366
-updated: 2017-03-21T09:25:26.393598798-07:00
+hash: 765d314a0f7239af84d3b47e0b9444e074e8d669e2ff77df94f582038fcb69bb
+updated: 2017-03-24T15:42:46.143264072-07:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
@@ -28,7 +28,7 @@ imports:
 - name: github.com/uber-go/atomic
   version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
 - name: github.com/uber/dosa-idl
-  version: 5a9c550942325d52b35d108657ebad651e0e1006
+  version: 74e0688e5ca1e009de399d0f35884ef7163f4b85
   repo: git@github.com:uber/dosa-idl.git
   subpackages:
   - .gen
@@ -36,7 +36,7 @@ imports:
   - .gen/dosa/dosaclient
   - .gen/dosa/dosatest
 - name: github.com/uber/tchannel-go
-  version: 2feb388c9d0c0303f98481d1621308d634093ffb
+  version: 0b7f160817553b0bacb5b108dd84a5022dbdd1c4
   subpackages:
   - internal/argreader
   - relay
@@ -44,13 +44,13 @@ imports:
   - trand
   - typed
 - name: github.com/yarpc/yarpc-go
-  version: 6ad92c34d7e982d4bb7299f20e6a27652116cf5d
+  version: 3860420a469b82f1708886e4e03ea75a2314f237
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: go.uber.org/atomic
   version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
 - name: go.uber.org/thriftrw
-  version: c98a13058faa5dd41584a77221a268d2c72d832d
+  version: 05f870b3c56597d180af568a6392209cc33269e2
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -60,7 +60,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 6ad92c34d7e982d4bb7299f20e6a27652116cf5d
+  version: f01b39b021a77ec92e6507d2a14c83f4af0ea871
   subpackages:
   - api/encoding
   - api/middleware
@@ -86,7 +86,7 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 6b27048ae5e6ad1ef927e72e437531493de612fe
+  version: 6c23252515492caf9b228a9d5cabcdbde29f7f82
   subpackages:
   - context
   - context/ctxhttp
@@ -94,7 +94,7 @@ testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
 - name: github.com/axw/gocov
-  version: c77561ca0c0cb1ed5d4ce4a912a75f5532566422
+  version: 3a69a0d2a4ef1f263e2d92b041a69593d6964fe8
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
@@ -116,9 +116,11 @@ testImports:
 - name: github.com/mattn/goveralls
   version: a99c5ee06aeeca2a2befc7e90b99061b1180850c
 - name: github.com/mvdan/interfacer
-  version: 049d0176189d83d4e2535611f0253b6f1db487ad
+  version: 17c838aea007c18c5c137250e615dc9309e0caf0
   subpackages:
   - cmd/interfacer
+- name: github.com/mvdan/lint
+  version: 8349bd8248c3cc6c5f3b61086b37fbb76628f1a9
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
@@ -130,6 +132,6 @@ testImports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: golang.org/x/tools
-  version: 2946dd1f77e693e136d9ed202ba093bb4a3ea761
+  version: c21bc47f893ee73c18dd2119bb8ff9a2b492c4c6
   subpackages:
   - cover

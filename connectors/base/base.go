@@ -126,19 +126,27 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead 
 }
 
 // CheckSchema calls Next
-func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) ([]int32, error) {
+func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
 	if c.Next == nil {
-		return nil, ErrNoMoreConnector{}
+		return dosa.InvalidVersion, ErrNoMoreConnector{}
 	}
 	return c.Next.CheckSchema(ctx, scope, namePrefix, ed)
 }
 
 // UpsertSchema calls Next
-func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) ([]int32, error) {
+func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
 	if c.Next == nil {
 		return nil, ErrNoMoreConnector{}
 	}
 	return c.Next.UpsertSchema(ctx, scope, namePrefix, ed)
+}
+
+// CheckSchemaStatus calls Next
+func (c *Connector) CheckSchemaStatus(ctx context.Context, scope string, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
+	if c.Next == nil {
+		return nil, ErrNoMoreConnector{}
+	}
+	return c.Next.CheckSchemaStatus(ctx, scope, namePrefix, version)
 }
 
 // CreateScope calls Next
