@@ -27,6 +27,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewUUID(t *testing.T) {
+	id := NewUUID()
+	assert.NotNil(t, id)
+	assert.NotEqual(t, string(id), "")
+}
+
 func TestUUIDToBytes(t *testing.T) {
 	id := UUID(uuid.NewV4().String())
 	bs, err := id.Bytes()
@@ -48,4 +54,52 @@ func TestBytesToUUID(t *testing.T) {
 	invalidBs := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 	_, err = BytesToUUID(invalidBs)
 	assert.Error(t, err)
+}
+
+func TestFromString(t *testing.T) {
+	tt := []struct {
+		input    string
+		expected Type
+	}{
+		{
+			input:    TUUID.String(),
+			expected: TUUID,
+		},
+		{
+			input:    String.String(),
+			expected: String,
+		},
+		{
+			input:    Int32.String(),
+			expected: Int32,
+		},
+		{
+			input:    Int64.String(),
+			expected: Int64,
+		},
+		{
+			input:    Double.String(),
+			expected: Double,
+		},
+		{
+			input:    Blob.String(),
+			expected: Blob,
+		},
+		{
+			input:    Timestamp.String(),
+			expected: Timestamp,
+		},
+		{
+			input:    Bool.String(),
+			expected: Bool,
+		},
+		{
+			input:    "invalid",
+			expected: Invalid,
+		},
+	}
+
+	for _, tc := range tt {
+		assert.Equal(t, FromString(tc.input), tc.expected)
+	}
 }
