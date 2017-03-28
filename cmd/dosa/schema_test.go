@@ -93,7 +93,7 @@ func TestSchema_ExpandDirectories(t *testing.T) {
 func TestSchema_Check_PrefixRequired(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "check", "../testentity"}
+	os.Args = []string{"dosa", "schema", "check", "../../testentity"}
 	main()
 	assert.Contains(t, c.stop(true), "--prefix' was not specified")
 }
@@ -101,7 +101,7 @@ func TestSchema_Check_PrefixRequired(t *testing.T) {
 func TestSchema_Upsert_PrefixRequired(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "upsert", "../testentity"}
+	os.Args = []string{"dosa", "schema", "upsert", "../../testentity"}
 	main()
 	assert.Contains(t, c.stop(true), "--prefix' was not specified")
 }
@@ -109,7 +109,7 @@ func TestSchema_Upsert_PrefixRequired(t *testing.T) {
 func TestSchema_Check_InvalidDirectory(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "../testentity", "/dev/null"}
+	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "../../testentity", "/dev/null"}
 	main()
 	assert.Contains(t, c.stop(true), "\"/dev/null\" is not a directory")
 }
@@ -117,7 +117,7 @@ func TestSchema_Check_InvalidDirectory(t *testing.T) {
 func TestSchema_Upsert_InvalidDirectory(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "../testentity", "/dev/null"}
+	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "../../testentity", "/dev/null"}
 	main()
 	assert.Contains(t, c.stop(true), "\"/dev/null\" is not a directory")
 }
@@ -125,7 +125,7 @@ func TestSchema_Upsert_InvalidDirectory(t *testing.T) {
 func TestSchema_Dump_InvalidDirectory(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "../testentity", "/dev/null"}
+	os.Args = []string{"dosa", "schema", "dump", "../../testentity", "/dev/null"}
 	main()
 	assert.Contains(t, c.stop(true), "\"/dev/null\" is not a directory")
 }
@@ -133,7 +133,7 @@ func TestSchema_Dump_InvalidDirectory(t *testing.T) {
 func TestSchema_Check_NoEntitiesFound(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "-e", "testentity.go", "../testentity"}
+	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "-e", "testentity.go", "../../testentity"}
 	main()
 	assert.Contains(t, c.stop(true), "no entities found")
 }
@@ -141,7 +141,7 @@ func TestSchema_Check_NoEntitiesFound(t *testing.T) {
 func TestSchema_Upsert_NoEntitiesFound(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "-e", "testentity.go", "../testentity"}
+	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "-e", "testentity.go", "../../testentity"}
 	main()
 	assert.Contains(t, c.stop(true), "no entities found")
 }
@@ -149,7 +149,7 @@ func TestSchema_Upsert_NoEntitiesFound(t *testing.T) {
 func TestSchema_Dump_NoEntitiesFound(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "-e", "testentity.go", "../testentity"}
+	os.Args = []string{"dosa", "schema", "dump", "-e", "testentity.go", "../../testentity"}
 	main()
 	assert.Contains(t, c.stop(true), "no entities found")
 }
@@ -157,7 +157,7 @@ func TestSchema_Dump_NoEntitiesFound(t *testing.T) {
 func TestSchema_Dump_InvalidFormat(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "-f", "invalid", "../testentity"}
+	os.Args = []string{"dosa", "schema", "dump", "-f", "invalid", "../../testentity"}
 	main()
 	assert.Contains(t, c.stop(true), "Invalid value")
 }
@@ -187,7 +187,7 @@ func TestSchema_Check_Happy(t *testing.T) {
 			}).Return(int32(1), nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../testentity"}
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
 	main()
 }
 
@@ -210,14 +210,14 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 			}).Return(&dosa.SchemaStatus{Version: int32(1)}, nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../testentity"}
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
 	main()
 }
 
 func TestSchema_Dump_CQL(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "-v", "../testentity"}
+	os.Args = []string{"dosa", "schema", "dump", "-v", "../../testentity"}
 	main()
 	output := c.stop(false)
 	assert.Contains(t, output, "executing schema dump")
@@ -227,7 +227,7 @@ func TestSchema_Dump_CQL(t *testing.T) {
 func TestSchema_Dump_UQL(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "-f", "uql", "-v", "../testentity"}
+	os.Args = []string{"dosa", "schema", "dump", "-f", "uql", "-v", "../../testentity"}
 	main()
 	output := c.stop(false)
 	assert.Contains(t, output, "executing schema dump")
@@ -239,7 +239,7 @@ func TestSchema_Dump_UQL(t *testing.T) {
 func TestSchema_Dump_Avro(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "-f", "avro", "-v", "../testentity"}
+	os.Args = []string{"dosa", "schema", "dump", "-f", "avro", "-v", "../../testentity"}
 	main()
 	output := c.stop(false)
 	assert.Contains(t, output, "executing schema dump")
