@@ -64,6 +64,11 @@ const (
 // The format of uuid used in datastore is orthogonal to the string format here.
 type UUID string
 
+// NewUUID is a helper for returning a new dosa.UUID value
+func NewUUID() UUID {
+	return UUID(uuid.NewV4().String())
+}
+
 // Bytes gets the bytes from a UUID
 func (u UUID) Bytes() ([]byte, error) {
 	id, err := uuid.FromString(string(u))

@@ -27,6 +27,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewUUID(t *testing.T) {
+	id := NewUUID()
+	assert.NotNil(t, id)
+	assert.NotEqual(t, string(id), "")
+}
+
 func TestUUIDToBytes(t *testing.T) {
 	id := UUID(uuid.NewV4().String())
 	bs, err := id.Bytes()
