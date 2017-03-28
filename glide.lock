@@ -1,5 +1,5 @@
-hash: 765d314a0f7239af84d3b47e0b9444e074e8d669e2ff77df94f582038fcb69bb
-updated: 2017-03-24T15:42:46.143264072-07:00
+hash: 979208e38ce5b4ce624913df81d4d8a4acf0e494452dd0effe2636e4104abb35
+updated: 2017-03-27T17:40:04.853109257-07:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
@@ -29,7 +29,6 @@ imports:
   version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
 - name: github.com/uber/dosa-idl
   version: 74e0688e5ca1e009de399d0f35884ef7163f4b85
-  repo: git@github.com:uber/dosa-idl.git
   subpackages:
   - .gen
   - .gen/dosa
@@ -44,7 +43,7 @@ imports:
   - trand
   - typed
 - name: github.com/yarpc/yarpc-go
-  version: 3860420a469b82f1708886e4e03ea75a2314f237
+  version: 6ad92c34d7e982d4bb7299f20e6a27652116cf5d
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: go.uber.org/atomic
@@ -60,7 +59,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: f01b39b021a77ec92e6507d2a14c83f4af0ea871
+  version: 6ad92c34d7e982d4bb7299f20e6a27652116cf5d
   subpackages:
   - api/encoding
   - api/middleware
@@ -94,7 +93,7 @@ testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
 - name: github.com/axw/gocov
-  version: 3a69a0d2a4ef1f263e2d92b041a69593d6964fe8
+  version: c77561ca0c0cb1ed5d4ce4a912a75f5532566422
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
@@ -116,7 +115,7 @@ testImports:
 - name: github.com/mattn/goveralls
   version: a99c5ee06aeeca2a2befc7e90b99061b1180850c
 - name: github.com/mvdan/interfacer
-  version: 17c838aea007c18c5c137250e615dc9309e0caf0
+  version: 049d0176189d83d4e2535611f0253b6f1db487ad
   subpackages:
   - cmd/interfacer
 - name: github.com/mvdan/lint
@@ -132,6 +131,6 @@ testImports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: golang.org/x/tools
-  version: c21bc47f893ee73c18dd2119bb8ff9a2b492c4c6
+  version: 2946dd1f77e693e136d9ed202ba093bb4a3ea761
   subpackages:
   - cover
