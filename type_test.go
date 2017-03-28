@@ -55,3 +55,51 @@ func TestBytesToUUID(t *testing.T) {
 	_, err = BytesToUUID(invalidBs)
 	assert.Error(t, err)
 }
+
+func TestFromString(t *testing.T) {
+	tt := []struct {
+		input    string
+		expected Type
+	}{
+		{
+			input:    TUUID.String(),
+			expected: TUUID,
+		},
+		{
+			input:    String.String(),
+			expected: String,
+		},
+		{
+			input:    Int32.String(),
+			expected: Int32,
+		},
+		{
+			input:    Int64.String(),
+			expected: Int64,
+		},
+		{
+			input:    Double.String(),
+			expected: Double,
+		},
+		{
+			input:    Blob.String(),
+			expected: Blob,
+		},
+		{
+			input:    Timestamp.String(),
+			expected: Timestamp,
+		},
+		{
+			input:    Bool.String(),
+			expected: Bool,
+		},
+		{
+			input:    "invalid",
+			expected: Invalid,
+		},
+	}
+
+	for _, tc := range tt {
+		assert.Equal(t, FromString(tc.input), tc.expected)
+	}
+}
