@@ -87,7 +87,7 @@ func NewConnector(cfg *Config) (*Connector, error) {
 		}
 	case "tchannel":
 		hostPort := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
-		ts, err := tchannel.NewChannelTransport(tchannel.ServiceName(cfg.ServiceName))
+		ts, err := tchannel.NewChannelTransport(tchannel.ServiceName(cfg.CallerName))
 		if err != nil {
 			return nil, err
 		}
