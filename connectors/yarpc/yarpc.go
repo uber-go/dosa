@@ -87,7 +87,10 @@ func NewConnector(cfg *Config) (*Connector, error) {
 		}
 	case "tchannel":
 		hostPort := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
-		ts, err := tchannel.NewChannelTransport(tchannel.ServiceName(cfg.ServiceName))
+		// this looks wrong, BUT since it's a uni-directional tchannel
+		// connection, we have to pass CallerName as the tchannel "ServiceName"
+		// for source/destination to be reported correctly by RPC layer.
+		ts, err := tchannel.NewChannelTransport(tchannel.ServiceName(cfg.CallerName))
 		if err != nil {
 			return nil, err
 		}
