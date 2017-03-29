@@ -356,9 +356,7 @@ func (c *client) Range(ctx context.Context, r *RangeOp) ([]DomainObject, string,
 	// call the server side method
 	values, token, err := c.connector.Range(ctx, re.info, columnConditions, fieldsToRead, r.sop.token, r.sop.limit)
 	if err != nil {
-		// This error should not be wrapped since
-		// it might be a known error
-		return nil, "", err
+		return nil, "", errors.Wrap(err, "Range")
 	}
 
 	objectArray := objectsFromValueArray(r.sop.object, values, re)

@@ -23,7 +23,6 @@ package yarpc
 import (
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 )
@@ -239,9 +238,4 @@ func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) dosarpc.Field
 		fields[name] = rpcValue
 	}
 	return fields
-}
-
-// decorate an error with a stack trace
-func errorDecorate(err error) error {
-	return errors.WithStack(err)
 }
