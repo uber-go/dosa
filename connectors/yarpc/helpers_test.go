@@ -61,6 +61,13 @@ func TestRPCTypeFromClientType(t *testing.T) {
 	})
 }
 
+func TestRawValueFromInterfaceNilBlob(t *testing.T) {
+	var blob []byte
+	raw := RawValueFromInterface(blob)
+	_, err := raw.ToWire()
+	assert.NoError(t, err)
+}
+
 // TODO: add additional happy path unit tests here. The helpers currently get
 // good coverage from the connectors though.
 
