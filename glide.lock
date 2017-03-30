@@ -1,5 +1,5 @@
-hash: 979208e38ce5b4ce624913df81d4d8a4acf0e494452dd0effe2636e4104abb35
-updated: 2017-03-27T17:40:04.853109257-07:00
+hash: 68769adb3cce5343e0fb38d3af278cc0591c6b6968ae8e048afa5f59ce9f98df
+updated: 2017-03-29T22:14:01.685788392-07:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
@@ -43,7 +43,7 @@ imports:
   - trand
   - typed
 - name: github.com/yarpc/yarpc-go
-  version: 6ad92c34d7e982d4bb7299f20e6a27652116cf5d
+  version: 6ae533f0810337028ef055b690360e050aa13219
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: go.uber.org/atomic
@@ -59,7 +59,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 6ad92c34d7e982d4bb7299f20e6a27652116cf5d
+  version: 6ae533f0810337028ef055b690360e050aa13219
   subpackages:
   - api/encoding
   - api/middleware
@@ -68,7 +68,6 @@ imports:
   - encoding/thrift
   - encoding/thrift/internal
   - internal
-  - internal/buffer
   - internal/clientconfig
   - internal/encoding
   - internal/errors
@@ -85,7 +84,7 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 6c23252515492caf9b228a9d5cabcdbde29f7f82
+  version: ffcf1bedda3b04ebb15a168a59800a73d6dc0f4d
   subpackages:
   - context
   - context/ctxhttp
@@ -93,7 +92,7 @@ testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
 - name: github.com/axw/gocov
-  version: c77561ca0c0cb1ed5d4ce4a912a75f5532566422
+  version: 3a69a0d2a4ef1f263e2d92b041a69593d6964fe8
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
@@ -115,7 +114,7 @@ testImports:
 - name: github.com/mattn/goveralls
   version: a99c5ee06aeeca2a2befc7e90b99061b1180850c
 - name: github.com/mvdan/interfacer
-  version: 049d0176189d83d4e2535611f0253b6f1db487ad
+  version: bd42ca7f68d821198f2f3aa564058a57dfe213ac
   subpackages:
   - cmd/interfacer
 - name: github.com/mvdan/lint
@@ -131,6 +130,6 @@ testImports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: golang.org/x/tools
-  version: 2946dd1f77e693e136d9ed202ba093bb4a3ea761
+  version: d63e2b22b05a9682de336cd4802bba367ed429e7
   subpackages:
   - cover
