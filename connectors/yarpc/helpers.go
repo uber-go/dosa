@@ -70,6 +70,11 @@ func RawValueFromInterface(i interface{}) *dosarpc.RawValue {
 	case float64:
 		return &dosarpc.RawValue{DoubleValue: &v}
 	case []byte:
+		// If we set nil to BinaryValue, thrift cannot encode it
+		// as it thought we didn't set any field in the union
+		if v == nil {
+			v = []byte{}
+		}
 		return &dosarpc.RawValue{BinaryValue: v}
 	case time.Time:
 		time := v.UnixNano()
