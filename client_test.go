@@ -38,17 +38,17 @@ import (
 
 type ClientTestEntity1 struct {
 	dosaRenamed.Entity `dosa:"primaryKey=(ID)"`
-	ID          int64
-	Name        string
-	Email       string
+	ID                 int64
+	Name               string
+	Email              string
 }
 
 type ClientTestEntity2 struct {
 	dosaRenamed.Entity `dosa:"primaryKey=(UUID,Color)"`
-	UUID        string
-	Color       string
-	IsActive    bool
-	ignoreme    int32
+	UUID               string
+	Color              string
+	IsActive           bool
+	ignoreme           int32
 }
 
 var (
@@ -647,15 +647,15 @@ func TestAdminClient_GetSchema(t *testing.T) {
 	content := `
 package main
 
-import "github.com/uber-go/dosa"
+import renamed "github.com/uber-go/dosa"
 
 type TestEntityA struct {
-	dosa.Entity ` + "`dosa:\"primaryKey=(ID)\"`" + `
+	renamed.Entity ` + "`dosa:\"primaryKey=(ID)\"`" + `
 	ID int32
 }
 type TestEntityB struct {
-	dosa.Entity ` + "`dosa:\"primaryKey=(ID)\"`" + `
-	ID int32
+	renamed.Entity ` + "`dosa:\"primaryKey=(ID)\"`" + `
+	ID renamed.UUID
 }
 `
 	invalid := `

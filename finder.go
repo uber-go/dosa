@@ -77,6 +77,7 @@ func FindEntities(paths, excludes []string) ([]*Table, []error, error) {
 	return entities, warnings, nil
 }
 
+// DosaPackageName is the name of the dosa package, fully qualified and quoted
 const DosaPackageName = `"github.com/uber-go/dosa"`
 
 func findDosaPackage(file *ast.File) (string, bool) {
@@ -219,7 +220,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 					// skip unexported fields
 					continue
 				}
-				typ := stringToDosaType(kind)
+				typ := stringToDosaType(kind, packagePrefix)
 				if typ == Invalid {
 					return nil, fmt.Errorf("Column %q has invalid type %q", name, kind)
 				}
@@ -245,7 +246,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 	return t, nil
 }
 
-func stringToDosaType(inType string) Type {
+func stringToDosaType(inType string, packagePrefix string) Type {
 	switch inType {
 	case "string":
 		return String
@@ -261,7 +262,7 @@ func stringToDosaType(inType string) Type {
 		return Double
 	case "time.Time":
 		return Timestamp
-	case "dosa.UUID":
+	case packagePrefix + ".UUID":
 		return TUUID
 	default:
 		return Invalid
