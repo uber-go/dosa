@@ -60,8 +60,13 @@ func FindEntities(paths, excludes []string) ([]*Table, []error, error) {
 		erv := new(EntityRecordingVisitor)
 		for _, pkg := range packages { // go through all the packages
 			for _, file := range pkg.Files { // go through all the files
-				for _, decl := range file.Decls { // go through all the declarations
-					ast.Walk(erv, decl)
+				packagePrefix, hasDosa := findDosaPackage(file)
+				//if erv.PackageName != "" { // skip packages that don't import 'dosa'
+				if hasDosa {
+					erv.PackagePrefix = packagePrefix
+					for _, decl := range file.Decls { // go through all the declarations
+						ast.Walk(erv, decl)
+					}
 				}
 			}
 		}
@@ -72,12 +77,37 @@ func FindEntities(paths, excludes []string) ([]*Table, []error, error) {
 	return entities, warnings, nil
 }
 
+// DosaPackageName is the name of the dosa package, fully qualified and quoted
+const DosaPackageName = `"github.com/uber-go/dosa"`
+
+func findDosaPackage(file *ast.File) (string, bool) {
+	// look for the case where we import dosa
+	for _, impspec := range file.Imports {
+		if impspec.Path.Value == DosaPackageName {
+			// impspec.Name is nil when not renamed,
+			// so we use the default "dosa"
+			if impspec.Name == nil {
+				return "dosa", true
+			}
+			// renamed case
+			return impspec.Name.Name, true
+		}
+	}
+	if file.Name.Name == "dosa" {
+		// special case: our package is 'dosa' so no prefix is required
+		return "", true
+	}
+	// this file doesn't have any references to dosa, so skip it
+	return "", false
+}
+
 // EntityRecordingVisitor is a visitor that records entities it finds
 // It also keeps track of all failed entities that pass the basic "looks like a DOSA object" test
 // (see isDosaEntity to understand that test)
 type EntityRecordingVisitor struct {
-	Entities []*Table
-	Warnings []error
+	Entities      []*Table
+	Warnings      []error
+	PackagePrefix string
 }
 
 // Visit records all the entities seen into the EntityRecordingVisitor structure
@@ -89,7 +119,7 @@ func (f *EntityRecordingVisitor) Visit(n ast.Node) ast.Visitor {
 		if structType, ok := n.Type.(*ast.StructType); ok {
 			// look for a Entity with a dosa annotation
 			if isDosaEntity(structType) {
-				table, err := tableFromStructType(n.Name.Name, structType)
+				table, err := tableFromStructType(n.Name.Name, structType, f.PackagePrefix)
 				if err == nil {
 					f.Entities = append(f.Entities, table)
 				} else {
@@ -134,7 +164,7 @@ func isDosaEntity(structType *ast.StructType) bool {
 }
 
 // tableFromStructType takes an ast StructType and converts it into a Table object
-func tableFromStructType(structName string, structType *ast.StructType) (*Table, error) {
+func tableFromStructType(structName string, structType *ast.StructType, packagePrefix string) (*Table, error) {
 	normalizedName, err := NormalizeName(structName)
 	if err != nil {
 		// TODO: This isn't correct, someone could override the name later
@@ -177,7 +207,7 @@ func tableFromStructType(structName string, structType *ast.StructType) (*Table,
 				kind = innerName.Name + "." + typeName.Sel.Name
 			}
 		}
-		if kind == entityName || kind == "dosa."+entityName {
+		if kind == packagePrefix+"."+entityName || (packagePrefix == "" && kind == entityName) {
 			var err error
 			if t.EntityDefinition.Name, t.Key, err = parseEntityTag(structName, dosaTag); err != nil {
 				return nil, err
@@ -190,7 +220,7 @@ func tableFromStructType(structName string, structType *ast.StructType) (*Table,
 					// skip unexported fields
 					continue
 				}
-				typ := stringToDosaType(kind)
+				typ := stringToDosaType(kind, packagePrefix)
 				if typ == Invalid {
 					return nil, fmt.Errorf("Column %q has invalid type %q", name, kind)
 				}
@@ -204,6 +234,11 @@ func tableFromStructType(structName string, structType *ast.StructType) (*Table,
 			}
 		}
 	}
+
+	if t.Key == nil {
+		return nil, errors.Errorf("cannot find dosa.Entity in object %s", t.StructName)
+	}
+
 	translateKeyName(t)
 	if err := t.EnsureValid(); err != nil {
 		return nil, errors.Wrap(err, "failed to parse dosa object")
@@ -211,7 +246,7 @@ func tableFromStructType(structName string, structType *ast.StructType) (*Table,
 	return t, nil
 }
 
-func stringToDosaType(inType string) Type {
+func stringToDosaType(inType string, packagePrefix string) Type {
 	switch inType {
 	case "string":
 		return String
@@ -227,7 +262,7 @@ func stringToDosaType(inType string) Type {
 		return Double
 	case "time.Time":
 		return Timestamp
-	case "dosa.UUID":
+	case packagePrefix + ".UUID":
 		return TUUID
 	default:
 		return Invalid

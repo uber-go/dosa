@@ -200,6 +200,10 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		}
 	}
 
+	if t.Key == nil {
+		return nil, errors.Errorf("cannot find dosa.Entity in object %s", t.StructName)
+	}
+
 	translateKeyName(t)
 
 	if err := t.EnsureValid(); err != nil {
