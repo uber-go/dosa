@@ -703,7 +703,7 @@ type TestEntityC struct {
 		{
 			dirs:        []string{tmpdir},
 			scope:       scope,
-			errContains: "invalid dosa struct tag",
+			errContains: "invalidtag",
 		},
 	}
 
