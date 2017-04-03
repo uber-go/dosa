@@ -37,6 +37,8 @@ import (
 	"go.uber.org/yarpc/transport/tchannel"
 )
 
+const _defaultServiceName = "dosa-gateway"
+
 // Config contains the YARPC client parameters
 type Config struct {
 	Transport   string `yaml:"transport"`
@@ -61,9 +63,40 @@ func NewConnectorWithTransport(cc transport.ClientConfig) *Connector {
 	}
 }
 
+// NewConnectorWithChannel creates a new instance using the given tchannel.
+// Note that the method refers to the YARPC tchannel interface which should
+// be satisfied in order to be used with this connector (and YARPC). Use this
+// if you are using a raw TChannel configuration instead of YARPC directly.
+func NewConnectorWithChannel(ch tchannel.Channel) (*Connector, error) {
+	ts, err := tchannel.NewChannelTransport(tchannel.WithChannel(ch))
+	if err != nil {
+		return nil, err
+	}
+	// use the channel's service name for "caller" and use default for outbound
+	// configuration since we just need a consistent mapping to get client.
+	ycfg := rpc.Config{
+		Name: ts.Channel().ServiceName(),
+		Outbounds: rpc.Outbounds{
+			_defaultServiceName: {
+				Unary: ts.NewOutbound(),
+			},
+		},
+	}
+
+	dispatcher := rpc.NewDispatcher(ycfg)
+	if err := dispatcher.Start(); err != nil {
+		// this should never happen since we're always providing sane defaults
+		return nil, err
+	}
+
+	client := dosaclient.New(dispatcher.ClientConfig(_defaultServiceName))
+	return &Connector{
+		Client:     client,
+		dispatcher: dispatcher,
+	}, nil
+}
+
 // NewConnector returns a new YARPC connector with the given configuration.
-// TODO: make smarter to handle more complex YARPC configurations, this only
-// supports the one-way http client case.
 func NewConnector(cfg *Config) (*Connector, error) {
 	ycfg := rpc.Config{Name: cfg.CallerName}
 
@@ -74,6 +107,11 @@ func NewConnector(cfg *Config) (*Connector, error) {
 
 	if cfg.Port == "" {
 		return nil, errors.New("invalid port")
+	}
+
+	// service name is not required, defaults to "dosa-gateway"
+	if cfg.ServiceName == "" {
+		cfg.ServiceName = _defaultServiceName
 	}
 
 	switch cfg.Transport {
