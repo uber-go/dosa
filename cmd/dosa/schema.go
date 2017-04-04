@@ -87,9 +87,7 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 		return err
 	}
 
-	if c.Verbose {
-		fmt.Printf("%s successful\n", name)
-	}
+	fmt.Printf("%s successful\n", name)
 	return nil
 }
 
@@ -126,9 +124,7 @@ func (c *SchemaCmd) doSchemaStatusOp(name string, f func(dosa.AdminClient, conte
 		return err
 	}
 
-	if c.Verbose {
-		fmt.Printf("%s successful with status: %s\n", name, status.Status)
-	}
+	fmt.Printf("%s successful with status: %s\n", name, status.Status)
 	return nil
 }
 
