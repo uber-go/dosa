@@ -142,7 +142,7 @@ type AdminClient interface {
 	// Scope sets the admin client scope
 	Scope(scope string) AdminClient
 	// CheckSchema checks the compatibility of schemas
-	CheckSchema(ctx context.Context, namePrefix string) (int32, error)
+	CheckSchema(ctx context.Context, namePrefix string) (*SchemaStatus, error)
 	// CheckSchemaStatus checks the status of schema application
 	CheckSchemaStatus(ctx context.Context, namePrefix string, version int32) (*SchemaStatus, error)
 	// UpsertSchema upserts the schemas
@@ -453,16 +453,19 @@ func (c *adminClient) Scope(scope string) AdminClient {
 // any of the entities found are incompatible, not found or not uniquely named.
 // The definition of "incompatible" and "not found" may vary but is ultimately
 // defined by the client connector implementation.
-func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) (int32, error) {
+func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) (*SchemaStatus, error) {
 	defs, err := c.GetSchema()
 	if err != nil {
-		return -1, errors.Wrapf(err, "GetSchema failed")
+		return nil, errors.Wrapf(err, "GetSchema failed")
 	}
 	version, err := c.connector.CheckSchema(ctx, c.scope, namePrefix, defs)
 	if err != nil {
-		return -1, errors.Wrapf(err, "CheckSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
+		return nil, errors.Wrapf(err, "CheckSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
 	}
-	return version, nil
+	return &SchemaStatus{
+		Version: version,
+		Status:  "OK",
+	}, nil
 }
 
 func (c *adminClient) CheckSchemaStatus(ctx context.Context, namePrefix string, version int32) (*SchemaStatus, error) {
