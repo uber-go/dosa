@@ -56,45 +56,7 @@ type SchemaCmd struct {
 	NamePrefix string `long:"prefix" description:"Name prefix for schema types." required:"true"`
 }
 
-func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) (int32, error), args []string) error {
-	if c.Verbose {
-		fmt.Printf("executing %s with %v\n", name, args)
-		fmt.Printf("options are %+v\n", *c)
-		fmt.Printf("global options are %+v\n", options)
-	}
-	client, err := getAdminClient(options)
-	if err != nil {
-		return err
-	}
-	if len(args) != 0 {
-		dirs, err := expandDirectories(args)
-		if err != nil {
-			return errors.Wrap(err, "could not expand directories")
-		}
-		client.Directories(dirs)
-	}
-	if len(c.Excludes) != 0 {
-		client.Excludes(c.Excludes)
-	}
-	if c.Scope != "" {
-		client.Scope(c.Scope)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
-	defer cancel()
-
-	if _, err := f(client, ctx, c.NamePrefix); err != nil {
-		return err
-	}
-
-	if c.Verbose {
-		fmt.Printf("%s successful\n", name)
-	}
-	return nil
-}
-
-// TODO make doSchema and doSchemaStatusOp better code
-func (c *SchemaCmd) doSchemaStatusOp(name string, f func(dosa.AdminClient, context.Context, string) (*dosa.SchemaStatus, error), args []string) error {
+func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) (*dosa.SchemaStatus, error), args []string) error {
 	if c.Verbose {
 		fmt.Printf("executing %s with %v\n", name, args)
 		fmt.Printf("options are %+v\n", *c)
@@ -123,12 +85,14 @@ func (c *SchemaCmd) doSchemaStatusOp(name string, f func(dosa.AdminClient, conte
 
 	status, err := f(client, ctx, c.NamePrefix)
 	if err != nil {
+		if c.Verbose {
+			fmt.Printf("detail:%+v\n", err)
+		}
+		fmt.Println("Status: NOT OK")
 		return err
 	}
-
-	if c.Verbose {
-		fmt.Printf("%s successful with status: %s\n", name, status.Status)
-	}
+	fmt.Printf("Version: %d\n", status.Version)
+	fmt.Printf("Status: %s\n", status.Status)
 	return nil
 }
 
@@ -149,7 +113,7 @@ type SchemaUpsert struct {
 
 // Execute executes a schema upsert command
 func (c *SchemaUpsert) Execute(args []string) error {
-	return c.doSchemaStatusOp("schema upsert", dosa.AdminClient.UpsertSchema, args)
+	return c.doSchemaOp("schema upsert", dosa.AdminClient.UpsertSchema, args)
 }
 
 // SchemaDump contains data for executing the schema dump command
