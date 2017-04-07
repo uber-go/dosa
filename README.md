@@ -6,7 +6,9 @@
 
 ## Abstract
 
-[dosa][dosa-spec] is a library that provides a distributed
+DOSA open source is not ready for prime time yet. We will announce when it's ready.
+
+[dosa] is a library that provides a distributed
 object storage abstraction for applications in golang and
 java. It's designed to help with storage discovery and
 abstract the underlying database system.
