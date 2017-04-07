@@ -261,7 +261,7 @@ func parseEntityTag(structName, dosaAnnotation string) (string, *PrimaryKey, err
 	// find the primaryKey
 	matchs := primaryKeyPattern0.FindStringSubmatch(tag)
 	if len(matchs) != 4 {
-		return "", nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag", structName)
+		return "", nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag %q", structName, tag)
 	}
 	pkString := matchs[1]
 	key, err := parsePrimaryKey(structName, pkString)
