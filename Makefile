@@ -95,3 +95,10 @@ fmt:
 .PHONY: cli
 cli:
 	$(ECHO_V)go install ./cmd/dosa
+ifdef target
+ifeq ($(target), Darwin)
+	$(ECHO_V)GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -o ./out/cli/darwin/dosa ./cmd/dosa 
+else ifeq ($(target), Linux)
+	$(ECHO_V)GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./out/cli/linux/dosa ./cmd/dosa
+endif
+endif
