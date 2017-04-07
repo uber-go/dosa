@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/yarpc/api/transport/transporttest"
+
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -32,6 +34,7 @@ import (
 	"github.com/uber-go/dosa/connectors/yarpc"
 	drpc "github.com/uber/dosa-idl/.gen/dosa"
 	"github.com/uber/dosa-idl/.gen/dosa/dosatest"
+	tchan "github.com/uber/tchannel-go"
 )
 
 func testInt64Ptr(i int64) *int64 {
@@ -88,6 +91,26 @@ var testRPCSchemaRef = drpc.SchemaRef{
 }
 
 var ctx = context.Background()
+
+func TestYaRPCClient_NewConnectorWithTransport(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	cc := transporttest.NewMockClientConfig(ctrl)
+	assert.NotNil(t, yarpc.NewConnectorWithTransport(cc))
+}
+
+func TestYaRPCClient_NewConnectorWithChannel(t *testing.T) {
+	// if we can call this with a real tchannel instance, only errors can occur
+	// when trying to initialize the dispatcher, which also shouldn't return
+	// an error since we're providing a known, compatible configuration.
+	ch, err := tchan.NewChannel("mysvc", &tchan.ChannelOptions{
+		ProcessName: "pname",
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, ch)
+	conn, err := yarpc.NewConnectorWithChannel(ch)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+}
 
 func TestYaRPCClient_NewConnector(t *testing.T) {
 	cases := []struct {
