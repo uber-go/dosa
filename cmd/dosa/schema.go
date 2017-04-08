@@ -35,6 +35,12 @@ import (
 	"github.com/uber-go/dosa/schema/uql"
 )
 
+const (
+	_defServiceName  = "dosa-dev-gateway"
+	_prodServiceName = "dosa-gateway"
+	_prodScope       = "production"
+)
+
 var (
 	schemaDumpOutputTypes = map[string]bool{
 		"cql":  true,
@@ -62,6 +68,15 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 		fmt.Printf("options are %+v\n", *c)
 		fmt.Printf("global options are %+v\n", options)
 	}
+
+	// if not given, set the service name dynamically based on scope
+	if options.ServiceName == "" {
+		options.ServiceName = _defServiceName
+		if c.Scope == _prodScope {
+			options.ServiceName = _prodServiceName
+		}
+	}
+
 	client, err := getAdminClient(options)
 	if err != nil {
 		return err

@@ -38,7 +38,7 @@ type GlobalOptions struct {
 	Host        string   `long:"host" default:"127.0.0.1" description:"The hostname or IP for the gateway."`
 	Port        string   `short:"p" long:"port" default:"21300" description:"The hostname or IP for the gateway."`
 	Transport   string   `long:"transport" default:"tchannel" description:"TCP Transport to use. Options: http, tchannel."`
-	ServiceName string   `long:"service" default:"dosa-gateway" description:"The TChannel service name for the gateway."`
+	ServiceName string   `long:"service" description:"The TChannel service name for the gateway."`
 	CallerName  string   `long:"caller" default:"dosacli-$USER" description:"Caller will override the default caller name (which is dosacli-$USER)."`
 	Timeout     timeFlag `long:"timeout" default:"60s" description:"The timeout for gateway requests. E.g., 100ms, 0.5s, 1s. If no unit is specified, milliseconds are assumed."`
 	Connector   string   `hidden:"true" long:"connector" default:"yarpc" description:"Name of connector to use"`
