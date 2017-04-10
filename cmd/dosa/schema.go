@@ -56,6 +56,11 @@ type SchemaCmd struct {
 	NamePrefix string `long:"prefix" description:"Name prefix for schema types." required:"true"`
 }
 
+// SchemaArgs specifies the required positional args for schema commands
+type SchemaArgs struct {
+	Paths []string `positional-arg-name:"paths" default:"."`
+}
+
 func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) (*dosa.SchemaStatus, error), args []string) error {
 	if c.Verbose {
 		fmt.Printf("executing %s with %v\n", name, args)
@@ -108,6 +113,7 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 // SchemaCheck holds the options for 'schema check'
 type SchemaCheck struct {
 	*SchemaCmd
+	*SchemaArgs `positional-args:"yes"`
 }
 
 // Execute executes a schema check command
@@ -118,6 +124,7 @@ func (c *SchemaCheck) Execute(args []string) error {
 // SchemaUpsert contains data for executing schema upsert command.
 type SchemaUpsert struct {
 	*SchemaCmd
+	*SchemaArgs `positional-args:"yes"`
 }
 
 // Execute executes a schema upsert command
@@ -128,7 +135,8 @@ func (c *SchemaUpsert) Execute(args []string) error {
 // SchemaDump contains data for executing the schema dump command
 type SchemaDump struct {
 	*SchemaOptions
-	Format string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
+	*SchemaArgs `positional-args:"yes"`
+	Format      string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
 }
 
 // Execute executes a schema dump command

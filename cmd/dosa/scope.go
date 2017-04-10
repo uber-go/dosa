@@ -28,11 +28,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ScopeCmd holds options for scope commands (there aren't any)
-type ScopeCmd struct{}
+// ScopeOptions contains configuration for scope command flags
+type ScopeOptions struct{}
+
+// ScopeArgs specifies the required positional args for scope commands
+type ScopeArgs struct {
+	Scopes []string `positional-arg-name:"scopes" required:"1"`
+}
 
 // ScopeCreate contains data for executing scope create command.
-type ScopeCreate struct{}
+type ScopeCreate struct {
+	*ScopeArgs `positional-args:"yes" required:"1"`
+}
 
 // Execute executes a scope create command
 func (c *ScopeCreate) Execute(args []string) error {
@@ -54,6 +61,7 @@ func (c *ScopeCreate) Execute(args []string) error {
 
 // ScopeDrop contains data for executing scope drop command.
 type ScopeDrop struct {
+	*ScopeArgs `positional-args:"yes" required:"1"`
 }
 
 // Execute executes a scope drop command
@@ -77,6 +85,7 @@ func (c *ScopeDrop) Execute(args []string) error {
 
 // ScopeTruncate contains data for executing scope truncate command.
 type ScopeTruncate struct {
+	*ScopeArgs `positional-args:"yes" required:"1"`
 }
 
 // Execute executes a scope truncate command

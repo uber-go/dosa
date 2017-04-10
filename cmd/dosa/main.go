@@ -53,7 +53,7 @@ func main() {
 	OptionsParser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
 	OptionsParser.LongDescription = `
 dosa manages your schema both in production and development scopes`
-	c, _ := OptionsParser.AddCommand("scope", "commands to manage scope", "create, drop, or truncate development scopes", &ScopeCmd{})
+	c, _ := OptionsParser.AddCommand("scope", "commands to manage scope", "create, drop, or truncate development scopes", &ScopeOptions{})
 	_, _ = c.AddCommand("create", "Create scope", "creates a new scope", &ScopeCreate{})
 	_, _ = c.AddCommand("drop", "Drop scope", "drops a scope", &ScopeDrop{})
 	_, _ = c.AddCommand("truncate", "Truncate scope", "truncates a scope", &ScopeTruncate{})
