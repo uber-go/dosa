@@ -31,6 +31,16 @@ import (
 	"github.com/uber-go/dosa/mocks"
 )
 
+func TestScope_ServiceInference(t *testing.T) {
+	tcs := []struct {
+		scopes   []string
+		expected string
+	}{
+		scopes:   []string{},
+		expected: _defServiceName,
+	}
+}
+
 // There are 3 tests to perform on each scope operator:
 // 1 - success case, should call connector once for each provided scope, displaying scope name and operation
 // 2 - failure case, connector's API call generated error, provides name of scope that failed

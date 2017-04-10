@@ -35,12 +35,6 @@ import (
 	"github.com/uber-go/dosa/schema/uql"
 )
 
-const (
-	_defServiceName  = "dosa-dev-gateway"
-	_prodServiceName = "dosa-gateway"
-	_prodScope       = "production"
-)
-
 var (
 	schemaDumpOutputTypes = map[string]bool{
 		"cql":  true,

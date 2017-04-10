@@ -92,7 +92,7 @@ func TestSchema_ExpandDirectories(t *testing.T) {
 	os.Chdir("..")
 }
 
-func TestSchema_DefaultScope(t *testing.T) {
+func TestSchema_ServiceInference(t *testing.T) {
 	tcs := []struct {
 		serviceName string
 		scope       string
