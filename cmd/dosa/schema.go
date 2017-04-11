@@ -115,8 +115,6 @@ type SchemaCheck struct {
 
 // Execute executes a schema check command
 func (c *SchemaCheck) Execute(args []string) error {
-	fmt.Println("Paths")
-	fmt.Println(c.Args.Paths)
 	return c.doSchemaOp("schema check", dosa.AdminClient.CheckSchema, c.Args.Paths)
 }
 
