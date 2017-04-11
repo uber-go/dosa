@@ -56,11 +56,6 @@ type SchemaCmd struct {
 	NamePrefix string `long:"prefix" description:"Name prefix for schema types." required:"true"`
 }
 
-// SchemaArgs specifies the required positional args for schema commands
-type SchemaArgs struct {
-	Paths []string `positional-arg-name:"paths" default:"."`
-}
-
 func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) (*dosa.SchemaStatus, error), args []string) error {
 	if c.Verbose {
 		fmt.Printf("executing %s with %v\n", name, args)
@@ -113,30 +108,38 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 // SchemaCheck holds the options for 'schema check'
 type SchemaCheck struct {
 	*SchemaCmd
-	*SchemaArgs `positional-args:"yes"`
+	Args struct {
+		Paths []string `positional-arg-name:"paths"`
+	} `positional-args:"yes"`
 }
 
 // Execute executes a schema check command
 func (c *SchemaCheck) Execute(args []string) error {
-	return c.doSchemaOp("schema check", dosa.AdminClient.CheckSchema, args)
+	fmt.Println("Paths")
+	fmt.Println(c.Args.Paths)
+	return c.doSchemaOp("schema check", dosa.AdminClient.CheckSchema, c.Args.Paths)
 }
 
 // SchemaUpsert contains data for executing schema upsert command.
 type SchemaUpsert struct {
 	*SchemaCmd
-	*SchemaArgs `positional-args:"yes"`
+	Args struct {
+		Paths []string `positional-arg-name:"paths"`
+	} `positional-args:"yes"`
 }
 
 // Execute executes a schema upsert command
 func (c *SchemaUpsert) Execute(args []string) error {
-	return c.doSchemaOp("schema upsert", dosa.AdminClient.UpsertSchema, args)
+	return c.doSchemaOp("schema upsert", dosa.AdminClient.UpsertSchema, c.Args.Paths)
 }
 
 // SchemaDump contains data for executing the schema dump command
 type SchemaDump struct {
 	*SchemaOptions
-	*SchemaArgs `positional-args:"yes"`
-	Format      string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
+	Format string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
+	Args   struct {
+		Paths []string `positional-arg-name:"paths"`
+	} `positional-args:"yes"`
 }
 
 // Execute executes a schema dump command
@@ -149,8 +152,8 @@ func (c *SchemaDump) Execute(args []string) error {
 
 	// no connection necessary
 	client := dosa.NewAdminClient(&devnull.Connector{})
-	if len(args) != 0 {
-		dirs, err := expandDirectories(args)
+	if len(c.Args.Paths) != 0 {
+		dirs, err := expandDirectories(c.Args.Paths)
 		if err != nil {
 			return errors.Wrap(err, "could not expand directories")
 		}

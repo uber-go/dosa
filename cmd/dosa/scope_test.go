@@ -31,13 +31,34 @@ import (
 	"github.com/uber-go/dosa/mocks"
 )
 
-func TestScope_ServiceInference(t *testing.T) {
+func TestScope_ServiceDefault(t *testing.T) {
 	tcs := []struct {
-		scopes   []string
-		expected string
+		serviceName string
+		expected    string
 	}{
-		scopes:   []string{},
-		expected: _defServiceName,
+		//  service = "" -> default
+		{
+			expected: _defServiceName,
+		},
+		//  service = "foo" -> foo
+		{
+			serviceName: "foo",
+			expected:    "foo",
+		},
+	}
+	for _, tc := range tcs {
+		for _, cmd := range []string{"create", "drop", "truncate"} {
+			os.Args = []string{
+				"dosa",
+				"--service", tc.serviceName,
+				"--connector", "devnull",
+				"scope",
+				cmd,
+				"scope",
+			}
+			main()
+			assert.Equal(t, options.ServiceName, tc.expected)
+		}
 	}
 }
 
