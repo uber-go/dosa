@@ -31,6 +31,37 @@ import (
 	"github.com/uber-go/dosa/mocks"
 )
 
+func TestScope_ServiceDefault(t *testing.T) {
+	tcs := []struct {
+		serviceName string
+		expected    string
+	}{
+		//  service = "" -> default
+		{
+			expected: _defServiceName,
+		},
+		//  service = "foo" -> foo
+		{
+			serviceName: "foo",
+			expected:    "foo",
+		},
+	}
+	for _, tc := range tcs {
+		for _, cmd := range []string{"create", "drop", "truncate"} {
+			os.Args = []string{
+				"dosa",
+				"--service", tc.serviceName,
+				"--connector", "devnull",
+				"scope",
+				cmd,
+				"scope",
+			}
+			main()
+			assert.Equal(t, options.ServiceName, tc.expected)
+		}
+	}
+}
+
 // There are 3 tests to perform on each scope operator:
 // 1 - success case, should call connector once for each provided scope, displaying scope name and operation
 // 2 - failure case, connector's API call generated error, provides name of scope that failed

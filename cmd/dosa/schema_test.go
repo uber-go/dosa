@@ -31,6 +31,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/mocks"
+
+	_ "github.com/uber-go/dosa/connectors/devnull"
 )
 
 func TestSchema_ExpandDirectories(t *testing.T) {
@@ -90,76 +92,131 @@ func TestSchema_ExpandDirectories(t *testing.T) {
 	os.Chdir("..")
 }
 
-func TestSchema_Check_PrefixRequired(t *testing.T) {
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "check", "../../testentity"}
-	main()
-	assert.Contains(t, c.stop(true), "--prefix' was not specified")
+func TestSchema_ServiceInference(t *testing.T) {
+	tcs := []struct {
+		serviceName string
+		scope       string
+		expected    string
+	}{
+		//  service = "", scope = "" -> default
+		{
+			expected: _defServiceName,
+		},
+		//  service = "", scope != prod -> default
+		{
+			scope:    "not-production",
+			expected: _defServiceName,
+		},
+		//  service = "", scope = prod -> prod
+		{
+			scope:    _prodScope,
+			expected: _prodServiceName,
+		},
+		//  service = "foo", scope = "" -> "foo"
+		{
+			serviceName: "foo",
+			expected:    "foo",
+		},
+		//  service = "bar", scope != prod -> "bar"
+		{
+			serviceName: "bar",
+			scope:       "bar",
+			expected:    "bar",
+		},
+		//  service = "baz", scope = prod -> "baz"
+		{
+			serviceName: "baz",
+			scope:       _prodScope,
+			expected:    "baz",
+		},
+	}
+
+	for _, tc := range tcs {
+		for _, cmd := range []string{"check", "upsert"} {
+			os.Args = []string{
+				"dosa",
+				"--service", tc.serviceName,
+				"--connector", "devnull",
+				"schema",
+				cmd,
+				"--prefix", "foo",
+				"--scope", tc.scope,
+				"../../testentity",
+			}
+			main()
+			assert.Equal(t, options.ServiceName, tc.expected)
+		}
+	}
 }
 
-func TestSchema_Upsert_PrefixRequired(t *testing.T) {
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "upsert", "../../testentity"}
-	main()
-	assert.Contains(t, c.stop(true), "--prefix' was not specified")
+func TestSchema_PrefixRequired(t *testing.T) {
+	for _, cmd := range []string{"check", "upsert"} {
+		c := StartCapture()
+		exit = func(r int) {}
+		os.Args = []string{
+			"dosa",
+			"schema",
+			cmd,
+			"../../testentity",
+		}
+		main()
+		assert.Contains(t, c.stop(true), "--prefix' was not specified")
+	}
 }
 
-func TestSchema_Check_InvalidDirectory(t *testing.T) {
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "../../testentity", "/dev/null"}
-	main()
-	assert.Contains(t, c.stop(true), "\"/dev/null\" is not a directory")
+func TestSchema_InvalidDirectory(t *testing.T) {
+	// dump is a special snowflake
+	prefixMap := map[string]bool{
+		"check":  true,
+		"upsert": true,
+		"dump":   false,
+	}
+	for cmd, hasPrefix := range prefixMap {
+		c := StartCapture()
+		exit = func(r int) {}
+		os.Args = []string{
+			"dosa",
+			"schema",
+			cmd,
+		}
+		if hasPrefix {
+			os.Args = append(os.Args, "--prefix", "foo")
+		}
+		os.Args = append(os.Args, []string{
+			"-e", "testentity.go",
+			"../../testentity",
+			"/dev/null",
+		}...)
+		main()
+		assert.Contains(t, c.stop(true), "\"/dev/null\" is not a directory")
+	}
 }
 
-func TestSchema_Upsert_InvalidDirectory(t *testing.T) {
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "../../testentity", "/dev/null"}
-	main()
-	assert.Contains(t, c.stop(true), "\"/dev/null\" is not a directory")
-}
-
-func TestSchema_Dump_InvalidDirectory(t *testing.T) {
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "../../testentity", "/dev/null"}
-	main()
-	assert.Contains(t, c.stop(true), "\"/dev/null\" is not a directory")
-}
-
-func TestSchema_Check_NoEntitiesFound(t *testing.T) {
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "check", "--prefix", "foo", "-e", "testentity.go", "../../testentity"}
-	main()
-	assert.Contains(t, c.stop(true), "no entities found")
-}
-
-func TestSchema_Upsert_NoEntitiesFound(t *testing.T) {
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "upsert", "--prefix", "foo", "-e", "testentity.go", "../../testentity"}
-	main()
-	assert.Contains(t, c.stop(true), "no entities found")
-}
-
-func TestSchema_Dump_NoEntitiesFound(t *testing.T) {
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "-e", "testentity.go", "../../testentity"}
-	main()
-	assert.Contains(t, c.stop(true), "no entities found")
-}
-
-func TestSchema_Dump_InvalidFormat(t *testing.T) {
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "-f", "invalid", "../../testentity"}
-	main()
-	assert.Contains(t, c.stop(true), "Invalid value")
+func TestSchema_NoEntitiesFound(t *testing.T) {
+	// dump is a special snowflake
+	prefixMap := map[string]bool{
+		"check":  true,
+		"upsert": true,
+		"dump":   false,
+	}
+	for cmd, hasPrefix := range prefixMap {
+		c := StartCapture()
+		exit = func(r int) {}
+		os.Args = []string{
+			"dosa",
+			"schema",
+			cmd,
+		}
+		if hasPrefix {
+			os.Args = append(os.Args, "--prefix", "foo")
+		}
+		os.Args = append(os.Args, []string{
+			"-e", "testentity.go",
+			"../../testentity",
+		}...)
+		main()
+		assert.Contains(t, c.stop(true), "no entities found")
+	}
 }
 
 // There are 4 tests to perform against each operation
@@ -212,6 +269,14 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
 	main()
+}
+
+func TestSchema_Dump_InvalidFormat(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "schema", "dump", "-f", "invalid", "../../testentity"}
+	main()
+	assert.Contains(t, c.stop(true), "Invalid value")
 }
 
 func TestSchema_Dump_CQL(t *testing.T) {

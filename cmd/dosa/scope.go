@@ -23,76 +23,75 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/pkg/errors"
+	"github.com/uber-go/dosa"
 )
 
-// ScopeCmd holds options for scope commands (there aren't any)
+// ScopeOptions contains configuration for scope command flags
+type ScopeOptions struct{}
+
+// ScopeCmd is a placeholder for all scope commands
 type ScopeCmd struct{}
 
-// ScopeCreate contains data for executing scope create command.
-type ScopeCreate struct{}
+func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Context, string) error, scopes []string) error {
+	// set default service name if one isn't provided, this is done here instead
+	// of in the struct tags because schema and scope commands differ slightly
+	// in how the service name should be inferred.
+	if options.ServiceName == "" {
+		options.ServiceName = _defServiceName // defined in options.go
+	}
 
-// Execute executes a scope create command
-func (c *ScopeCreate) Execute(args []string) error {
 	client, err := getAdminClient(options)
 	if err != nil {
 		return err
 	}
-
-	for _, s := range args {
+	for _, s := range scopes {
 		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 		defer cancel()
-		if err := client.CreateScope(ctx, s); err != nil {
-			return errors.Wrapf(err, "create scope on %q", s)
+		if err := f(client, ctx, s); err != nil {
+			return errors.Wrapf(err, "%s scope on %q", name, s)
 		}
-		fmt.Printf("created scope %q\n", s)
+		fmt.Printf("%s scope %q: OK\n", name, s)
 	}
 	return nil
+}
+
+// ScopeCreate contains data for executing scope create command.
+type ScopeCreate struct {
+	*ScopeCmd
+	Args struct {
+		Scopes []string `positional-arg-name:"scopes" required:"1"`
+	} `positional-args:"yes" required:"1"`
+}
+
+// Execute executes a scope create command
+func (c *ScopeCreate) Execute(args []string) error {
+	return c.doScopeOp("create", dosa.AdminClient.CreateScope, c.Args.Scopes)
 }
 
 // ScopeDrop contains data for executing scope drop command.
 type ScopeDrop struct {
+	*ScopeCmd
+	Args struct {
+		Scopes []string `positional-arg-name:"scopes" required:"1"`
+	} `positional-args:"yes" required:"1"`
 }
 
 // Execute executes a scope drop command
 func (c *ScopeDrop) Execute(args []string) error {
-	client, err := getAdminClient(options)
-	if err != nil {
-		return err
-	}
-
-	for _, s := range args {
-		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
-		defer cancel()
-		if err := client.DropScope(ctx, s); err != nil {
-			return errors.Wrapf(err, "drop scope on %q", s)
-		}
-		fmt.Printf("dropped scope %q\n", s)
-	}
-
-	return nil
+	return c.doScopeOp("drop", dosa.AdminClient.DropScope, c.Args.Scopes)
 }
 
 // ScopeTruncate contains data for executing scope truncate command.
 type ScopeTruncate struct {
+	*ScopeCmd
+	Args struct {
+		Scopes []string `positional-arg-name:"scopes" required:"1"`
+	} `positional-args:"yes" required:"1"`
 }
 
 // Execute executes a scope truncate command
 func (c *ScopeTruncate) Execute(args []string) error {
-	client, err := getAdminClient(options)
-	if err != nil {
-		return err
-	}
-
-	for _, s := range args {
-		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
-		defer cancel()
-		if err := client.TruncateScope(ctx, s); err != nil {
-			return errors.Wrapf(err, "truncate scope on %q", s)
-		}
-		fmt.Fprintf(os.Stdout, "truncated scope %q\n", s)
-	}
-	return nil
+	return c.doScopeOp("truncate", dosa.AdminClient.TruncateScope, c.Args.Scopes)
 }

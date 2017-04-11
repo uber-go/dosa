@@ -62,6 +62,15 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 		fmt.Printf("options are %+v\n", *c)
 		fmt.Printf("global options are %+v\n", options)
 	}
+
+	// if not given, set the service name dynamically based on scope
+	if options.ServiceName == "" {
+		options.ServiceName = _defServiceName
+		if c.Scope == _prodScope {
+			options.ServiceName = _prodServiceName
+		}
+	}
+
 	client, err := getAdminClient(options)
 	if err != nil {
 		return err
@@ -99,27 +108,36 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 // SchemaCheck holds the options for 'schema check'
 type SchemaCheck struct {
 	*SchemaCmd
+	Args struct {
+		Paths []string `positional-arg-name:"paths"`
+	} `positional-args:"yes"`
 }
 
 // Execute executes a schema check command
 func (c *SchemaCheck) Execute(args []string) error {
-	return c.doSchemaOp("schema check", dosa.AdminClient.CheckSchema, args)
+	return c.doSchemaOp("schema check", dosa.AdminClient.CheckSchema, c.Args.Paths)
 }
 
 // SchemaUpsert contains data for executing schema upsert command.
 type SchemaUpsert struct {
 	*SchemaCmd
+	Args struct {
+		Paths []string `positional-arg-name:"paths"`
+	} `positional-args:"yes"`
 }
 
 // Execute executes a schema upsert command
 func (c *SchemaUpsert) Execute(args []string) error {
-	return c.doSchemaOp("schema upsert", dosa.AdminClient.UpsertSchema, args)
+	return c.doSchemaOp("schema upsert", dosa.AdminClient.UpsertSchema, c.Args.Paths)
 }
 
 // SchemaDump contains data for executing the schema dump command
 type SchemaDump struct {
 	*SchemaOptions
 	Format string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
+	Args   struct {
+		Paths []string `positional-arg-name:"paths"`
+	} `positional-args:"yes"`
 }
 
 // Execute executes a schema dump command
@@ -132,8 +150,8 @@ func (c *SchemaDump) Execute(args []string) error {
 
 	// no connection necessary
 	client := dosa.NewAdminClient(&devnull.Connector{})
-	if len(args) != 0 {
-		dirs, err := expandDirectories(args)
+	if len(c.Args.Paths) != 0 {
+		dirs, err := expandDirectories(c.Args.Paths)
 		if err != nil {
 			return errors.Wrap(err, "could not expand directories")
 		}

@@ -134,3 +134,9 @@ func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error)
 func (c *Connector) Shutdown() error {
 	return nil
 }
+
+func init() {
+	dosa.RegisterConnector("devnull", func(args map[string]interface{}) (dosa.Connector, error) {
+		return &Connector{}, nil
+	})
+}

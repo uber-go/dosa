@@ -29,6 +29,12 @@ import (
 	"github.com/uber-go/dosa"
 )
 
+const (
+	_defServiceName  = "dosa-dev-gateway"
+	_prodServiceName = "dosa-gateway"
+	_prodScope       = "production"
+)
+
 type timeFlag time.Duration
 
 func (t *timeFlag) setDuration(d time.Duration) {
