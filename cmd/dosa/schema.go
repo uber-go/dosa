@@ -131,6 +131,53 @@ func (c *SchemaUpsert) Execute(args []string) error {
 	return c.doSchemaOp("schema upsert", dosa.AdminClient.UpsertSchema, c.Args.Paths)
 }
 
+// SchemaStatus contains data for executing schema status command
+type SchemaStatus struct {
+	*SchemaCmd
+	Version int32 `long:"version" description:"Specify schema version."`
+}
+
+// Execute executes a schema status command
+func (c *SchemaStatus) Execute(args []string) error {
+	if c.Verbose {
+		fmt.Printf("executing schema status with %v\n", args)
+		fmt.Printf("options are %+v\n", *c)
+		fmt.Printf("global options are %+v\n", options)
+	}
+
+	// if not given, set the service name dynamically based on scope
+	if options.ServiceName == "" {
+		options.ServiceName = _defServiceName
+		if c.Scope == _prodScope {
+			options.ServiceName = _prodServiceName
+		}
+	}
+
+	client, err := getAdminClient(options)
+	if err != nil {
+		return err
+	}
+
+	if c.Scope != "" {
+		client.Scope(c.Scope)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
+	defer cancel()
+
+	status, err := client.CheckSchemaStatus(ctx, c.NamePrefix, c.Version)
+	if err != nil {
+		if c.Verbose {
+			fmt.Printf("detail:%+v\n", err)
+		}
+		fmt.Println("Status: NOT OK")
+		return err
+	}
+	fmt.Printf("Version: %d\n", status.Version)
+	fmt.Printf("Status: %s\n", status.Status)
+	return nil
+}
+
 // SchemaDump contains data for executing the schema dump command
 type SchemaDump struct {
 	*SchemaOptions
