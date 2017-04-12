@@ -42,7 +42,7 @@ func TestMissingSubcommands(t *testing.T) {
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema"}
 	main()
-	assert.Contains(t, c.stop(true), "check, dump or upsert")
+	assert.Contains(t, c.stop(true), "check, dump, status or upsert")
 }
 
 func TestHostOptionButNothingElse(t *testing.T) {

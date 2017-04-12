@@ -132,7 +132,7 @@ func TestSchema_ServiceInference(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		for _, cmd := range []string{"check", "upsert"} {
+		for _, cmd := range []string{"check", "upsert", "status"} {
 			os.Args = []string{
 				"dosa",
 				"--service", tc.serviceName,
@@ -245,6 +245,28 @@ func TestSchema_Check_Happy(t *testing.T) {
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
+	main()
+}
+
+func TestSchema_Status_Happy(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	exit = func(r int) {
+		assert.Equal(t, 0, r)
+	}
+	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
+		mc := mocks.NewMockConnector(ctrl)
+		mc.EXPECT().CheckSchemaStatus(gomock.Any(), "scope", "foo", gomock.Any()).
+			Do(func(ctx context.Context, scope string, namePrefix string, version int32) {
+				dl, ok := ctx.Deadline()
+				assert.True(t, ok)
+				assert.True(t, dl.After(time.Now()))
+				assert.Equal(t, int32(12), version)
+			}).Return(&dosa.SchemaStatus{Version: int32(12)}, nil)
+		return mc, nil
+	})
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "status", "--prefix", "foo", "-s", "scope", "-v", "--version", "12"}
 	main()
 }
 
