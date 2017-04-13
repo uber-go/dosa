@@ -277,6 +277,15 @@ func TestEntityDefinitionIsCompatible(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "clustering")
 
+	// empty clustering key
+	errEd = getValidEntityDefinition()
+	errEd.Key.ClusteringKeys = nil
+
+	errEd1 := getValidEntityDefinition()
+	errEd1.Key.ClusteringKeys = make([]*dosa.ClusteringKey, 0)
+	err = errEd.IsCompatible(errEd1)
+	assert.NoError(t, err)
+
 	// not same clustering key
 	// name not match
 	errEd = getValidEntityDefinition()
