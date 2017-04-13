@@ -233,11 +233,12 @@ func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
 
 	cks1 := e1.Key.ClusteringKeys
 	cks2 := e2.Key.ClusteringKeys
-	b = reflect.DeepEqual(cks1, cks2)
-	if !b {
-		return errors.Errorf("clustering key mismatch: (%v vs %v)", cks1, cks2)
+	if len(cks2) != 0 || len(cks1) != 0 {
+		b = reflect.DeepEqual(cks1, cks2)
+		if !b {
+			return errors.Errorf("clustering key mismatch: (%v vs %v)", cks1, cks2)
+		}
 	}
-
 	// only allow to add new columns
 	colsMap1 := e1.ColumnTypes()
 	colsMap2 := e2.ColumnTypes()
