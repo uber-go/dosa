@@ -419,6 +419,7 @@ func TestClient_Unimplemented(t *testing.T) {
 	reg1, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1)
 
 	c := dosaRenamed.NewClient(reg1, nullConnector)
+	/* TODO: Coming in v2.1
 	assert.Panics(t, func() {
 		c.MultiRead(ctx, dosaRenamed.All(), &ClientTestEntity1{})
 	})
@@ -428,6 +429,7 @@ func TestClient_Unimplemented(t *testing.T) {
 	assert.Panics(t, func() {
 		c.MultiRemove(ctx, &ClientTestEntity1{})
 	})
+	*/
 	assert.Panics(t, func() {
 		c.Search(ctx, &dosaRenamed.SearchOp{})
 	})
