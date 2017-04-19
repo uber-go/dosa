@@ -97,28 +97,40 @@ type Client interface {
 	// Create creates an entity; it fails if the entity already exists.
 	// This is a relatively expensive operation. Use Upsert whenever possible.
 	CreateIfNotExists(context.Context, DomainObject) error
+
 	// Read fetches a row by primary key. A list of fields to read can be
 	// specified. Use All() or nil for all fields.
 	Read(context.Context, []string, DomainObject) error
+
+	// TODO: Coming in v2.1
 	// MultiRead fetches several rows by primary key. A list of fields can be
 	// specified. Use All() or nil for all fields.
-	MultiRead(context.Context, []string, ...DomainObject) (MultiResult, error)
+	// MultiRead(context.Context, []string, ...DomainObject) (MultiResult, error)
+
 	// Upsert creates or update a row. A list of fields to update can be
 	// specified. Use All() or nil for all fields.
 	Upsert(context.Context, []string, DomainObject) error
+
+	// TODO: Coming in v2.1
 	// MultiUpsert creates or updates multiple rows. A list of fields to
 	// update can be specified. Use All() or nil for all fields.
-	MultiUpsert(context.Context, []string, ...DomainObject) (MultiResult, error)
+	// MultiUpsert(context.Context, []string, ...DomainObject) (MultiResult, error)
+
 	// Remove removes a row by primary key. The passed-in entity should contain
 	// the primary key field values.
 	Remove(context.Context, DomainObject) error
+
+	// TODO: Coming in v2.1
 	// MultiRemove removes multiple rows by primary key. The passed-in entity should
 	// contain the primary key field values.
-	MultiRemove(context.Context, ...DomainObject) (MultiResult, error)
+	// MultiRemove(context.Context, ...DomainObject) (MultiResult, error)
+
 	// Range fetches entities within a range
 	Range(context.Context, *RangeOp) ([]DomainObject, string, error)
+
 	// Search fetches entities by fields that have been marked "searchable"
 	Search(context.Context, *SearchOp) ([]DomainObject, string, error)
+
 	// ScanEverything fetches all entities of a type
 	ScanEverything(context.Context, *ScanOp) ([]DomainObject, string, error)
 }
