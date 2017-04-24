@@ -33,6 +33,28 @@ type exiter func(int)
 
 var exit = os.Exit
 
+// these are overridden at build-time w/ the -ldflags -X option
+var version, githash timestamp string
+
+// BuildInfo contains information about the binary build environment.
+type BuildInfo struct {
+	Version string
+	Githash string
+	Timestamp string
+}
+
+func (b BuildInfo) String() string {
+	return fmt.Sprintf("Version:\t%s\nGit Commit:\t%s\nUTC Build Time:\t%s", b.Version, b.Githash, b.Timestamp
+}
+
+func (b BuildInfo) Execute(args []string) error {
+	b.Version = version
+	b.Githash = githash
+	b.Timestamp = timestamp
+	fmt.Println(b)
+	exit(0)
+}
+
 // GlobalOptions are options for all subcommands
 type GlobalOptions struct {
 	Host        string   `long:"host" default:"127.0.0.1" description:"The hostname or IP for the gateway."`
@@ -53,6 +75,7 @@ func main() {
 	OptionsParser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
 	OptionsParser.LongDescription = `
 dosa manages your schema both in production and development scopes`
+
 	c, _ := OptionsParser.AddCommand("scope", "commands to manage scope", "create, drop, or truncate development scopes", &ScopeOptions{})
 	_, _ = c.AddCommand("create", "Create scope", "creates a new scope", &ScopeCreate{})
 	_, _ = c.AddCommand("drop", "Drop scope", "drops a scope", &ScopeDrop{})

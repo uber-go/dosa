@@ -93,6 +93,7 @@ fmt:
 	fi
 
 .PHONY: cli
+# CLI_BUILD_FLAGS= "-X main.buildstamp $(date -u '+%Y-%m-%d_%I:%M:%S%p'"
 cli:
 	$(ECHO_V)go install ./cmd/dosa
 ifdef target
