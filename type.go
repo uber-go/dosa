@@ -57,6 +57,9 @@ const (
 
 	// Bool is a bool type
 	Bool
+
+	// CustomizedObject is customized struct that implement the customObject interface
+	CustomizedObject
 )
 
 // UUID stores a string format of uuid.
@@ -109,4 +112,9 @@ func FromString(s string) Type {
 	default:
 		return Invalid
 	}
+}
+
+type CustomObject interface {
+	Marshal(v interface{}) ([]byte, error)
+	Unmarshal(data []byte, v interface{}) error
 }

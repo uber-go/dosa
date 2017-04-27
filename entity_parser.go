@@ -319,6 +319,7 @@ var (
 	doubleType    = reflect.TypeOf(float64(0.0))
 	stringType    = reflect.TypeOf("")
 	boolType      = reflect.TypeOf(true)
+	objectType    = reflect.TypeOf((*CustomObject)(nil)).Elem()
 )
 
 func typify(f reflect.Type) (Type, error) {
@@ -339,6 +340,10 @@ func typify(f reflect.Type) (Type, error) {
 		return String, nil
 	case boolType:
 		return Bool, nil
+	}
+
+	if f.Implements(objectType) {
+		return CustomizedObject, nil
 	}
 
 	return Invalid, fmt.Errorf("Invalid type %v", f)

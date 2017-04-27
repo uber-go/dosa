@@ -174,6 +174,7 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 
 // Upsert inserts or updates your data
 func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+	// TODO marshal the customized type
 	upsertRequest := dosarpc.UpsertRequest{
 		Ref:          entityInfoToSchemaRef(ei),
 		EntityValues: fieldValueMapFromClientMap(values),
@@ -183,6 +184,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 
 // Read reads a single entity
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
+	// TODO unmarshal the customzied type
 	// Convert the fields from the client's map to a set of fields to read
 	var rpcFieldsToRead map[string]struct{}
 	if fieldsToRead != nil {
