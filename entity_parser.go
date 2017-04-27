@@ -343,7 +343,7 @@ func typify(f reflect.Type) (Type, error) {
 	}
 
 	if f.Implements(objectType) {
-		return CustomizedObject, nil
+		return CustomObject, nil
 	}
 
 	return Invalid, fmt.Errorf("Invalid type %v", f)

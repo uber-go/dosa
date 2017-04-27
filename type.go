@@ -58,8 +58,8 @@ const (
 	// Bool is a bool type
 	Bool
 
-	// CustomizedObject is customized struct that implement the customObject interface
-	CustomizedObject
+	// CustomObject is customized struct that implement the customObject interface
+	CustomObject
 )
 
 // UUID stores a string format of uuid.
