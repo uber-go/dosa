@@ -28,6 +28,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
+	"encoding/json"
 )
 
 type AllTypes struct {
@@ -55,12 +56,12 @@ type Location struct {
 	Zipcode  string
 }
 
-func (l Location) Marshal(v interface{}) ([]byte, error) {
-	return nil, nil
+func (l Location) Marshal() ([]byte, error) {
+	return json.Marshal(l)
 }
 
-func (l Location) Unmarshal(data []byte, v interface{}) error {
-	return nil
+func (l Location) Unmarshal(data []byte) error {
+	return json.Unmarshal(data, l)
 }
 
 

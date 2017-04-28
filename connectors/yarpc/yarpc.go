@@ -257,7 +257,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 		for name, value := range rpcResult.EntityValues {
 			for _, col := range ei.Def.Columns {
 				if col.Name == name {
-					results[i].Values[name] = RawValueAsInterface(*value.ElemValue, col.Type)
+					results[i].Values[name] = RawValueAsInterface(*value.ElemValue, *col)
 					break
 				}
 			}

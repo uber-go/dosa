@@ -51,7 +51,9 @@ func TestRawValueFromInterfaceBadType(t *testing.T) {
 
 func TestRawValueAsInterfaceBadType(t *testing.T) {
 	assert.Panics(t, func() {
-		RawValueAsInterface(dosarpc.RawValue{}, dosa.Invalid)
+		RawValueAsInterface(dosarpc.RawValue{}, dosa.ColumnDefinition{
+			Type: dosa.Invalid,
+		})
 	})
 }
 
