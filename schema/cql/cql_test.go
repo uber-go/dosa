@@ -60,8 +60,14 @@ func (l Location) Marshal() ([]byte, error) {
 	return json.Marshal(l)
 }
 
-func (l Location) Unmarshal(data []byte) error {
-	return json.Unmarshal(data, l)
+func (l Location) Unmarshal(data []byte) (dosa.CustomObjectInterface, error) {
+	newl := &Location{}
+	err := json.Unmarshal(data, newl)
+	if err != nil {
+		return nil, err
+	}
+	return *newl, nil
+
 }
 
 

@@ -54,12 +54,12 @@ func RawValueAsInterface(val dosarpc.RawValue, col dosa.ColumnDefinition) interf
 		if col.CustomType == nil {
 			panic("no custom type defined")
 		}
-		newObject := reflect.Zero(col.CustomType).Elem().Interface().(dosa.CustomObjectInterface)
-		err := newObject.Unmarshal(val.BinaryValue)
+		newObject := reflect.Zero(col.CustomType).Interface().(dosa.CustomObjectInterface)
+		result, err := newObject.Unmarshal(val.BinaryValue)
 		if err != nil {
 			panic(err)
 		}
-		return newObject
+		return result
 	}
 	panic("bad type")
 }

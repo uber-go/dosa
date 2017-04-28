@@ -116,5 +116,5 @@ func FromString(s string) Type {
 
 type CustomObjectInterface interface {
 	Marshal() ([]byte, error)
-	Unmarshal(data []byte) error
+	Unmarshal(data []byte) (CustomObjectInterface, error)
 }
