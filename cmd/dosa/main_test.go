@@ -86,6 +86,28 @@ func TestInvalidTransport(t *testing.T) {
 	assert.Contains(t, output, "invalid transport")
 }
 
+func TestVersionFlag(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "--version"}
+	main()
+	output := c.stop(false)
+	assert.Contains(t, output, "Version:")
+	assert.Contains(t, output, "Git Commit:")
+	assert.Contains(t, output, "UTC Build Time:")
+}
+
+func TestVersionCommand(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "version"}
+	main()
+	output := c.stop(false)
+	assert.Contains(t, output, "Version:")
+	assert.Contains(t, output, "Git Commit:")
+	assert.Contains(t, output, "UTC Build Time:")
+}
+
 /* TODO: implement these integration test cases
 
 // expect: top-level usage, transport=tchannel
