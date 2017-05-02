@@ -34,7 +34,7 @@ func TestNoSubcommand(t *testing.T) {
 	}
 	os.Args = []string{"dosa"}
 	main()
-	assert.Contains(t, c.stop(true), "schema or scope")
+	assert.Contains(t, c.stop(true), "schema, scope or version")
 }
 
 func TestMissingSubcommands(t *testing.T) {
@@ -50,7 +50,7 @@ func TestHostOptionButNothingElse(t *testing.T) {
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "--host", "10.10.10.10"}
 	main()
-	assert.Contains(t, c.stop(true), "schema or scope")
+	assert.Contains(t, c.stop(true), "schema, scope or version")
 }
 
 // this test uses a trailing dot in the hostname to avoid multiple DNS lookups
