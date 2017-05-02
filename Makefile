@@ -102,3 +102,12 @@ else ifeq ($(target), Linux)
 	$(ECHO_V)GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./out/cli/linux/dosa ./cmd/dosa
 endif
 endif
+
+mocks/client.go:
+	mockgen -package mocks github.com/uber-go/dosa Client,AdminClient > ./mocks/client.go
+
+mocks/connector.go:
+	mockgen -package mocks github.com/uber-go/dosa Connector > ./mocks/connector.go
+
+.PHONY: mocks
+mocks: mocks/client.go mocks/connector.go
