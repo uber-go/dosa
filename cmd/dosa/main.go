@@ -65,7 +65,7 @@ type GlobalOptions struct {
 	CallerName  string   `long:"caller" default:"dosacli-$USER" description:"Caller will override the default caller name (which is dosacli-$USER)."`
 	Timeout     timeFlag `long:"timeout" default:"60s" description:"The timeout for gateway requests. E.g., 100ms, 0.5s, 1s. If no unit is specified, milliseconds are assumed."`
 	Connector   string   `hidden:"true" long:"connector" default:"yarpc" description:"Name of connector to use"`
-	Version     bool     `short:"v" long:"version" description:"Display version info"`
+	Version     bool     `long:"version" description:"Display version info"`
 }
 
 var (
