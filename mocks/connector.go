@@ -25,6 +25,7 @@ package mocks
 
 import (
 	context "context"
+
 	gomock "github.com/golang/mock/gomock"
 	dosa "github.com/uber-go/dosa"
 )

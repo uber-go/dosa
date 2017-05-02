@@ -47,10 +47,12 @@ type BuildInfo struct {
 	Timestamp string
 }
 
+// String satisfies Stringer interface
 func (b BuildInfo) String() string {
 	return fmt.Sprintf("Version:\t%s\nGit Commit:\t%s\nUTC Build Time:\t%s", version, githash, timestamp)
 }
 
+// Execute is ran for the version subcommand
 func (b BuildInfo) Execute(args []string) error {
 	fmt.Printf("%s\n", b)
 	return nil
