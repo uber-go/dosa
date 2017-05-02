@@ -108,11 +108,14 @@ else ifeq ($(target), Linux)
 endif
 endif
 
+.PHONY: mocks/client.go
 mocks/client.go:
 	mockgen -package mocks github.com/uber-go/dosa Client,AdminClient > ./mocks/client.go
 
+.PHONY: mocks/connector.go
 mocks/connector.go:
 	mockgen -package mocks github.com/uber-go/dosa Connector > ./mocks/connector.go
 
 .PHONY: mocks
 mocks: mocks/client.go mocks/connector.go
+	python ./script/license-headers.py -t LICENSE.txt -d mocks
