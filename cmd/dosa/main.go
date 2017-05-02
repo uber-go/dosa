@@ -34,25 +34,26 @@ type exiter func(int)
 var exit = os.Exit
 
 // these are overridden at build-time w/ the -ldflags -X option
-var version, githash timestamp string
+var (
+	version   = "0.0.0"
+	githash   = "master"
+	timestamp = "now"
+)
 
-// BuildInfo contains information about the binary build environment.
+// BuildInfo reports information about the binary build environment
 type BuildInfo struct {
-	Version string
-	Githash string
+	Version   string
+	Githash   string
 	Timestamp string
 }
 
 func (b BuildInfo) String() string {
-	return fmt.Sprintf("Version:\t%s\nGit Commit:\t%s\nUTC Build Time:\t%s", b.Version, b.Githash, b.Timestamp
+	return fmt.Sprintf("Version:\t%s\nGit Commit:\t%s\nUTC Build Time:\t%s\n", version, githash, timestamp)
 }
 
 func (b BuildInfo) Execute(args []string) error {
-	b.Version = version
-	b.Githash = githash
-	b.Timestamp = timestamp
 	fmt.Println(b)
-	exit(0)
+	return nil
 }
 
 // GlobalOptions are options for all subcommands
@@ -64,19 +65,25 @@ type GlobalOptions struct {
 	CallerName  string   `long:"caller" default:"dosacli-$USER" description:"Caller will override the default caller name (which is dosacli-$USER)."`
 	Timeout     timeFlag `long:"timeout" default:"60s" description:"The timeout for gateway requests. E.g., 100ms, 0.5s, 1s. If no unit is specified, milliseconds are assumed."`
 	Connector   string   `hidden:"true" long:"connector" default:"yarpc" description:"Name of connector to use"`
+	Version     bool     `short:"v" long:"version" description:"Display version info"`
 }
 
-var options GlobalOptions
+var (
+	options   GlobalOptions
+	buildInfo BuildInfo
+)
 
 // OptionsParser holds the global parser
 
 func main() {
+	buildInfo := &BuildInfo{}
 	OptionsParser := flags.NewParser(&options, flags.PassAfterNonOption|flags.HelpFlag)
 	OptionsParser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
 	OptionsParser.LongDescription = `
 dosa manages your schema both in production and development scopes`
+	c, _ := OptionsParser.AddCommand("version", "display build info", "display build info", &BuildInfo{})
 
-	c, _ := OptionsParser.AddCommand("scope", "commands to manage scope", "create, drop, or truncate development scopes", &ScopeOptions{})
+	c, _ = OptionsParser.AddCommand("scope", "commands to manage scope", "create, drop, or truncate development scopes", &ScopeOptions{})
 	_, _ = c.AddCommand("create", "Create scope", "creates a new scope", &ScopeCreate{})
 	_, _ = c.AddCommand("drop", "Drop scope", "drops a scope", &ScopeDrop{})
 	_, _ = c.AddCommand("truncate", "Truncate scope", "truncates a scope", &ScopeTruncate{})
@@ -88,6 +95,12 @@ dosa manages your schema both in production and development scopes`
 	_, _ = c.AddCommand("status", "Check schema status", "Check application status of schema", &SchemaStatus{})
 
 	_, err := OptionsParser.Parse()
+
+	if options.Version {
+		fmt.Fprintf(os.Stdout, buildInfo.String())
+		exit(0)
+	}
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 		exit(1)
