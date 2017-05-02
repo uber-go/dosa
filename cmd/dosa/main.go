@@ -48,11 +48,11 @@ type BuildInfo struct {
 }
 
 func (b BuildInfo) String() string {
-	return fmt.Sprintf("Version:\t%s\nGit Commit:\t%s\nUTC Build Time:\t%s\n", version, githash, timestamp)
+	return fmt.Sprintf("Version:\t%s\nGit Commit:\t%s\nUTC Build Time:\t%s", version, githash, timestamp)
 }
 
 func (b BuildInfo) Execute(args []string) error {
-	fmt.Println(b)
+	fmt.Printf("%s\n", b)
 	return nil
 }
 
@@ -97,7 +97,8 @@ dosa manages your schema both in production and development scopes`
 	_, err := OptionsParser.Parse()
 
 	if options.Version {
-		fmt.Fprintf(os.Stdout, buildInfo.String())
+		fmt.Fprintf(os.Stdout, "%s\n", buildInfo.String())
+		options.Version = false // for tests, we leak state between runs
 		exit(0)
 	}
 
