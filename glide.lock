@@ -1,5 +1,5 @@
-hash: 68769adb3cce5343e0fb38d3af278cc0591c6b6968ae8e048afa5f59ce9f98df
-updated: 2017-03-29T22:14:01.685788392-07:00
+hash: 7d1e85d070980bf11cab0f4dc869c2af64ecfaf41b1ccb52eaa5db06184b23ba
+updated: 2017-05-03T14:11:01.313181441-07:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
@@ -10,12 +10,10 @@ imports:
 - name: github.com/jessevdk/go-flags
   version: 460c7bb0abd6e927f2767cadc91aa6ef776a98b4
 - name: github.com/opentracing/opentracing-go
-  version: 6edb48674bd9467b8e91fda004f2bd7202d60ce4
+  version: 1949ddbfd147afd4d964a9f00b24eb291e0e7c38
   subpackages:
   - ext
   - log
-- name: github.com/pborman/uuid
-  version: a97ce2ca70fa5a848076093f05e639a89ca34d06
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/satori/go.uuid
@@ -43,19 +41,20 @@ imports:
   - trand
   - typed
 - name: github.com/yarpc/yarpc-go
-  version: 6ae533f0810337028ef055b690360e050aa13219
+  version: 6b9245d126758870690c44f27f695cc7e811f913
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: go.uber.org/atomic
-  version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
+  version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
 - name: go.uber.org/thriftrw
-  version: 05f870b3c56597d180af568a6392209cc33269e2
+  version: dde90c2a40f45fb2b6361d13c1b4bf09465401c0
   subpackages:
   - envelope
   - internal/envelope/exception
   - internal/semver
   - protocol
   - protocol/binary
+  - thriftreflect
   - version
   - wire
 - name: go.uber.org/yarpc
@@ -65,6 +64,7 @@ imports:
   - api/middleware
   - api/peer
   - api/transport
+  - api/transport/transporttest
   - encoding/thrift
   - encoding/thrift/internal
   - internal

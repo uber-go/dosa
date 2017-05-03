@@ -16,8 +16,6 @@ import:
 - package: github.com/golang/mock
   subpackages:
   - gomock
-- package: github.com/pborman/uuid
-  version: ^1.0.0
 - package: github.com/yookoala/realpath
 - package: github.com/jessevdk/go-flags
 - package: github.com/yarpc/yarpc-go
