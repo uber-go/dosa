@@ -26,7 +26,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/pborman/uuid"
+	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 )
 
@@ -84,7 +84,7 @@ func Data(ei *dosa.EntityInfo, fieldsToRead []string) map[string]dosa.FieldValue
 		case dosa.Timestamp:
 			v = dosa.FieldValue(time.Unix(0, rand.Int63()/2))
 		case dosa.TUUID:
-			v = dosa.FieldValue(uuid.New())
+			v = dosa.FieldValue(uuid.NewV4())
 		default:
 			panic("invalid type " + cd.Type.String())
 
