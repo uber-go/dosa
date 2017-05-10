@@ -25,6 +25,7 @@ import (
 
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
+	"github.com/pkg/errors"
 )
 
 // RawValueAsInterface converts a value from the wire to an object implementing the interface
@@ -55,33 +56,36 @@ func RawValueAsInterface(val dosarpc.RawValue, typ dosa.Type) interface{} {
 // RawValueFromInterface takes an interface, introspects the type, and then
 // returns a RawValue object that represents this. It panics if the type
 // is not in the list, which should be a dosa bug
-func RawValueFromInterface(i interface{}) *dosarpc.RawValue {
+func RawValueFromInterface(i interface{}) (*dosarpc.RawValue, error) {
 	// TODO: Do we do type compatibility checks here? We should know the schema,
 	// but the callers are all well known and should match the types
 	switch v := i.(type) {
 	case string:
-		return &dosarpc.RawValue{StringValue: &v}
+		return &dosarpc.RawValue{StringValue: &v}, nil
 	case bool:
-		return &dosarpc.RawValue{BoolValue: &v}
+		return &dosarpc.RawValue{BoolValue: &v}, nil
 	case int64:
-		return &dosarpc.RawValue{Int64Value: &v}
+		return &dosarpc.RawValue{Int64Value: &v}, nil
 	case int32:
-		return &dosarpc.RawValue{Int32Value: &v}
+		return &dosarpc.RawValue{Int32Value: &v}, nil
 	case float64:
-		return &dosarpc.RawValue{DoubleValue: &v}
+		return &dosarpc.RawValue{DoubleValue: &v}, nil
 	case []byte:
 		// If we set nil to BinaryValue, thrift cannot encode it
 		// as it thought we didn't set any field in the union
 		if v == nil {
 			v = []byte{}
 		}
-		return &dosarpc.RawValue{BinaryValue: v}
+		return &dosarpc.RawValue{BinaryValue: v}, nil
 	case time.Time:
 		time := v.UnixNano()
-		return &dosarpc.RawValue{Int64Value: &time}
+		return &dosarpc.RawValue{Int64Value: &time}, nil
 	case dosa.UUID:
-		bytes, _ := v.Bytes() // TODO: should we handle this error?
-		return &dosarpc.RawValue{BinaryValue: bytes}
+		bytes, err := v.Bytes()
+		if err != nil {
+			return nil, err
+		}
+		return &dosarpc.RawValue{BinaryValue: bytes}, nil
 	}
 	panic("bad type")
 }
@@ -236,11 +240,15 @@ func entityInfoToSchemaRef(ei *dosa.EntityInfo) *dosarpc.SchemaRef {
 	return &sr
 }
 
-func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) dosarpc.FieldValueMap {
+func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) (dosarpc.FieldValueMap, error) {
 	fields := dosarpc.FieldValueMap{}
 	for name, value := range values {
-		rpcValue := &dosarpc.Value{ElemValue: RawValueFromInterface(value)}
+		rv, err := RawValueFromInterface(value)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Error encoding field %q", name)
+		}
+		rpcValue := &dosarpc.Value{ElemValue: rv}
 		fields[name] = rpcValue
 	}
-	return fields
+	return fields, nil
 }

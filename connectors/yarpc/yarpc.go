@@ -157,11 +157,15 @@ func NewConnector(cfg *Config) (*Connector, error) {
 
 // CreateIfNotExists ...
 func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+	ev, err := fieldValueMapFromClientMap(values)
+	if err != nil {
+		return err
+	}
 	createRequest := dosarpc.CreateRequest{
 		Ref:          entityInfoToSchemaRef(ei),
-		EntityValues: fieldValueMapFromClientMap(values),
+		EntityValues: ev,
 	}
-	err := c.Client.CreateIfNotExists(ctx, &createRequest)
+	err = c.Client.CreateIfNotExists(ctx, &createRequest)
 	if err != nil {
 		if be, ok := err.(*dosarpc.BadRequestError); ok {
 			if be.ErrorCode != nil && *be.ErrorCode == errCodeAlreadyExists {
@@ -174,9 +178,13 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 
 // Upsert inserts or updates your data
 func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+	ev, err := fieldValueMapFromClientMap(values)
+	if err != nil {
+		return err
+	}
 	upsertRequest := dosarpc.UpsertRequest{
 		Ref:          entityInfoToSchemaRef(ei),
-		EntityValues: fieldValueMapFromClientMap(values),
+		EntityValues: ev,
 	}
 	return c.Client.Upsert(ctx, &upsertRequest)
 }
@@ -195,7 +203,11 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	// convert the key values from interface{} to RPC's Value
 	rpcFields := make(dosarpc.FieldValueMap)
 	for key, value := range keys {
-		rpcValue := &dosarpc.Value{ElemValue: RawValueFromInterface(value)}
+		rv, err := RawValueFromInterface(value)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Key field %q", key)
+		}
+		rpcValue := &dosarpc.Value{ElemValue: rv}
 		rpcFields[key] = rpcValue
 	}
 
@@ -231,7 +243,11 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 	for i, kmap := range keys {
 		rpcFields[i] = make(dosarpc.FieldValueMap)
 		for key, value := range kmap {
-			rpcValue := &dosarpc.Value{ElemValue: RawValueFromInterface(value)}
+			rv, err := RawValueFromInterface(value)
+			if err != nil {
+				return nil, err
+			}
+			rpcValue := &dosarpc.Value{ElemValue: rv}
 			rpcFields[i][key] = rpcValue
 		}
 	}
@@ -279,7 +295,11 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 	// convert the key values from interface{} to RPC's Value
 	rpcFields := make(dosarpc.FieldValueMap)
 	for key, value := range keys {
-		rpcValue := &dosarpc.Value{ElemValue: RawValueFromInterface(value)}
+		rv, err := RawValueFromInterface(value)
+		if err != nil {
+			return errors.Wrapf(err, "Key field %q", key)
+		}
+		rpcValue := &dosarpc.Value{ElemValue: rv}
 		rpcFields[key] = rpcValue
 	}
 
@@ -312,9 +332,13 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 		// field variable always has the same address. If we want to dereference it, we have to assign the value to a new variable.
 		fieldName := field
 		for _, condition := range conditions {
+			rv, err := RawValueFromInterface(condition.Value)
+			if err != nil {
+				return nil, "", errors.Wrap(err, "Bad range value")
+			}
 			rpcConditions = append(rpcConditions, &dosarpc.Condition{
 				Op:    encodeOperator(condition.Op),
-				Field: &dosarpc.Field{Name: &fieldName, Value: &dosarpc.Value{ElemValue: RawValueFromInterface(condition.Value)}},
+				Field: &dosarpc.Field{Name: &fieldName, Value: &dosarpc.Value{ElemValue: rv}},
 			})
 		}
 	}
