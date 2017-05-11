@@ -25,12 +25,13 @@ import (
 
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
+	"reflect"
 )
 
 // RawValueAsInterface converts a value from the wire to an object implementing the interface
 // based on the dosa type. For example, a TUUID type will get a dosa.UUID object
-func RawValueAsInterface(val dosarpc.RawValue, typ dosa.Type) interface{} {
-	switch typ {
+func RawValueAsInterface(val dosarpc.RawValue, col dosa.ColumnDefinition) interface{} {
+	switch col.Type {
 	case dosa.TUUID:
 		uuid, _ := dosa.BytesToUUID(val.BinaryValue) // TODO: should we handle this error?
 		return uuid
@@ -48,6 +49,17 @@ func RawValueAsInterface(val dosarpc.RawValue, typ dosa.Type) interface{} {
 		return time.Unix(0, *val.Int64Value)
 	case dosa.Bool:
 		return *val.BoolValue
+	case dosa.CustomObject:
+		// create a new customobject based on the type store in column definition
+		if col.CustomType == nil {
+			panic("no custom type defined")
+		}
+		newObject := reflect.Zero(col.CustomType).Interface().(dosa.CustomObjectInterface)
+		result, err := newObject.Unmarshal(val.BinaryValue)
+		if err != nil {
+			panic(err)
+		}
+		return result
 	}
 	panic("bad type")
 }
@@ -81,6 +93,12 @@ func RawValueFromInterface(i interface{}) *dosarpc.RawValue {
 		return &dosarpc.RawValue{Int64Value: &time}
 	case dosa.UUID:
 		bytes, _ := v.Bytes() // TODO: should we handle this error?
+		return &dosarpc.RawValue{BinaryValue: bytes}
+	case dosa.CustomObjectInterface:
+		bytes, err := v.Marshal()
+		if err != nil {
+			panic(err)
+		}
 		return &dosarpc.RawValue{BinaryValue: bytes}
 	}
 	panic("bad type")
@@ -204,7 +222,7 @@ func decodeResults(ei *dosa.EntityInfo, invals dosarpc.FieldValueMap) map[string
 	for name, value := range invals {
 		for _, col := range ei.Def.Columns {
 			if col.Name == name {
-				result[name] = RawValueAsInterface(*value.ElemValue, col.Type)
+				result[name] = RawValueAsInterface(*value.ElemValue, *col)
 				break
 			}
 		}

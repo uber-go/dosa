@@ -35,6 +35,8 @@ import (
 	drpc "github.com/uber/dosa-idl/.gen/dosa"
 	"github.com/uber/dosa-idl/.gen/dosa/dosatest"
 	tchan "github.com/uber/tchannel-go"
+	"encoding/json"
+	"reflect"
 )
 
 func testInt64Ptr(i int64) *int64 {
@@ -57,6 +59,22 @@ func testBoolPtr(b bool) *bool {
 	return &b
 }
 
+type Location struct {
+	Name  string
+	Address  string
+	Zipcode  string
+}
+
+func (l Location) Marshal() ([]byte, error) {
+	return json.Marshal(l)
+}
+
+func (l Location) Unmarshal(data []byte) (dosa.CustomObjectInterface, error) {
+	newL := &Location{}
+	json.Unmarshal(data, newL)
+	return *newL, nil
+}
+
 var testEi = &dosa.EntityInfo{
 	Ref: &testSchemaRef,
 	Def: &dosa.EntityDefinition{
@@ -68,6 +86,7 @@ var testEi = &dosa.EntityInfo{
 			{Name: "c4", Type: dosa.Blob},
 			{Name: "c5", Type: dosa.Bool},
 			{Name: "c6", Type: dosa.Int32},
+			{Name: "c7", Type: dosa.CustomObject, CustomType: reflect.TypeOf(Location{})},
 		},
 		Key: &dosa.PrimaryKey{
 			PartitionKeys: []string{"f1"},
@@ -198,6 +217,12 @@ func TestYaRPCClient_Read(t *testing.T) {
 		FieldsToRead: map[string]struct{}{"f1": {}},
 	}
 
+	l := Location{
+		Name: "AAA",
+		Address: "BBB",
+		Zipcode: "CCC",
+	}
+	locationByte, _ := l.Marshal()
 	// we expect a single call to Read, and we return back two fields, f1 which is in the typemap and another field that is not
 	mockedClient.EXPECT().Read(ctx, readRequest).Return(&drpc.ReadResponse{drpc.FieldValueMap{
 		"c1":               {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(1)}},
@@ -207,6 +232,7 @@ func TestYaRPCClient_Read(t *testing.T) {
 		"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
 		"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(false)}},
 		"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(1)}},
+		"c7":               {ElemValue: &drpc.RawValue{BinaryValue: locationByte}},
 	}}, nil)
 
 	// Prepare the dosa client interface using the mocked RPC layer
@@ -223,6 +249,7 @@ func TestYaRPCClient_Read(t *testing.T) {
 	assert.Equal(t, false, values["c5"])
 	assert.Equal(t, int32(1), values["c6"])
 	assert.Empty(t, values["fieldNotInSchema"]) // the unknown field is not present
+	assert.True(t, reflect.DeepEqual(l, values["c7"]), "read complex type")
 
 	errCode := int32(404)
 	mockedClient.EXPECT().Read(ctx, readRequest).Return(nil, &drpc.BadRequestError{ErrorCode: &errCode})
@@ -376,7 +403,6 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
-
 	// here are the data types to test; the names are random
 	vals := []struct {
 		Name  string
@@ -389,6 +415,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 		{"c5", false},
 		{"c6", int32(2)},
 		{"c7", time.Now()},
+		{"c8", Location{ Name: "AAA", Address: "BBB", Zipcode: "CCC"}},
 	}
 
 	// build up the input field list and the output field list
@@ -440,6 +467,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 		{"c5", false},
 		{"c6", int32(2)},
 		{"c7", time.Now()},
+		{"c8", Location{ Name: "AAA", Address: "BBB", Zipcode: "CCC"}},
 	}
 
 	// build up the input field list and the output field list

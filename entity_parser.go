@@ -292,7 +292,14 @@ func parseFieldTag(structField reflect.StructField, dosaAnnotation string) (*Col
 	if err != nil {
 		return nil, err
 	}
-	return parseField(typ, structField.Name, dosaAnnotation)
+	cd, err := parseField(typ, structField.Name, dosaAnnotation)
+	if err != nil {
+		return nil, err
+	}
+	if typ == CustomObject {
+		cd.CustomType = structField.Type
+	}
+	return cd, nil
 }
 
 func parseField(typ Type, name string, tag string) (*ColumnDefinition, error) {
@@ -319,6 +326,7 @@ var (
 	doubleType    = reflect.TypeOf(float64(0.0))
 	stringType    = reflect.TypeOf("")
 	boolType      = reflect.TypeOf(true)
+	objectType    = reflect.TypeOf((*CustomObjectInterface)(nil)).Elem()
 )
 
 func typify(f reflect.Type) (Type, error) {
@@ -339,6 +347,10 @@ func typify(f reflect.Type) (Type, error) {
 		return String, nil
 	case boolType:
 		return Bool, nil
+	}
+
+	if f.Implements(objectType) {
+		return CustomObject, nil
 	}
 
 	return Invalid, fmt.Errorf("Invalid type %v", f)

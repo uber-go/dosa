@@ -97,6 +97,7 @@ type ColumnDefinition struct {
 	// TODO: change as need to support tags like pii, searchable, etc
 	// currently it's in the form of a map from tag name to (optional) tag value
 	Tags map[string]string
+	CustomType reflect.Type
 }
 
 // EntityDefinition stores information about a DOSA entity

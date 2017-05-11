@@ -28,6 +28,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
+	"encoding/json"
 )
 
 type AllTypes struct {
@@ -48,6 +49,34 @@ type SinglePrimaryKey struct {
 	Data        string
 }
 
+
+type Location struct {
+	Name  string
+	Address  string
+	Zipcode  string
+}
+
+func (l Location) Marshal() ([]byte, error) {
+	return json.Marshal(l)
+}
+
+func (l Location) Unmarshal(data []byte) (dosa.CustomObjectInterface, error) {
+	newl := &Location{}
+	err := json.Unmarshal(data, newl)
+	if err != nil {
+		return nil, err
+	}
+	return *newl, nil
+
+}
+
+
+type CustomizedType struct {
+	dosa.Entity `dosa:"primaryKey=PrimaryKey"`
+	PrimaryKey    dosa.UUID
+	Address Location
+}
+
 func TestCQL(t *testing.T) {
 	data := []struct {
 		Instance  dosa.DomainObject
@@ -60,6 +89,10 @@ func TestCQL(t *testing.T) {
 		{
 			Instance:  &AllTypes{},
 			Statement: `create table "alltypes" ("booltype" boolean, "int32type" int, "int64type" bigint, "doubletype" double, "stringtype" text, "blobtype" blob, "timetype" timestamp, "uuidtype" uuid, primary key (booltype));`,
+		},
+		{
+			Instance: &CustomizedType{},
+			Statement: `create table "customizedtype" ("primarykey" uuid, "address" blob, primary key (primarykey));`,
 		},
 		// TODO: Add more test cases
 	}

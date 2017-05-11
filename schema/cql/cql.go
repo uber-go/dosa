@@ -47,6 +47,8 @@ func typeMap(t dosa.Type) string {
 		return "timestamp"
 	case dosa.TUUID:
 		return "uuid"
+	case dosa.CustomObject:
+		return "blob"
 	}
 	return "unknown"
 }
