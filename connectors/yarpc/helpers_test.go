@@ -83,6 +83,11 @@ func TestRawValueConversionError(t *testing.T) {
 		assert.Error(t, err, "test %+v", test)
 		assert.Contains(t, err.Error(), test.errmsg, "test %+v", test)
 	}
+
+	// happy path
+	v, err := RawValueFromInterface(dosa.UUID("80bccd66-9517-4f54-9dec-0ddb87d0dc2a"))
+	assert.NoError(t, err)
+	assert.NotNil(t, v)
 }
 
 // TODO: add additional happy path unit tests here. The helpers currently get
