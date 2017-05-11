@@ -68,6 +68,7 @@ var testEi = &dosa.EntityInfo{
 			{Name: "c4", Type: dosa.Blob},
 			{Name: "c5", Type: dosa.Bool},
 			{Name: "c6", Type: dosa.Int32},
+			{Name: "c7", Type: dosa.TUUID},
 		},
 		Key: &dosa.PrimaryKey{
 			PartitionKeys: []string{"f1"},
@@ -397,7 +398,8 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	outFields := drpc.FieldValueMap{}
 	for _, item := range vals {
 		inFields[item.Name] = item.Value
-		outFields[item.Name] = &drpc.Value{ElemValue: yarpc.RawValueFromInterface(item.Value)}
+		rv, _ := yarpc.RawValueFromInterface(item.Value)
+		outFields[item.Name] = &drpc.Value{ElemValue: rv}
 	}
 
 	mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields})
@@ -419,6 +421,12 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	assert.True(t, dosa.ErrorIsAlreadyExists(err))
 	// make sure we actually called CreateIfNotExists on the interface
 	ctrl.Finish()
+
+	// cover the conversion error case
+	err = sut.CreateIfNotExists(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "\"c7\"") // must contain name of bad field
+	assert.Contains(t, err.Error(), "too short")  // must mention that the uuid is too short
 
 	assert.NoError(t, sut.Shutdown())
 }
@@ -448,7 +456,8 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 	outFields := map[string]*drpc.Value{}
 	for _, item := range vals {
 		inFields[item.Name] = item.Value
-		outFields[item.Name] = &drpc.Value{ElemValue: yarpc.RawValueFromInterface(item.Value)}
+		rv, _ := yarpc.RawValueFromInterface(item.Value)
+		outFields[item.Name] = &drpc.Value{ElemValue: rv}
 	}
 
 	mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
@@ -463,6 +472,12 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 	// and run the test, first with a nil FieldsToUpdate, then with a specific list
 	err := sut.Upsert(ctx, testEi, inFields)
 	assert.Nil(t, err)
+
+	// cover the conversion error case
+	err = sut.Upsert(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "\"c7\"") // must contain name of bad field
+	assert.Contains(t, err.Error(), "too short")  // must mention that the uuid is too short
 
 	// make sure we actually called CreateIfNotExists on the interface
 	ctrl.Finish()
@@ -772,6 +787,12 @@ func TestConnector_Remove(t *testing.T) {
 	// perform the read
 	err := sut.Remove(ctx, testEi, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))})
 	assert.Nil(t, err) // not an error
+
+	// cover the conversion error case
+	err = sut.Remove(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("321")})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "\"c7\"") // must contain name of bad field
+	assert.Contains(t, err.Error(), "too short")  // must mention that the uuid is too short
 
 	// make sure we actually called Read on the interface
 	ctrl.Finish()

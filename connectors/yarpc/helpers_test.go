@@ -63,9 +63,31 @@ func TestRPCTypeFromClientType(t *testing.T) {
 
 func TestRawValueFromInterfaceNilBlob(t *testing.T) {
 	var blob []byte
-	raw := RawValueFromInterface(blob)
+	raw, _ := RawValueFromInterface(blob)
 	_, err := raw.ToWire()
 	assert.NoError(t, err)
+}
+
+func TestRawValueConversionError(t *testing.T) {
+	data := []struct {
+		input  interface{}
+		errmsg string
+	}{
+		{dosa.UUID(""), "short"}, // empty string
+		{dosa.UUID("1"), "short"},
+		{dosa.UUID("this is not a uuid, uuids shouldnt contain something like a t in them"), "invalid byte"},
+	}
+
+	for _, test := range data {
+		_, err := RawValueFromInterface(test.input)
+		assert.Error(t, err, "test %+v", test)
+		assert.Contains(t, err.Error(), test.errmsg, "test %+v", test)
+	}
+
+	// happy path
+	v, err := RawValueFromInterface(dosa.UUID("80bccd66-9517-4f54-9dec-0ddb87d0dc2a"))
+	assert.NoError(t, err)
+	assert.NotNil(t, v)
 }
 
 // TODO: add additional happy path unit tests here. The helpers currently get
