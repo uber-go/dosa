@@ -92,15 +92,20 @@ func ErrorIsAlreadyExists(err error) bool {
 // Client defines the methods to operate with DOSA entities
 type Client interface {
 	// Initialize must be called before any data operation
-	Initialize(context.Context) error
+	Initialize(ctx context.Context) error
 
 	// Create creates an entity; it fails if the entity already exists.
+	// You must fill in all of the fields of the DomainObject before
+	// calling this method, or they will be inserted with the zero value
 	// This is a relatively expensive operation. Use Upsert whenever possible.
-	CreateIfNotExists(context.Context, DomainObject) error
+	CreateIfNotExists(ctx context.Context, objectToCreate DomainObject) error
 
 	// Read fetches a row by primary key. A list of fields to read can be
 	// specified. Use All() or nil for all fields.
-	Read(context.Context, []string, DomainObject) error
+	// Before calling this method, fill in the DomainObject with ALL
+	// of the primary key fields; the other field values will be populated
+	// as a result of the read
+	Read(ctx context.Context, fieldsToRead []string, objectToRead DomainObject) error
 
 	// TODO: Coming in v2.1
 	// MultiRead fetches several rows by primary key. A list of fields can be
@@ -109,7 +114,10 @@ type Client interface {
 
 	// Upsert creates or update a row. A list of fields to update can be
 	// specified. Use All() or nil for all fields.
-	Upsert(context.Context, []string, DomainObject) error
+	// Before calling this method, fill in the DomainObject with ALL
+	// of the primary key fields, along with whatever fields you specify
+	// to update in fieldsToUpdate (or all the fields if you use dosa.All())
+	Upsert(ctx context.Context, fieldsToUpdate []string, objectToUpdate DomainObject) error
 
 	// TODO: Coming in v2.1
 	// MultiUpsert creates or updates multiple rows. A list of fields to
@@ -117,8 +125,8 @@ type Client interface {
 	// MultiUpsert(context.Context, []string, ...DomainObject) (MultiResult, error)
 
 	// Remove removes a row by primary key. The passed-in entity should contain
-	// the primary key field values.
-	Remove(context.Context, DomainObject) error
+	// the primary key field values, all other fields are ignored.
+	Remove(ctx context.Context, objectToRemove DomainObject) error
 
 	// TODO: Coming in v2.1
 	// MultiRemove removes multiple rows by primary key. The passed-in entity should
@@ -126,13 +134,24 @@ type Client interface {
 	// MultiRemove(context.Context, ...DomainObject) (MultiResult, error)
 
 	// Range fetches entities within a range
-	Range(context.Context, *RangeOp) ([]DomainObject, string, error)
+	// Before calling range, create a RangeOp and fill in the table
+	// along with the partition key information. You will get back
+	// an array of DomainObjects, which will be of the type you requested
+	// in the rangeOp
+	Range(ctx context.Context, rangeOp *RangeOp) ([]DomainObject, string, error)
 
 	// Search fetches entities by fields that have been marked "searchable"
-	Search(context.Context, *SearchOp) ([]DomainObject, string, error)
+	// TODO: Coming in v2.1
+	// Search(ctx context.Context, searchOp *SearchOp) ([]DomainObject, string, error)
 
 	// ScanEverything fetches all entities of a type
-	ScanEverything(context.Context, *ScanOp) ([]DomainObject, string, error)
+	// Before calling ScanEverything, create a scanOp to specify the
+	// table to scan. The return values are an array of objects, that
+	// you can type-assert to the appropriate dosa.Entity, a string
+	// that contains the continuation token, and any error.
+	// To scan the next set of rows, modify the scanOp to provide
+	// the string returned as an Offset()
+	ScanEverything(ctx context.Context, scanOp *ScanOp) ([]DomainObject, string, error)
 }
 
 // MultiResult contains the result for each entity operation in the case of
