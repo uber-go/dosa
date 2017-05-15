@@ -26,6 +26,7 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
+	"github.com/golang/mock/gomock"
 )
 
 // RangeOp is used to specify constraints to Range calls
@@ -142,4 +143,49 @@ func convertRangeOpConditions(r *RangeOp, t *Table) (map[string][]*Condition, er
 		}
 	}
 	return serverConditions, nil
+}
+
+type CondsMantcher struct {}
+
+
+
+type rangeOpMatcher struct {
+	conds  map[Condition]bool
+	eqScanOp gomock.Matcher
+}
+
+// EqRangeOp creates a gomock Matcher that will match any RangeOp with the same conditions, limit, token, and fields
+// as those specified in the op argument.
+func EqRangeOp(op *RangeOp) gomock.Matcher {
+	conds := make(map[Condition]bool)
+	for _, colConds := range op.conditions {
+		for _, cond := range colConds {
+			conds[*cond] = true
+		}
+	}
+
+	return rangeOpMatcher{
+		conds: conds,
+		eqScanOp: EqScanOp(&(op.sop)),
+	}
+}
+func (m rangeOpMatcher) Matches(x interface{}) bool {
+	op := x.(*RangeOp)
+	for _, conditions := range op.conditions {
+		for _, condition := range conditions {
+			if !m.conds[*condition] {
+				return false
+			}
+		}
+	}
+
+	return m.eqScanOp.Matches(&op.sop)
+}
+
+func (m rangeOpMatcher) String() string {
+	return fmt.Sprintf(
+		" is equals to RangeOp with conditions %q, and scan op %s",
+		m.conds,
+		m.eqScanOp.String(),
+	)
 }

@@ -124,3 +124,17 @@ func TestConvertRangeOpConditions(t *testing.T) {
 		}
 	}
 }
+
+func TestRangeOpMatcher(t *testing.T) {
+	RangeOp0 := NewRangeOp(&AllTypes{}).Eq("FieldName", "Hello")
+	RangeOp1 := NewRangeOp(&AllTypes{}).Eq("FieldName", "Hello")
+	RangeOp2 := NewRangeOp(&AllTypes{}).Lt("FieldName", "Hello")
+	RangeOp3 := NewRangeOp(&AllTypes{}).Eq("FieldName", "Hello").Offset("token1")
+	RangeOp4 := NewRangeOp(&AllTypes{}).Eq("FieldName", "Hello").Limit(5)
+
+	matcher := EqRangeOp(RangeOp0)
+	assert.True(t, matcher.Matches(RangeOp1))
+	assert.False(t, matcher.Matches(RangeOp2))
+	assert.False(t, matcher.Matches(RangeOp3))
+	assert.False(t, matcher.Matches(RangeOp4))
+}

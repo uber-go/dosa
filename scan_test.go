@@ -80,3 +80,15 @@ var ScanTestCases = []struct {
 		stringer: "ScanOp",
 	},
 }
+
+func TestScanOpMatcher(t *testing.T) {
+	scanOp0 := dosa.NewScanOp(&AllTypes{}).Limit(1)
+	scanOp1 := dosa.NewScanOp(&AllTypes{}).Limit(1)
+	scanOp2 := dosa.NewScanOp(&AllTypes{}).Limit(1).Offset("token1")
+	scanOp3 := dosa.NewScanOp(&AllTypes{}).Limit(1).Fields([]string{"field1", "field2"})
+
+	matcher := dosa.EqScanOp(scanOp0)
+	assert.True(t, matcher.Matches(scanOp1))
+	assert.False(t, matcher.Matches(scanOp2))
+	assert.False(t, matcher.Matches(scanOp3))
+}

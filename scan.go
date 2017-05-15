@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"github.com/golang/mock/gomock"
 )
 
 // ScanOp represents the scan query
@@ -73,4 +74,45 @@ func (s *ScanOp) Offset(token string) *ScanOp {
 func (s *ScanOp) Fields(fields []string) *ScanOp {
 	s.fieldsToRead = fields
 	return s
+}
+
+type scanOpMatcher struct {
+	limit  int
+	token  string
+	fields map[string]bool
+}
+
+// EqScanOp provides a gomock Matcher that matches any ScanOp with a limit,
+// token, and fields to read that are the same as those specificed by the op argument.
+func EqScanOp(op *ScanOp) gomock.Matcher {
+	fields := make(map[string]bool, len(op.fieldsToRead))
+	for _, field := range op.fieldsToRead {
+		fields[field] = true
+	}
+
+	return scanOpMatcher{
+		limit:  op.limit,
+		token:  op.token,
+		fields: fields,
+	}
+}
+
+func (m scanOpMatcher) Matches(x interface{}) bool {
+	op := x.(*ScanOp)
+	for _, field := range op.fieldsToRead {
+		if !m.fields[field] {
+			return false
+		}
+	}
+
+	return op.limit == m.limit && op.token == m.token
+}
+
+func (m scanOpMatcher) String() string {
+	return fmt.Sprintf(
+		" is equals to ScanOp with limit %q, token %q, and fields %q",
+		m.limit,
+		m.token,
+		m.fields,
+	)
 }
