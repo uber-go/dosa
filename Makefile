@@ -92,7 +92,7 @@ fmt:
 		$(GOIMPORTS) -w $(ALL_SRC) ; \
 	fi
 
-CLI_BUILD_VERSION ?= $(shell cat VERSION.txt)
+CLI_BUILD_VERSION ?= $(shell git describe --abbrev=0 --tags)
 CLI_BUILD_TIMESTAMP ?= $(shell date -u '+%Y-%m-%d_%I:%M:%S%p')
 CLI_BUILD_REF ?= $(shell git rev-parse --short HEAD)
 CLI_LINKER_FLAGS="-X main.version=$(CLI_BUILD_VERSION) -X main.timestamp=$(CLI_BUILD_TIMESTAMP) -X main.githash=$(CLI_BUILD_REF)"
