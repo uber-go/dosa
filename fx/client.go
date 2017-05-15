@@ -18,39 +18,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package dosa is the DOSA - Declarative Object Storage Abstraction.
-//
-// Abstract
-//
-// :warning: DOSA is BETA software. It is not recommended for production use.
-// We will announce when it's ready.
-//
-//
-// DOSA (https://github.com/uber-go/dosa/wiki) is a storage framework that
-// provides a
-// delcarative object storage abstraction for applications in Golang
-// and (eventually) Java. DOSA is designed to relieve common headaches developers
-// face while building stateful, database-dependent services.
-//
-//
-// If you'd like to start by writing a small DOSA-enabled program, check out
-// the getting started guide (https://github.com/uber-go/dosa/wiki/Getting-Started-Guide).
-//
-// Overview
-//
-// DOSA is a storage library that supports:
-//
-// • methods to store and retrieve go structs
-//
-// • struct annotations to describe queries against data
-//
-// • tools to create and/or migrate database schemas
-//
-// • implementations that serialize requests to remote stateless servers
-//
-// Annotations
-//
-// This project is released under the MIT License (LICENSE.txt).
-//
-//
-package dosa
+package dosafx
+
+import (
+	"go.uber.org/fx/service"
+	"go.uber.org/yarpc"
+
+	"github.com/pkg/errors"
+	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/client"
+	"github.com/uber-go/dosa/config"
+)
+
+// New creates a new DOSA client that can be registered as an FX module.
+func New(d *yarpc.Dispatcher, h service.Host) (dosa.Client, error) {
+	cfg, err := config.NewConfigForService(h)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not populate DOSA configuration")
+	}
+
+	// before the connection can be used, it must be started
+	cc := d.ClientConfig(cfg.Service())
+	if err := cc.GetUnaryOutbound().Start(); err != nil {
+		return nil, errors.Wrap(err, "could not start outbound connection")
+	}
+
+	// create client
+	return dosaclient.New(cfg)
+}

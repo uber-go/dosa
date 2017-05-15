@@ -23,12 +23,57 @@ package config_test
 import (
 	"testing"
 
+	fxconfig "go.uber.org/fx/config"
+	"go.uber.org/fx/service"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/config"
 	"github.com/uber-go/dosa/connectors/yarpc"
 )
 
+const (
+	testScope      = "testscope"
+	testPrefix     = "testprefix"
+	testEntityPath = "../testentity"
+)
+
+var (
+	testCfg = map[string]interface{}{
+		"storage": map[string]interface{}{
+			"dosa": config.Config{
+				Scope:       testScope,
+				NamePrefix:  testPrefix,
+				EntityPaths: []string{testEntityPath},
+			},
+		},
+	}
+	testCfgProvider = getTestCfgProvider(testCfg)
+)
+
+func getTestCfgProvider(cfg map[string]interface{}) fxconfig.Provider {
+	return fxconfig.NewStaticProvider(cfg)
+}
+
+func TestNewConfigForService(t *testing.T) {
+	cfg, err := config.NewConfigForService(service.NopHost())
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+}
+
+func TestConfig_Service(t *testing.T) {
+	prodCfg := &config.Config{
+		Scope: "production",
+	}
+	assert.Equal(t, prodCfg.Service(), "dosa-gateway")
+
+	notProdCfg := &config.Config{
+		Scope: "not-production",
+	}
+	assert.Equal(t, notProdCfg.Service(), "dosa-dev-gateway")
+}
+
+// SinglePartitionKey is used to test NewClient
 type SinglePartitionKey struct {
 	dosa.Entity `dosa:"primaryKey=PrimaryKey"`
 	PrimaryKey  int64

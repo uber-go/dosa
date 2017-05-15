@@ -26,6 +26,8 @@ import (
 	"github.com/uber-go/dosa"
 )
 
+const name = "devnull"
+
 // Connector is a connector implementation for testing
 type Connector struct{}
 
@@ -140,8 +142,18 @@ func (c *Connector) Shutdown() error {
 	return nil
 }
 
+// Name returns the name of the connector
+func Name() string {
+	return name
+}
+
+// NewConnector creates a new devnull connector
+func NewConnector() *Connector {
+	return &Connector{}
+}
+
 func init() {
-	dosa.RegisterConnector("devnull", func(args map[string]interface{}) (dosa.Connector, error) {
+	dosa.RegisterConnector(name, func(args map[string]interface{}) (dosa.Connector, error) {
 		return &Connector{}, nil
 	})
 }

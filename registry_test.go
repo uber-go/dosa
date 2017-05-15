@@ -22,12 +22,11 @@ package dosa_test
 
 import (
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"sort"
 
 	"github.com/uber-go/dosa"
 )
@@ -170,6 +169,26 @@ func TestRegisteredEntity_SetFieldValues(t *testing.T) {
 	assert.Equal(t, entity.Email, validFieldValues["email"])
 }
 
+func TestRegisteredEntity_OnlyFieldValues(t *testing.T) {
+	table, _ := dosa.TableFromInstance(&RegistryTestValid{})
+	scope := "test"
+	namePrefix := "team.service"
+
+	re := dosa.NewRegisteredEntity(scope, namePrefix, table)
+	testv := RegistryTestValid{ID: 1, Name: "name", Email: "email"}
+	expected := map[string]dosa.FieldValue{
+		"id":    dosa.FieldValue(int64(1)),
+		"name":  dosa.FieldValue("name"),
+		"email": dosa.FieldValue("email")}
+
+	vals, err := re.OnlyFieldValues(&testv, nil)
+	assert.Equal(t, expected, vals)
+	assert.NoError(t, err)
+	vals, err = re.OnlyFieldValues(&testv, []string{})
+	assert.Equal(t, expected, vals)
+	assert.NoError(t, err)
+}
+
 func TestNewRegistrar(t *testing.T) {
 	entities := []dosa.DomainObject{&RegistryTestValid{}}
 
@@ -211,23 +230,4 @@ func TestRegistrar(t *testing.T) {
 	registered, err = r.FindAll()
 	assert.NoError(t, err)
 	assert.Equal(t, len(registered), len(validEntities))
-}
-func TestRegisteredEntity_OnlyFieldValues(t *testing.T) {
-	table, _ := dosa.TableFromInstance(&RegistryTestValid{})
-	scope := "test"
-	namePrefix := "team.service"
-
-	re := dosa.NewRegisteredEntity(scope, namePrefix, table)
-	testv := RegistryTestValid{ID: 1, Name: "name", Email: "email"}
-	expected := map[string]dosa.FieldValue{
-		"id":    dosa.FieldValue(int64(1)),
-		"name":  dosa.FieldValue("name"),
-		"email": dosa.FieldValue("email")}
-
-	vals, err := re.OnlyFieldValues(&testv, nil)
-	assert.Equal(t, expected, vals)
-	assert.NoError(t, err)
-	vals, err = re.OnlyFieldValues(&testv, []string{})
-	assert.Equal(t, expected, vals)
-	assert.NoError(t, err)
 }

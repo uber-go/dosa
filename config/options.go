@@ -18,39 +18,61 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package dosa is the DOSA - Declarative Object Storage Abstraction.
-//
-// Abstract
-//
-// :warning: DOSA is BETA software. It is not recommended for production use.
-// We will announce when it's ready.
-//
-//
-// DOSA (https://github.com/uber-go/dosa/wiki) is a storage framework that
-// provides a
-// delcarative object storage abstraction for applications in Golang
-// and (eventually) Java. DOSA is designed to relieve common headaches developers
-// face while building stateful, database-dependent services.
-//
-//
-// If you'd like to start by writing a small DOSA-enabled program, check out
-// the getting started guide (https://github.com/uber-go/dosa/wiki/Getting-Started-Guide).
-//
-// Overview
-//
-// DOSA is a storage library that supports:
-//
-// • methods to store and retrieve go structs
-//
-// • struct annotations to describe queries against data
-//
-// • tools to create and/or migrate database schemas
-//
-// • implementations that serialize requests to remote stateless servers
-//
-// Annotations
-//
-// This project is released under the MIT License (LICENSE.txt).
-//
-//
-package dosa
+// TODO(eculver): consider supporting variadic options args to `dosa.New`
+
+package config
+
+import (
+	"github.com/uber-go/dosa/connectors/yarpc"
+)
+
+// Option ...
+type Option func(cfg *Config) error
+
+// WithScope ...
+func WithScope(scopeName string) Option {
+	return func(cfg *Config) error {
+		cfg.Scope = scopeName
+		return nil
+	}
+}
+
+// WithNamePrefix ...
+func WithNamePrefix(namePrefix string) Option {
+	return func(cfg *Config) error {
+		cfg.NamePrefix = namePrefix
+		return nil
+	}
+}
+
+// WithEntityPath ...
+func WithEntityPath(pathName string) Option {
+	return func(cfg *Config) error {
+		cfg.EntityPaths = append(cfg.EntityPaths, pathName)
+		return nil
+	}
+}
+
+// ExcludingEntities ...
+func ExcludingEntities(exclude string) Option {
+	return func(cfg *Config) error {
+		cfg.Excludes = append(cfg.Excludes, exclude)
+		return nil
+	}
+}
+
+// WithYARPC ...
+func WithYARPC(ycfg yarpc.Config) Option {
+	return func(cfg *Config) error {
+		cfg.Yarpc = ycfg
+		return nil
+	}
+}
+
+// WithTimeouts ...
+func WithTimeouts(tcfg *TimeoutConfig) Option {
+	return func(cfg *Config) error {
+		cfg.Timeout = tcfg
+		return nil
+	}
+}
