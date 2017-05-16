@@ -26,6 +26,7 @@ import (
 	"io"
 
 	"github.com/golang/mock/gomock"
+	"reflect"
 )
 
 // ScanOp represents the scan query
@@ -81,6 +82,7 @@ type scanOpMatcher struct {
 	limit  int
 	token  string
 	fields map[string]bool
+	typ    reflect.Type
 }
 
 // EqScanOp provides a gomock Matcher that matches any ScanOp with a limit,
@@ -91,10 +93,12 @@ func EqScanOp(op *ScanOp) gomock.Matcher {
 		fields[field] = true
 	}
 
+
 	return scanOpMatcher{
 		limit:  op.limit,
 		token:  op.token,
 		fields: fields,
+		typ:    reflect.TypeOf(op.object).Elem(),
 	}
 }
 
@@ -110,14 +114,15 @@ func (m scanOpMatcher) Matches(x interface{}) bool {
 		}
 	}
 
-	return op.limit == m.limit && op.token == m.token
+	return op.limit == m.limit && op.token == m.token && reflect.TypeOf(op.object).Elem() == m.typ
 }
 
 func (m scanOpMatcher) String() string {
 	return fmt.Sprintf(
-		" is equals to ScanOp with limit %q, token %q, and fields %v",
+		" is equals to ScanOp with limit %q, token %q, dosa entity type %v and fields %v",
 		m.limit,
 		m.token,
+		m.typ,
 		m.fields,
 	)
 }
