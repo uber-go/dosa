@@ -137,4 +137,5 @@ func TestRangeOpMatcher(t *testing.T) {
 	assert.False(t, matcher.Matches(RangeOp2))
 	assert.False(t, matcher.Matches(RangeOp3))
 	assert.False(t, matcher.Matches(RangeOp4))
+	assert.False(t, matcher.Matches(3))
 }

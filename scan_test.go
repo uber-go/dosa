@@ -91,4 +91,5 @@ func TestScanOpMatcher(t *testing.T) {
 	assert.True(t, matcher.Matches(scanOp1))
 	assert.False(t, matcher.Matches(scanOp2))
 	assert.False(t, matcher.Matches(scanOp3))
+	assert.False(t, matcher.Matches(3))
 }

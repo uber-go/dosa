@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+
 	"github.com/golang/mock/gomock"
 )
 
@@ -98,7 +99,11 @@ func EqScanOp(op *ScanOp) gomock.Matcher {
 }
 
 func (m scanOpMatcher) Matches(x interface{}) bool {
-	op := x.(*ScanOp)
+	op, ok := x.(*ScanOp)
+	if !ok {
+		return false
+	}
+
 	for _, field := range op.fieldsToRead {
 		if !m.fields[field] {
 			return false
@@ -110,7 +115,7 @@ func (m scanOpMatcher) Matches(x interface{}) bool {
 
 func (m scanOpMatcher) String() string {
 	return fmt.Sprintf(
-		" is equals to ScanOp with limit %q, token %q, and fields %q",
+		" is equals to ScanOp with limit %q, token %q, and fields %v",
 		m.limit,
 		m.token,
 		m.fields,
