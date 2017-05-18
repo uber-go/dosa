@@ -25,8 +25,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/golang/mock/gomock"
 	"reflect"
+
+	"github.com/golang/mock/gomock"
 )
 
 // ScanOp represents the scan query
@@ -93,7 +94,6 @@ func EqScanOp(op *ScanOp) gomock.Matcher {
 		fields[field] = true
 	}
 
-
 	return scanOpMatcher{
 		limit:  op.limit,
 		token:  op.token,
@@ -118,11 +118,15 @@ func (m scanOpMatcher) Matches(x interface{}) bool {
 }
 
 func (m scanOpMatcher) String() string {
+	fieldList := make([]string, 0, len(m.fields))
+	for field := range m.fields {
+		fieldList = append(fieldList, field)
+	}
 	return fmt.Sprintf(
-		" is equals to ScanOp with limit %q, token %q, dosa entity type %v and fields %v",
+		" is equal to ScanOp with limit %d, token %q, dosa entity type %v, and fields %v",
 		m.limit,
 		m.token,
 		m.typ,
-		m.fields,
+		fieldList,
 	)
 }

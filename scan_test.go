@@ -85,7 +85,7 @@ func TestScanOpMatcher(t *testing.T) {
 	scanOp0 := dosa.NewScanOp(&AllTypes{}).Limit(1)
 	scanOp1 := dosa.NewScanOp(&AllTypes{}).Limit(1)
 	scanOp2 := dosa.NewScanOp(&AllTypes{}).Limit(1).Offset("token1")
-	scanOp3 := dosa.NewScanOp(&AllTypes{}).Limit(1).Fields([]string{"field1", "field2"})
+	scanOp3 := dosa.NewScanOp(&AllTypes{}).Limit(1).Fields([]string{"BoolType", "TimeType"})
 	scanOp4 := dosa.NewScanOp(&dosa.Entity{}).Limit(1)
 
 	matcher := dosa.EqScanOp(scanOp0)

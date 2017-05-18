@@ -146,17 +146,18 @@ func convertRangeOpConditions(r *RangeOp, t *Table) (map[string][]*Condition, er
 }
 
 type rangeOpMatcher struct {
-	conds    map[Condition]bool
+	conds    map[string]map[Condition]bool
 	eqScanOp gomock.Matcher
 }
 
 // EqRangeOp creates a gomock Matcher that will match any RangeOp with the same conditions, limit, token, and fields
 // as those specified in the op argument.
 func EqRangeOp(op *RangeOp) gomock.Matcher {
-	conds := make(map[Condition]bool)
-	for _, colConds := range op.conditions {
+	conds := make(map[string]map[Condition]bool)
+	for col, colConds := range op.conditions {
+		conds[col] = make(map[Condition]bool, len(colConds))
 		for _, cond := range colConds {
-			conds[*cond] = true
+			conds[col][*cond] = true
 		}
 	}
 
@@ -171,20 +172,23 @@ func (m rangeOpMatcher) Matches(x interface{}) bool {
 		return false
 	}
 
-	for _, conditions := range op.conditions {
-		for _, condition := range conditions {
-			if !m.conds[*condition] {
+	for col, conds := range op.conditions {
+		for _, condition := range conds {
+			if !m.conds[col][*condition] {
 				return false
 			}
 		}
 	}
 
-	return m.eqScanOp.Matches(&op.sop)
+	if !m.eqScanOp.Matches(&(op.sop)) {
+		return false
+	}
+	return true
 }
 
 func (m rangeOpMatcher) String() string {
 	return fmt.Sprintf(
-		" is equals to RangeOp with conditions %v, and scan op %s",
+		" is equal to RangeOp with conditions %v, and scan op %s",
 		m.conds,
 		m.eqScanOp.String(),
 	)
