@@ -102,6 +102,7 @@ func EqScanOp(op *ScanOp) gomock.Matcher {
 	}
 }
 
+// Matches satisfies the gomock.Matcher interface
 func (m scanOpMatcher) Matches(x interface{}) bool {
 	op, ok := x.(*ScanOp)
 	if !ok {
@@ -117,6 +118,7 @@ func (m scanOpMatcher) Matches(x interface{}) bool {
 	return op.limit == m.limit && op.token == m.token && reflect.TypeOf(op.object).Elem() == m.typ
 }
 
+// String satisfies the gomock.Matcher and Stringer interface
 func (m scanOpMatcher) String() string {
 	fieldList := make([]string, 0, len(m.fields))
 	for field := range m.fields {

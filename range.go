@@ -166,6 +166,8 @@ func EqRangeOp(op *RangeOp) gomock.Matcher {
 		eqScanOp: EqScanOp(&(op.sop)),
 	}
 }
+
+// Matches satisfies the gomock.Matcher interface
 func (m rangeOpMatcher) Matches(x interface{}) bool {
 	op, ok := x.(*RangeOp)
 	if !ok {
@@ -186,6 +188,7 @@ func (m rangeOpMatcher) Matches(x interface{}) bool {
 	return true
 }
 
+// String satisfies the gomock.Matcher and Stringer interface
 func (m rangeOpMatcher) String() string {
 	return fmt.Sprintf(
 		" is equal to RangeOp with conditions %v, and scan op %s",
