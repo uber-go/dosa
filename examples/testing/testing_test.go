@@ -34,9 +34,24 @@ import (
 )
 
 var (
-	ctx  = context.TODO()
-	uuid = dosa.NewUUID()
-	user = &examples.User{UUID: uuid}
+	ctx       = context.TODO()
+	uuid      = dosa.NewUUID()
+	user      = &examples.User{UUID: uuid}
+	menuUUID  = dosa.NewUUID()
+	menuItem1 = &examples.MenuItem{
+		MenuUUID:     menuUUID,
+		MenuItemUUID: dosa.NewUUID(),
+		Name:         "Burrito",
+		Description:  "A large wheat flour tortilla with a filling",
+	}
+	menuItem2 = &examples.MenuItem{
+		MenuUUID:     menuUUID,
+		MenuItemUUID: dosa.NewUUID(),
+		Name:         "Waffel",
+		Description:  "Cooked batter in a circular grid pattern",
+	}
+	menu    = []*examples.MenuItem{menuItem1, menuItem2}
+	objMenu = []dosa.DomainObject{menuItem1, menuItem2}
 )
 
 func TestNewDatastore(t *testing.T) {
@@ -81,4 +96,31 @@ func TestGetUser(t *testing.T) {
 	u2, err2 := ds2.GetUser(ctx, uuid)
 	assert.NoError(t, err2)
 	assert.Equal(t, u2, user)
+}
+
+func TestGetMenu(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	expectedOp := dosa.NewRangeOp(&examples.MenuItem{}).Eq("MenuUUID", menuUUID).Limit(50)
+
+	// mock error from Range call
+	c1 := mocks.NewMockClient(ctrl)
+	c1.EXPECT().Initialize(gomock.Any()).Return(nil).Times(1)
+	c1.EXPECT().Range(gomock.Any(), dosa.EqRangeOp(expectedOp)).Return(nil, "", errors.New("Range Error")).Times(1)
+	ds1, _ := examples.NewDatastore(c1)
+
+	m1, err1 := ds1.GetMenu(ctx, menuUUID)
+	assert.Error(t, err1)
+	assert.Nil(t, m1)
+
+	// happy path
+	c2 := mocks.NewMockClient(ctrl)
+	c2.EXPECT().Initialize(gomock.Any()).Return(nil).Times(1)
+	c2.EXPECT().Range(gomock.Any(), dosa.EqRangeOp(expectedOp)).Return(objMenu, "", nil).Times(1)
+	ds2, _ := examples.NewDatastore(c2)
+
+	m2, err2 := ds2.GetMenu(ctx, menuUUID)
+	assert.NoError(t, err2)
+	assert.Equal(t, menu, m2)
 }

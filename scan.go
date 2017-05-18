@@ -24,6 +24,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+
+	"reflect"
+
+	"github.com/golang/mock/gomock"
 )
 
 // ScanOp represents the scan query
@@ -73,4 +77,58 @@ func (s *ScanOp) Offset(token string) *ScanOp {
 func (s *ScanOp) Fields(fields []string) *ScanOp {
 	s.fieldsToRead = fields
 	return s
+}
+
+type scanOpMatcher struct {
+	limit  int
+	token  string
+	fields map[string]bool
+	typ    reflect.Type
+}
+
+// EqScanOp provides a gomock Matcher that matches any ScanOp with a limit,
+// token, and fields to read that are the same as those specificed by the op argument.
+func EqScanOp(op *ScanOp) gomock.Matcher {
+	fields := make(map[string]bool, len(op.fieldsToRead))
+	for _, field := range op.fieldsToRead {
+		fields[field] = true
+	}
+
+	return scanOpMatcher{
+		limit:  op.limit,
+		token:  op.token,
+		fields: fields,
+		typ:    reflect.TypeOf(op.object).Elem(),
+	}
+}
+
+// Matches satisfies the gomock.Matcher interface
+func (m scanOpMatcher) Matches(x interface{}) bool {
+	op, ok := x.(*ScanOp)
+	if !ok {
+		return false
+	}
+
+	for _, field := range op.fieldsToRead {
+		if !m.fields[field] {
+			return false
+		}
+	}
+
+	return op.limit == m.limit && op.token == m.token && reflect.TypeOf(op.object).Elem() == m.typ
+}
+
+// String satisfies the gomock.Matcher and Stringer interface
+func (m scanOpMatcher) String() string {
+	fieldList := make([]string, 0, len(m.fields))
+	for field := range m.fields {
+		fieldList = append(fieldList, field)
+	}
+	return fmt.Sprintf(
+		" is equal to ScanOp with limit %d, token %q, dosa entity type %v, and fields %v",
+		m.limit,
+		m.token,
+		m.typ,
+		fieldList,
+	)
 }

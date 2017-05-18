@@ -36,6 +36,15 @@ type User struct {
 	CreatedOn   time.Time
 }
 
+// MenuItem represents a single item on a Menu.
+type MenuItem struct {
+	dosa.Entity  `dosa:"primaryKey=((MenuUUID), MenuItemUUID)"`
+	MenuUUID     dosa.UUID
+	MenuItemUUID dosa.UUID
+	Name         string
+	Description  string
+}
+
 // Datastore implements methods to operate on entities.
 type Datastore struct {
 	client dosa.Client
@@ -62,4 +71,22 @@ func (d *Datastore) GetUser(ctx context.Context, uuid dosa.UUID) (*User, error) 
 		return nil, err
 	}
 	return user, nil
+}
+
+// GetMenu fetches all of the MenuItems for the menu specified by menuUUID.
+func (d *Datastore) GetMenu(ctx context.Context, menuUUID dosa.UUID) ([]*MenuItem, error) {
+	op := dosa.NewRangeOp(&MenuItem{}).Eq("MenuUUID", menuUUID).Limit(50)
+	rangeCtx, rangeCancelFn := context.WithTimeout(ctx, 1*time.Second)
+	defer rangeCancelFn()
+
+	objs, _, err := d.client.Range(rangeCtx, op)
+	if err != nil {
+		return nil, err
+	}
+
+	menuItems := make([]*MenuItem, len(objs))
+	for i, obj := range objs {
+		menuItems[i] = obj.(*MenuItem)
+	}
+	return menuItems, nil
 }

@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 )
 
@@ -142,4 +143,56 @@ func convertRangeOpConditions(r *RangeOp, t *Table) (map[string][]*Condition, er
 		}
 	}
 	return serverConditions, nil
+}
+
+type rangeOpMatcher struct {
+	conds    map[string]map[Condition]bool
+	eqScanOp gomock.Matcher
+}
+
+// EqRangeOp creates a gomock Matcher that will match any RangeOp with the same conditions, limit, token, and fields
+// as those specified in the op argument.
+func EqRangeOp(op *RangeOp) gomock.Matcher {
+	conds := make(map[string]map[Condition]bool)
+	for col, colConds := range op.conditions {
+		conds[col] = make(map[Condition]bool, len(colConds))
+		for _, cond := range colConds {
+			conds[col][*cond] = true
+		}
+	}
+
+	return rangeOpMatcher{
+		conds:    conds,
+		eqScanOp: EqScanOp(&(op.sop)),
+	}
+}
+
+// Matches satisfies the gomock.Matcher interface
+func (m rangeOpMatcher) Matches(x interface{}) bool {
+	op, ok := x.(*RangeOp)
+	if !ok {
+		return false
+	}
+
+	for col, conds := range op.conditions {
+		for _, condition := range conds {
+			if !m.conds[col][*condition] {
+				return false
+			}
+		}
+	}
+
+	if !m.eqScanOp.Matches(&(op.sop)) {
+		return false
+	}
+	return true
+}
+
+// String satisfies the gomock.Matcher and Stringer interface
+func (m rangeOpMatcher) String() string {
+	return fmt.Sprintf(
+		" is equal to RangeOp with conditions %v, and scan op %s",
+		m.conds,
+		m.eqScanOp.String(),
+	)
 }
