@@ -364,15 +364,77 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 	if len(partitionRef) == 0 {
 		return nil, "", &dosa.ErrNotFound{}
 	}
-	// TODO: hunt through the partitionRef and return values that match search criteria
+	// hunt through the partitionRef and return values that match search criteria
+	// TODO: This can be done much faster using a binary search
+	startinx, endinx := 0, len(partitionRef)-1
+	for startinx < len(partitionRef) && !matchesClusteringConditions(ei, columnConditions, partitionRef[startinx]) {
+		startinx++
+	}
+	// TODO: adjust startinx with a passed in token
+	for endinx >= startinx && !matchesClusteringConditions(ei, columnConditions, partitionRef[endinx]) {
+		endinx--
+
+	}
+	if endinx <= startinx {
+		return nil, "", &dosa.ErrNotFound{}
+	}
 	// TODO: enforce limits and return a token when there are more rows
-	// TODO: if a set of columns is specified, return only that set
-	return partitionRef, "", nil
+	// TODO: use filterSet() to remove columns not asked for
+	return partitionRef[startinx : endinx+1], "", nil
 }
 
-// Scan is not implemented
+// matchesClusteringConditions checks if a data row matches the conditions in the columnConditions that apply to
+// clustering columns. If a condition does NOT match, it returns false, otherwise true
+// This function is pretty fast if there are no conditions on the clustering columns
+func matchesClusteringConditions(ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, data map[string]dosa.FieldValue) bool {
+	for _, col := range ei.Def.Key.ClusteringKeys {
+		if conds, ok := columnConditions[col.Name]; ok {
+			// conditions exist on this clustering key
+			for _, cond := range conds {
+				if !passCol(data[col.Name], cond) {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+// passCol checks if a column passes a specific condition
+func passCol(data dosa.FieldValue, cond *dosa.Condition) bool {
+	cmp := compareType(data, cond.Value)
+	switch cond.Op {
+	case dosa.Eq:
+		return cmp == 0
+	case dosa.Gt:
+		return cmp > 0
+	case dosa.GtOrEq:
+		return cmp >= 0
+	case dosa.Lt:
+		return cmp < 0
+	case dosa.LtOrEq:
+		return cmp <= 0
+	}
+	panic("invalid operator " + cond.Op.String())
+}
+
+// Scan returns all the rows
 func (c *Connector) Scan(_ context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	panic("not implemented")
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	if c.data[ei.Def.Name] == nil {
+		return nil, "", &dosa.ErrNotFound{}
+	}
+	entityRef := c.data[ei.Def.Name]
+	allTheThings := make([]map[string]dosa.FieldValue, 0)
+	// TODO: stop when we reach the limit, and make a token for continuation
+	for _, vals := range entityRef {
+		allTheThings = append(allTheThings, vals...)
+	}
+	if len(allTheThings) == 0 {
+		return nil, "", &dosa.ErrNotFound{}
+	}
+	return allTheThings, "", nil
 }
 
 // CheckSchema is just a stub; there is no schema management for the in memory connector

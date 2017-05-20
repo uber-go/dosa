@@ -802,4 +802,3 @@ func TestErrorIsAlreadyExists(t *testing.T) {
 	assert.True(t, dosaRenamed.ErrorIsAlreadyExists(errors.Wrap(&dosaRenamed.ErrAlreadyExists{}, "wrapped")))
 	assert.Equal(t, "already exists", (&dosaRenamed.ErrAlreadyExists{}).Error())
 }
-
