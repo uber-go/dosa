@@ -202,6 +202,7 @@ func TestConnector_Remove(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
+	// create a single row
 	err = sut.CreateIfNotExists(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("data"),
 		"c1": dosa.FieldValue(int32(1)),
@@ -238,13 +239,12 @@ func TestConnector_Remove(t *testing.T) {
 		"c7": dosa.FieldValue(id)})
 	assert.NoError(t, err)
 
-	// remove it again, now that there's nothing at all there (different code path)
+	// remove it again, now that there's nothing at all there (corner case)
 	err = sut.Remove(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("key"),
 		"c1": dosa.FieldValue(int32(1)),
 		"c7": dosa.FieldValue(id)})
 	assert.Error(t, err)
-
 }
 
 func TestConnector_Shutdown(t *testing.T) {
@@ -252,6 +252,7 @@ func TestConnector_Shutdown(t *testing.T) {
 
 	err := sut.Shutdown()
 	assert.NoError(t, err)
+	assert.Nil(t, sut.data)
 }
 
 // test CreateIfNotExists with partitioning
@@ -358,6 +359,7 @@ func TestConnector_Range(t *testing.T) {
 	const idcount = 10
 	sut := Connector{}
 
+	// no data at all (corner case)
 	data, token, err := sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 	}, dosa.All(), "", 200)
@@ -365,6 +367,9 @@ func TestConnector_Range(t *testing.T) {
 	assert.True(t, dosa.ErrorIsNotFound(err))
 	assert.Empty(t, token)
 	assert.Empty(t, data)
+
+	// insert some data into data/1/uuid with a random set of uuids
+	// we insert them in a random order
 	testUUIDs := make([]dosa.UUID, idcount)
 	for x := 0; x < idcount; x++ {
 		testUUIDs[x] = dosa.NewUUID()
@@ -376,7 +381,8 @@ func TestConnector_Range(t *testing.T) {
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
 	}
-	// no data in this partition key
+
+	// search using a different partition key
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("wrongdata")}},
 	}, dosa.All(), "", 200)
@@ -384,19 +390,30 @@ func TestConnector_Range(t *testing.T) {
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	sort.Sort(ByUUID(testUUIDs))
+	// search using the right partition key, and check that the data was insertion-sorted
+	// correctly
+	data, _, _ = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
+	}, dosa.All(), "", 200)
+	for idx, row := range data {
+		assert.Equal(t, testUUIDs[idx], row["c7"])
+	}
+
 	// find the midpoint and look for all values greater than that
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
-		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[idcount/2])}},
+		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[idcount/2-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Equal(t, idcount/2-1, len(data))
 
+	// there's one more for greater than or equal
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
-		"c7": {{Op: dosa.GtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2])}},
+		"c7": {{Op: dosa.GtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Equal(t, idcount/2, len(data))
@@ -405,24 +422,35 @@ func TestConnector_Range(t *testing.T) {
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
-		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[idcount/2-1])}},
+		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[idcount/2])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Equal(t, idcount/2-1, len(data))
 
+	// and same for less than or equal
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
-		"c7": {{Op: dosa.LtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2-1])}},
+		"c7": {{Op: dosa.LtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Equal(t, idcount/2, len(data))
 
-	// look off the end of the left side (remember, uuids are backwards)
+	// look off the end of the left side, so greater than maximum (edge case)
+	// (uuids are ordered descending so this is non-intuitively backwards)
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
-		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[idcount-1])}},
+		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[0])}},
+	}, dosa.All(), "", 200)
+	assert.Error(t, err)
+	assert.True(t, dosa.ErrorIsNotFound(err))
+
+	// look off the end of the left side, so greater than maximum
+	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
+		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[idcount-1])}},
 	}, dosa.All(), "", 200)
 	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
@@ -432,7 +460,7 @@ type ByUUID []dosa.UUID
 
 func (u ByUUID) Len() int           { return len(u) }
 func (u ByUUID) Swap(i, j int)      { u[i], u[j] = u[j], u[i] }
-func (u ByUUID) Less(i, j int) bool { return string(u[i]) < string(u[j]) }
+func (u ByUUID) Less(i, j int) bool { return string(u[i]) > string(u[j]) }
 
 func BenchmarkConnector_CreateIfNotExists(b *testing.B) {
 	sut := Connector{}
