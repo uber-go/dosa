@@ -23,9 +23,9 @@ package yarpc
 import (
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
-	"github.com/pkg/errors"
 )
 
 // RawValueAsInterface converts a value from the wire to an object implementing the interface
