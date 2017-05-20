@@ -131,7 +131,7 @@ func TestConnector_Read(t *testing.T) {
 
 	err = sut.CreateIfNotExists(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("data"),
-		"c1": dosa.FieldValue(int32(1)),
+		"c1": dosa.FieldValue(int64(1)),
 		"c2": dosa.FieldValue(float64(2)),
 	})
 	assert.NoError(t, err)
@@ -139,14 +139,14 @@ func TestConnector_Read(t *testing.T) {
 	vals, err = sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("data")}, []string{"c1"})
 	assert.NoError(t, err)
-	assert.Equal(t, int32(1), vals["c1"])
+	assert.Equal(t, int64(1), vals["c1"])
 	assert.Nil(t, vals["c2"])
 	assert.Equal(t, 1, len(vals))
 
 	vals, err = sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("data")}, dosa.All())
 	assert.NoError(t, err)
-	assert.Equal(t, int32(1), vals["c1"])
+	assert.Equal(t, int64(1), vals["c1"])
 	assert.Equal(t, float64(2), vals["c2"])
 	assert.Equal(t, "data", vals["f1"])
 
@@ -171,7 +171,7 @@ func TestConnector_Read(t *testing.T) {
 	id := dosa.NewUUID()
 	err = sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("key"),
-		"c1": dosa.FieldValue(int32(1)),
+		"c1": dosa.FieldValue(int64(1)),
 		"c2": dosa.FieldValue(float64(1.2)),
 		"c7": dosa.FieldValue(id)})
 	assert.NoError(t, err)
@@ -179,7 +179,7 @@ func TestConnector_Read(t *testing.T) {
 	// read that row
 	vals, err = sut.Read(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("key"),
-		"c1": dosa.FieldValue(int32(1)),
+		"c1": dosa.FieldValue(int64(1)),
 		"c7": dosa.FieldValue(id)}, dosa.All())
 	assert.NoError(t, err)
 	assert.Equal(t, dosa.FieldValue(float64(1.2)), vals["c2"])
@@ -187,7 +187,7 @@ func TestConnector_Read(t *testing.T) {
 	// and fail a read on a clustered key
 	vals, err = sut.Read(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("key"),
-		"c1": dosa.FieldValue(int32(2)),
+		"c1": dosa.FieldValue(int64(2)),
 		"c7": dosa.FieldValue(id)}, dosa.All())
 	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
@@ -205,7 +205,7 @@ func TestConnector_Remove(t *testing.T) {
 	// create a single row
 	err = sut.CreateIfNotExists(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("data"),
-		"c1": dosa.FieldValue(int32(1)),
+		"c1": dosa.FieldValue(int64(1)),
 		"c2": dosa.FieldValue(float64(2)),
 	})
 	assert.NoError(t, err)
@@ -220,7 +220,7 @@ func TestConnector_Remove(t *testing.T) {
 	id := dosa.NewUUID()
 	err = sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("key"),
-		"c1": dosa.FieldValue(int32(1)),
+		"c1": dosa.FieldValue(int64(1)),
 		"c2": dosa.FieldValue(float64(1.2)),
 		"c7": dosa.FieldValue(id)})
 	assert.NoError(t, err)
@@ -228,21 +228,21 @@ func TestConnector_Remove(t *testing.T) {
 	// remove something not there, but matches partition
 	err = sut.Remove(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("key"),
-		"c1": dosa.FieldValue(int32(1)),
+		"c1": dosa.FieldValue(int64(1)),
 		"c7": dosa.FieldValue(dosa.NewUUID())})
 	assert.Error(t, err)
 
 	// and remove the partitioned value
 	err = sut.Remove(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("key"),
-		"c1": dosa.FieldValue(int32(1)),
+		"c1": dosa.FieldValue(int64(1)),
 		"c7": dosa.FieldValue(id)})
 	assert.NoError(t, err)
 
 	// remove it again, now that there's nothing at all there (corner case)
 	err = sut.Remove(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("key"),
-		"c1": dosa.FieldValue(int32(1)),
+		"c1": dosa.FieldValue(int64(1)),
 		"c7": dosa.FieldValue(id)})
 	assert.Error(t, err)
 }
@@ -268,7 +268,7 @@ func TestConnector_CreateIfNotExists2(t *testing.T) {
 	for x := 0; x < 10; x++ {
 		err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),
-			"c1": dosa.FieldValue(int32(1)),
+			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
 	}
@@ -276,7 +276,7 @@ func TestConnector_CreateIfNotExists2(t *testing.T) {
 	for x := 0; x < 10; x++ {
 		err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),
-			"c1": dosa.FieldValue(int32(1)),
+			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.Error(t, err)
 		assert.True(t, dosa.ErrorIsAlreadyExists(err))
@@ -285,7 +285,7 @@ func TestConnector_CreateIfNotExists2(t *testing.T) {
 	for x := 0; x < 10; x++ {
 		err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),
-			"c1": dosa.FieldValue(int32(2)),
+			"c1": dosa.FieldValue(int64(2)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
 	}
@@ -293,7 +293,7 @@ func TestConnector_CreateIfNotExists2(t *testing.T) {
 	for x := 0; x < 10; x++ {
 		err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("different"),
-			"c1": dosa.FieldValue(int32(1)),
+			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
 	}
@@ -317,7 +317,7 @@ func TestConnector_Upsert2(t *testing.T) {
 	for x := 0; x < 10; x++ {
 		err := sut.Upsert(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),
-			"c1": dosa.FieldValue(int32(1)),
+			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
 	}
@@ -325,7 +325,7 @@ func TestConnector_Upsert2(t *testing.T) {
 	for x := 0; x < 10; x++ {
 		err := sut.Upsert(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),
-			"c1": dosa.FieldValue(int32(1)),
+			"c1": dosa.FieldValue(int64(1)),
 			"c6": dosa.FieldValue(int32(x)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
@@ -334,7 +334,7 @@ func TestConnector_Upsert2(t *testing.T) {
 	for x := 0; x < 10; x++ {
 		err := sut.Upsert(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),
-			"c1": dosa.FieldValue(int32(2)),
+			"c1": dosa.FieldValue(int64(2)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
 	}
@@ -342,7 +342,7 @@ func TestConnector_Upsert2(t *testing.T) {
 	for x := 0; x < 10; x++ {
 		err := sut.Upsert(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("different"),
-			"c1": dosa.FieldValue(int32(1)),
+			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
 	}
@@ -377,7 +377,7 @@ func TestConnector_Range(t *testing.T) {
 	for x := 0; x < idcount; x++ {
 		err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),
-			"c1": dosa.FieldValue(int32(1)),
+			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
 	}
@@ -394,7 +394,7 @@ func TestConnector_Range(t *testing.T) {
 	// correctly
 	data, _, _ = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
-		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
 	}, dosa.All(), "", 200)
 	for idx, row := range data {
 		assert.Equal(t, testUUIDs[idx], row["c7"])
@@ -403,7 +403,7 @@ func TestConnector_Range(t *testing.T) {
 	// find the midpoint and look for all values greater than that
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
-		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
 		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[idcount/2-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
@@ -412,7 +412,7 @@ func TestConnector_Range(t *testing.T) {
 	// there's one more for greater than or equal
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
-		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
 		"c7": {{Op: dosa.GtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
@@ -421,7 +421,7 @@ func TestConnector_Range(t *testing.T) {
 	// find the midpoint and look for all values less than that
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
-		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
 		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[idcount/2])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
@@ -430,7 +430,7 @@ func TestConnector_Range(t *testing.T) {
 	// and same for less than or equal
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
-		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
 		"c7": {{Op: dosa.LtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
@@ -440,7 +440,7 @@ func TestConnector_Range(t *testing.T) {
 	// (uuids are ordered descending so this is non-intuitively backwards)
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
-		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
 		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[0])}},
 	}, dosa.All(), "", 200)
 	assert.Error(t, err)
@@ -449,7 +449,7 @@ func TestConnector_Range(t *testing.T) {
 	// look off the end of the left side, so greater than maximum
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
-		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int32(1))}},
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
 		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[idcount-1])}},
 	}, dosa.All(), "", 200)
 	assert.Error(t, err)
@@ -468,7 +468,7 @@ func BenchmarkConnector_CreateIfNotExists(b *testing.B) {
 		id := dosa.NewUUID()
 		err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("key"),
-			"c1": dosa.FieldValue(int32(1)),
+			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(id)})
 		assert.NoError(b, err)
 		if x%1000 == 0 {
@@ -487,7 +487,7 @@ func BenchmarkConnector_Read(b *testing.B) {
 	for x := 0; x < idcount; x++ {
 		err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),
-			"c1": dosa.FieldValue(int32(1)),
+			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(b, err)
 	}
@@ -495,7 +495,7 @@ func BenchmarkConnector_Read(b *testing.B) {
 	for x := 0; x < b.N; x++ {
 		_, err := sut.Read(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),
-			"c1": dosa.FieldValue(int32(1)),
+			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x%idcount])}, dosa.All())
 		assert.NoError(b, err)
 	}
@@ -557,7 +557,7 @@ func TestConnector_Scan(t *testing.T) {
 	for x := 0; x < 10; x++ {
 		err := sut.Upsert(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data" + string(x%2)),
-			"c1": dosa.FieldValue(int32(1)),
+			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
 	}
@@ -571,7 +571,7 @@ func TestConnector_Scan(t *testing.T) {
 	for x := 0; x < 10; x++ {
 		err := sut.Remove(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data" + string(x%2)),
-			"c1": dosa.FieldValue(int32(1)),
+			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
 	}
