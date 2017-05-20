@@ -27,6 +27,7 @@ import (
 
 	"sort"
 
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 )
@@ -456,6 +457,52 @@ func TestConnector_Range(t *testing.T) {
 	assert.True(t, dosa.ErrorIsNotFound(err))
 }
 
+func TestConnector_TimeUUIDs(t *testing.T) {
+	sut := Connector{}
+	const idcount = 10
+
+	// insert a bunch of values with V1 timestamps as clustering keys
+	for x := 0; x < idcount; x++ {
+		err := sut.Upsert(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
+			"f1": dosa.FieldValue("data"),
+			"c1": dosa.FieldValue(int64(1)),
+			"c6": dosa.FieldValue(int32(x)),
+			"c7": dosa.FieldValue(dosa.UUID(uuid.NewV1().String()))})
+		assert.NoError(t, err)
+	}
+
+	// read them back, they should be in reverse order
+	data, _, _ := sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
+	}, dosa.All(), "", 200)
+
+	// check that the order is backwards
+	for idx, row := range data {
+		assert.Equal(t, int32(idcount-idx-1), row["c6"])
+	}
+
+	// now mix in a few V4 UUIDs
+	for x := 0; x < idcount; x++ {
+		err := sut.Upsert(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
+			"f1": dosa.FieldValue("data"),
+			"c1": dosa.FieldValue(int64(1)),
+			"c6": dosa.FieldValue(int32(idcount + x)),
+			"c7": dosa.FieldValue(dosa.NewUUID())})
+		assert.NoError(t, err)
+	}
+
+	// the V4's should all be first, since V4 UUIDs sort > V1 UUIDs
+	data, _, _ = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
+	}, dosa.All(), "", 200)
+	for _, row := range data[0:idcount] {
+		assert.True(t, row["c6"].(int32) >= idcount, row["c6"])
+	}
+
+}
+
 type ByUUID []dosa.UUID
 
 func (u ByUUID) Len() int           { return len(u) }
@@ -502,7 +549,9 @@ func BenchmarkConnector_Read(b *testing.B) {
 }
 
 func TestCompareType(t *testing.T) {
-	uuid := dosa.NewUUID()
+	tuuid := dosa.NewUUID()
+	v1uuid := dosa.UUID(uuid.NewV1().String())
+	v1newer := dosa.UUID(uuid.NewV1().String())
 	tests := []struct {
 		t1, t2 dosa.FieldValue
 		result int8
@@ -511,7 +560,8 @@ func TestCompareType(t *testing.T) {
 		{dosa.FieldValue(int64(1)), dosa.FieldValue(int64(1)), 0},
 		{dosa.FieldValue("test"), dosa.FieldValue("test"), 0},
 		{dosa.FieldValue(time.Time{}), dosa.FieldValue(time.Time{}), 0},
-		{dosa.FieldValue(uuid), dosa.FieldValue(uuid), 0},
+		{dosa.FieldValue(tuuid), dosa.FieldValue(tuuid), 0},
+		{dosa.FieldValue(v1uuid), dosa.FieldValue(v1uuid), 0},
 		{dosa.FieldValue(false), dosa.FieldValue(false), 0},
 		{dosa.FieldValue([]byte{1}), dosa.FieldValue([]byte{1}), 0},
 		{dosa.FieldValue(1.0), dosa.FieldValue(1.0), 0},
@@ -520,7 +570,8 @@ func TestCompareType(t *testing.T) {
 		{dosa.FieldValue(int64(1)), dosa.FieldValue(int64(2)), -1},
 		{dosa.FieldValue("test"), dosa.FieldValue("test2"), -1},
 		{dosa.FieldValue(time.Time{}), dosa.FieldValue(time.Time{}.Add(time.Duration(1))), -1},
-		{dosa.FieldValue(uuid), dosa.FieldValue(uuid), 0},
+		{dosa.FieldValue(v1uuid), dosa.FieldValue(tuuid), -1},
+		{dosa.FieldValue(v1uuid), dosa.FieldValue(v1newer), -1},
 		{dosa.FieldValue(false), dosa.FieldValue(true), -1},
 		{dosa.FieldValue([]byte{1}), dosa.FieldValue([]byte{2}), -1},
 		{dosa.FieldValue(0.9), dosa.FieldValue(1.0), -1},
@@ -529,13 +580,14 @@ func TestCompareType(t *testing.T) {
 		{dosa.FieldValue(int64(2)), dosa.FieldValue(int64(1)), 1},
 		{dosa.FieldValue("test2"), dosa.FieldValue("test"), 1},
 		{dosa.FieldValue(time.Time{}.Add(time.Duration(1))), dosa.FieldValue(time.Time{}), 1},
-		{dosa.FieldValue(uuid), dosa.FieldValue(uuid), 0},
+		{dosa.FieldValue(tuuid), dosa.FieldValue(v1uuid), 1},
+		{dosa.FieldValue(v1newer), dosa.FieldValue(v1uuid), 1},
 		{dosa.FieldValue(true), dosa.FieldValue(false), 1},
 		{dosa.FieldValue([]byte{2}), dosa.FieldValue([]byte{1}), 1},
 		{dosa.FieldValue(1.1), dosa.FieldValue(1.0), 1},
 	}
 	for _, test := range tests {
-		assert.Equal(t, test.result, compareType(test.t1, test.t2), test.t1)
+		assert.Equal(t, test.result, compareType(test.t1, test.t2))
 	}
 
 	assert.Panics(t, func() { compareType(t, t) })

@@ -28,6 +28,9 @@ import (
 	"sync"
 	"time"
 
+	"encoding/binary"
+
+	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
 )
@@ -98,53 +101,85 @@ func compareRows(ei *dosa.EntityInfo, v1 map[string]dosa.FieldValue, v2 map[stri
 	return cmp
 }
 
+// This function returns the time bits from a UUID
+// You would have to scale this to nanos to make a
+// time.Time but we don't generally need that for
+// comparisons. See RFC 4122 for these bit offsets
+func timeFromUUID(u uuid.UUID) int64 {
+	low := int64(binary.BigEndian.Uint32(u[0:4]))
+	mid := int64(binary.BigEndian.Uint16(u[4:6]))
+	hi := int64((binary.BigEndian.Uint16(u[6:8]) & 0x0fff))
+	return low + (mid << 32) + (hi << 48)
+}
+
 // compareType compares a single DOSA field based on the type. This code assumes the types of each
 // of the columns are the same, or it will panic
 func compareType(d1 dosa.FieldValue, d2 dosa.FieldValue) int8 {
-	switch d1.(type) {
+	switch d1 := d1.(type) {
 	case dosa.UUID:
-		// TODO: compare timestamp UUIDs
-		if string(d1.(dosa.UUID)) == string(d2.(dosa.UUID)) {
+		u1 := uuid.FromStringOrNil(string(d1))
+		u2 := uuid.FromStringOrNil(string(d2.(dosa.UUID)))
+		if u1.Version() != u2.Version() {
+			if u1.Version() < u2.Version() {
+				return -1
+			}
+			return 1
+		}
+		if u1.Version() == 1 {
+			// compare time UUIDs
+			t1 := timeFromUUID(u1)
+			t2 := timeFromUUID(u2)
+			if t1 == t2 {
+				return 0
+			}
+			if t1 < t2 {
+				return -1
+			}
+			return 1
+		}
+
+		// version
+		if string(d1) == string(d2.(dosa.UUID)) {
 			return 0
 		}
-		if string(d1.(dosa.UUID)) < string(d2.(dosa.UUID)) {
+		if string(d1) < string(d2.(dosa.UUID)) {
 			return -1
 		}
 		return 1
 	case string:
-		if d1.(string) == d2.(string) {
+		if d1 == d2.(string) {
 			return 0
 		}
-		if d1.(string) < d2.(string) {
+		if d1 < d2.(string) {
 			return -1
 		}
 		return 1
 	case int64:
-		if d1.(int64) == d2.(int64) {
+		if d1 == d2.(int64) {
 			return 0
 		}
-		if d1.(int64) < d2.(int64) {
+		if d1 < d2.(int64) {
 			return -1
 		}
 		return 1
 	case int32:
-		if d1.(int32) == d2.(int32) {
+		if d1 == d2.(int32) {
 			return 0
 		}
-		if d1.(int32) < d2.(int32) {
+		if d1 < d2.(int32) {
 			return -1
 		}
 		return 1
 	case float64:
-		if d1.(float64) == d2.(float64) {
+		if d1 == d2.(float64) {
 			return 0
 		}
-		if d1.(float64) < d2.(float64) {
+		if d1 < d2.(float64) {
 			return -1
 		}
 		return 1
 	case []byte:
-		c := bytes.Compare(d1.([]byte), d2.([]byte))
+		c := bytes.Compare(d1, d2.([]byte))
 		if c == 0 {
 			return 0
 		}
@@ -153,18 +188,18 @@ func compareType(d1 dosa.FieldValue, d2 dosa.FieldValue) int8 {
 		}
 		return 1
 	case time.Time:
-		if d1.(time.Time).Equal(d2.(time.Time)) {
+		if d1.Equal(d2.(time.Time)) {
 			return 0
 		}
-		if d1.(time.Time).Before(d2.(time.Time)) {
+		if d1.Before(d2.(time.Time)) {
 			return -1
 		}
 		return 1
 	case bool:
-		if d1.(bool) == d2.(bool) {
+		if d1 == d2.(bool) {
 			return 0
 		}
-		if d1.(bool) == false {
+		if d1 == false {
 			return -1
 		}
 		return 1
