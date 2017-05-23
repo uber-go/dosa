@@ -92,6 +92,9 @@ type SchemaStatus struct {
 
 // Connector is the interface that must be implemented for a backend service
 // It can also be implemented using an RPC such as thrift (dosa-idl)
+// When fields are returned from read/range/search/scan methods, it's legal for the connector
+// to return more fields than originally requested. The caller of the connector should never mutate
+// the returned columns either, in case they are from a cache
 type Connector interface {
 	// DML operations (CRUD + search)
 	// CreateIfNotExists creates a row, but only if it does not exist.

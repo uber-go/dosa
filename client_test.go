@@ -92,11 +92,11 @@ func ExampleNewClient() {
 	}
 }
 
-// ExampleGetConnector gets an in-memory connector that can be used for testing your code
+// ExampleGetConnector gets an in-memory connector that can be used for testing your code.
 // The in-memory connector always starts off with no rows, so you'll need to add rows to
 // your "database" before reading them
 func ExampleGetConnector() {
-	// register your entities so the engine can separate your data based on table names
+	// register your entities so the engine can separate your data based on table names.
 	// Scopes and prefixes are not used by the in-memory connector, and are ignored, but
 	// your list of entities is important. In this case, we only have one, our ClientTestEntity1
 	reg, err := dosaRenamed.NewRegistrar("test", "myteam.myservice", &ClientTestEntity1{})
@@ -208,7 +208,7 @@ func TestClient_Read(t *testing.T) {
 	assert.NoError(t, c3.Initialize(ctx))
 	assert.NoError(t, c3.Read(ctx, fieldsToRead, cte1))
 	assert.Equal(t, cte1.ID, results["id"])
-	assert.Equal(t, cte1.Name, results["name"])
+	assert.NotEqual(t, cte1.Name, results["name"])
 	assert.Equal(t, cte1.Email, results["email"])
 }
 

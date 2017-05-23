@@ -83,7 +83,7 @@ var clusteredEi = &dosa.EntityInfo{
 }
 
 func TestConnector_CreateIfNotExists(t *testing.T) {
-	sut := Connector{}
+	sut := NewConnector()
 
 	err := sut.CreateIfNotExists(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("data"),
@@ -94,11 +94,10 @@ func TestConnector_CreateIfNotExists(t *testing.T) {
 		"f1": dosa.FieldValue("data"),
 	})
 
-	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsAlreadyExists(err))
 }
 func TestConnector_Upsert(t *testing.T) {
-	sut := Connector{}
+	sut := NewConnector()
 
 	err := sut.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("data"),
@@ -122,12 +121,11 @@ func TestConnector_Upsert(t *testing.T) {
 }
 
 func TestConnector_Read(t *testing.T) {
-	sut := Connector{}
+	sut := NewConnector()
 
 	// read with no data
 	vals, err := sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("data")}, []string{"c1"})
-	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	err = sut.CreateIfNotExists(context.TODO(), testEi, map[string]dosa.FieldValue{
@@ -141,8 +139,6 @@ func TestConnector_Read(t *testing.T) {
 		"f1": dosa.FieldValue("data")}, []string{"c1"})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), vals["c1"])
-	assert.Nil(t, vals["c2"])
-	assert.Equal(t, 1, len(vals))
 
 	vals, err = sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("data")}, dosa.All())
@@ -154,7 +150,6 @@ func TestConnector_Read(t *testing.T) {
 	// read a key that isn't there
 	vals, err = sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("not there")}, dosa.All())
-	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	// now delete the one that is
@@ -165,7 +160,6 @@ func TestConnector_Read(t *testing.T) {
 	// read the deleted key
 	vals, err = sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("data")}, dosa.All())
-	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	// insert into clustered entity
@@ -190,18 +184,16 @@ func TestConnector_Read(t *testing.T) {
 		"f1": dosa.FieldValue("key"),
 		"c1": dosa.FieldValue(int64(2)),
 		"c7": dosa.FieldValue(id)}, dosa.All())
-	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 }
 
 func TestConnector_Remove(t *testing.T) {
-	sut := Connector{}
+	sut := NewConnector()
 
 	// remove with no data
 	err := sut.Remove(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("data")})
-	assert.Error(t, err)
-	assert.True(t, dosa.ErrorIsNotFound(err))
+	assert.NoError(t, err)
 
 	// create a single row
 	err = sut.CreateIfNotExists(context.TODO(), testEi, map[string]dosa.FieldValue{
@@ -214,8 +206,7 @@ func TestConnector_Remove(t *testing.T) {
 	// remove something not there
 	err = sut.Remove(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("nothere")})
-	assert.Error(t, err)
-	assert.True(t, dosa.ErrorIsNotFound(err))
+	assert.NoError(t, err)
 
 	// insert into clustered entity
 	id := dosa.NewUUID()
@@ -231,7 +222,7 @@ func TestConnector_Remove(t *testing.T) {
 		"f1": dosa.FieldValue("key"),
 		"c1": dosa.FieldValue(int64(1)),
 		"c7": dosa.FieldValue(dosa.NewUUID())})
-	assert.Error(t, err)
+	assert.NoError(t, err)
 
 	// and remove the partitioned value
 	err = sut.Remove(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
@@ -245,11 +236,11 @@ func TestConnector_Remove(t *testing.T) {
 		"f1": dosa.FieldValue("key"),
 		"c1": dosa.FieldValue(int64(1)),
 		"c7": dosa.FieldValue(id)})
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestConnector_Shutdown(t *testing.T) {
-	sut := Connector{}
+	sut := NewConnector()
 
 	err := sut.Shutdown()
 	assert.NoError(t, err)
@@ -258,7 +249,7 @@ func TestConnector_Shutdown(t *testing.T) {
 
 // test CreateIfNotExists with partitioning
 func TestConnector_CreateIfNotExists2(t *testing.T) {
-	sut := Connector{}
+	sut := NewConnector()
 
 	testUUIDs := make([]dosa.UUID, 10)
 	for x := 0; x < 10; x++ {
@@ -279,7 +270,6 @@ func TestConnector_CreateIfNotExists2(t *testing.T) {
 			"f1": dosa.FieldValue("data"),
 			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
-		assert.Error(t, err)
 		assert.True(t, dosa.ErrorIsAlreadyExists(err))
 	}
 	// now, insert them again, but this time with a different secondary key
@@ -303,11 +293,11 @@ func TestConnector_CreateIfNotExists2(t *testing.T) {
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Empty(t, token)
-	assert.Equal(t, 20, len(data))
+	assert.Len(t, data, 20)
 }
 
 func TestConnector_Upsert2(t *testing.T) {
-	sut := Connector{}
+	sut := NewConnector()
 
 	testUUIDs := make([]dosa.UUID, 10)
 	for x := 0; x < 10; x++ {
@@ -352,19 +342,18 @@ func TestConnector_Upsert2(t *testing.T) {
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Empty(t, token)
-	assert.Equal(t, 20, len(data))
+	assert.Len(t, data, 20)
 	assert.NotNil(t, data[0]["c6"])
 }
 
 func TestConnector_Range(t *testing.T) {
 	const idcount = 10
-	sut := Connector{}
+	sut := NewConnector()
 
 	// no data at all (corner case)
 	data, token, err := sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 	}, dosa.All(), "", 200)
-	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 	assert.Empty(t, token)
 	assert.Empty(t, data)
@@ -387,7 +376,6 @@ func TestConnector_Range(t *testing.T) {
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("wrongdata")}},
 	}, dosa.All(), "", 200)
-	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	sort.Sort(ByUUID(testUUIDs))
@@ -408,7 +396,7 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[idcount/2-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Equal(t, idcount/2-1, len(data))
+	assert.Len(t, data, idcount/2-1)
 
 	// there's one more for greater than or equal
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
@@ -417,7 +405,7 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.GtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Equal(t, idcount/2, len(data))
+	assert.Len(t, data, idcount/2)
 
 	// find the midpoint and look for all values less than that
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
@@ -426,7 +414,7 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[idcount/2])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Equal(t, idcount/2-1, len(data))
+	assert.Len(t, data, idcount/2-1)
 
 	// and same for less than or equal
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
@@ -435,7 +423,7 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.LtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Equal(t, idcount/2, len(data))
+	assert.Len(t, data, idcount/2)
 
 	// look off the end of the left side, so greater than maximum (edge case)
 	// (uuids are ordered descending so this is non-intuitively backwards)
@@ -444,7 +432,6 @@ func TestConnector_Range(t *testing.T) {
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
 		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[0])}},
 	}, dosa.All(), "", 200)
-	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	// look off the end of the left side, so greater than maximum
@@ -453,12 +440,11 @@ func TestConnector_Range(t *testing.T) {
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
 		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[idcount-1])}},
 	}, dosa.All(), "", 200)
-	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 }
 
 func TestConnector_TimeUUIDs(t *testing.T) {
-	sut := Connector{}
+	sut := NewConnector()
 	const idcount = 10
 
 	// insert a bunch of values with V1 timestamps as clustering keys
@@ -510,7 +496,7 @@ func (u ByUUID) Swap(i, j int)      { u[i], u[j] = u[j], u[i] }
 func (u ByUUID) Less(i, j int) bool { return string(u[i]) > string(u[j]) }
 
 func BenchmarkConnector_CreateIfNotExists(b *testing.B) {
-	sut := Connector{}
+	sut := NewConnector()
 	for x := 0; x < b.N; x++ {
 		id := dosa.NewUUID()
 		err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
@@ -530,7 +516,7 @@ func BenchmarkConnector_Read(b *testing.B) {
 	for x := 0; x < idcount; x++ {
 		testUUIDs[x] = dosa.NewUUID()
 	}
-	sut := Connector{}
+	sut := NewConnector()
 	for x := 0; x < idcount; x++ {
 		err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),
@@ -594,14 +580,13 @@ func TestCompareType(t *testing.T) {
 }
 
 func TestConnector_Scan(t *testing.T) {
-	sut := Connector{}
+	sut := NewConnector()
 	testUUIDs := make([]dosa.UUID, 10)
 	for x := 0; x < 10; x++ {
 		testUUIDs[x] = dosa.NewUUID()
 	}
 	// scan with nothing there yet
 	_, token, err := sut.Scan(context.TODO(), clusteredEi, dosa.All(), "", 100)
-	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 	assert.Empty(t, token)
 
@@ -616,7 +601,7 @@ func TestConnector_Scan(t *testing.T) {
 
 	data, token, err := sut.Scan(context.TODO(), clusteredEi, dosa.All(), "", 100)
 	assert.NoError(t, err)
-	assert.Equal(t, 10, len(data))
+	assert.Len(t, data, 10)
 	assert.Empty(t, token)
 
 	// there's an odd edge case when you delete everything, so do that, then call scan
@@ -628,7 +613,6 @@ func TestConnector_Scan(t *testing.T) {
 		assert.NoError(t, err)
 	}
 	data, token, err = sut.Scan(context.TODO(), clusteredEi, dosa.All(), "", 100)
-	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 	assert.Empty(t, token)
 }
@@ -636,7 +620,7 @@ func TestConnector_Scan(t *testing.T) {
 func TestConstruction(t *testing.T) {
 	c, err := dosa.GetConnector("memory", nil)
 	assert.NoError(t, err)
-	assert.IsType(t, &Connector{}, c)
+	assert.IsType(t, NewConnector(), c)
 
 	v, err := c.CheckSchema(context.TODO(), "dummy", "dummy", nil)
 	assert.Equal(t, int32(1), v)

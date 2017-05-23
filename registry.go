@@ -158,15 +158,22 @@ func (e *RegisteredEntity) ColumnNames(fieldNames []string) ([]string, error) {
 
 // SetFieldValues is a helper for populating a DOSA entity with the given
 // fieldName->value map
-func (e *RegisteredEntity) SetFieldValues(entity DomainObject, fieldValues map[string]FieldValue) {
+func (e *RegisteredEntity) SetFieldValues(entity DomainObject, fieldValues map[string]FieldValue, fieldsToRead []string) {
 	r := reflect.ValueOf(entity).Elem()
-	for columnName, fieldValue := range fieldValues {
+	if fieldsToRead == nil {
+		for columnName := range fieldValues {
+			fieldsToRead = append(fieldsToRead, columnName)
+		}
+	}
+	//for columnName, fieldValue := range fieldValues {
+	for _, columnName := range fieldsToRead {
 		// column name may be different from the entity's field name, so we
 		// have to look it up along the way.
 		fieldName, ok := e.table.ColToField[columnName]
 		if !ok {
 			continue // we ignore fields that we don't know about
 		}
+		fieldValue := fieldValues[columnName]
 		val := r.FieldByName(fieldName)
 		if !val.IsValid() {
 			panic("Field " + fieldName + " is is not a valid field for " + e.table.StructName)

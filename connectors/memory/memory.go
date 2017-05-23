@@ -35,8 +35,8 @@ import (
 	"github.com/uber-go/dosa/connectors/base"
 )
 
-// Connector is an in memory connector.
-// The in-memory connector stores it's data like this:
+// Connector is an in-memory connector.
+// The in-memory connector stores its data like this:
 // map[string]map[string][]map[string]dosa.FieldValue
 //
 // the first 'string' is the table name (entity name)
@@ -213,44 +213,9 @@ func compareType(d1 dosa.FieldValue, d2 dosa.FieldValue) int8 {
 // Otherwise, search the partition for the exact same clustering keys. If there, fail
 // if not, then insert it at the right spot (sort.Search does most of the heavy lifting here)
 func (c *Connector) CreateIfNotExists(_ context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	if c.data == nil {
-		c.data = make(map[string]map[string][]map[string]dosa.FieldValue)
-	}
-	if c.data[ei.Def.Name] == nil {
-		c.data[ei.Def.Name] = make(map[string][]map[string]dosa.FieldValue)
-	}
-	entityRef := c.data[ei.Def.Name]
-	encodedPartitionKey := partitionKeyBuilder(ei, values)
-	if entityRef[encodedPartitionKey] == nil {
-		entityRef[encodedPartitionKey] = make([]map[string]dosa.FieldValue, 0, 1)
-	}
-	partitionRef := entityRef[encodedPartitionKey]
-	// no data in this partition? easy out!
-	if len(partitionRef) == 0 {
-		entityRef[encodedPartitionKey] = append(entityRef[encodedPartitionKey], values)
-		return nil
-	}
-
-	if len(ei.Def.ClusteringKeySet()) == 0 {
-		// no clustering key, so the row must already exist
+	return c.mergedInsert(ei, values, func(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
 		return &dosa.ErrAlreadyExists{}
-	}
-	// there is a clustering key, find the insertion point (binary search would be fastest)
-	found, offset := findInsertionPoint(ei, partitionRef, values)
-	if found {
-		return &dosa.ErrAlreadyExists{}
-	}
-	// perform slice magic to insert value at given offset
-	l := len(entityRef[encodedPartitionKey])                                                                     // get length
-	entityRef[encodedPartitionKey] = append(entityRef[encodedPartitionKey], entityRef[encodedPartitionKey][l-1]) // copy last element
-	// scoot over remaining elements
-	copy(entityRef[encodedPartitionKey][offset+1:], entityRef[encodedPartitionKey][offset:])
-	// and plunk value into appropriate location
-	entityRef[encodedPartitionKey][offset] = values
-
-	return nil
+	})
 }
 
 // Read searches for a row. First, it finds the partition, then it searches in the partition for
@@ -271,39 +236,32 @@ func (c *Connector) Read(_ context.Context, ei *dosa.EntityInfo, values map[stri
 	}
 
 	if len(ei.Def.ClusteringKeySet()) == 0 {
-		return filterSet(partitionRef[0], fieldsToRead), nil
+		return partitionRef[0], nil
 	}
 	// clustering key, search for the value in the set
 	found, inx := findInsertionPoint(ei, partitionRef, values)
 	if !found {
 		return nil, &dosa.ErrNotFound{}
 	}
-	return filterSet(partitionRef[inx], fieldsToRead), nil
-}
-
-// filterSet is a helper that creates a smaller map when the fieldsToRead has been
-// specified
-func filterSet(set map[string]dosa.FieldValue, fieldsToRead []string) map[string]dosa.FieldValue {
-	if fieldsToRead == nil {
-		return set
-	}
-	newSet := make(map[string]dosa.FieldValue)
-	for _, field := range fieldsToRead {
-		if val, ok := set[field]; ok {
-			newSet[field] = val
-		}
-	}
-	return newSet
+	return partitionRef[inx], nil
 }
 
 // Upsert works a lot like CreateIfNotExists but merges the data when it finds an existing row
 func (c *Connector) Upsert(_ context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+	return c.mergedInsert(ei, values, func(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
+		for k, v := range from {
+			into[k] = v
+		}
+		return nil
+	})
+}
+
+func (c *Connector) mergedInsert(ei *dosa.EntityInfo,
+	values map[string]dosa.FieldValue,
+	mergeFunc func(map[string]dosa.FieldValue, map[string]dosa.FieldValue) error) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if c.data == nil {
-		c.data = make(map[string]map[string][]map[string]dosa.FieldValue)
-	}
 	if c.data[ei.Def.Name] == nil {
 		c.data[ei.Def.Name] = make(map[string][]map[string]dosa.FieldValue)
 	}
@@ -321,14 +279,12 @@ func (c *Connector) Upsert(_ context.Context, ei *dosa.EntityInfo, values map[st
 
 	if len(ei.Def.ClusteringKeySet()) == 0 {
 		// no clustering key, so the row must already exist, merge it
-		merge(partitionRef[0], values)
-		return nil
+		return mergeFunc(partitionRef[0], values)
 	}
 	// there is a clustering key, find the insertion point (binary search would be fastest)
 	found, offset := findInsertionPoint(ei, partitionRef, values)
 	if found {
-		merge(partitionRef[offset], values)
-		return nil
+		return mergeFunc(partitionRef[offset], values)
 	}
 	// perform slice magic to insert value at given offset
 	l := len(entityRef[encodedPartitionKey])                                                                     // get length
@@ -339,28 +295,23 @@ func (c *Connector) Upsert(_ context.Context, ei *dosa.EntityInfo, values map[st
 	entityRef[encodedPartitionKey][offset] = values
 	return nil
 }
-func merge(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) {
-	for k, v := range from {
-		into[k] = v
-	}
-}
 
 // Remove deletes a single row
 func (c *Connector) Remove(_ context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if c.data[ei.Def.Name] == nil {
-		return &dosa.ErrNotFound{}
+		return nil
 	}
 	entityRef := c.data[ei.Def.Name]
 	encodedPartitionKey := partitionKeyBuilder(ei, values)
 	if entityRef[encodedPartitionKey] == nil {
-		return &dosa.ErrNotFound{}
+		return nil
 	}
 	partitionRef := entityRef[encodedPartitionKey]
 	// no data in this partition? easy out!
 	if len(partitionRef) == 0 {
-		return &dosa.ErrNotFound{}
+		return nil
 	}
 
 	// no clustering keys? Simple, delete this
@@ -371,9 +322,8 @@ func (c *Connector) Remove(_ context.Context, ei *dosa.EntityInfo, values map[st
 	found, offset := findInsertionPoint(ei, partitionRef, values)
 	if found {
 		entityRef[encodedPartitionKey] = append(entityRef[encodedPartitionKey][:offset], entityRef[encodedPartitionKey][offset+1:]...)
-		return nil
 	}
-	return &dosa.ErrNotFound{}
+	return nil
 }
 
 // Range returns a slice of data from the datastore
@@ -386,7 +336,7 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 	entityRef := c.data[ei.Def.Name]
 
 	// find the equals conditions on each of the partition keys
-	values := map[string]dosa.FieldValue{}
+	values := make(map[string]dosa.FieldValue)
 	for _, pk := range ei.Def.Key.PartitionKeys {
 		// TODO: assert len(columnConditions[pk] == 1
 		// TODO: assert columnConditions[pk][0].Op is equals
@@ -414,7 +364,6 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 		return nil, "", &dosa.ErrNotFound{}
 	}
 	// TODO: enforce limits and return a token when there are more rows
-	// TODO: use filterSet() to remove columns not asked for
 	return partitionRef[startinx : endinx+1], "", nil
 }
 
@@ -486,8 +435,15 @@ func (c *Connector) Shutdown() error {
 	return nil
 }
 
+// NewConnector creates a new in-memory connector
+func NewConnector() *Connector {
+	c := Connector{}
+	c.data = make(map[string]map[string][]map[string]dosa.FieldValue)
+	return &c
+}
+
 func init() {
 	dosa.RegisterConnector("memory", func(args map[string]interface{}) (dosa.Connector, error) {
-		return &Connector{}, nil
+		return NewConnector(), nil
 	})
 }

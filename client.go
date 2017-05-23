@@ -273,7 +273,7 @@ func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainO
 	}
 
 	// map results to entity fields
-	re.SetFieldValues(entity, results)
+	re.SetFieldValues(entity, results, columnsToRead)
 
 	return nil
 }
@@ -390,11 +390,11 @@ func (c *client) Range(ctx context.Context, r *RangeOp) ([]DomainObject, string,
 		return nil, "", errors.Wrap(err, "Range")
 	}
 
-	objectArray := objectsFromValueArray(r.sop.object, values, re)
+	objectArray := objectsFromValueArray(r.sop.object, values, re, nil)
 	return objectArray, token, nil
 }
 
-func objectsFromValueArray(object DomainObject, values []map[string]FieldValue, re *RegisteredEntity) []DomainObject {
+func objectsFromValueArray(object DomainObject, values []map[string]FieldValue, re *RegisteredEntity, columnsToRead []string) []DomainObject {
 	goType := reflect.TypeOf(object).Elem() // get the reflect.Type of the client entity
 	doType := reflect.TypeOf((*DomainObject)(nil)).Elem()
 	slice := reflect.MakeSlice(reflect.SliceOf(doType), 0, len(values)) // make a slice of these
@@ -402,7 +402,7 @@ func objectsFromValueArray(object DomainObject, values []map[string]FieldValue, 
 	elements.Elem().Set(slice)
 	for _, flist := range values { // for each row returned
 		newObject := reflect.New(goType).Interface()                             // make a new entity
-		re.SetFieldValues(newObject.(DomainObject), flist)                       // fill it in from server values
+		re.SetFieldValues(newObject.(DomainObject), flist, columnsToRead)        // fill it in from server values
 		slice = reflect.Append(slice, reflect.ValueOf(newObject.(DomainObject))) // append to slice
 	}
 	return slice.Interface().([]DomainObject)
@@ -434,7 +434,7 @@ func (c *client) ScanEverything(ctx context.Context, sop *ScanOp) ([]DomainObjec
 	if err != nil {
 		return nil, "", err
 	}
-	objectArray := objectsFromValueArray(sop.object, values, re)
+	objectArray := objectsFromValueArray(sop.object, values, re, nil)
 	return objectArray, token, nil
 
 }

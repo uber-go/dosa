@@ -154,17 +154,17 @@ func TestRegisteredEntity_SetFieldValues(t *testing.T) {
 
 	// invalid entity
 	assert.Panics(t, func() {
-		re.SetFieldValues(&RegistryTestInvalid{PrimaryKey: 1}, validFieldValues)
+		re.SetFieldValues(&RegistryTestInvalid{PrimaryKey: 1}, validFieldValues, []string{"name", "email"})
 	})
 
 	// invalid values are skipped
-	re.SetFieldValues(entity, invalidFieldValues)
+	re.SetFieldValues(entity, invalidFieldValues, []string{"id", "name", "invalid"})
 	assert.Equal(t, entity.ID, invalidFieldValues["id"])
 	assert.Equal(t, entity.Name, invalidFieldValues["name"])
 	assert.Equal(t, entity.Email, "foo@email.com")
 
 	// valid
-	re.SetFieldValues(entity, validFieldValues)
+	re.SetFieldValues(entity, validFieldValues, []string{"id", "name", "email"})
 	assert.Equal(t, entity.ID, validFieldValues["id"])
 	assert.Equal(t, entity.Name, validFieldValues["name"])
 	assert.Equal(t, entity.Email, validFieldValues["email"])
