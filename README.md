@@ -6,15 +6,16 @@
 
 ## Abstract
 
-DOSA open source is not ready for prime time yet. We will announce when it's ready.
+:warning: DOSA is _BETA_ software. It is not recommended for production use.
+We will announce when it's ready.
 
-[dosa] is a library that provides a distributed
-object storage abstraction for applications in golang and
-java. It's designed to help with storage discovery and
-abstract the underlying database system.
+[DOSA](https://github.com/uber-go/dosa/wiki) is a storage framework that
+provides a _delcarative object storage abstraction_ for applications in Golang
+and (eventually) Java. DOSA is designed to relieve common headaches developers
+face while building stateful, database-dependent services.
 
-If you'd like to start by writing a small DOSA-enabled
-program, check out [the guide][guide/DOSA.md].
+If you'd like to start by writing a small DOSA-enabled program, check out
+[the getting started guide](https://github.com/uber-go/dosa/wiki/Getting-Started-Guide).
 
 ## Overview
 
