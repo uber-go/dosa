@@ -546,7 +546,7 @@ func (c *adminClient) GetSchema() ([]*EntityDefinition, error) {
 	}
 	// prevent unnecessary connector calls when nothing was found
 	if len(entities) == 0 {
-		return nil, fmt.Errorf("no entities found")
+		return nil, fmt.Errorf("no entities found; did you specify the right directories for your source?")
 	}
 
 	defs := make([]*EntityDefinition, len(entities))
