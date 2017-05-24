@@ -74,13 +74,15 @@ func ExampleNewClient() {
 	reg, err := dosaRenamed.NewRegistrar("test", "myteam.myservice", cte1)
 	if err != nil {
 		// registration will fail if the object is tagged incorrectly
-		panic("dosaRenamed.NewRegister returned an error")
+		fmt.Printf("NewRegistrar error: %s", err)
+		return
 	}
 
 	// use a devnull connector for example purposes
 	conn, err := dosaRenamed.GetConnector("devnull", nil)
 	if err != nil {
-		panic(err)
+		fmt.Printf("GetConnector error: %s", err)
+		return
 	}
 
 	// create the client using the registry and connector
@@ -88,7 +90,8 @@ func ExampleNewClient() {
 
 	err = client.Initialize(context.Background())
 	if err != nil {
-		panic(err)
+		fmt.Printf("Initialize error: %s", err)
+		return
 	}
 }
 
@@ -101,7 +104,8 @@ func ExampleGetConnector() {
 	// your list of entities is important. In this case, we only have one, our ClientTestEntity1
 	reg, err := dosaRenamed.NewRegistrar("test", "myteam.myservice", &ClientTestEntity1{})
 	if err != nil {
-		panic(err)
+		fmt.Printf("NewRegistrar error: %s", err)
+		return
 	}
 
 	// Find the memory connector. There is no configuration information so pass a nil
@@ -114,7 +118,8 @@ func ExampleGetConnector() {
 
 	// initialize the client; this should always work for the in-memory connector
 	if err = client.Initialize(context.Background()); err != nil {
-		panic(err)
+		fmt.Printf("Initialize error: %s", err)
+		return
 	}
 
 	// now populate an entity and insert it into the memory store
@@ -122,7 +127,8 @@ func ExampleGetConnector() {
 		ID:    int64(1),
 		Name:  "rkuris",
 		Email: "rkuris@uber.com"}); err != nil {
-		panic(err)
+		fmt.Printf("CreateIfNotExists error: %s", err)
+		return
 	}
 
 	// create an entity to hold the read result, just populate the key
@@ -130,7 +136,8 @@ func ExampleGetConnector() {
 	// now read the data from the "database", all columns
 	err = client.Read(context.Background(), dosaRenamed.All(), &e)
 	if err != nil {
-		panic(err)
+		fmt.Printf("Read error: %s", err)
+		return
 	}
 	// great! It worked, so display the information we stored earlier
 	fmt.Printf("id:%d Name:%q Email:%q\n", e.ID, e.Name, e.Email)
