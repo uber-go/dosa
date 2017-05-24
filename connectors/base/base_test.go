@@ -58,21 +58,21 @@ func TestBase_CreateIfNotExists(t *testing.T) {
 }
 
 func TestBase_Read(t *testing.T) {
-	fieldsToRead := make([]string, 1)
-	_, err := bc.Read(ctx, testInfo, testValues, fieldsToRead)
+	minimumFields := make([]string, 1)
+	_, err := bc.Read(ctx, testInfo, testValues, minimumFields)
 	assert.Error(t, err)
 
-	val, err := bcWNext.Read(ctx, testInfo, testValues, fieldsToRead)
+	val, err := bcWNext.Read(ctx, testInfo, testValues, minimumFields)
 	assert.Nil(t, val)
 	assert.Error(t, err)
 }
 
 func TestBase_MultiRead(t *testing.T) {
-	fieldsToRead := make([]string, 1)
-	_, e := bc.MultiRead(ctx, testInfo, testMultiValues, fieldsToRead)
+	minimumFields := make([]string, 1)
+	_, e := bc.MultiRead(ctx, testInfo, testMultiValues, minimumFields)
 	assert.Error(t, e)
 
-	v, e := bcWNext.MultiRead(ctx, testInfo, testMultiValues, fieldsToRead)
+	v, e := bcWNext.MultiRead(ctx, testInfo, testMultiValues, minimumFields)
 	assert.NotNil(t, v)
 	assert.Nil(t, e)
 }
@@ -113,31 +113,31 @@ func TestBase_MultiRemove(t *testing.T) {
 
 func TestBase_Range(t *testing.T) {
 	conditions := make(map[string][]*dosa.Condition)
-	fieldsToRead := make([]string, 1)
-	_, _, err := bc.Range(ctx, testInfo, conditions, fieldsToRead, "", 0)
+	minimumFields := make([]string, 1)
+	_, _, err := bc.Range(ctx, testInfo, conditions, minimumFields, "", 0)
 	assert.Error(t, err)
 
-	vals, _, err := bcWNext.Range(ctx, testInfo, conditions, fieldsToRead, "", 0)
+	vals, _, err := bcWNext.Range(ctx, testInfo, conditions, minimumFields, "", 0)
 	assert.Nil(t, vals)
 	assert.Error(t, err)
 }
 
 func TestBase_Search(t *testing.T) {
-	fieldsToRead := make([]string, 1)
-	_, _, err := bc.Search(ctx, testInfo, testPairs, fieldsToRead, "", 0)
+	minimumFields := make([]string, 1)
+	_, _, err := bc.Search(ctx, testInfo, testPairs, minimumFields, "", 0)
 	assert.Error(t, err)
 
-	vals, _, err := bcWNext.Search(ctx, testInfo, testPairs, fieldsToRead, "", 0)
+	vals, _, err := bcWNext.Search(ctx, testInfo, testPairs, minimumFields, "", 0)
 	assert.Nil(t, vals)
 	assert.Error(t, err)
 }
 
 func TestBase_Scan(t *testing.T) {
-	fieldsToRead := make([]string, 1)
-	_, _, err := bc.Scan(ctx, testInfo, fieldsToRead, "", 0)
+	minimumFields := make([]string, 1)
+	_, _, err := bc.Scan(ctx, testInfo, minimumFields, "", 0)
 	assert.Error(t, err)
 
-	vals, _, err := bcWNext.Scan(ctx, testInfo, fieldsToRead, "", 0)
+	vals, _, err := bcWNext.Scan(ctx, testInfo, minimumFields, "", 0)
 	assert.Nil(t, vals)
 	assert.Error(t, err)
 }

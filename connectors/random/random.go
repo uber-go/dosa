@@ -52,9 +52,9 @@ func randomString(slen int) string {
 
 // Data generates some random data. Because our test is blackbox in a different package,
 // we have to export this
-func Data(ei *dosa.EntityInfo, fieldsToRead []string) map[string]dosa.FieldValue {
+func Data(ei *dosa.EntityInfo, minimumFields []string) map[string]dosa.FieldValue {
 	var result = map[string]dosa.FieldValue{}
-	for _, field := range fieldsToRead {
+	for _, field := range minimumFields {
 		var v dosa.FieldValue
 		cd := ei.Def.FindColumnDefinition(field)
 		switch cd.Type {
@@ -95,17 +95,17 @@ func Data(ei *dosa.EntityInfo, fieldsToRead []string) map[string]dosa.FieldValue
 }
 
 // Read always returns random data of the type specified
-func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
+func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, minimumFields []string) (map[string]dosa.FieldValue, error) {
 
-	return Data(ei, fieldsToRead), nil
+	return Data(ei, minimumFields), nil
 }
 
 // MultiRead returns a set of random data for each key you specify
-func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToRead []string) ([]*dosa.FieldValuesOrError, error) {
+func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, minimumFields []string) ([]*dosa.FieldValuesOrError, error) {
 	vals := make([]*dosa.FieldValuesOrError, len(values))
 	for inx := range values {
 		vals[inx] = &dosa.FieldValuesOrError{
-			Values: Data(ei, fieldsToRead),
+			Values: Data(ei, minimumFields),
 		}
 	}
 	return vals, nil
@@ -141,22 +141,22 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiV
 }
 
 // Range returns a random set of data, and a random continuation token
-func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	vals := make([]map[string]dosa.FieldValue, limit)
 	for inx := range vals {
-		vals[inx] = Data(ei, fieldsToRead)
+		vals[inx] = Data(ei, minimumFields)
 	}
 	return vals, randomString(32), nil
 }
 
 // Search also returns a random set of data, just like Range
-func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	return c.Range(ctx, ei, map[string][]*dosa.Condition{}, fieldsToRead, token, limit)
+func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+	return c.Range(ctx, ei, map[string][]*dosa.Condition{}, minimumFields, token, limit)
 }
 
 // Scan also returns a random set of data, like Range and Search
-func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	return c.Range(ctx, ei, map[string][]*dosa.Condition{}, fieldsToRead, token, limit)
+func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+	return c.Range(ctx, ei, map[string][]*dosa.Condition{}, minimumFields, token, limit)
 }
 
 // CheckSchema always returns a slice of int32 values that match its index

@@ -58,7 +58,7 @@ var (
 	testPairs       = dosa.FieldNameValuePair{}
 	testValues      = make(map[string]dosa.FieldValue)
 	testMultiValues = make([]map[string]dosa.FieldValue, 50)
-	fieldsToRead    = []string{"booltype", "int32type", "int64type", "doubletype", "stringtype", "blobtype", "timetype", "uuidtype"}
+	minimumFields    = []string{"booltype", "int32type", "int64type", "doubletype", "stringtype", "blobtype", "timetype", "uuidtype"}
 	ctx             = context.Background()
 )
 
@@ -67,21 +67,21 @@ func TestRandom_CreateIfNotExists(t *testing.T) {
 }
 
 func TestRandom_Read(t *testing.T) {
-	val, err := sut.Read(ctx, testInfo, testValues, fieldsToRead)
+	val, err := sut.Read(ctx, testInfo, testValues, minimumFields)
 	assert.NoError(t, err)
 	assert.NotNil(t, val)
-	for _, field := range fieldsToRead {
+	for _, field := range minimumFields {
 		assert.NotNil(t, val[field])
 	}
 }
 
 func TestRandom_MultiRead(t *testing.T) {
-	v, e := sut.MultiRead(ctx, testInfo, testMultiValues, fieldsToRead)
+	v, e := sut.MultiRead(ctx, testInfo, testMultiValues, minimumFields)
 	assert.NotNil(t, v)
 	assert.Nil(t, e)
 	assert.Equal(t, len(testMultiValues), len(v))
 	for i := range v {
-		for _, field := range fieldsToRead {
+		for _, field := range minimumFields {
 			assert.NotNil(t, v[i].Values[field])
 		}
 	}
@@ -111,19 +111,19 @@ func TestRandom_MultiRemove(t *testing.T) {
 
 func TestRandom_Range(t *testing.T) {
 	conditions := make(map[string][]*dosa.Condition)
-	vals, _, err := sut.Range(ctx, testInfo, conditions, fieldsToRead, "", 32)
+	vals, _, err := sut.Range(ctx, testInfo, conditions, minimumFields, "", 32)
 	assert.NotNil(t, vals)
 	assert.NoError(t, err)
 }
 
 func TestRandom_Search(t *testing.T) {
-	vals, _, err := sut.Search(ctx, testInfo, testPairs, fieldsToRead, "", 32)
+	vals, _, err := sut.Search(ctx, testInfo, testPairs, minimumFields, "", 32)
 	assert.NotNil(t, vals)
 	assert.NoError(t, err)
 }
 
 func TestRandom_Scan(t *testing.T) {
-	vals, _, err := sut.Scan(ctx, testInfo, fieldsToRead, "", 32)
+	vals, _, err := sut.Scan(ctx, testInfo, minimumFields, "", 32)
 	assert.NotNil(t, vals)
 	assert.NoError(t, err)
 }
@@ -168,6 +168,6 @@ func TestRandom_Shutdown(t *testing.T) {
 func TestRandom_badTypePanic(t *testing.T) {
 	testInfo.Def.Columns[0].Type = dosa.Invalid
 	assert.Panics(t, func() {
-		random.Data(testInfo, fieldsToRead)
+		random.Data(testInfo, minimumFields)
 	})
 }

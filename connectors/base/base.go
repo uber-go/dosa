@@ -54,19 +54,19 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 }
 
 // Read calls Next
-func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
+func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, minimumFields []string) (map[string]dosa.FieldValue, error) {
 	if c.Next == nil {
 		return nil, ErrNoMoreConnector{}
 	}
-	return c.Next.Read(ctx, ei, values, fieldsToRead)
+	return c.Next.Read(ctx, ei, values, minimumFields)
 }
 
 // MultiRead calls Next
-func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, fieldsToRead []string) ([]*dosa.FieldValuesOrError, error) {
+func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, minimumFields []string) ([]*dosa.FieldValuesOrError, error) {
 	if c.Next == nil {
 		return nil, ErrNoMoreConnector{}
 	}
-	return c.Next.MultiRead(ctx, ei, values, fieldsToRead)
+	return c.Next.MultiRead(ctx, ei, values, minimumFields)
 }
 
 // Upsert calls Next
@@ -102,27 +102,27 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiV
 }
 
 // Range calls Next
-func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	if c.Next == nil {
 		return nil, "", ErrNoMoreConnector{}
 	}
-	return c.Next.Range(ctx, ei, columnConditions, fieldsToRead, token, limit)
+	return c.Next.Range(ctx, ei, columnConditions, minimumFields, token, limit)
 }
 
 // Search calls Next
-func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	if c.Next == nil {
 		return nil, "", ErrNoMoreConnector{}
 	}
-	return c.Next.Search(ctx, ei, fieldPairs, fieldsToRead, token, limit)
+	return c.Next.Search(ctx, ei, fieldPairs, minimumFields, token, limit)
 }
 
 // Scan calls Next
-func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	if c.Next == nil {
 		return nil, "", ErrNoMoreConnector{}
 	}
-	return c.Next.Scan(ctx, ei, fieldsToRead, token, limit)
+	return c.Next.Scan(ctx, ei, minimumFields, token, limit)
 }
 
 // CheckSchema calls Next
