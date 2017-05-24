@@ -216,15 +216,15 @@ func decodeResults(ei *dosa.EntityInfo, invals dosarpc.FieldValueMap) map[string
 	return result
 }
 
-func makeRPCFieldsToRead(fieldsToRead []string) map[string]struct{} {
-	var rpcFieldsToRead map[string]struct{}
-	if fieldsToRead != nil {
-		rpcFieldsToRead = map[string]struct{}{}
-		for _, field := range fieldsToRead {
-			rpcFieldsToRead[field] = struct{}{}
+func makeRPCminimumFields(minimumFields []string) map[string]struct{} {
+	var rpcminimumFields map[string]struct{}
+	if minimumFields != nil {
+		rpcminimumFields = map[string]struct{}{}
+		for _, field := range minimumFields {
+			rpcminimumFields[field] = struct{}{}
 		}
 	}
-	return rpcFieldsToRead
+	return rpcminimumFields
 }
 func entityInfoToSchemaRef(ei *dosa.EntityInfo) *dosarpc.SchemaRef {
 	scope := ei.Ref.Scope

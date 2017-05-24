@@ -100,11 +100,11 @@ type Connector interface {
 	// CreateIfNotExists creates a row, but only if it does not exist.
 	CreateIfNotExists(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
 	// Read fetches a row by primary key
-	// If fieldsToRead is empty or nil, all non-key fields would be fetched.
-	Read(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue, fieldsToRead []string) (values map[string]FieldValue, err error)
+	// If minimumFields is empty or nil, all non-key fields would be fetched.
+	Read(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue, minimumFields []string) (values map[string]FieldValue, err error)
 	// MultiRead fetches several rows by primary key
-	// If fieldsToRead is empty or nil, all non-key fields would be fetched.
-	MultiRead(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, fieldsToRead []string) (results []*FieldValuesOrError, err error)
+	// If minimumFields is empty or nil, all non-key fields would be fetched.
+	MultiRead(ctx context.Context, ei *EntityInfo, keys []map[string]FieldValue, minimumFields []string) (results []*FieldValuesOrError, err error)
 	// Upsert updates some columns of a row, or creates a new one if it doesn't exist yet.
 	Upsert(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
 	// MultiUpsert updates some columns of several rows, or creates a new ones if they doesn't exist yet
@@ -114,14 +114,14 @@ type Connector interface {
 	// MultiRemove removes multiple rows
 	MultiRemove(ctx context.Context, ei *EntityInfo, multiKeys []map[string]FieldValue) (result []error, err error)
 	// Range does a range scan using a set of conditions.
-	// If fieldsToRead is empty or nil, all fields (including key fields) would be fetched.
-	Range(ctx context.Context, ei *EntityInfo, columnConditions map[string][]*Condition, fieldsToRead []string, token string, limit int) ([]map[string]FieldValue, string, error)
+	// If minimumFields is empty or nil, all fields (including key fields) would be fetched.
+	Range(ctx context.Context, ei *EntityInfo, columnConditions map[string][]*Condition, minimumFields []string, token string, limit int) ([]map[string]FieldValue, string, error)
 	// Search does a search against a field marked 'searchable'
-	// If fieldsToRead is empty or nil, all fields (including key fields) would be fetched.
-	Search(ctx context.Context, ei *EntityInfo, fieldPairs FieldNameValuePair, fieldsToRead []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)
+	// If minimumFields is empty or nil, all fields (including key fields) would be fetched.
+	Search(ctx context.Context, ei *EntityInfo, fieldPairs FieldNameValuePair, minimumFields []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)
 	// Scan reads the whole table, for doing a sequential search or dump/load use cases
-	// If fieldsToRead is empty or nil, all fields (including key fields) would be fetched.
-	Scan(ctx context.Context, ei *EntityInfo, fieldsToRead []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)
+	// If minimumFields is empty or nil, all fields (including key fields) would be fetched.
+	Scan(ctx context.Context, ei *EntityInfo, minimumFields []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)
 
 	// DDL operations (schema)
 	// CheckSchema validates that the set of entities you have provided is valid and registered already

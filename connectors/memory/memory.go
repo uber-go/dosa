@@ -221,7 +221,7 @@ func (c *Connector) CreateIfNotExists(_ context.Context, ei *dosa.EntityInfo, va
 // Read searches for a row. First, it finds the partition, then it searches in the partition for
 // the data, and returns it when it finds it. Again, sort.Search does most of the heavy lifting
 // within a partition
-func (c *Connector) Read(_ context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
+func (c *Connector) Read(_ context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, minimumFields []string) (map[string]dosa.FieldValue, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	if c.data[ei.Def.Name] == nil {
@@ -327,7 +327,7 @@ func (c *Connector) Remove(_ context.Context, ei *dosa.EntityInfo, values map[st
 }
 
 // Range returns a slice of data from the datastore
-func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	if c.data[ei.Def.Name] == nil {
@@ -403,7 +403,7 @@ func passCol(data dosa.FieldValue, cond *dosa.Condition) bool {
 }
 
 // Scan returns all the rows
-func (c *Connector) Scan(_ context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Scan(_ context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	if c.data[ei.Def.Name] == nil {

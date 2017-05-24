@@ -52,15 +52,15 @@ func TestDevNull_CreateIfNotExists(t *testing.T) {
 }
 
 func TestDevNull_Read(t *testing.T) {
-	fieldsToRead := make([]string, 1)
-	val, err := sut.Read(ctx, testInfo, testValues, fieldsToRead)
+	minimumFields := make([]string, 1)
+	val, err := sut.Read(ctx, testInfo, testValues, minimumFields)
 	assert.Nil(t, val)
 	assert.Error(t, err)
 }
 
 func TestDevNull_MultiRead(t *testing.T) {
-	fieldsToRead := make([]string, 1)
-	v, e := sut.MultiRead(ctx, testInfo, testMultiValues, fieldsToRead)
+	minimumFields := make([]string, 1)
+	v, e := sut.MultiRead(ctx, testInfo, testMultiValues, minimumFields)
 	assert.NotNil(t, v)
 	assert.Nil(t, e)
 }
@@ -89,22 +89,22 @@ func TestDevNull_MultiRemove(t *testing.T) {
 
 func TestDevNull_Range(t *testing.T) {
 	conditions := make(map[string][]*dosa.Condition)
-	fieldsToRead := make([]string, 1)
-	vals, _, err := sut.Range(ctx, testInfo, conditions, fieldsToRead, "", 0)
+	minimumFields := make([]string, 1)
+	vals, _, err := sut.Range(ctx, testInfo, conditions, minimumFields, "", 0)
 	assert.Nil(t, vals)
 	assert.Error(t, err)
 }
 
 func TestDevNull_Search(t *testing.T) {
-	fieldsToRead := make([]string, 1)
-	vals, _, err := sut.Search(ctx, testInfo, testPairs, fieldsToRead, "", 0)
+	minimumFields := make([]string, 1)
+	vals, _, err := sut.Search(ctx, testInfo, testPairs, minimumFields, "", 0)
 	assert.Nil(t, vals)
 	assert.Error(t, err)
 }
 
 func TestDevNull_Scan(t *testing.T) {
-	fieldsToRead := make([]string, 1)
-	vals, _, err := sut.Scan(ctx, testInfo, fieldsToRead, "", 0)
+	minimumFields := make([]string, 1)
+	vals, _, err := sut.Scan(ctx, testInfo, minimumFields, "", 0)
 	assert.Nil(t, vals)
 	assert.Error(t, err)
 }

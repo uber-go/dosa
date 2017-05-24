@@ -190,13 +190,13 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 }
 
 // Read reads a single entity
-func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
+func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, minimumFields []string) (map[string]dosa.FieldValue, error) {
 	// Convert the fields from the client's map to a set of fields to read
-	var rpcFieldsToRead map[string]struct{}
-	if fieldsToRead != nil {
-		rpcFieldsToRead = map[string]struct{}{}
-		for _, field := range fieldsToRead {
-			rpcFieldsToRead[field] = struct{}{}
+	var rpcMinimumFields map[string]struct{}
+	if minimumFields != nil {
+		rpcMinimumFields = map[string]struct{}{}
+		for _, field := range minimumFields {
+			rpcMinimumFields[field] = struct{}{}
 		}
 	}
 
@@ -215,7 +215,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	readRequest := &dosarpc.ReadRequest{
 		Ref:          entityInfoToSchemaRef(ei),
 		KeyValues:    rpcFields,
-		FieldsToRead: rpcFieldsToRead,
+		FieldsToRead: rpcMinimumFields,
 	}
 
 	response, err := c.Client.Read(ctx, readRequest)
@@ -234,9 +234,9 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 }
 
 // MultiRead reads multiple entities at one time
-func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, fieldsToRead []string) ([]*dosa.FieldValuesOrError, error) {
+func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, minimumFields []string) ([]*dosa.FieldValuesOrError, error) {
 	// Convert the fields from the client's map to a set of fields to read
-	rpcFieldsToRead := makeRPCFieldsToRead(fieldsToRead)
+	rpcMinimumFields := makeRPCminimumFields(minimumFields)
 
 	// convert the keys to RPC's Value
 	rpcFields := make([]dosarpc.FieldValueMap, len(keys))
@@ -256,7 +256,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 	request := &dosarpc.MultiReadRequest{
 		Ref:          entityInfoToSchemaRef(ei),
 		KeyValues:    rpcFields,
-		FieldsToRead: rpcFieldsToRead,
+		FieldsToRead: rpcMinimumFields,
 	}
 
 	response, err := c.Client.MultiRead(ctx, request)
@@ -323,9 +323,9 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiK
 }
 
 // Range does a scan across a range
-func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	limit32 := int32(limit)
-	rpcFieldsToRead := makeRPCFieldsToRead(fieldsToRead)
+	rpcMinimumFields := makeRPCminimumFields(minimumFields)
 	rpcConditions := []*dosarpc.Condition{}
 	for field, conditions := range columnConditions {
 		// Warning: Don't remove this line.
@@ -347,7 +347,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 		Token:        &token,
 		Limit:        &limit32,
 		Conditions:   rpcConditions,
-		FieldsToRead: rpcFieldsToRead,
+		FieldsToRead: rpcMinimumFields,
 	}
 	response, err := c.Client.Range(ctx, &rangeRequest)
 	if err != nil {
@@ -361,19 +361,19 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 }
 
 // Search is not yet implemented
-func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	panic("not implemented")
 }
 
 // Scan marshals a scan request into YaRPC
-func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	limit32 := int32(limit)
-	rpcFieldsToRead := makeRPCFieldsToRead(fieldsToRead)
+	rpcMinimumFields := makeRPCminimumFields(minimumFields)
 	scanRequest := dosarpc.ScanRequest{
 		Ref:          entityInfoToSchemaRef(ei),
 		Token:        &token,
 		Limit:        &limit32,
-		FieldsToRead: rpcFieldsToRead,
+		FieldsToRead: rpcMinimumFields,
 	}
 	response, err := c.Client.Scan(ctx, &scanRequest)
 	if err != nil {
