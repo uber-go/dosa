@@ -1,9 +1,8 @@
 package dosa
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestNullInt(t *testing.T) {
@@ -52,6 +51,9 @@ func TestNullInt_UnmarshalText(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = v.Get()
 	assert.Equal(t, ErrNullValue, err)
+	value, err := v.Get()
+	assert.NoError(t, err)
+	assert.Equal(t, int64(10), value)
 }
 
 func TestNullInt_MarshalJSON(t *testing.T) {
