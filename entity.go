@@ -211,7 +211,7 @@ func (e *EntityDefinition) KeySet() map[string]struct{} {
 }
 
 // IsCompatible checks if two entity definitions are compatible or not.
-// e1.g. edA.IsCompatible(edB) return true, means edA is compatibile with edB.
+// e1.g. edA.IsCompatible(edB) return true, means edA is compatible with edB.
 // edA is the one to compare and edB is the one to be compared.
 func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
 	// for better naming

@@ -58,7 +58,7 @@ var (
 	testPairs       = dosa.FieldNameValuePair{}
 	testValues      = make(map[string]dosa.FieldValue)
 	testMultiValues = make([]map[string]dosa.FieldValue, 50)
-	minimumFields    = []string{"booltype", "int32type", "int64type", "doubletype", "stringtype", "blobtype", "timetype", "uuidtype"}
+	minimumFields   = []string{"booltype", "int32type", "int64type", "doubletype", "stringtype", "blobtype", "timetype", "uuidtype"}
 	ctx             = context.Background()
 )
 

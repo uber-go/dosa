@@ -143,10 +143,10 @@ func TestToFQN(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualValues(t, "", f)
 
-	f, err = dosa.ToFQN("service.an entity")
+	_, err = dosa.ToFQN("service.an entity")
 	assert.Error(t, err)
 
-	f, err = dosa.ToFQN("germanRush.über")
+	_, err = dosa.ToFQN("germanRush.über")
 	assert.Error(t, err)
 }
 
