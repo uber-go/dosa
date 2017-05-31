@@ -239,6 +239,53 @@ func TestConnector_Remove(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestConnector_RemoveRange(t *testing.T) {
+	const idcount = 10
+	sut := NewConnector()
+
+	// remove with no data
+	err := sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+	})
+	assert.NoError(t, err)
+
+	// insert some data into data/i/uuid with a random set of uuids
+	for x := 0; x < idcount; x++ {
+		err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
+			"f1": dosa.FieldValue("data"),
+			"c1": dosa.FieldValue(int64(x)),
+			"c7": dosa.FieldValue(dosa.NewUUID())})
+		assert.NoError(t, err)
+	}
+
+	// find the midpoint and delete all values greater than that
+	err = sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c1": {{Op: dosa.Gt, Value: dosa.FieldValue(int64(4))}},
+	})
+	assert.NoError(t, err)
+
+	// ensure all the uuids less than or equal uuid at the midpoint are still in the range.
+	data, _, err := sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c1": {{Op: dosa.LtOrEq, Value: dosa.FieldValue(int64(4))}},
+	}, dosa.All(), "", 200)
+	assert.NoError(t, err)
+	assert.Len(t, data, idcount/2)
+	for i, x := range data {
+		assert.Equal(t, x["c1"], int64(i))
+	}
+
+	// ensure all the uuids greater than the uuid at the midpoint are removed.
+	data, _, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c1": {{Op: dosa.Gt, Value: dosa.FieldValue(int64(4))}},
+	}, dosa.All(), "", 200)
+	t.Logf("Length of data is: %d\n", len(data))
+	assert.Error(t, err)
+	assert.True(t, dosa.ErrorIsNotFound(err))
+}
+
 func TestConnector_Shutdown(t *testing.T) {
 	sut := NewConnector()
 

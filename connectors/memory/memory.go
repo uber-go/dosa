@@ -35,6 +35,14 @@ import (
 	"github.com/uber-go/dosa/connectors/base"
 )
 
+// partitionRange represents one section of a partition.
+type partitionRange struct {
+	entityRef map[string][]map[string]dosa.FieldValue
+	partitionKey string
+	start int
+	end int
+}
+
 // Connector is an in-memory connector.
 // The in-memory connector stores its data like this:
 // map[string]map[string][]map[string]dosa.FieldValue
@@ -326,12 +334,50 @@ func (c *Connector) Remove(_ context.Context, ei *dosa.EntityInfo, values map[st
 	return nil
 }
 
+// RemoveRange removes all of the elements in the range specified by the entity info and the column conditions.
+func (c *Connector) RemoveRange(_ context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	partitionRange := c.findRange(ei, columnConditions)
+	if partitionRange == nil {
+		return nil
+	}
+
+	partitionRef := partitionRange.entityRef[partitionRange.partitionKey]
+	partitionKey := partitionRange.partitionKey
+	entityRef := partitionRange.entityRef
+	start := partitionRange.start
+	end := partitionRange.end
+
+	entityRef[partitionKey] = append(partitionRef[:start], partitionRef[end+1:]...)
+	return nil
+}
+
 // Range returns a slice of data from the datastore
 func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
-	if c.data[ei.Def.Name] == nil {
+
+	partitionRange := c.findRange(ei, columnConditions)
+	if partitionRange == nil{
 		return nil, "", &dosa.ErrNotFound{}
+	}
+
+	partition := partitionRange.entityRef[partitionRange.partitionKey]
+
+	// TODO: enforce limits and return a token when there are more rows
+	return partition[partitionRange.start : partitionRange.end+1], "", nil
+}
+
+// findRange finds the partitionRange specified by the given entity info and column conditions.
+// In the case that no entities are found an empty partitionRange with a nil partition field will be returned.
+//
+// Note that this function reads from the connector's data map. Any calling functions should hold
+// at least a read lock on the map.
+func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) *partitionRange {
+	if c.data[ei.Def.Name] == nil {
+		return nil
 	}
 	entityRef := c.data[ei.Def.Name]
 
@@ -347,7 +393,7 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 	partitionRef := entityRef[encodedPartitionKey]
 	// no data in this partition? easy out!
 	if len(partitionRef) == 0 {
-		return nil, "", &dosa.ErrNotFound{}
+		return nil
 	}
 	// hunt through the partitionRef and return values that match search criteria
 	// TODO: This can be done much faster using a binary search
@@ -361,10 +407,15 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 
 	}
 	if endinx <= startinx {
-		return nil, "", &dosa.ErrNotFound{}
+		return nil
 	}
-	// TODO: enforce limits and return a token when there are more rows
-	return partitionRef[startinx : endinx+1], "", nil
+
+	return &partitionRange{
+		entityRef: entityRef,
+		partitionKey: encodedPartitionKey,
+		start: startinx,
+		end: endinx,
+	}
 }
 
 // matchesClusteringConditions checks if a data row matches the conditions in the columnConditions that apply to
