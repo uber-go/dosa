@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strconv"
 )
 
@@ -17,7 +16,7 @@ type NullInt64 struct {
 // specified value.
 func NewNullInt64(value int64) NullInt64 {
 	return NullInt64{
-		NullInt64: sql.NullInt64{
+		sql.NullInt64{
 			Valid: true,
 			Int64: value,
 		},
@@ -97,7 +96,7 @@ func (i *NullInt64) UnmarshalJSON(data []byte) error {
 		i.Valid = false
 		return nil
 	default:
-		err = fmt.Errorf("failed to unmarshal %v into NullInt64", reflect.TypeOf(unknown).Name())
+		err = fmt.Errorf("failed to unmarshal %T into NullInt64", unknown)
 	}
 
 	i.Valid = err == nil
