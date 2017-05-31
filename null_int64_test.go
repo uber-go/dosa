@@ -7,7 +7,7 @@ import (
 )
 
 func TestNullInt(t *testing.T) {
-	v := NewNullInt(10)
+	v := NewNullInt64(10)
 	actual, err := v.Get()
 	assert.NoError(t, err)
 	assert.Equal(t, int64(10), actual)
@@ -23,7 +23,7 @@ func TestNullInt(t *testing.T) {
 }
 
 func TestNullInt_MarshalText(t *testing.T) {
-	v := NewNullInt(10)
+	v := NewNullInt64(10)
 	bytes, err := v.MarshalText()
 	assert.NoError(t, err)
 	assert.Equal(t, "10", string(bytes))
@@ -35,7 +35,7 @@ func TestNullInt_MarshalText(t *testing.T) {
 }
 
 func TestNullInt_UnmarshalText(t *testing.T) {
-	var v NullInt
+	var v NullInt64
 	err := v.UnmarshalText([]byte("10"))
 	assert.NoError(t, err)
 
@@ -55,7 +55,7 @@ func TestNullInt_UnmarshalText(t *testing.T) {
 }
 
 func TestNullInt_MarshalJSON(t *testing.T) {
-	v := NewNullInt(-123)
+	v := NewNullInt64(-123)
 	bytes, err := v.MarshalJSON()
 	assert.NoError(t, err)
 	assert.Equal(t, "-123", string(bytes))
@@ -67,7 +67,7 @@ func TestNullInt_MarshalJSON(t *testing.T) {
 }
 
 func TestNullInt_UnmarshalJSON(t *testing.T) {
-	var v NullInt
+	var v NullInt64
 	err := v.UnmarshalJSON([]byte("-12"))
 	assert.NoError(t, err)
 	value, err := v.Get()

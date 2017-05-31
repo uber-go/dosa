@@ -8,15 +8,15 @@ import (
 	"strconv"
 )
 
-// NullInt is a type that holds an optional int64 value.
-type NullInt struct {
+// NullInt64 is a type that holds an optional int64 value.
+type NullInt64 struct {
 	sql.NullInt64
 }
 
-// NewNullInt returns a new NullInt object that is initialized to the
+// NewNullInt64 returns a new NullInt64 object that is initialized to the
 // specified value.
-func NewNullInt(value int64) NullInt {
-	return NullInt{
+func NewNullInt64(value int64) NullInt64 {
+	return NullInt64{
 		NullInt64: sql.NullInt64{
 			Valid: true,
 			Int64: value,
@@ -24,20 +24,20 @@ func NewNullInt(value int64) NullInt {
 	}
 }
 
-// Set is the preferred method to initialize the NullInt to a valid value.
-func (i *NullInt) Set(v int64) {
+// Set is the preferred method to initialize the NullInt64 to a valid value.
+func (i *NullInt64) Set(v int64) {
 	i.Int64 = v
 	i.Valid = true
 }
 
 // Nullify marks the object as null.
-func (i *NullInt) Nullify() {
+func (i *NullInt64) Nullify() {
 	i.Valid = false
 }
 
 // Get is the preferred method to access the underlying value. It returns ErrNullValue
 // if there's no valid value associated with the object.
-func (i NullInt) Get() (int64, error) {
+func (i NullInt64) Get() (int64, error) {
 	if !i.Valid {
 		return 0, ErrNullValue
 	}
@@ -45,9 +45,9 @@ func (i NullInt) Get() (int64, error) {
 	return i.Int64, nil
 }
 
-// MarshalText encodes a NullInt into text representation. This is helpful
-// to cleanly facilitate encoding of structs that embed NullInt as a field.
-func (i NullInt) MarshalText() ([]byte, error) {
+// MarshalText encodes a NullInt64 into text representation. This is helpful
+// to cleanly facilitate encoding of structs that embed NullInt64 as a field.
+func (i NullInt64) MarshalText() ([]byte, error) {
 	if !i.Valid {
 		return []byte{}, nil
 	}
@@ -55,9 +55,9 @@ func (i NullInt) MarshalText() ([]byte, error) {
 	return []byte(strconv.FormatInt(i.Int64, 10)), nil
 }
 
-// UnmarshalText decodes a NullInt object from the byte representation. This is
-// helpful in decoding structs that embed NullInt as a field.
-func (i *NullInt) UnmarshalText(data []byte) error {
+// UnmarshalText decodes a NullInt64 object from the byte representation. This is
+// helpful in decoding structs that embed NullInt64 as a field.
+func (i *NullInt64) UnmarshalText(data []byte) error {
 	str := string(data)
 	if str == "" || str == "null" {
 		i.Valid = false
@@ -70,10 +70,10 @@ func (i *NullInt) UnmarshalText(data []byte) error {
 	return err
 }
 
-// MarshalJSON encodes a NullInt object into appropriate JSON representation.
+// MarshalJSON encodes a NullInt64 object into appropriate JSON representation.
 // It encodes a nil value as "null" otherwise uses a base-10 string representation
 // of the underlying value.
-func (i NullInt) MarshalJSON() ([]byte, error) {
+func (i NullInt64) MarshalJSON() ([]byte, error) {
 	if !i.Valid {
 		return []byte("null"), nil
 	}
@@ -81,8 +81,8 @@ func (i NullInt) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.FormatInt(i.Int64, 10)), nil
 }
 
-// UnmarshalJSON decodes a NullInt object from the specific json blob.
-func (i *NullInt) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON decodes a NullInt64 object from the specific json blob.
+func (i *NullInt64) UnmarshalJSON(data []byte) error {
 	var err error
 	var unknown interface{}
 	if err := json.Unmarshal(data, &unknown); err != nil {
@@ -97,7 +97,7 @@ func (i *NullInt) UnmarshalJSON(data []byte) error {
 		i.Valid = false
 		return nil
 	default:
-		err = fmt.Errorf("failed to unmarshal %v into NullInt", reflect.TypeOf(unknown).Name())
+		err = fmt.Errorf("failed to unmarshal %v into NullInt64", reflect.TypeOf(unknown).Name())
 	}
 
 	i.Valid = err == nil
