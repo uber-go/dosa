@@ -8,27 +8,32 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNullInt(t *testing.T) {
-	v := NewNullInt64(10)
+func TestNullBool(t *testing.T) {
+	v := NewNullBool(true)
 	actual, err := v.Get()
 	assert.NoError(t, err)
-	assert.Equal(t, int64(10), actual)
+	assert.True(t, actual)
 
-	v.Set(20)
+	v.Set(false)
 	actual, err = v.Get()
 	assert.NoError(t, err)
-	assert.Equal(t, int64(20), actual)
+	assert.False(t, actual)
 
 	v.Nullify()
 	actual, err = v.Get()
 	assert.Error(t, err, "Value is null")
 }
 
-func TestNullInt_MarshalText(t *testing.T) {
-	v := NewNullInt64(10)
+func TestNullBool_MarshalText(t *testing.T) {
+	v := NewNullBool(true)
 	bytes, err := v.MarshalText()
 	assert.NoError(t, err)
-	assert.Equal(t, "10", string(bytes))
+	assert.Equal(t, "true", string(bytes))
+
+	v = NewNullBool(false)
+	bytes, err = v.MarshalText()
+	assert.NoError(t, err)
+	assert.Equal(t, "false", string(bytes))
 
 	v.Nullify()
 	bytes, err = v.MarshalText()
@@ -36,14 +41,21 @@ func TestNullInt_MarshalText(t *testing.T) {
 	assert.Equal(t, "", string(bytes))
 }
 
-func TestNullInt_UnmarshalText(t *testing.T) {
-	var v NullInt64
-	err := v.UnmarshalText([]byte("10"))
+func TestNullBool_UnmarshalText(t *testing.T) {
+	var v NullBool
+	err := v.UnmarshalText([]byte("true"))
 	assert.NoError(t, err)
 
 	value, err := v.Get()
 	assert.NoError(t, err)
-	assert.Equal(t, int64(10), value)
+	assert.True(t, value)
+
+	err = v.UnmarshalText([]byte("false"))
+	assert.NoError(t, err)
+
+	value, err = v.Get()
+	assert.NoError(t, err)
+	assert.False(t, value)
 
 	err = v.UnmarshalText([]byte(""))
 	assert.NoError(t, err)
@@ -56,11 +68,16 @@ func TestNullInt_UnmarshalText(t *testing.T) {
 	assert.Equal(t, ErrNullValue, err)
 }
 
-func TestNullInt_MarshalJSON(t *testing.T) {
-	v := NewNullInt64(-123)
+func TestNullBool_MarshalJSON(t *testing.T) {
+	v := NewNullBool(true)
 	bytes, err := v.MarshalJSON()
 	assert.NoError(t, err)
-	assert.Equal(t, "-123", string(bytes))
+	assert.Equal(t, "true", string(bytes))
+
+	v.Set(false)
+	bytes, err = v.MarshalJSON()
+	assert.NoError(t, err)
+	assert.Equal(t, "false", string(bytes))
 
 	v.Nullify()
 	bytes, err = v.MarshalJSON()
@@ -68,13 +85,14 @@ func TestNullInt_MarshalJSON(t *testing.T) {
 	assert.Equal(t, "null", string(bytes))
 }
 
-func TestNullInt_UnmarshalJSON(t *testing.T) {
-	var v NullInt64
-	err := v.UnmarshalJSON([]byte("-12"))
+func TestNullBool_UnmarshalJSON(t *testing.T) {
+	var v NullBool
+	err := v.UnmarshalJSON([]byte("true"))
 	assert.NoError(t, err)
+
 	value, err := v.Get()
 	assert.NoError(t, err)
-	assert.Equal(t, int64(-12), value)
+	assert.True(t, value)
 
 	err = v.UnmarshalJSON([]byte("null"))
 	assert.NoError(t, err)
