@@ -294,7 +294,7 @@ func TestEntityDefinitionIsCompatible(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "clustering")
 
-	// decsending not match
+	// descending not match
 	errEd = getValidEntityDefinition()
 	errEd.Key.ClusteringKeys[0].Descending = !errEd.Key.ClusteringKeys[0].Descending
 	err = validEd.IsCompatible(errEd)

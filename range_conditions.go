@@ -87,7 +87,7 @@ func ensureExactOneEqCondition(t Type, conditions []*Condition) error {
 
 	r := conditions[0]
 	if r.Op != Eq {
-		return errors.Errorf("only Eq condition is allowed on this column for this query, found: %s", r.Op)
+		return errors.Errorf("only Eq condition is allowed on this column for this query, found: %s", r.Op.String())
 	}
 
 	if err := ensureTypeMatch(t, r.Value); err != nil {

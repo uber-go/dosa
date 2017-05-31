@@ -193,7 +193,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 		switch typeName := field.Type.(type) {
 		case *ast.Ident:
 			kind = typeName.Name
-			// not an Entity type, perhaps another primative type
+			// not an Entity type, perhaps another primitive type
 		case *ast.ArrayType:
 			// only dosa allowed array type is []byte
 			if typeName, ok := typeName.Elt.(*ast.Ident); ok {
