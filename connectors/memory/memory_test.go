@@ -180,7 +180,7 @@ func TestConnector_Read(t *testing.T) {
 	assert.Equal(t, dosa.FieldValue(float64(1.2)), vals["c2"])
 
 	// and fail a read on a clustered key
-	vals, err = sut.Read(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
+	_, err = sut.Read(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("key"),
 		"c1": dosa.FieldValue(int64(2)),
 		"c7": dosa.FieldValue(id)}, dosa.All())
@@ -435,7 +435,7 @@ func TestConnector_Range(t *testing.T) {
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	// look off the end of the left side, so greater than maximum
-	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+	data, _, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
 		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[idcount-1])}},
@@ -612,7 +612,7 @@ func TestConnector_Scan(t *testing.T) {
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
 	}
-	data, token, err = sut.Scan(context.TODO(), clusteredEi, dosa.All(), "", 100)
+	_, token, err = sut.Scan(context.TODO(), clusteredEi, dosa.All(), "", 100)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 	assert.Empty(t, token)
 }
