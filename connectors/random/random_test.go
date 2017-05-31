@@ -100,7 +100,7 @@ func TestRandom_MultiUpsert(t *testing.T) {
 
 func TestRandom_Remove(t *testing.T) {
 	err := sut.Remove(ctx, testInfo, testValues)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestRandom_MultiRemove(t *testing.T) {
