@@ -42,6 +42,7 @@ var (
 		},
 		Def: &dosa.EntityDefinition{},
 	}
+	testConditions  = make(map[string][]*dosa.Condition)
 	testPairs       = dosa.FieldNameValuePair{}
 	testValues      = make(map[string]dosa.FieldValue)
 	testMultiValues = make([]map[string]dosa.FieldValue, 1)
@@ -81,6 +82,11 @@ func TestDevNull_Remove(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestDevNull_RemoveRange(t *testing.T) {
+	err := sut.RemoveRange(ctx, testInfo, testConditions)
+	assert.NoError(t, err)
+}
+
 func TestDevNull_MultiRemove(t *testing.T) {
 	errs, err := sut.MultiRemove(ctx, testInfo, testMultiValues)
 	assert.NotNil(t, errs)
@@ -88,9 +94,8 @@ func TestDevNull_MultiRemove(t *testing.T) {
 }
 
 func TestDevNull_Range(t *testing.T) {
-	conditions := make(map[string][]*dosa.Condition)
 	minimumFields := make([]string, 1)
-	vals, _, err := sut.Range(ctx, testInfo, conditions, minimumFields, "", 0)
+	vals, _, err := sut.Range(ctx, testInfo, testConditions, minimumFields, "", 0)
 	assert.Nil(t, vals)
 	assert.Error(t, err)
 }

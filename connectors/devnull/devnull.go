@@ -72,6 +72,11 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[
 	return &dosa.ErrNotFound{}
 }
 
+// RemoveRange removes all entities within the range specified by the columnConditions.
+func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) error {
+	return nil
+}
+
 // MultiRemove returns a not found error for each value
 func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
 	return makeErrorSlice(len(multiValues), &dosa.ErrNotFound{}), nil
