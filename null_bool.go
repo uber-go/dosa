@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strconv"
 )
 
@@ -17,7 +16,7 @@ type NullBool struct {
 // specified value.
 func NewNullBool(value bool) NullBool {
 	return NullBool{
-		NullBool: sql.NullBool{
+		sql.NullBool{
 			Valid: true,
 			Bool:  value,
 		},
@@ -95,7 +94,7 @@ func (i *NullBool) UnmarshalJSON(data []byte) error {
 		i.Valid = false
 		return nil
 	default:
-		err = fmt.Errorf("failed to unmarshal %v into NullBool", reflect.TypeOf(unknown).Name())
+		err = fmt.Errorf("failed to unmarshal %T into NullBool", unknown)
 	}
 
 	i.Valid = err == nil
