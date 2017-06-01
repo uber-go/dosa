@@ -56,10 +56,10 @@ type Connector struct {
 
 // partitionRange represents one section of a partition.
 type partitionRange struct {
-	entityRef map[string][]map[string]dosa.FieldValue
+	entityRef    map[string][]map[string]dosa.FieldValue
 	partitionKey string
-	start int
-	end int
+	start        int
+	end          int
 }
 
 // delete deletes the values referenced by the partitionRange. Since this function modifies
@@ -80,7 +80,6 @@ func (pr *partitionRange) delete() {
 func (pr *partitionRange) values() []map[string]dosa.FieldValue {
 	return pr.entityRef[pr.partitionKey][pr.start : pr.end+1]
 }
-
 
 // partitionKeyBuilder extracts the partition key components from the map and encodes them,
 // generating a unique string. It uses the encoding/gob method to make a byte array as the
@@ -373,7 +372,7 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 	defer c.lock.RUnlock()
 
 	partitionRange := c.findRange(ei, columnConditions)
-	if partitionRange == nil{
+	if partitionRange == nil {
 		return nil, "", &dosa.ErrNotFound{}
 	}
 
@@ -422,10 +421,10 @@ func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][
 	}
 
 	return &partitionRange{
-		entityRef: entityRef,
+		entityRef:    entityRef,
 		partitionKey: encodedPartitionKey,
-		start: startinx,
-		end: endinx,
+		start:        startinx,
+		end:          endinx,
 	}
 }
 
