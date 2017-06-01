@@ -37,7 +37,12 @@ import (
 	"go.uber.org/yarpc/transport/tchannel"
 )
 
-const _defaultServiceName = "dosa-gateway"
+const (
+	_defaultServiceName        = "dosa-gateway"
+	errCodeNotFound      int32 = 404
+	errCodeAlreadyExists int32 = 409
+	name                       = "yarpc"
+)
 
 // Config contains the YARPC client parameters
 type Config struct {
@@ -516,6 +521,11 @@ func (c *Connector) Shutdown() error {
 	return c.dispatcher.Stop()
 }
 
+// Name returns the name of the connector
+func Name() string {
+	return name
+}
+
 func getWithDefault(args map[string]interface{}, elem string, def string) string {
 	v, ok := args[elem]
 	if ok {
@@ -526,7 +536,7 @@ func getWithDefault(args map[string]interface{}, elem string, def string) string
 }
 
 func init() {
-	dosa.RegisterConnector("yarpc", func(args map[string]interface{}) (dosa.Connector, error) {
+	dosa.RegisterConnector(name, func(args map[string]interface{}) (dosa.Connector, error) {
 		// richest way is with a transport client configuration
 		if tc, ok := args["config"]; ok {
 			if transportConfig, ok := tc.(transport.ClientConfig); ok {
@@ -552,8 +562,3 @@ func init() {
 		return nil, errors.New("both host and port must be specified")
 	})
 }
-
-const (
-	errCodeNotFound      int32 = 404
-	errCodeAlreadyExists int32 = 409
-)
