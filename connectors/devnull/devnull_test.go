@@ -78,7 +78,7 @@ func TestDevNull_MultiUpsert(t *testing.T) {
 
 func TestDevNull_Remove(t *testing.T) {
 	err := sut.Remove(ctx, testInfo, testValues)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestDevNull_MultiRemove(t *testing.T) {

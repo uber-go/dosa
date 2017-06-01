@@ -99,7 +99,7 @@ func TestBase_Remove(t *testing.T) {
 	assert.Error(t, err)
 
 	err = bcWNext.Remove(ctx, testInfo, testValues)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestBase_MultiRemove(t *testing.T) {
