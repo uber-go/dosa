@@ -89,10 +89,10 @@ func TestNullString_UnmarshalText(t *testing.T) {
 }
 
 func TestNullString_MarshalJSON(t *testing.T) {
-	v := NewNullString("some type")
+	v := NewNullString("sometype")
 	bytes, err := v.MarshalJSON()
 	assert.NoError(t, err)
-	assert.Equal(t, "\"some type\"", string(bytes))
+	assert.Equal(t, "\"sometype\"", string(bytes))
 
 	v.Set("abc")
 	bytes, err = v.MarshalJSON()
