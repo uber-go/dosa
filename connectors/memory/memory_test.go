@@ -249,7 +249,7 @@ func TestConnector_RemoveRange(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	// insert some data into data/i/uuid with a random set of uuids
+	// insert some data all into the data partition, but spread out among the c1 clustering key
 	for x := 0; x < idcount; x++ {
 		err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),

@@ -35,14 +35,6 @@ import (
 	"github.com/uber-go/dosa/connectors/base"
 )
 
-// partitionRange represents one section of a partition.
-type partitionRange struct {
-	entityRef map[string][]map[string]dosa.FieldValue
-	partitionKey string
-	start int
-	end int
-}
-
 // Connector is an in-memory connector.
 // The in-memory connector stores its data like this:
 // map[string]map[string][]map[string]dosa.FieldValue
@@ -61,6 +53,30 @@ type Connector struct {
 	data map[string]map[string][]map[string]dosa.FieldValue
 	lock sync.RWMutex
 }
+
+// partitionRange represents one section of a partition.
+type partitionRange struct {
+	entityRef map[string][]map[string]dosa.FieldValue
+	partitionKey string
+	start int
+	end int
+}
+
+// delete deletes the values referenced by the partitionRange. This method can't be called more than
+// once. Calling it more than once will cause a panic.
+func (pr *partitionRange) delete() {
+	partitionRef := pr.entityRef[pr.partitionKey]
+	pr.entityRef[pr.partitionKey] = append(partitionRef[:pr.start], partitionRef[pr.end+1:]...)
+	pr.entityRef = nil
+	pr.partitionKey = ""
+	pr.start = 0
+	pr.end = 0
+}
+
+func (pr *partitionRange) values() []map[string]dosa.FieldValue {
+	return pr.entityRef[pr.partitionKey][pr.start : pr.end+1]
+}
+
 
 // partitionKeyBuilder extracts the partition key components from the map and encodes them,
 // generating a unique string. It uses the encoding/gob method to make a byte array as the
@@ -344,13 +360,7 @@ func (c *Connector) RemoveRange(_ context.Context, ei *dosa.EntityInfo, columnCo
 		return nil
 	}
 
-	partitionRef := partitionRange.entityRef[partitionRange.partitionKey]
-	partitionKey := partitionRange.partitionKey
-	entityRef := partitionRange.entityRef
-	start := partitionRange.start
-	end := partitionRange.end
-
-	entityRef[partitionKey] = append(partitionRef[:start], partitionRef[end+1:]...)
+	partitionRange.delete()
 	return nil
 }
 
@@ -364,10 +374,8 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 		return nil, "", &dosa.ErrNotFound{}
 	}
 
-	partition := partitionRange.entityRef[partitionRange.partitionKey]
-
 	// TODO: enforce limits and return a token when there are more rows
-	return partition[partitionRange.start : partitionRange.end+1], "", nil
+	return partitionRange.values(), "", nil
 }
 
 // findRange finds the partitionRange specified by the given entity info and column conditions.
