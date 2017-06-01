@@ -54,6 +54,34 @@ type Connector struct {
 	lock sync.RWMutex
 }
 
+// partitionRange represents one section of a partition.
+type partitionRange struct {
+	entityRef map[string][]map[string]dosa.FieldValue
+	partitionKey string
+	start int
+	end int
+}
+
+// delete deletes the values referenced by the partitionRange. Since this function modifies
+// the data stored in the in-memory connector, a write lock must be held when calling
+// this function.
+//
+// Note this function can't be called more than once. Calling it more than once will cause a panic.
+func (pr *partitionRange) delete() {
+	partitionRef := pr.entityRef[pr.partitionKey]
+	pr.entityRef[pr.partitionKey] = append(partitionRef[:pr.start], partitionRef[pr.end+1:]...)
+	pr.entityRef = nil
+	pr.partitionKey = ""
+	pr.start = 0
+	pr.end = 0
+}
+
+// values returns all the values in the partition range
+func (pr *partitionRange) values() []map[string]dosa.FieldValue {
+	return pr.entityRef[pr.partitionKey][pr.start : pr.end+1]
+}
+
+
 // partitionKeyBuilder extracts the partition key components from the map and encodes them,
 // generating a unique string. It uses the encoding/gob method to make a byte array as the
 // key, and returns this as a string
@@ -326,12 +354,41 @@ func (c *Connector) Remove(_ context.Context, ei *dosa.EntityInfo, values map[st
 	return nil
 }
 
+// RemoveRange removes all of the elements in the range specified by the entity info and the column conditions.
+func (c *Connector) RemoveRange(_ context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	partitionRange := c.findRange(ei, columnConditions)
+	if partitionRange != nil {
+		partitionRange.delete()
+	}
+
+	return nil
+}
+
 // Range returns a slice of data from the datastore
 func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
-	if c.data[ei.Def.Name] == nil {
+
+	partitionRange := c.findRange(ei, columnConditions)
+	if partitionRange == nil{
 		return nil, "", &dosa.ErrNotFound{}
+	}
+
+	// TODO: enforce limits and return a token when there are more rows
+	return partitionRange.values(), "", nil
+}
+
+// findRange finds the partitionRange specified by the given entity info and column conditions.
+// In the case that no entities are found an empty partitionRange with a nil partition field will be returned.
+//
+// Note that this function reads from the connector's data map. Any calling functions should hold
+// at least a read lock on the map.
+func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) *partitionRange {
+	if c.data[ei.Def.Name] == nil {
+		return nil
 	}
 	entityRef := c.data[ei.Def.Name]
 
@@ -347,7 +404,7 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 	partitionRef := entityRef[encodedPartitionKey]
 	// no data in this partition? easy out!
 	if len(partitionRef) == 0 {
-		return nil, "", &dosa.ErrNotFound{}
+		return nil
 	}
 	// hunt through the partitionRef and return values that match search criteria
 	// TODO: This can be done much faster using a binary search
@@ -361,10 +418,15 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 
 	}
 	if endinx <= startinx {
-		return nil, "", &dosa.ErrNotFound{}
+		return nil
 	}
-	// TODO: enforce limits and return a token when there are more rows
-	return partitionRef[startinx : endinx+1], "", nil
+
+	return &partitionRange{
+		entityRef: entityRef,
+		partitionKey: encodedPartitionKey,
+		start: startinx,
+		end: endinx,
+	}
 }
 
 // matchesClusteringConditions checks if a data row matches the conditions in the columnConditions that apply to

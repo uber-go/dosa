@@ -239,6 +239,63 @@ func TestConnector_Remove(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestConnector_RemoveRange(t *testing.T) {
+	const idcount = 10
+	sut := NewConnector()
+
+	// test removing a range with no data in the range
+	err := sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+	})
+	assert.NoError(t, err)
+
+	// insert some data all into the data partition, spread out among the c1 clustering key
+	for x := 0; x < idcount; x++ {
+		err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
+			"f1": dosa.FieldValue("data"),
+			"c1": dosa.FieldValue(int64(x)),
+			"c7": dosa.FieldValue(dosa.NewUUID())})
+		assert.NoError(t, err)
+	}
+
+	// delete all values greater than those with 4 for c1
+	err = sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c1": {{Op: dosa.Gt, Value: dosa.FieldValue(int64(4))}},
+	})
+	assert.NoError(t, err)
+
+	// ensure all the rows with c1 value less than or equal to 4 still exist
+	data, _, err := sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c1": {{Op: dosa.LtOrEq, Value: dosa.FieldValue(int64(4))}},
+	}, dosa.All(), "", 200)
+	assert.NoError(t, err)
+	assert.Len(t, data, idcount/2)
+	for i, x := range data {
+		assert.Equal(t, x["c1"], int64(i))
+	}
+
+	// ensure all the with a c1 value greater than 4 are deleted.
+	data, _, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c1": {{Op: dosa.Gt, Value: dosa.FieldValue(int64(4))}},
+	}, dosa.All(), "", 200)
+	assert.Error(t, err)
+	assert.True(t, dosa.ErrorIsNotFound(err))
+
+	// test completely deleting all the rows in a partition.
+	err = sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+	})
+	assert.NoError(t, err)
+	_, _, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+	}, dosa.All(), "", 200)
+	assert.Error(t, err)
+	assert.True(t, dosa.ErrorIsNotFound(err))
+}
+
 func TestConnector_Shutdown(t *testing.T) {
 	sut := NewConnector()
 
