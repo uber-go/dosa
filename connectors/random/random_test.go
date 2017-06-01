@@ -55,6 +55,7 @@ var (
 			EntityName: "testEntityName",
 		},
 	}
+	testConditions  = make(map[string][]*dosa.Condition)
 	testPairs       = dosa.FieldNameValuePair{}
 	testValues      = make(map[string]dosa.FieldValue)
 	testMultiValues = make([]map[string]dosa.FieldValue, 50)
@@ -103,6 +104,11 @@ func TestRandom_Remove(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestRandom_RemoveRange(t *testing.T) {
+	err := sut.RemoveRange(ctx, testInfo, testConditions)
+	assert.NoError(t, err)
+}
+
 func TestRandom_MultiRemove(t *testing.T) {
 	errs, err := sut.MultiRemove(ctx, testInfo, testMultiValues)
 	assert.NotNil(t, errs)
@@ -110,8 +116,7 @@ func TestRandom_MultiRemove(t *testing.T) {
 }
 
 func TestRandom_Range(t *testing.T) {
-	conditions := make(map[string][]*dosa.Condition)
-	vals, _, err := sut.Range(ctx, testInfo, conditions, minimumFields, "", 32)
+	vals, _, err := sut.Range(ctx, testInfo, testConditions, minimumFields, "", 32)
 	assert.NotNil(t, vals)
 	assert.NoError(t, err)
 }
