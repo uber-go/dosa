@@ -243,13 +243,13 @@ func TestConnector_RemoveRange(t *testing.T) {
 	const idcount = 10
 	sut := NewConnector()
 
-	// remove with no data
+	// test removing a range with no data in the range
 	err := sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 	})
 	assert.NoError(t, err)
 
-	// insert some data all into the data partition, but spread out among the c1 clustering key
+	// insert some data all into the data partition, spread out among the c1 clustering key
 	for x := 0; x < idcount; x++ {
 		err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),
@@ -258,14 +258,14 @@ func TestConnector_RemoveRange(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	// find the midpoint and delete all values greater than that
+	// delete all values greater than those with 4 for c1
 	err = sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Gt, Value: dosa.FieldValue(int64(4))}},
 	})
 	assert.NoError(t, err)
 
-	// ensure all the uuids less than or equal uuid at the midpoint are still in the range.
+	// ensure all the rows with c1 value less than or equal to 4 still exist
 	data, _, err := sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.LtOrEq, Value: dosa.FieldValue(int64(4))}},
@@ -276,12 +276,22 @@ func TestConnector_RemoveRange(t *testing.T) {
 		assert.Equal(t, x["c1"], int64(i))
 	}
 
-	// ensure all the uuids greater than the uuid at the midpoint are removed.
+	// ensure all the with a c1 value greater than 4 are deleted.
 	data, _, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Gt, Value: dosa.FieldValue(int64(4))}},
 	}, dosa.All(), "", 200)
-	t.Logf("Length of data is: %d\n", len(data))
+	assert.Error(t, err)
+	assert.True(t, dosa.ErrorIsNotFound(err))
+
+	// test completely deleting all the rows in a partition.
+	err = sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+	})
+	assert.NoError(t, err)
+	_, _, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+	}, dosa.All(), "", 200)
 	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 }
