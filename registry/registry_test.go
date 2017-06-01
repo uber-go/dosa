@@ -18,39 +18,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package dosa is the DOSA - Declarative Object Storage Abstraction.
-//
-// Abstract
-//
-// :warning: DOSA is BETA software. It is not recommended for production use.
-// We will announce when it's ready.
-//
-//
-// DOSA (https://github.com/uber-go/dosa/wiki) is a storage framework that
-// provides a
-// delcarative object storage abstraction for applications in Golang
-// and (eventually) Java. DOSA is designed to relieve common headaches developers
-// face while building stateful, database-dependent services.
-//
-//
-// If you'd like to start by writing a small DOSA-enabled program, check out
-// the getting started guide (https://github.com/uber-go/dosa/wiki/Getting-Started-Guide).
-//
-// Overview
-//
-// DOSA is a storage library that supports:
-//
-// • methods to store and retrieve go structs
-//
-// • struct annotations to describe queries against data
-//
-// • tools to create and/or migrate database schemas
-//
-// • implementations that serialize requests to remote stateless servers
-//
-// Annotations
-//
-// This project is released under the MIT License (LICENSE.txt).
-//
-//
-package dosa
+package registry_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/config"
+	"github.com/uber-go/dosa/registry"
+)
+
+type TestEntity struct {
+	dosa.Entity `dosa:"primaryKey=(ID, Name)"`
+	ID          int64
+	Name        string
+	Email       string
+}
+
+func TestRegistrar_Scope(t *testing.T) {
+	assert.Equal(t, true, true)
+}
+
+func TestRegistrar_NamePrefix(t *testing.T) {
+	assert.Equal(t, true, true)
+}
+
+func TestRegistrar_Find(t *testing.T) {
+	assert.Equal(t, true, true)
+}
+
+func TestRegistrar_FindAll(t *testing.T) {
+	assert.Equal(t, true, true)
+}
+
+func TestNewRegistrar(t *testing.T) {
+	cfg := &config.Config{}
+	reg, err := registry.NewRegistrar(cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, reg)
+}
