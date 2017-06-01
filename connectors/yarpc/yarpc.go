@@ -532,7 +532,6 @@ func getWithDefault(args map[string]interface{}, elem string, def string) string
 
 func init() {
 	dosa.RegisterConnector("yarpc", func(args dosa.CreationArgs) (dosa.Connector, error) {
-
 		if host, ok := args["host"]; ok {
 			if port, ok := args["port"]; ok {
 				trans := getWithDefault(args, "transport", "tchannel")
