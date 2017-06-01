@@ -62,8 +62,11 @@ type partitionRange struct {
 	end int
 }
 
-// delete deletes the values referenced by the partitionRange. This method can't be called more than
-// once. Calling it more than once will cause a panic.
+// delete deletes the values referenced by the partitionRange. Since this function modifies
+// the data stored in the in-memory connector, a write lock must be held when calling
+// this function.
+//
+// Note this function can't be called more than once. Calling it more than once will cause a panic.
 func (pr *partitionRange) delete() {
 	partitionRef := pr.entityRef[pr.partitionKey]
 	pr.entityRef[pr.partitionKey] = append(partitionRef[:pr.start], partitionRef[pr.end+1:]...)
@@ -73,6 +76,7 @@ func (pr *partitionRange) delete() {
 	pr.end = 0
 }
 
+// values returns all the values in the partition range
 func (pr *partitionRange) values() []map[string]dosa.FieldValue {
 	return pr.entityRef[pr.partitionKey][pr.start : pr.end+1]
 }
@@ -356,11 +360,10 @@ func (c *Connector) RemoveRange(_ context.Context, ei *dosa.EntityInfo, columnCo
 	defer c.lock.Unlock()
 
 	partitionRange := c.findRange(ei, columnConditions)
-	if partitionRange == nil {
-		return nil
+	if partitionRange != nil {
+		partitionRange.delete()
 	}
 
-	partitionRange.delete()
 	return nil
 }
 
