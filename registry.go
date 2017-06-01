@@ -205,6 +205,7 @@ type prefixedRegistrar struct {
 // entities provided. `dosa.Client` implementations are intended to use scope
 // and prefix to uniquely identify where entities should live but the
 // registrar itself is only responsible for basic accounting of entities.
+// DEPRECATED: use (github.com/uber-go/dosa/registry).NewRegistrar instead.
 func NewRegistrar(scope, prefix string, entities ...DomainObject) (Registrar, error) {
 	baseFQN, err := ToFQN(prefix)
 	if err != nil {

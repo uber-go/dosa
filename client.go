@@ -561,6 +561,12 @@ type EntityErrors struct {
 	warns []error
 }
 
+// NewEntityErrors returns a wrapper for errors encountered while parsing
+// entity struct tags.
+func NewEntityErrors(warns []error) *EntityErrors {
+	return &EntityErrors{warns: warns}
+}
+
 // Error makes parse errors discernable to end-user.
 func (ee *EntityErrors) Error() string {
 	var str bytes.Buffer
