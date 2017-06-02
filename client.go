@@ -538,7 +538,7 @@ func (c *adminClient) GetSchema() ([]*EntityDefinition, error) {
 	// "warnings" mean entity was found but contained invalid annotations
 	entities, warns, err := FindEntities(c.dirs, c.excludes)
 	if len(warns) > 0 {
-		return nil, &EntityErrors{warns: warns}
+		return nil, NewEntityErrors(warns)
 	}
 	// I/O and AST parsing errors
 	if err != nil {
