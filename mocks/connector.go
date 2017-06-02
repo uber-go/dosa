@@ -25,12 +25,11 @@ package mocks
 
 import (
 	context "context"
-
 	gomock "github.com/golang/mock/gomock"
 	dosa "github.com/uber-go/dosa"
 )
 
-// Mock of Connector interface
+// MockConnector is a mock of Connector interface
 type MockConnector struct {
 	ctrl     *gomock.Controller
 	recorder *_MockConnectorRecorder
@@ -41,16 +40,19 @@ type _MockConnectorRecorder struct {
 	mock *MockConnector
 }
 
+// NewMockConnector creates a new mock
 func NewMockConnector(ctrl *gomock.Controller) *MockConnector {
 	mock := &MockConnector{ctrl: ctrl}
 	mock.recorder = &_MockConnectorRecorder{mock}
 	return mock
 }
 
+// EXPECT adds an expectation
 func (_m *MockConnector) EXPECT() *_MockConnectorRecorder {
 	return _m.recorder
 }
 
+// CheckSchema is a mock implementation of MockConnector.CheckSchema
 func (_m *MockConnector) CheckSchema(_param0 context.Context, _param1 string, _param2 string, _param3 []*dosa.EntityDefinition) (int32, error) {
 	ret := _m.ctrl.Call(_m, "CheckSchema", _param0, _param1, _param2, _param3)
 	ret0, _ := ret[0].(int32)
@@ -62,6 +64,7 @@ func (_mr *_MockConnectorRecorder) CheckSchema(arg0, arg1, arg2, arg3 interface{
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CheckSchema", arg0, arg1, arg2, arg3)
 }
 
+// CheckSchemaStatus is a mock implementation of MockConnector.CheckSchemaStatus
 func (_m *MockConnector) CheckSchemaStatus(_param0 context.Context, _param1 string, _param2 string, _param3 int32) (*dosa.SchemaStatus, error) {
 	ret := _m.ctrl.Call(_m, "CheckSchemaStatus", _param0, _param1, _param2, _param3)
 	ret0, _ := ret[0].(*dosa.SchemaStatus)
@@ -73,6 +76,7 @@ func (_mr *_MockConnectorRecorder) CheckSchemaStatus(arg0, arg1, arg2, arg3 inte
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CheckSchemaStatus", arg0, arg1, arg2, arg3)
 }
 
+// CreateIfNotExists is a mock implementation of MockConnector.CreateIfNotExists
 func (_m *MockConnector) CreateIfNotExists(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 map[string]dosa.FieldValue) error {
 	ret := _m.ctrl.Call(_m, "CreateIfNotExists", _param0, _param1, _param2)
 	ret0, _ := ret[0].(error)
@@ -83,6 +87,7 @@ func (_mr *_MockConnectorRecorder) CreateIfNotExists(arg0, arg1, arg2 interface{
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateIfNotExists", arg0, arg1, arg2)
 }
 
+// CreateScope is a mock implementation of MockConnector.CreateScope
 func (_m *MockConnector) CreateScope(_param0 context.Context, _param1 string) error {
 	ret := _m.ctrl.Call(_m, "CreateScope", _param0, _param1)
 	ret0, _ := ret[0].(error)
@@ -93,6 +98,7 @@ func (_mr *_MockConnectorRecorder) CreateScope(arg0, arg1 interface{}) *gomock.C
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateScope", arg0, arg1)
 }
 
+// DropScope is a mock implementation of MockConnector.DropScope
 func (_m *MockConnector) DropScope(_param0 context.Context, _param1 string) error {
 	ret := _m.ctrl.Call(_m, "DropScope", _param0, _param1)
 	ret0, _ := ret[0].(error)
@@ -103,6 +109,7 @@ func (_mr *_MockConnectorRecorder) DropScope(arg0, arg1 interface{}) *gomock.Cal
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "DropScope", arg0, arg1)
 }
 
+// MultiRead is a mock implementation of MockConnector.MultiRead
 func (_m *MockConnector) MultiRead(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 []map[string]dosa.FieldValue, _param3 []string) ([]*dosa.FieldValuesOrError, error) {
 	ret := _m.ctrl.Call(_m, "MultiRead", _param0, _param1, _param2, _param3)
 	ret0, _ := ret[0].([]*dosa.FieldValuesOrError)
@@ -114,6 +121,7 @@ func (_mr *_MockConnectorRecorder) MultiRead(arg0, arg1, arg2, arg3 interface{})
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "MultiRead", arg0, arg1, arg2, arg3)
 }
 
+// MultiRemove is a mock implementation of MockConnector.MultiRemove
 func (_m *MockConnector) MultiRemove(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 []map[string]dosa.FieldValue) ([]error, error) {
 	ret := _m.ctrl.Call(_m, "MultiRemove", _param0, _param1, _param2)
 	ret0, _ := ret[0].([]error)
@@ -125,6 +133,7 @@ func (_mr *_MockConnectorRecorder) MultiRemove(arg0, arg1, arg2 interface{}) *go
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "MultiRemove", arg0, arg1, arg2)
 }
 
+// MultiUpsert is a mock implementation of MockConnector.MultiUpsert
 func (_m *MockConnector) MultiUpsert(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 []map[string]dosa.FieldValue) ([]error, error) {
 	ret := _m.ctrl.Call(_m, "MultiUpsert", _param0, _param1, _param2)
 	ret0, _ := ret[0].([]error)
@@ -136,6 +145,7 @@ func (_mr *_MockConnectorRecorder) MultiUpsert(arg0, arg1, arg2 interface{}) *go
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "MultiUpsert", arg0, arg1, arg2)
 }
 
+// Range is a mock implementation of MockConnector.Range
 func (_m *MockConnector) Range(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 map[string][]*dosa.Condition, _param3 []string, _param4 string, _param5 int) ([]map[string]dosa.FieldValue, string, error) {
 	ret := _m.ctrl.Call(_m, "Range", _param0, _param1, _param2, _param3, _param4, _param5)
 	ret0, _ := ret[0].([]map[string]dosa.FieldValue)
@@ -148,6 +158,7 @@ func (_mr *_MockConnectorRecorder) Range(arg0, arg1, arg2, arg3, arg4, arg5 inte
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Range", arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
+// Read is a mock implementation of MockConnector.Read
 func (_m *MockConnector) Read(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 map[string]dosa.FieldValue, _param3 []string) (map[string]dosa.FieldValue, error) {
 	ret := _m.ctrl.Call(_m, "Read", _param0, _param1, _param2, _param3)
 	ret0, _ := ret[0].(map[string]dosa.FieldValue)
@@ -159,6 +170,7 @@ func (_mr *_MockConnectorRecorder) Read(arg0, arg1, arg2, arg3 interface{}) *gom
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Read", arg0, arg1, arg2, arg3)
 }
 
+// Remove is a mock implementation of MockConnector.Remove
 func (_m *MockConnector) Remove(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 map[string]dosa.FieldValue) error {
 	ret := _m.ctrl.Call(_m, "Remove", _param0, _param1, _param2)
 	ret0, _ := ret[0].(error)
@@ -169,6 +181,7 @@ func (_mr *_MockConnectorRecorder) Remove(arg0, arg1, arg2 interface{}) *gomock.
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Remove", arg0, arg1, arg2)
 }
 
+// Scan is a mock implementation of MockConnector.Scan
 func (_m *MockConnector) Scan(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 []string, _param3 string, _param4 int) ([]map[string]dosa.FieldValue, string, error) {
 	ret := _m.ctrl.Call(_m, "Scan", _param0, _param1, _param2, _param3, _param4)
 	ret0, _ := ret[0].([]map[string]dosa.FieldValue)
@@ -181,6 +194,7 @@ func (_mr *_MockConnectorRecorder) Scan(arg0, arg1, arg2, arg3, arg4 interface{}
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Scan", arg0, arg1, arg2, arg3, arg4)
 }
 
+// ScopeExists is a mock implementation of MockConnector.ScopeExists
 func (_m *MockConnector) ScopeExists(_param0 context.Context, _param1 string) (bool, error) {
 	ret := _m.ctrl.Call(_m, "ScopeExists", _param0, _param1)
 	ret0, _ := ret[0].(bool)
@@ -192,6 +206,7 @@ func (_mr *_MockConnectorRecorder) ScopeExists(arg0, arg1 interface{}) *gomock.C
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ScopeExists", arg0, arg1)
 }
 
+// Search is a mock implementation of MockConnector.Search
 func (_m *MockConnector) Search(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 dosa.FieldNameValuePair, _param3 []string, _param4 string, _param5 int) ([]map[string]dosa.FieldValue, string, error) {
 	ret := _m.ctrl.Call(_m, "Search", _param0, _param1, _param2, _param3, _param4, _param5)
 	ret0, _ := ret[0].([]map[string]dosa.FieldValue)
@@ -204,6 +219,7 @@ func (_mr *_MockConnectorRecorder) Search(arg0, arg1, arg2, arg3, arg4, arg5 int
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Search", arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
+// Shutdown is a mock implementation of MockConnector.Shutdown
 func (_m *MockConnector) Shutdown() error {
 	ret := _m.ctrl.Call(_m, "Shutdown")
 	ret0, _ := ret[0].(error)
@@ -214,6 +230,7 @@ func (_mr *_MockConnectorRecorder) Shutdown() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Shutdown")
 }
 
+// TruncateScope is a mock implementation of MockConnector.TruncateScope
 func (_m *MockConnector) TruncateScope(_param0 context.Context, _param1 string) error {
 	ret := _m.ctrl.Call(_m, "TruncateScope", _param0, _param1)
 	ret0, _ := ret[0].(error)
@@ -224,6 +241,7 @@ func (_mr *_MockConnectorRecorder) TruncateScope(arg0, arg1 interface{}) *gomock
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TruncateScope", arg0, arg1)
 }
 
+// Upsert is a mock implementation of MockConnector.Upsert
 func (_m *MockConnector) Upsert(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 map[string]dosa.FieldValue) error {
 	ret := _m.ctrl.Call(_m, "Upsert", _param0, _param1, _param2)
 	ret0, _ := ret[0].(error)
@@ -234,6 +252,7 @@ func (_mr *_MockConnectorRecorder) Upsert(arg0, arg1, arg2 interface{}) *gomock.
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Upsert", arg0, arg1, arg2)
 }
 
+// UpsertSchema is a mock implementation of MockConnector.UpsertSchema
 func (_m *MockConnector) UpsertSchema(_param0 context.Context, _param1 string, _param2 string, _param3 []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
 	ret := _m.ctrl.Call(_m, "UpsertSchema", _param0, _param1, _param2, _param3)
 	ret0, _ := ret[0].(*dosa.SchemaStatus)
