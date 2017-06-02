@@ -35,26 +35,26 @@ const (
 	_defExclude    = "_test.go"
 
 	// default timeouts in milliseconds
-	_defInitializeTimeout        = 10000
-	_defCreateIfNotExistsTimeout = 10000
-	_defReadTimeout              = 10000
-	_defUpsertTimeout            = 10000
-	_defRemoveTimeout            = 10000
-	_defRangeTimeout             = 10000
-	_defSearchTimeout            = 10000
-	_defScanEverythingTimeout    = 10000
+	_defCreateIfNotExistsTimeout = time.Duration(10 * time.Second)
+	_defInitializeTimeout        = time.Duration(10 * time.Second)
+	_defRangeTimeout             = time.Duration(10 * time.Second)
+	_defReadTimeout              = time.Duration(2 * time.Second)
+	_defRemoveTimeout            = time.Duration(2 * time.Second)
+	_defScanEverythingTimeout    = time.Duration(10 * time.Second)
+	_defSearchTimeout            = time.Duration(10 * time.Second)
+	_defUpsertTimeout            = time.Duration(2 * time.Second)
 )
 
 // TimeoutConfig holds timeout values for all DOSA operations
 type TimeoutConfig struct {
-	Initialize        time.Duration `yaml:"initialize"`
 	CreateIfNotExists time.Duration `yaml:"createIfNotExists"`
-	Read              time.Duration `yaml:"read"`
-	Upsert            time.Duration `yaml:"upsert"`
-	Remove            time.Duration `yaml:"remove"`
+	Initialize        time.Duration `yaml:"initialize"`
 	Range             time.Duration `yaml:"range"`
-	Search            time.Duration `yaml:"search"`
+	Read              time.Duration `yaml:"read"`
+	Remove            time.Duration `yaml:"remove"`
 	ScanEverything    time.Duration `yaml:"scanEverything"`
+	Search            time.Duration `yaml:"search"`
+	Upsert            time.Duration `yaml:"upsert"`
 }
 
 // Config represents the settings for the dosa client
@@ -90,14 +90,14 @@ func NewDefaultConfig() Config {
 		Excludes:    []string{_defExclude},
 		Connector:   _defaultConn,
 		Timeout: &TimeoutConfig{
-			Initialize:        time.Duration(_defInitializeTimeout) * time.Millisecond,
-			CreateIfNotExists: time.Duration(_defCreateIfNotExistsTimeout) * time.Millisecond,
-			Read:              time.Duration(_defReadTimeout) * time.Millisecond,
-			Upsert:            time.Duration(_defUpsertTimeout) * time.Millisecond,
-			Remove:            time.Duration(_defRemoveTimeout) * time.Millisecond,
-			Range:             time.Duration(_defRangeTimeout) * time.Millisecond,
-			Search:            time.Duration(_defSearchTimeout) * time.Millisecond,
-			ScanEverything:    time.Duration(_defScanEverythingTimeout) * time.Millisecond,
+			CreateIfNotExists: _defCreateIfNotExistsTimeout,
+			Initialize:        _defInitializeTimeout,
+			Range:             _defRangeTimeout,
+			Read:              _defReadTimeout,
+			Remove:            _defRemoveTimeout,
+			ScanEverything:    _defScanEverythingTimeout,
+			Search:            _defSearchTimeout,
+			Upsert:            _defUpsertTimeout,
 		},
 	}
 }
