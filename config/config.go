@@ -23,11 +23,23 @@ package config
 import (
 	"time"
 
+	"go.uber.org/fx/service"
+
+	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/yarpc"
 )
 
 const (
+	// configuration path in dotted notation, primarily used for UberFx
+	cfgPath = "storage.dosa"
+
+	// use dev gateway for any non-production scope
+	// TODO(eculver): this switching should be done on server-side
+	prodScope   = "production"
+	prodService = "dosa-gateway"
+	devService  = "dosa-dev-gateway"
+
 	_defConn = "yarpc"
 
 	// default search location and what to exclude
@@ -102,4 +114,23 @@ func NewDefaultConfig() Config {
 			Upsert:            _defUpsertTimeout,
 		},
 	}
+}
+
+// NewConfigForService returns a new configuration instance from an UberFx
+// service's config. The configuration must live at the path "storage.dosa".
+func NewConfigForService(h service.Host) (*Config, error) {
+	cfg := NewDefaultConfig()
+	if err := h.Config().Get(cfgPath).Populate(&cfg); err != nil {
+		return nil, errors.Wrap(err, "could not populate DOSA configuration")
+	}
+	return &cfg, nil
+}
+
+// Service returns the YARPC service name based on the scope set. If scope is
+// anything other than "production", the service name will be "dosa-dev-gateway"
+func (c *Config) Service() string {
+	if c.Scope == prodScope {
+		return prodService
+	}
+	return devService
 }

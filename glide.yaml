@@ -18,8 +18,14 @@ import:
   - gomock
 - package: github.com/yookoala/realpath
 - package: github.com/jessevdk/go-flags
+- package: go.uber.org/fx
+  version: glue-dig-b3
+- package: go.uber.org/dig
+  version: ~0.1
 - package: github.com/yarpc/yarpc-go
   version: ^1.7.1
+- package: github.com/go-validator/validator
+  version: v2
 testImport:
 - package: golang.org/x/tools
   subpackages:
