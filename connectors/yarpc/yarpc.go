@@ -319,7 +319,24 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		return errors.Wrap(err, "YARPC Remove failed")
 	}
 	return nil
+}
 
+// RemoveRange removes all entities within the range specified by the columnConditions.
+func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) error {
+	conditions, err := createRpcConditions(columnConditions)
+	if err != nil {
+		errors.Wrap(err, "RemoveRange failed")
+	}
+
+	request := &dosarpc.RemoveRangeRequest{
+		Ref: entityInfoToSchemaRef(ei),
+		Conditions: conditions,
+	}
+
+	if err := c.Client.RemoveRange(ctx, request); err != nil {
+		return errors.Wrap(err, "YARPC RemoveRange failed")
+	}
+	return nil
 }
 
 // MultiRemove is not yet implemented
@@ -331,27 +348,15 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiK
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	limit32 := int32(limit)
 	rpcMinimumFields := makeRPCminimumFields(minimumFields)
-	rpcConditions := []*dosarpc.Condition{}
-	for field, conditions := range columnConditions {
-		// Warning: Don't remove this line.
-		// field variable always has the same address. If we want to dereference it, we have to assign the value to a new variable.
-		fieldName := field
-		for _, condition := range conditions {
-			rv, err := RawValueFromInterface(condition.Value)
-			if err != nil {
-				return nil, "", errors.Wrap(err, "Bad range value")
-			}
-			rpcConditions = append(rpcConditions, &dosarpc.Condition{
-				Op:    encodeOperator(condition.Op),
-				Field: &dosarpc.Field{Name: &fieldName, Value: &dosarpc.Value{ElemValue: rv}},
-			})
-		}
+	conditions, err := createRpcConditions(columnConditions)
+	if err != nil {
+		errors.Wrap(err, "Range failed")
 	}
 	rangeRequest := dosarpc.RangeRequest{
 		Ref:          entityInfoToSchemaRef(ei),
 		Token:        &token,
 		Limit:        &limit32,
-		Conditions:   rpcConditions,
+		Conditions:   conditions,
 		FieldsToRead: rpcMinimumFields,
 	}
 	response, err := c.Client.Range(ctx, &rangeRequest)
@@ -363,6 +368,27 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 		results = append(results, decodeResults(ei, entity))
 	}
 	return results, *response.NextToken, nil
+}
+
+func createRpcConditions(columnConditions map[string][]*dosa.Condition) ([]*dosarpc.Condition, error) {
+	rpcConditions := []*dosarpc.Condition{}
+	for field, conditions := range columnConditions {
+		// Warning: Don't remove this line.
+		// field variable always has the same address. If we want to dereference it, we have to assign the value to a new variable.
+		fieldName := field
+		for _, condition := range conditions {
+			rv, err := RawValueFromInterface(condition.Value)
+			if err != nil {
+				return nil, errors.Wrap(err, "Bad range value")
+			}
+			rpcConditions = append(rpcConditions, &dosarpc.Condition{
+				Op:    encodeOperator(condition.Op),
+				Field: &dosarpc.Field{Name: &fieldName, Value: &dosarpc.Value{ElemValue: rv}},
+			})
+		}
+	}
+
+	return rpcConditions, nil
 }
 
 // Search is not yet implemented
