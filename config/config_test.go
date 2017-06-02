@@ -29,6 +29,13 @@ import (
 	"github.com/uber-go/dosa/connectors/yarpc"
 )
 
+const (
+	testScope      = "testscope"
+	testPrefix     = "testprefix"
+	testEntityPath = "../testentity"
+)
+
+// SinglePartitionKey is used to test NewClient
 type SinglePartitionKey struct {
 	dosa.Entity `dosa:"primaryKey=PrimaryKey"`
 	PrimaryKey  int64

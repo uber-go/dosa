@@ -21,15 +21,51 @@
 package config
 
 import (
+	"time"
+
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/yarpc"
 )
 
+const (
+	_defaultConn = "yarpc"
+
+	// default search location and what to exclude
+	_defEntityPath = "./entities/dosa"
+	_defExclude    = "_test.go"
+
+	// default timeouts in milliseconds
+	_defCreateIfNotExistsTimeout = time.Duration(10 * time.Second)
+	_defInitializeTimeout        = time.Duration(10 * time.Second)
+	_defRangeTimeout             = time.Duration(10 * time.Second)
+	_defReadTimeout              = time.Duration(2 * time.Second)
+	_defRemoveTimeout            = time.Duration(2 * time.Second)
+	_defScanEverythingTimeout    = time.Duration(10 * time.Second)
+	_defSearchTimeout            = time.Duration(10 * time.Second)
+	_defUpsertTimeout            = time.Duration(2 * time.Second)
+)
+
+// TimeoutConfig holds timeout values for all DOSA operations
+type TimeoutConfig struct {
+	CreateIfNotExists time.Duration `yaml:"createIfNotExists"`
+	Initialize        time.Duration `yaml:"initialize"`
+	Range             time.Duration `yaml:"range"`
+	Read              time.Duration `yaml:"read"`
+	Remove            time.Duration `yaml:"remove"`
+	ScanEverything    time.Duration `yaml:"scanEverything"`
+	Search            time.Duration `yaml:"search"`
+	Upsert            time.Duration `yaml:"upsert"`
+}
+
 // Config represents the settings for the dosa client
 type Config struct {
-	Scope      string       `yaml:"scope"`
-	NamePrefix string       `yaml:"namePrefix"`
-	Yarpc      yarpc.Config `yaml:"yarpc"`
+	Scope       string         `yaml:"scope"`
+	NamePrefix  string         `yaml:"namePrefix"`
+	Connector   string         `yaml:"connector"`
+	EntityPaths []string       `yaml:"entityPaths"`
+	Excludes    []string       `yaml:"excludes"`
+	Yarpc       yarpc.Config   `yaml:"yarpc"`
+	Timeout     *TimeoutConfig `yaml:"timeout"`
 }
 
 // NewClient creates a DOSA client based on the configuration
@@ -45,4 +81,23 @@ func (c Config) NewClient(entities ...dosa.DomainObject) (dosa.Client, error) {
 	}
 
 	return dosa.NewClient(reg, conn), nil
+}
+
+// NewDefaultConfig returns a configuration instance with all default values
+func NewDefaultConfig() Config {
+	return Config{
+		EntityPaths: []string{_defEntityPath},
+		Excludes:    []string{_defExclude},
+		Connector:   _defaultConn,
+		Timeout: &TimeoutConfig{
+			CreateIfNotExists: _defCreateIfNotExistsTimeout,
+			Initialize:        _defInitializeTimeout,
+			Range:             _defRangeTimeout,
+			Read:              _defReadTimeout,
+			Remove:            _defRemoveTimeout,
+			ScanEverything:    _defScanEverythingTimeout,
+			Search:            _defSearchTimeout,
+			Upsert:            _defUpsertTimeout,
+		},
+	}
 }
