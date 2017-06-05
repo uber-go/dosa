@@ -33,6 +33,7 @@ import (
 // In addition to shared EntityDefinition, it records struct name and field names.
 type Table struct {
 	EntityDefinition
+	Indexes    []*IndexDefinition
 	StructName string
 	ColToField map[string]string // map from column name -> field name
 	FieldToCol map[string]string // map from field name -> column name
@@ -97,6 +98,12 @@ type ColumnDefinition struct {
 	// TODO: change as need to support tags like pii, searchable, etc
 	// currently it's in the form of a map from tag name to (optional) tag value
 	Tags map[string]string
+}
+
+// IndexDefinition stores information about a DOSA entity's index
+type IndexDefinition struct {
+	Name string // normalized index name
+	Key  *PrimaryKey
 }
 
 // EntityDefinition stores information about a DOSA entity
