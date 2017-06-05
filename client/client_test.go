@@ -56,7 +56,7 @@ func TestNew(t *testing.T) {
 	c, err = dosaclient.New(&invalidCfg)
 	assert.Nil(t, c)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "must contain 'name'")
+	assert.Contains(t, err.Error(), "must contain a string 'name' value")
 
 	unknownCfg := config.NewDefaultConfig()
 	unknownCfg.Connector["name"] = "foo"
@@ -64,7 +64,7 @@ func TestNew(t *testing.T) {
 	c, err = dosaclient.New(&unknownCfg)
 	assert.Nil(t, c)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "No such connector")
+	assert.Contains(t, err.Error(), "GetConnector failed for connector with name: foo")
 
 	devnullCfg := config.NewDefaultConfig()
 	devnullCfg.Connector["name"] = "devnull"

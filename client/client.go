@@ -48,13 +48,13 @@ func New(cfg *config.Config) (dosa.Client, error) {
 	args := dosa.CreationArgs(cfg.Connector)
 	connName, ok := args["name"].(string)
 	if !ok {
-		return nil, errors.Errorf("Connector config must contain 'name' (%v)", args)
+		return nil, errors.Errorf("Connector config must contain a string 'name' value (%v)", args)
 	}
 
 	// create connector with args
 	conn, err := dosa.GetConnector(connName, args)
 	if err != nil {
-		return nil, errors.Wrapf(err, "GetConnector failed for args: %v", args)
+		return nil, errors.Wrapf(err, "GetConnector failed for connector with name: %v", connName)
 	}
 
 	// client init
