@@ -49,7 +49,7 @@ func (r *registrar) NamePrefix() string {
 // Find looks at its internal index to find a registration that matches the
 // entity instance provided. Return an error when not found.
 func (r *registrar) Find(entity dosa.DomainObject) (*dosa.RegisteredEntity, error) {
-	name := reflect.TypeOf(entity).Name()
+	name := reflect.TypeOf(entity).Elem().Name()
 	fqn, _ := r.baseFQN.Child(name)
 	re, ok := r.idx[fqn]
 	if !ok {
