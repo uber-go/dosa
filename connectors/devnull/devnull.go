@@ -140,8 +140,13 @@ func (c *Connector) Shutdown() error {
 	return nil
 }
 
+// NewConnector creates a new devnull connector
+func NewConnector() *Connector {
+	return &Connector{}
+}
+
 func init() {
-	dosa.RegisterConnector("devnull", func(args map[string]interface{}) (dosa.Connector, error) {
+	dosa.RegisterConnector("devnull", func(dosa.CreationArgs) (dosa.Connector, error) {
 		return &Connector{}, nil
 	})
 }

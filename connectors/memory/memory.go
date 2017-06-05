@@ -35,6 +35,8 @@ import (
 	"github.com/uber-go/dosa/connectors/base"
 )
 
+const name = "memory"
+
 // Connector is an in-memory connector.
 // The in-memory connector stores its data like this:
 // map[string]map[string][]map[string]dosa.FieldValue
@@ -496,6 +498,11 @@ func (c *Connector) Shutdown() error {
 	return nil
 }
 
+// Name returns the name of the connector
+func Name() string {
+	return name
+}
+
 // NewConnector creates a new in-memory connector
 func NewConnector() *Connector {
 	c := Connector{}
@@ -504,7 +511,7 @@ func NewConnector() *Connector {
 }
 
 func init() {
-	dosa.RegisterConnector("memory", func(args map[string]interface{}) (dosa.Connector, error) {
+	dosa.RegisterConnector("memory", func(dosa.CreationArgs) (dosa.Connector, error) {
 		return NewConnector(), nil
 	})
 }

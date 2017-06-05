@@ -74,7 +74,7 @@ func TestScope_Create(t *testing.T) {
 	exit = func(r int) {
 		assert.Equal(t, 0, r)
 	}
-	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
+	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
 		return mc, nil
@@ -84,7 +84,7 @@ func TestScope_Create(t *testing.T) {
 	main()
 	assert.Contains(t, c.stop(false), "\"three_scope\"")
 
-	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
+	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("oops"))
 		return mc, nil
@@ -106,7 +106,7 @@ func TestScopeDrop_Execute(t *testing.T) {
 		assert.Equal(t, 0, r)
 	}
 	c := StartCapture()
-	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
+	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().DropScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
 		return mc, nil
@@ -133,7 +133,7 @@ func TestScopeTruncate_Execute(t *testing.T) {
 	exit = func(r int) {
 		assert.Equal(t, 0, r)
 	}
-	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
+	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().TruncateScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
 		return mc, nil
@@ -147,7 +147,7 @@ func TestScopeTruncate_Execute(t *testing.T) {
 	exit = func(r int) {
 		assert.Equal(t, 1, r)
 	}
-	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
+	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().TruncateScope(gomock.Any(), gomock.Any()).Times(1).Return(&dosa.ErrNotFound{})
 		return mc, nil

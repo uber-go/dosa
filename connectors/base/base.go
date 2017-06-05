@@ -26,6 +26,8 @@ import (
 	"github.com/uber-go/dosa"
 )
 
+const name = "base"
+
 // ErrNoMoreConnector is used when there is no more next connector
 type ErrNoMoreConnector struct {
 }
@@ -187,4 +189,9 @@ func (c *Connector) Shutdown() error {
 		return ErrNoMoreConnector{}
 	}
 	return c.Next.Shutdown()
+}
+
+// Name returns the name of the connector
+func Name() string {
+	return name
 }

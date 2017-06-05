@@ -232,7 +232,7 @@ func TestSchema_Check_Happy(t *testing.T) {
 	exit = func(r int) {
 		assert.Equal(t, 0, r)
 	}
-	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
+	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().CheckSchema(gomock.Any(), "scope", "foo", gomock.Any()).
 			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
@@ -255,7 +255,7 @@ func TestSchema_Status_Happy(t *testing.T) {
 	exit = func(r int) {
 		assert.Equal(t, 0, r)
 	}
-	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
+	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().CheckSchemaStatus(gomock.Any(), "scope", "foo", gomock.Any()).
 			Do(func(ctx context.Context, scope string, namePrefix string, version int32) {
@@ -277,7 +277,7 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 	exit = func(r int) {
 		assert.Equal(t, 0, r)
 	}
-	dosa.RegisterConnector("mock", func(map[string]interface{}) (dosa.Connector, error) {
+	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().UpsertSchema(gomock.Any(), "scope", "foo", gomock.Any()).
 			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {

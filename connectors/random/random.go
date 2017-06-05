@@ -30,6 +30,11 @@ import (
 	"github.com/uber-go/dosa"
 )
 
+const (
+	maxBlobSize   = 32
+	maxStringSize = 64
+)
+
 // Connector is a connector implementation for testing
 type Connector struct{}
 
@@ -37,9 +42,6 @@ type Connector struct{}
 func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	return nil
 }
-
-const maxBlobSize = 32
-const maxStringSize = 64
 
 func randomString(slen int) string {
 	var validRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_-+={[}];:,.<>/?")
@@ -205,4 +207,15 @@ func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error)
 // Shutdown always returns nil
 func (c *Connector) Shutdown() error {
 	return nil
+}
+
+// NewConnector creates a new random connector
+func NewConnector() *Connector {
+	return &Connector{}
+}
+
+func init() {
+	dosa.RegisterConnector("random", func(args dosa.CreationArgs) (dosa.Connector, error) {
+		return NewConnector(), nil
+	})
 }

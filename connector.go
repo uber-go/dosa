@@ -147,8 +147,11 @@ type Connector interface {
 	Shutdown() error
 }
 
+// CreationArgs contains values for configuring different connectors
+type CreationArgs map[string]interface{}
+
 // CreationFuncType is the type of a creation function that creates an instance of a registered connector
-type CreationFuncType func(map[string]interface{}) (Connector, error)
+type CreationFuncType func(CreationArgs) (Connector, error)
 
 var registeredConnectors map[string]CreationFuncType
 
@@ -158,14 +161,14 @@ func init() {
 }
 
 // RegisterConnector registers a connector given a name
-func RegisterConnector(name string, creationFunc func(map[string]interface{}) (Connector, error)) {
+func RegisterConnector(name string, creationFunc func(CreationArgs) (Connector, error)) {
 	registeredConnectors[name] = creationFunc
 }
 
 // GetConnector gets a connector by name, along with some options
-func GetConnector(name string, opts map[string]interface{}) (Connector, error) {
+func GetConnector(name string, args CreationArgs) (Connector, error) {
 	if creationFunc, ok := registeredConnectors[name]; ok {
-		return creationFunc(opts)
+		return creationFunc(args)
 	}
 	return nil, errors.Errorf("No such connector %q", name)
 }

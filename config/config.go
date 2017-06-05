@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	_defaultConn = "yarpc"
+	_defConn = "yarpc"
 
 	// default search location and what to exclude
 	_defEntityPath = "./entities/dosa"
@@ -59,16 +59,18 @@ type TimeoutConfig struct {
 
 // Config represents the settings for the dosa client
 type Config struct {
-	Scope       string         `yaml:"scope"`
-	NamePrefix  string         `yaml:"namePrefix"`
-	Connector   string         `yaml:"connector"`
-	EntityPaths []string       `yaml:"entityPaths"`
-	Excludes    []string       `yaml:"excludes"`
-	Yarpc       yarpc.Config   `yaml:"yarpc"`
-	Timeout     *TimeoutConfig `yaml:"timeout"`
+	Scope       string            `yaml:"scope"`
+	NamePrefix  string            `yaml:"namePrefix"`
+	EntityPaths []string          `yaml:"entityPaths"`
+	Excludes    []string          `yaml:"excludes"`
+	Connector   dosa.CreationArgs `yaml:"connector"`
+	Yarpc       yarpc.Config      `yaml:"yarpc"`
+	Timeout     *TimeoutConfig    `yaml:"timeout"`
 }
 
 // NewClient creates a DOSA client based on the configuration
+// TODO: this should be deprecated so that we can decouple from YARPC, should
+// use dosaclient.New instead
 func (c Config) NewClient(entities ...dosa.DomainObject) (dosa.Client, error) {
 	reg, err := dosa.NewRegistrar(c.Scope, c.NamePrefix, entities...)
 	if err != nil {
@@ -88,7 +90,7 @@ func NewDefaultConfig() Config {
 	return Config{
 		EntityPaths: []string{_defEntityPath},
 		Excludes:    []string{_defExclude},
-		Connector:   _defaultConn,
+		Connector:   map[string]interface{}{"name": _defConn},
 		Timeout: &TimeoutConfig{
 			CreateIfNotExists: _defCreateIfNotExistsTimeout,
 			Initialize:        _defInitializeTimeout,
