@@ -21,13 +21,16 @@
 package dosafx
 
 import (
+	"context"
+
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc"
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/client"
 	"github.com/uber-go/dosa/config"
+	dosarpc "github.com/uber-go/dosa/connectors/yarpc"
+	"github.com/uber-go/dosa/registry"
 )
 
 // New creates a new DOSA client that can be registered as an FX module.
@@ -37,12 +40,35 @@ func New(d *yarpc.Dispatcher, h service.Host) (dosa.Client, error) {
 		return nil, errors.Wrap(err, "could not populate DOSA configuration")
 	}
 
+	reg, err := registry.NewRegistrar(cfg)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not register DOSA entities in %s", cfg.EntityPaths)
+	}
+
+	// TODO: we should have a better way to inject/override YARPC
+	if connName, ok := cfg.Connector["name"].(string); ok {
+		if connName != "yarpc" {
+			conn, err := dosa.GetConnector(connName, nil)
+			if err != nil {
+				return nil, errors.Wrapf(err, "GetConnector failed for connector with name: %v", connName)
+			}
+			// must be a test connector
+			return dosa.NewClient(reg, conn), nil
+		}
+	}
+
 	// before the connection can be used, it must be started
 	cc := d.ClientConfig(cfg.Service())
 	if err := cc.GetUnaryOutbound().Start(); err != nil {
 		return nil, errors.Wrap(err, "could not start outbound connection")
 	}
 
-	// create client
-	return dosaclient.New(cfg)
+	// client init
+	client := dosa.NewClient(reg, dosarpc.NewConnectorWithTransport(cc))
+	ctx, cancelFn := context.WithTimeout(context.Background(), cfg.Timeout.Initialize)
+	defer cancelFn()
+	if err := client.Initialize(ctx); err != nil {
+		return nil, errors.Wrap(err, "could not initialize DOSA client")
+	}
+	return client, nil
 }
