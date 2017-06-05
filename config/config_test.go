@@ -23,7 +23,6 @@ package config_test
 import (
 	"testing"
 
-	fxconfig "go.uber.org/fx/config"
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
@@ -37,23 +36,6 @@ const (
 	testPrefix     = "testprefix"
 	testEntityPath = "../testentity"
 )
-
-var (
-	testCfg = map[string]interface{}{
-		"storage": map[string]interface{}{
-			"dosa": config.Config{
-				Scope:       testScope,
-				NamePrefix:  testPrefix,
-				EntityPaths: []string{testEntityPath},
-			},
-		},
-	}
-	testCfgProvider = getTestCfgProvider(testCfg)
-)
-
-func getTestCfgProvider(cfg map[string]interface{}) fxconfig.Provider {
-	return fxconfig.NewStaticProvider(cfg)
-}
 
 func TestNewConfigForService(t *testing.T) {
 	cfg, err := config.NewConfigForService(service.NopHost())

@@ -27,7 +27,6 @@ import (
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/transport/tchannel"
-	"go.uber.org/yarpc/yarpctest/recorder"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
@@ -57,13 +56,12 @@ func getTestDispatcher(t *testing.T) *yarpc.Dispatcher {
 				Unary: ts.NewSingleOutbound("127.0.0.1:21300"),
 			},
 		},
-		OutboundMiddleware: yarpc.OutboundMiddleware{
-			Unary: recorder.NewRecorder(t),
-		},
 	}
 	return yarpc.NewDispatcher(ycfg)
 }
 
+// TODO(eculver): these tests need some love, particularly in mocking out the
+// YARPC outbound, whatever that means
 func TestFx(t *testing.T) {
 	scope := "test"
 	prefix := "dosa.test"
@@ -82,13 +80,13 @@ func TestFx(t *testing.T) {
 	testCfgErrProvider := fxconfig.NewStaticProvider(testCfgErr)
 
 	dosaCfg.EntityPaths = []string{"../testentity"}
-
 	testCfg := map[string]interface{}{
 		"storage": map[string]interface{}{
 			"dosa": config.Config(dosaCfg),
 		},
 	}
 	testCfgProvider := fxconfig.NewStaticProvider(testCfg)
+
 	tcs := []struct {
 		dispatcher *yarpc.Dispatcher
 		host       service.Host
