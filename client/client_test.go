@@ -26,65 +26,64 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa/client"
 	"github.com/uber-go/dosa/config"
+	_ "github.com/uber-go/dosa/connectors/devnull"
+	_ "github.com/uber-go/dosa/connectors/memory"
+	_ "github.com/uber-go/dosa/connectors/random"
 )
 
 func TestNew(t *testing.T) {
-	defaultCfg := config.NewDefaultConfig()
 	entityPathsValid := []string{"../testentity"}
+	entityPathsInvalid := []string{"/does/not/exist"}
 
-	unknownConnCfg := config.Config(defaultCfg)
-	unknownConnCfg.EntityPaths = entityPathsValid
-	unknownConnCfg.Connector = "foo"
+	parseErrCfg := config.NewDefaultConfig()
+	parseErrCfg.EntityPaths = entityPathsInvalid
+	c, err := dosaclient.New(&parseErrCfg)
+	assert.Nil(t, c)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "could not register")
 
-	devnullConnCfg := config.Config(defaultCfg)
-	devnullConnCfg.EntityPaths = entityPathsValid
-	devnullConnCfg.Connector = "devnull"
+	nilCfg := config.NewDefaultConfig()
+	nilCfg.Connector = nil
+	nilCfg.EntityPaths = entityPathsValid
+	c, err = dosaclient.New(&nilCfg)
+	assert.Nil(t, c)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration is nil")
 
-	memoryConnCfg := config.Config(defaultCfg)
-	memoryConnCfg.EntityPaths = entityPathsValid
-	memoryConnCfg.Connector = "memory"
+	invalidCfg := config.NewDefaultConfig()
+	invalidCfg.Connector = make(map[string]interface{})
+	invalidCfg.EntityPaths = entityPathsValid
+	c, err = dosaclient.New(&invalidCfg)
+	assert.Nil(t, c)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "must contain 'name'")
 
-	randomConnCfg := config.Config(defaultCfg)
-	randomConnCfg.EntityPaths = entityPathsValid
-	randomConnCfg.Connector = "random"
+	unknownCfg := config.NewDefaultConfig()
+	unknownCfg.Connector["name"] = "foo"
+	unknownCfg.EntityPaths = entityPathsValid
+	c, err = dosaclient.New(&unknownCfg)
+	assert.Nil(t, c)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "No such connector")
 
-	tcs := []struct {
-		cfg *config.Config
-		err string
-	}{
-		// registrar error
-		{
-			cfg: &defaultCfg,
-			err: "could not register",
-		},
-		// unknown connector error
-		{
-			cfg: &unknownConnCfg,
-			err: "unknown connector type",
-		},
-		// devnull connector
-		{
-			cfg: &devnullConnCfg,
-		},
-		// memory connector
-		{
-			cfg: &memoryConnCfg,
-		},
-		// random connector
-		{
-			cfg: &randomConnCfg,
-		},
-	}
+	devnullCfg := config.NewDefaultConfig()
+	devnullCfg.Connector["name"] = "devnull"
+	devnullCfg.EntityPaths = entityPathsValid
+	c, err = dosaclient.New(&devnullCfg)
+	assert.NotNil(t, c)
+	assert.NoError(t, err)
 
-	for _, tc := range tcs {
-		c, err := dosaclient.New(tc.cfg)
-		if tc.err != "" {
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), tc.err)
-			assert.Nil(t, c)
-			continue
-		}
-		assert.NoError(t, err)
-		assert.NotNil(t, c)
-	}
+	memoryCfg := config.NewDefaultConfig()
+	memoryCfg.Connector["name"] = "memory"
+	memoryCfg.EntityPaths = entityPathsValid
+	c, err = dosaclient.New(&memoryCfg)
+	assert.NotNil(t, c)
+	assert.NoError(t, err)
+
+	randomCfg := config.NewDefaultConfig()
+	randomCfg.Connector["name"] = "random"
+	randomCfg.EntityPaths = entityPathsValid
+	c, err = dosaclient.New(&randomCfg)
+	assert.NotNil(t, c)
+	assert.NoError(t, err)
 }

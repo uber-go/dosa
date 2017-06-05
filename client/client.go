@@ -22,15 +22,10 @@ package dosaclient
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/config"
-	"github.com/uber-go/dosa/connectors/devnull"
-	"github.com/uber-go/dosa/connectors/memory"
-	"github.com/uber-go/dosa/connectors/random"
-	"github.com/uber-go/dosa/connectors/yarpc"
 	"github.com/uber-go/dosa/registry"
 )
 
@@ -45,30 +40,23 @@ func New(cfg *config.Config) (dosa.Client, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not register DOSA entities in %s", cfg.EntityPaths)
 	}
-	// create connection from config
-	var conn dosa.Connector
-	var connErr error
-	switch cfg.Connector {
-	case devnull.Name():
-		conn, connErr = dosa.GetConnector(devnull.Name(), nil)
-	case memory.Name():
-		conn, connErr = dosa.GetConnector(memory.Name(), nil)
-	case random.Name():
-		conn, connErr = dosa.GetConnector(random.Name(), nil)
-	case yarpc.Name():
-		conn, connErr = dosa.GetConnector(yarpc.Name(), map[string]interface{}{
-			"transport":   cfg.Yarpc.Transport,
-			"host":        cfg.Yarpc.Host,
-			"port":        cfg.Yarpc.Port,
-			"callername":  cfg.Yarpc.CallerName,
-			"servicename": cfg.Yarpc.ServiceName,
-		})
-	default:
-		return nil, fmt.Errorf("unknown connector type: %s - must be one of: devnull, memory, random or yarpc", cfg.Connector)
+
+	if cfg.Connector == nil {
+		return nil, errors.Errorf("Connector configuration is nil")
 	}
-	if connErr != nil {
-		return nil, errors.Wrapf(err, "could not create connector for type %s", cfg.Connector)
+
+	args := dosa.CreationArgs(cfg.Connector)
+	connName, ok := args["name"].(string)
+	if !ok {
+		return nil, errors.Errorf("Connector config must contain 'name' (%v)", args)
 	}
+
+	// create connector with args
+	conn, err := dosa.GetConnector(connName, args)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GetConnector failed for args: %v", args)
+	}
+
 	// client init
 	client := dosa.NewClient(reg, conn)
 	ctx, cancelFn := context.WithTimeout(context.Background(), cfg.Timeout.Initialize)

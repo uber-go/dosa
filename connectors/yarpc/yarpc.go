@@ -41,16 +41,16 @@ const (
 	_defaultServiceName        = "dosa-gateway"
 	errCodeNotFound      int32 = 404
 	errCodeAlreadyExists int32 = 409
-	name                       = "yarpc"
 )
 
 // Config contains the YARPC client parameters
 type Config struct {
-	Transport   string `yaml:"transport"`
-	Host        string `yaml:"host"`
-	Port        string `yaml:"port"`
-	CallerName  string `yaml:"callerName"`
-	ServiceName string `yaml:"serviceName"`
+	Transport    string                  `yaml:"transport"`
+	Host         string                  `yaml:"host"`
+	Port         string                  `yaml:"port"`
+	CallerName   string                  `yaml:"callerName"`
+	ServiceName  string                  `yaml:"serviceName"`
+	ClientConfig *transport.ClientConfig `yaml:"clientConfig"`
 }
 
 // Connector holds the client-side RPC interface and some schema information
@@ -521,11 +521,6 @@ func (c *Connector) Shutdown() error {
 	return c.dispatcher.Stop()
 }
 
-// Name returns the name of the connector
-func Name() string {
-	return name
-}
-
 func getWithDefault(args map[string]interface{}, elem string, def string) string {
 	v, ok := args[elem]
 	if ok {
@@ -536,14 +531,8 @@ func getWithDefault(args map[string]interface{}, elem string, def string) string
 }
 
 func init() {
-	dosa.RegisterConnector(name, func(args map[string]interface{}) (dosa.Connector, error) {
-		// richest way is with a transport client configuration
-		if tc, ok := args["config"]; ok {
-			if transportConfig, ok := tc.(transport.ClientConfig); ok {
-				return NewConnectorWithTransport(transportConfig), nil
-			}
-			return nil, errors.Errorf("Invalid transport configuration type (%T)", tc)
-		}
+	dosa.RegisterConnector("yarpc", func(args dosa.CreationArgs) (dosa.Connector, error) {
+
 		if host, ok := args["host"]; ok {
 			if port, ok := args["port"]; ok {
 				trans := getWithDefault(args, "transport", "tchannel")

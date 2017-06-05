@@ -33,7 +33,6 @@ import (
 const (
 	maxBlobSize   = 32
 	maxStringSize = 64
-	name          = "random"
 )
 
 // Connector is a connector implementation for testing
@@ -210,18 +209,13 @@ func (c *Connector) Shutdown() error {
 	return nil
 }
 
-// Name returns the name of the connector
-func Name() string {
-	return name
-}
-
 // NewConnector creates a new random connector
 func NewConnector() *Connector {
 	return &Connector{}
 }
 
 func init() {
-	dosa.RegisterConnector(name, func(args map[string]interface{}) (dosa.Connector, error) {
+	dosa.RegisterConnector("random", func(args dosa.CreationArgs) (dosa.Connector, error) {
 		return NewConnector(), nil
 	})
 }
