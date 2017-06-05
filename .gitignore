@@ -58,6 +58,7 @@ vendor/
 .idea/dynamic.xml
 .idea/uiDesigner.xml
 .idea/vcs.xml
+.idea/
 
 # Gradle:
 .idea/gradle.xml
