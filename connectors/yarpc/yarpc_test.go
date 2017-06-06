@@ -701,6 +701,16 @@ func TestConnector_Range(t *testing.T) {
 	assert.Empty(t, token)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
+
+	// perform remove range with a bad field value
+	_, _, err = sut.Range(ctx, testEi, map[string][]*dosa.Condition{
+		"c7": {&dosa.Condition{
+			Value: dosa.UUID("baduuid"),
+			Op:    dosa.Eq,
+		}},
+	}, nil, "", 64)
+	assert.Error(t, err)
+	assert.EqualError(t, errors.Cause(err), "uuid: UUID string too short: baduuid")
 }
 
 func TestConnector_RemoveRange(t *testing.T) {
@@ -738,6 +748,16 @@ func TestConnector_RemoveRange(t *testing.T) {
 	}}})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
+
+	// perform remove range with a bad field value
+	err = sut.RemoveRange(ctx, testEi, map[string][]*dosa.Condition{
+		"c7": {&dosa.Condition{
+			Value: dosa.UUID("baduuid"),
+			Op:    dosa.Eq,
+		}},
+	})
+	assert.Error(t, err)
+	assert.EqualError(t, errors.Cause(err), "uuid: UUID string too short: baduuid")
 }
 
 func TestConnector_Scan(t *testing.T) {

@@ -325,7 +325,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) error {
 	conditions, err := createRpcConditions(columnConditions)
 	if err != nil {
-		errors.Wrap(err, "RemoveRange failed")
+		return errors.Wrap(err, "RemoveRange failed")
 	}
 
 	request := &dosarpc.RemoveRangeRequest{
@@ -350,7 +350,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 	rpcMinimumFields := makeRPCminimumFields(minimumFields)
 	conditions, err := createRpcConditions(columnConditions)
 	if err != nil {
-		errors.Wrap(err, "Range failed")
+		return nil, "", errors.Wrap(err, "Range failed")
 	}
 	rangeRequest := dosarpc.RangeRequest{
 		Ref:          entityInfoToSchemaRef(ei),
