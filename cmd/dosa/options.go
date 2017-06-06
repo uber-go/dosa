@@ -23,6 +23,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -34,6 +35,8 @@ const (
 	_prodServiceName = "dosa-gateway"
 	_prodScope       = "production"
 )
+
+var validNameRegex = regexp.MustCompile("^[a-z]+([a-z0-9]|[^-]-)*[^-]$")
 
 type timeFlag time.Duration
 
@@ -68,6 +71,13 @@ func getAdminClient(opts GlobalOptions) (dosa.AdminClient, error) {
 	// fix up the callername
 	if opts.CallerName == "" || opts.CallerName == "dosacli-$USER" {
 		opts.CallerName = fmt.Sprintf("dosacli-%s", os.Getenv("USER"))
+	}
+
+	// from YARPC: "must begin with a letter and consist only of dash-delimited
+	// lower-case ASCII alphanumeric words" -- we do this here because YARPC
+	// will panic if caller name is invalid.
+	if !validNameRegex.MatchString(opts.CallerName) {
+		return nil, fmt.Errorf("invalid caller name: %s, must begin with a letter and consist only of dash-delimited lower-case ASCII alphanumeric words", opts.CallerName)
 	}
 
 	// create connector
