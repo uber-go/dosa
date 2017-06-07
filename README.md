@@ -30,8 +30,8 @@ DOSA is a storage library that supports:
 
 This project is released under the [MIT License](LICENSE.txt).
 
-[doc-img]: https://godoc.org/github.com/uber/dosa-go?status.svg
-[doc]: https://godoc.org/github.com/uber/dosa-go
+[doc-img]: https://godoc.org/github.com/uber-go/dosa?status.svg
+[doc]: https://godoc.org/github.com/uber-go/dosa
 [ci-img]: https://travis-ci.com/uber-go/dosa.svg?token=zQquuxnrcfs8yizJ2Dcp&branch=master
 [ci]: https://travis-ci.com/uber/dosa-go
 [cov-img]: https://coveralls.io/repos/uber/dosa-go/badge.svg?branch=master&service=github
