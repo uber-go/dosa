@@ -1,5 +1,5 @@
 hash: 6d27efe914b9b5853f9f4f96d1cbc6eaab26d921c201c537306ac6d18f5d7871
-updated: 2017-06-07T14:24:15.561021658-07:00
+updated: 2017-06-07T15:38:52.288658056-07:00
 imports:
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
@@ -26,7 +26,7 @@ imports:
 - name: github.com/uber-go/atomic
   version: 908889c45e73bedd558e99819aea3be3503fc581
 - name: github.com/uber/dosa-idl
-  version: c2232eaffb054442105c493c79a37ff08389e34b
+  version: a887a8e79251bed4bffeaf52a90905b0fb14adbf
   subpackages:
   - .gen
   - .gen/dosa
@@ -136,6 +136,6 @@ testImports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 541ff5ee47f1dddf6a5281af78307d921524bcb5
 - name: golang.org/x/tools
-  version: 92d42b9ff15f625347a13b6aeafd04a33537ce91
+  version: 851770f01f04a0a480149de08a871c0378bc3fed
   subpackages:
   - cover
