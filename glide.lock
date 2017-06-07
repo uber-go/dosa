@@ -1,8 +1,22 @@
-hash: 7d1e85d070980bf11cab0f4dc869c2af64ecfaf41b1ccb52eaa5db06184b23ba
-updated: 2017-05-03T14:11:01.313181441-07:00
+hash: 9267408f4941eb838219f1115af0bd5f51ed140722c43d7b57a0aa35219f6286
+updated: 2017-06-05T11:12:35.945737241-07:00
 imports:
+- name: github.com/apache/thrift
+  version: 8da0e720bb8e7550220cf1b360f3fb8aa37b9ded
+  subpackages:
+  - lib/go/thrift
+- name: github.com/certifi/gocertifi
+  version: a9c833d2837d3b16888d55d5aafa9ffe9afb22b0
+- name: github.com/codahale/hdrhistogram
+  version: 3a0bb77429bd3a61596f5e8a3172445844342120
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
+- name: github.com/facebookgo/clock
+  version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
+- name: github.com/getsentry/raven-go
+  version: 5c07ee42021d8df0718f06bc7ea6b17123a44f9c
+- name: github.com/go-validator/validator
+  version: 07ffaad256c8e957050ad83d6472eb97d785013d
 - name: github.com/golang/mock
   version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
   subpackages:
@@ -24,7 +38,9 @@ imports:
   - assert
   - mock
 - name: github.com/uber-go/atomic
-  version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
+  version: e682c1008ac17bf26d2e4b5ad6cdd08520ed0b22
+- name: github.com/uber-go/tally
+  version: e9b601813b0be4771b1b3995390567b67ab2b3fc
 - name: github.com/uber/dosa-idl
   version: 74e0688e5ca1e009de399d0f35884ef7163f4b85
   subpackages:
@@ -32,12 +48,32 @@ imports:
   - .gen/dosa
   - .gen/dosa/dosaclient
   - .gen/dosa/dosatest
+- name: github.com/uber/jaeger-client-go
+  version: 465529424ed6b04a7fd2fcab6a9d6e96ea807fda
+  subpackages:
+  - config
+  - internal/spanlog
+  - log
+  - log/zap
+  - rpcmetrics
+  - thrift-gen/agent
+  - thrift-gen/sampling
+  - thrift-gen/zipkincore
+  - transport
+  - transport/udp
+  - utils
+- name: github.com/uber/jaeger-lib
+  version: b9a0fa4923ad750facbd5a4b93fc6d450bc45ccc
+  subpackages:
+  - metrics
+  - metrics/tally
 - name: github.com/uber/tchannel-go
-  version: 0b7f160817553b0bacb5b108dd84a5022dbdd1c4
+  version: b99c1d7cecb0fdc882bed0098e7cae6ec7459059
   subpackages:
   - internal/argreader
   - relay
   - tnet
+  - tos
   - trand
   - typed
 - name: github.com/yarpc/yarpc-go
@@ -46,6 +82,19 @@ imports:
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: go.uber.org/atomic
   version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
+- name: go.uber.org/dig
+  version: 869ade8e3afd0b6dee05418a8e165cdcb487070a
+- name: go.uber.org/fx
+  version: a65bc45199edafa609c814dff3234b0671297e00
+  subpackages:
+  - auth
+  - config
+  - internal/util
+  - metrics
+  - service
+  - tracing
+  - ulog
+  - ulog/sentry
 - name: go.uber.org/thriftrw
   version: dde90c2a40f45fb2b6361d13c1b4bf09465401c0
   subpackages:
@@ -83,11 +132,28 @@ imports:
   - transport/http
   - transport/tchannel
   - transport/tchannel/internal
-- name: golang.org/x/net
-  version: ffcf1bedda3b04ebb15a168a59800a73d6dc0f4d
+  - yarpctest/recorder
+- name: go.uber.org/zap
+  version: fab453050a7a08c35f31fc5fff6f2dbd962285ab
   subpackages:
+  - buffer
+  - internal/bufferpool
+  - internal/color
+  - internal/exit
+  - internal/multierror
+  - zapcore
+- name: golang.org/x/net
+  version: e4fa1c5465ad6111f206fc92186b8c83d64adbe1
+  subpackages:
+  - bpf
   - context
   - context/ctxhttp
+  - internal/iana
+  - internal/socket
+  - ipv4
+  - ipv6
+- name: gopkg.in/yaml.v2
+  version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -124,9 +190,9 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/russross/blackfriday
-  version: 5ebfae50aacdef0dacd1a1acc469c2c1c7a7d4d8
+  version: e7910a813fbd94acce2680899175fa106b7b1787
 - name: github.com/sectioneight/md-to-godoc
-  version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
+  version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: golang.org/x/tools

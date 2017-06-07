@@ -23,6 +23,8 @@ package config_test
 import (
 	"testing"
 
+	"go.uber.org/fx/service"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/config"
@@ -34,6 +36,24 @@ const (
 	testPrefix     = "testprefix"
 	testEntityPath = "../testentity"
 )
+
+func TestNewConfigForService(t *testing.T) {
+	cfg, err := config.NewConfigForService(service.NopHost())
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+}
+
+func TestConfig_Service(t *testing.T) {
+	prodCfg := &config.Config{
+		Scope: "production",
+	}
+	assert.Equal(t, prodCfg.Service(), "dosa-gateway")
+
+	notProdCfg := &config.Config{
+		Scope: "not-production",
+	}
+	assert.Equal(t, notProdCfg.Service(), "dosa-dev-gateway")
+}
 
 // SinglePartitionKey is used to test NewClient
 type SinglePartitionKey struct {
