@@ -18,6 +18,10 @@ import:
   - gomock
 - package: github.com/yookoala/realpath
 - package: github.com/jessevdk/go-flags
+
+# github.com/yarpc/yarpc-go and go.uber.org/yarpc are the same thing. Since we _need_ to pin yarpc-go
+# (we directly depend on it), we also pin go.uber.org/yarpc since some of our other dependencies use it.
+# These version pins should always be the same.
 - package: github.com/yarpc/yarpc-go
   version: ~1.7.1
 - package: go.uber.org/yarpc
