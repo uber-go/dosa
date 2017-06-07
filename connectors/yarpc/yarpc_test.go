@@ -743,7 +743,7 @@ func TestConnector_RemoveRange(t *testing.T) {
 	// perform a generic error request
 	mockedClient.EXPECT().RemoveRange(ctx, gomock.Any()).Return(errors.New("test error")).Times(1)
 	err = sut.RemoveRange(ctx, testEi, map[string][]*dosa.Condition{"c2": {&dosa.Condition{
-		Value: float64(3.3),
+		Value: 3.3,
 		Op:    dosa.Eq,
 	}}})
 	assert.Error(t, err)
