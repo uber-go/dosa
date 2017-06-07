@@ -723,7 +723,7 @@ func TestConnector_RemoveRange(t *testing.T) {
 	field := drpc.Field{&fieldName, &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}}}
 	op := drpc.OperatorEq
 
-	mockedClient.EXPECT().RemoveRange(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.RemoveRangeRequest){
+	mockedClient.EXPECT().RemoveRange(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.RemoveRangeRequest) {
 		assert.Equal(t, testRPCSchemaRef, *request.Ref)
 		assert.Equal(t, len(request.Conditions), 1)
 		condition := request.Conditions[0]

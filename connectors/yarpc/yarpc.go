@@ -329,7 +329,7 @@ func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, column
 	}
 
 	request := &dosarpc.RemoveRangeRequest{
-		Ref: entityInfoToSchemaRef(ei),
+		Ref:        entityInfoToSchemaRef(ei),
 		Conditions: conditions,
 	}
 
