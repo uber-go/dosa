@@ -34,12 +34,12 @@ func TestNullTime(t *testing.T) {
 	v := NewNullTime(now)
 	actual, err := v.Get()
 	assert.NoError(t, err)
-	assert.Equal(t, now, actual)
+	assert.Equal(t, now.Unix(), actual.Unix())
 
 	v.Set(time.Unix(0, 0))
 	actual, err = v.Get()
 	assert.NoError(t, err)
-	assert.Equal(t, time.Unix(0, 0), actual)
+	assert.Equal(t, time.Unix(0, 0).Unix(), actual.Unix())
 
 	v.Nullify()
 	actual, err = v.Get()
@@ -69,7 +69,7 @@ func TestNullTime_UnmarshalText(t *testing.T) {
 
 	value, err := v.Get()
 	assert.NoError(t, err)
-	assert.Equal(t, now, value)
+	assert.Equal(t, now.Unix(), value.Unix())
 
 	err = v.UnmarshalText([]byte(""))
 	assert.NoError(t, err)
@@ -105,7 +105,7 @@ func TestNullTime_UnmarshalJSON(t *testing.T) {
 
 	value, err := v.Get()
 	assert.NoError(t, err)
-	assert.Equal(t, now, value)
+	assert.Equal(t, now.Unix(), value.Unix())
 
 	err = v.UnmarshalJSON([]byte("null"))
 	assert.NoError(t, err)
