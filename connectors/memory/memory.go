@@ -416,7 +416,7 @@ func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][
 		endinx--
 
 	}
-	if endinx <= startinx {
+	if endinx < startinx {
 		return nil
 	}
 
