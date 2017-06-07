@@ -21,12 +21,13 @@
 package dosa
 
 import (
-"testing"
+	"testing"
 
-"encoding/json"
+	"encoding/json"
 
-"github.com/stretchr/testify/assert"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNullTime(t *testing.T) {
@@ -99,8 +100,8 @@ func TestNullTime_MarshalJSON(t *testing.T) {
 func TestNullTime_UnmarshalJSON(t *testing.T) {
 	now := time.Now()
 	var v NullTime
-	timeJson, err := now.MarshalJSON()
-	err = v.UnmarshalJSON(timeJson)
+	timeJSON, err := now.MarshalJSON()
+	err = v.UnmarshalJSON(timeJSON)
 	assert.NoError(t, err)
 
 	value, err := v.Get()
