@@ -28,34 +28,145 @@ import (
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/config"
 	"github.com/uber-go/dosa/registry"
+	// "github.com/uber-go/dosa/testentity"
 )
 
-type TestEntity struct {
-	dosa.Entity `dosa:"primaryKey=(ID, Name)"`
-	ID          int64
+var (
+	testScope  = "testscope"
+	testPrefix = "testprefix"
+)
+
+type TestEntity1 struct {
+	dosa.Entity `dosa:"primaryKey=(UUID)"`
+	UUID        dosa.UUID
+}
+
+type TestEntity2 struct {
+	dosa.Entity `dosa:"primaryKey=(UUID, Name)"`
+	UUID        int64
 	Name        string
 	Email       string
 }
 
 func TestRegistrar_Scope(t *testing.T) {
-	assert.Equal(t, true, true)
-}
-
-func TestRegistrar_NamePrefix(t *testing.T) {
-	assert.Equal(t, true, true)
-}
-
-func TestRegistrar_Find(t *testing.T) {
-	assert.Equal(t, true, true)
-}
-
-func TestRegistrar_FindAll(t *testing.T) {
-	assert.Equal(t, true, true)
-}
-
-func TestNewRegistrar(t *testing.T) {
-	cfg := &config.Config{}
+	cfg := &config.Config{
+		Scope: testScope,
+	}
 	reg, err := registry.NewRegistrar(cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, reg)
+	assert.Equal(t, reg.Scope(), testScope)
+}
+
+func TestRegistrar_NamePrefix(t *testing.T) {
+	cfg := &config.Config{
+		NamePrefix: testPrefix,
+	}
+	reg, err := registry.NewRegistrar(cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, reg)
+	assert.Equal(t, reg.NamePrefix(), testPrefix)
+}
+
+func TestRegistrar_Find(t *testing.T) {
+	cfg := &config.Config{
+		Scope:      testScope,
+		NamePrefix: testPrefix,
+	}
+	reg, err := registry.NewRegistrar(cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, reg)
+
+	// not found
+	re, err := reg.Find(&TestEntity1{})
+	assert.Error(t, err)
+
+	// found
+	cfg.EntityPaths = []string{"."}
+	reg, err = registry.NewRegistrar(cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, reg)
+	re, err = reg.Find(&TestEntity1{})
+	assert.NoError(t, err)
+	assert.NotNil(t, re)
+}
+
+func TestRegistrar_FindAll(t *testing.T) {
+	cfg := &config.Config{
+		Scope:      testScope,
+		NamePrefix: testPrefix,
+	}
+	reg, err := registry.NewRegistrar(cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, reg)
+
+	// not found
+	res, err := reg.FindAll()
+	assert.Error(t, err)
+
+	// found 1
+	cfg.EntityPaths = []string{"../testentity"}
+	reg, err = registry.NewRegistrar(cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, reg)
+	res, err = reg.FindAll()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), 1)
+
+	// found many
+	cfg.EntityPaths = []string{".", "../testentity"}
+	reg, err = registry.NewRegistrar(cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, reg)
+	res, err = reg.FindAll()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), 3)
+}
+
+func TestNewRegistrar(t *testing.T) {
+	cases := []struct {
+		scope  string
+		prefix string
+		paths  []string
+		err    string
+	}{
+		// invalid prefix
+		{
+			prefix: "--",
+			err:    "failed to construct Registrar",
+		},
+		// directory not found
+		{
+			prefix: testPrefix,
+			paths:  []string{"/foo/bar/baz"},
+			err:    "no such file or directory",
+		},
+		// parse errors
+		{
+			prefix: testPrefix,
+			paths:  []string{".."},
+			err:    "entities had warnings/errors",
+		},
+		// ok
+		{
+			scope:  testScope,
+			prefix: testPrefix,
+			paths:  []string{"../testentity"},
+		},
+	}
+	for _, c := range cases {
+		cfg := &config.Config{
+			Scope:       c.scope,
+			NamePrefix:  c.prefix,
+			EntityPaths: c.paths,
+		}
+		reg, err := registry.NewRegistrar(cfg)
+		if c.err != "" {
+			assert.Contains(t, err.Error(), c.err)
+			continue
+		}
+		assert.NoError(t, err)
+		assert.NotNil(t, reg)
+	}
+
 }
