@@ -284,6 +284,20 @@ func TestConnector_RemoveRange(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
+	// remove everything but the highest value
+	err = sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c1": {{Op: dosa.Gt, Value: dosa.FieldValue(int64(0))}},
+	})
+	assert.NoError(t, err)
+
+	// there should only be one value left now
+	data, _, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+	}, dosa.All(), "", 200)
+	assert.NoError(t, err)
+	assert.Len(t, data, 1)
+
 	// test completely deleting all the rows in a partition.
 	err = sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
