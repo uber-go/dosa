@@ -46,6 +46,19 @@ func (*Entity) isDomainObject() bool {
 	return true
 }
 
+// DomainIndex is a marker interface method for an Index
+type DomainIndex interface {
+	// dummy marker interface method
+	isDomainIndex() bool
+}
+
+// Index represents any object that can be indexed by by DOSA
+type Index struct{}
+
+func (*Index) isDomainIndex() bool {
+	return true
+}
+
 // ErrNotInitialized is returned when a user didn't call Initialize
 type ErrNotInitialized struct{}
 

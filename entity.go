@@ -33,7 +33,6 @@ import (
 // In addition to shared EntityDefinition, it records struct name and field names.
 type Table struct {
 	EntityDefinition
-	Indexes    []*IndexDefinition
 	StructName string
 	ColToField map[string]string // map from column name -> field name
 	FieldToCol map[string]string // map from field name -> column name
@@ -111,6 +110,7 @@ type EntityDefinition struct {
 	Name    string // normalized entity name
 	Key     *PrimaryKey
 	Columns []*ColumnDefinition
+	Indexes []*IndexDefinition
 }
 
 // EnsureValid ensures the entity definition is valid.
@@ -175,6 +175,54 @@ func (e *EntityDefinition) EnsureValid() error {
 			return errors.Errorf("a column cannot be used twice in key: %q", c.Name)
 		}
 		keyNamesSeen[c.Name] = struct{}{}
+	}
+
+	// validate index
+	indexNamesSeen := map[string]struct{}{}
+	for _, index := range e.Indexes {
+		if err := IsValidName(index.Name); err != nil {
+			return errors.Wrap(err, "IndexDefinition has invalid name")
+		}
+
+		if _, ok := indexNamesSeen[index.Name]; ok {
+			return errors.Errorf("index name is duplicated: %s", index.Name)
+		}
+
+		if index.Key == nil {
+			return errors.New("IndexDefinition has nil key")
+		}
+
+		indexNamesSeen[index.Name] = struct{}{}
+
+		if len(index.Key.PartitionKeys) == 0 {
+			return errors.New("index does not have partition key")
+		}
+
+		keyNamesSeen := map[string]struct{}{}
+		for _, p := range index.Key.PartitionKeys {
+			if _, ok := columnNamesSeen[p]; !ok {
+				return errors.Errorf("index partition key does not refer to a column: %q", p)
+			}
+			if _, ok := keyNamesSeen[p]; ok {
+				return errors.Errorf("a column cannot be used twice in index key: %q", p)
+			}
+			keyNamesSeen[p] = struct{}{}
+		}
+
+		for _, c := range index.Key.ClusteringKeys {
+			if c == nil {
+				return errors.New("IndexDefinition has invalid nil clustering key")
+			}
+
+			if _, ok := columnNamesSeen[c.Name]; !ok {
+				return errors.Errorf("clustering key does not refer to a column: %q", c.Name)
+			}
+
+			if _, ok := keyNamesSeen[c.Name]; ok {
+				return errors.Errorf("a column cannot be used twice in index key: %q", c.Name)
+			}
+			keyNamesSeen[c.Name] = struct{}{}
+		}
 	}
 
 	return nil

@@ -1,0 +1,96 @@
+// Copyright (c) 2017 Uber Technologies, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+package dosa
+
+import (
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+)
+
+type SingleIndexNoParen struct {
+	Entity       `dosa:"primaryKey=PrimaryKey"`
+	SearchByData Index `dosa:"key=Data"`
+	PrimaryKey   int64
+	Data         string
+}
+
+func TestSingleIndexNoParen(t *testing.T) {
+	dosaTable, err := TableFromInstance(&SingleIndexNoParen{})
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"data"}, dosaTable.Indexes[0].Key.PartitionKeys)
+	assert.Equal(t, 1, len(dosaTable.Indexes))
+}
+
+type MultipleIndexes struct {
+	Entity       `dosa:"primaryKey=PrimaryKey"`
+	SearchByData Index `dosa:"key=Data"`
+	SearchByDate Index `dosa:"key=Date"`
+	PrimaryKey   int64
+	Data         string
+	Date         time.Time
+}
+
+func TestMultipleIndexes(t *testing.T) {
+	dosaTable, err := TableFromInstance(&MultipleIndexes{})
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"data"}, dosaTable.Indexes[0].Key.PartitionKeys)
+	assert.Equal(t, []string{"date"}, dosaTable.Indexes[1].Key.PartitionKeys)
+	assert.Equal(t, "searchbydata", dosaTable.Indexes[0].Name)
+	assert.Equal(t, "searchbydate", dosaTable.Indexes[1].Name)
+	assert.Equal(t, 2, len(dosaTable.Indexes))
+}
+
+type ComplexIndexes struct {
+	Entity       `dosa:"primaryKey=PrimaryKey"`
+	SearchByData Index `dosa:"key=(Data, Date, PrimaryKey DESC) name=index_data"`
+	SearchByDate Index `dosa:"key=((Date, PrimaryKey), Data) name=index_date"`
+	PrimaryKey   int64
+	Data         string
+	Date         time.Time
+}
+
+func TestComplexIndexes(t *testing.T) {
+	dosaTable, err := TableFromInstance(&ComplexIndexes{})
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"data"}, dosaTable.Indexes[0].Key.PartitionKeys)
+	assert.Equal(t, []*ClusteringKey{
+		{
+			Name:       "date",
+			Descending: false,
+		},
+		{
+			Name:       "primarykey",
+			Descending: true,
+		},
+	}, dosaTable.Indexes[0].Key.ClusteringKeys)
+	assert.Equal(t, []string{"date", "primarykey"}, dosaTable.Indexes[1].Key.PartitionKeys)
+	assert.Equal(t, []*ClusteringKey{
+		{
+			Name:       "data",
+			Descending: false,
+		},
+	}, dosaTable.Indexes[1].Key.ClusteringKeys)
+	assert.Equal(t, "index_data", dosaTable.Indexes[0].Name)
+	assert.Equal(t, "index_date", dosaTable.Indexes[1].Name)
+	assert.Equal(t, 2, len(dosaTable.Indexes))
+}
