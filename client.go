@@ -421,12 +421,12 @@ func (c *client) ScanEverything(ctx context.Context, sop *ScanOp) ([]DomainObjec
 	// look up the entity in the registry
 	re, err := c.registrar.Find(sop.object)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "Range")
+		return nil, "", errors.Wrap(err, "ScanEverything")
 	}
 	// convert the fieldsToRead to the server side equivalent
 	fieldsToRead, err := re.ColumnNames(sop.fieldsToRead)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "Range")
+		return nil, "", errors.Wrap(err, "ScanEverything")
 	}
 
 	// call the server side method
