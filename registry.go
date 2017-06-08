@@ -21,7 +21,6 @@
 package dosa
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -126,7 +125,7 @@ func (e *RegisteredEntity) OnlyFieldValues(entity DomainObject, fieldNames []str
 	for _, fieldName := range fieldNames {
 		columnName, ok := e.table.FieldToCol[fieldName]
 		if !ok {
-			return nil, fmt.Errorf("%s is not a valid field for %s", fieldName, e.table.StructName)
+			return nil, errors.Errorf("%s is not a valid field for %s", fieldName, e.table.StructName)
 		}
 		value := v.FieldByName(fieldName)
 		if !value.IsValid() {
@@ -149,7 +148,7 @@ func (e *RegisteredEntity) ColumnNames(fieldNames []string) ([]string, error) {
 	for i, fieldName := range fieldNames {
 		columnName, ok := e.table.FieldToCol[fieldName]
 		if !ok {
-			return nil, fmt.Errorf("%s is not a valid field for %s", fieldName, e.table.StructName)
+			return nil, errors.Errorf("%s is not a valid field for %s", fieldName, e.table.StructName)
 		}
 		columnNames[i] = columnName
 	}
@@ -275,7 +274,7 @@ func (r *prefixedRegistrar) FindAll() ([]*RegisteredEntity, error) {
 		res = append(res, re)
 	}
 	if len(res) == 0 {
-		return nil, fmt.Errorf("registry.FindAll returned empty")
+		return nil, errors.Errorf("registry.FindAll returned empty")
 	}
 	return res, nil
 }

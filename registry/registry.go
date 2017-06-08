@@ -21,7 +21,6 @@
 package registry
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -49,7 +48,7 @@ func (r *registrar) NamePrefix() string {
 // Find looks at its internal index to find a registration that matches the
 // entity instance provided. Return an error when not found.
 func (r *registrar) Find(entity dosa.DomainObject) (*dosa.RegisteredEntity, error) {
-	name := reflect.TypeOf(entity).Name()
+	name := reflect.TypeOf(entity).Elem().Name()
 	fqn, _ := r.baseFQN.Child(name)
 	re, ok := r.idx[fqn]
 	if !ok {
@@ -65,7 +64,7 @@ func (r *registrar) FindAll() ([]*dosa.RegisteredEntity, error) {
 		res = append(res, re)
 	}
 	if len(res) == 0 {
-		return nil, fmt.Errorf("registry.FindAll returned empty")
+		return nil, errors.New("registry.FindAll returned empty")
 	}
 	return res, nil
 }
@@ -74,18 +73,18 @@ func (r *registrar) FindAll() ([]*dosa.RegisteredEntity, error) {
 func NewRegistrar(cfg *config.Config) (dosa.Registrar, error) {
 	idx := make(map[dosa.FQN]*dosa.RegisteredEntity)
 	baseFQN, err := dosa.ToFQN(cfg.NamePrefix)
+	// invalid prefix/FQN
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to construct Registrar")
 	}
-
 	// "warnings" mean entity was found but contained invalid annotations
 	eds, warns, err := dosa.FindEntities(cfg.EntityPaths, cfg.Excludes)
-	if len(warns) > 0 {
-		return nil, dosa.NewEntityErrors(warns)
-	}
 	// I/O and AST parsing errors
 	if err != nil {
 		return nil, err
+	}
+	if len(warns) > 0 {
+		return nil, dosa.NewEntityErrors(warns)
 	}
 
 	// index entity definitions (aka "tables")
