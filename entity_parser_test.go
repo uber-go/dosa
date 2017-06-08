@@ -198,23 +198,27 @@ func TestMissingAnnotation(t *testing.T) {
 }
 
 type AllTypes struct {
-	Entity     `dosa:"primaryKey=BoolType"`
-	BoolType   bool
-	Int32Type  int32
-	Int64Type  int64
-	DoubleType float64
-	StringType string
-	BlobType   []byte
-	TimeType   time.Time
-	UUIDType   UUID
+	Entity          `dosa:"primaryKey=BoolType"`
+	BoolType        bool
+	Int32Type       int32
+	Int64Type       int64
+	DoubleType      float64
+	StringType      string
+	BlobType        []byte
+	TimeType        time.Time
+	UUIDType        UUID
+	NullStringType  NullString
+	NullInt64Type   NullInt64
+	NullFloat64Type NullFloat64
+	NullBoolType    NullBool
 }
 
 func TestAllTypes(t *testing.T) {
 	dosaTable, err := TableFromInstance(&AllTypes{})
 	assert.NotNil(t, dosaTable)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	cds := dosaTable.Columns
-	assert.Len(t, cds, 8)
+	assert.Len(t, cds, 12)
 	for _, cd := range cds {
 		name, err := NormalizeName(cd.Name)
 		assert.NoError(t, err)
@@ -235,6 +239,49 @@ func TestAllTypes(t *testing.T) {
 			assert.Equal(t, Timestamp, cd.Type)
 		case "uuidtype":
 			assert.Equal(t, TUUID, cd.Type)
+		case "nullbooltype":
+			assert.Equal(t, TNullBool, cd.Type)
+		case "nullint64type":
+			assert.Equal(t, TNullInt64, cd.Type)
+		case "nullfloat64type":
+			assert.Equal(t, TNullFloat64, cd.Type)
+		case "nullstringtype":
+			assert.Equal(t, TNullString, cd.Type)
+		default:
+			assert.Fail(t, "unexpected column name", name)
+		}
+	}
+}
+
+type NullableType struct {
+	Entity          `dosa:"primaryKey=BoolType"`
+	BoolType        bool
+	NullStringType  NullString
+	NullInt64Type   NullInt64
+	NullFloat64Type NullFloat64
+	NullBoolType    NullBool
+}
+
+func TestNullableType(t *testing.T) {
+	dosaTable, err := TableFromInstance(&NullableType{})
+	assert.NoError(t, err)
+	assert.NotNil(t, dosaTable)
+	cds := dosaTable.Columns
+	assert.Len(t, cds, 5)
+	for _, cd := range cds {
+		name, err := NormalizeName(cd.Name)
+		assert.NoError(t, err)
+		switch name {
+		case "booltype":
+			assert.Equal(t, Bool, cd.Type)
+		case "nullbooltype":
+			assert.Equal(t, TNullBool, cd.Type)
+		case "nullint64type":
+			assert.Equal(t, TNullInt64, cd.Type)
+		case "nullfloat64type":
+			assert.Equal(t, TNullFloat64, cd.Type)
+		case "nullstringtype":
+			assert.Equal(t, TNullString, cd.Type)
 		default:
 			assert.Fail(t, "unexpected column name", name)
 		}

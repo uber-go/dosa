@@ -54,8 +54,8 @@ func TestNonExistentDirectory(t *testing.T) {
 
 func TestParser(t *testing.T) {
 	entities, errs, err := FindEntities([]string{"."}, []string{})
-	assert.Equal(t, 13, len(entities), fmt.Sprintf("%s", entities))
-	assert.Equal(t, 14, len(errs), fmt.Sprintf("%v", errs))
+	assert.Equal(t, 15, len(entities), fmt.Sprintf("%s", entities))
+	assert.Equal(t, 13, len(errs), fmt.Sprintf("%v", errs))
 	assert.Nil(t, err)
 
 	for _, entity := range entities {
@@ -73,6 +73,8 @@ func TestParser(t *testing.T) {
 			e, _ = TableFromInstance(&PrimaryKeyWithDescendingRange{})
 		case "multicomponentprimarykey":
 			e, _ = TableFromInstance(&MultiComponentPrimaryKey{})
+		case "nullabletype":
+			e, _ = TableFromInstance(&NullableType{})
 		case "alltypes":
 			e, _ = TableFromInstance(&AllTypes{})
 		case "unexportedfieldtype":
@@ -91,6 +93,7 @@ func TestParser(t *testing.T) {
 			t.Errorf("entity %s not expected", entity.Name)
 			continue
 		}
+
 		assert.Equal(t, e, entity)
 	}
 }
@@ -103,8 +106,9 @@ func TestExclusion(t *testing.T) {
 }
 
 func TestFindEntitiesInOtherPkg(t *testing.T) {
-	_, warnings, err := FindEntities([]string{"testentity"}, []string{})
+	entities, warnings, err := FindEntities([]string{"testentity"}, []string{})
 	assert.NoError(t, err)
+	assert.Equal(t, 2, len(entities))
 	assert.Empty(t, warnings)
 }
 

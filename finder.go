@@ -206,6 +206,8 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 			if innerName, ok := typeName.X.(*ast.Ident); ok {
 				kind = innerName.Name + "." + typeName.Sel.Name
 			}
+		default:
+			return nil, fmt.Errorf("Unexpected field type: %q", typeName)
 		}
 		if kind == packagePrefix+"."+entityName || (packagePrefix == "" && kind == entityName) {
 			var err error
@@ -247,6 +249,11 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 }
 
 func stringToDosaType(inType string, packagePrefix string) Type {
+	// Append a dot if the package suffix doesn't already have one.
+	if packagePrefix != "" && !strings.HasPrefix(packagePrefix, ".") {
+		packagePrefix += "."
+	}
+
 	switch inType {
 	case "string":
 		return String
@@ -262,8 +269,16 @@ func stringToDosaType(inType string, packagePrefix string) Type {
 		return Double
 	case "time.Time":
 		return Timestamp
-	case packagePrefix + ".UUID":
+	case packagePrefix + "UUID":
 		return TUUID
+	case packagePrefix + "NullString":
+		return TNullString
+	case packagePrefix + "NullInt64":
+		return TNullInt64
+	case packagePrefix + "NullFloat64":
+		return TNullFloat64
+	case packagePrefix + "NullBool":
+		return TNullBool
 	default:
 		return Invalid
 	}

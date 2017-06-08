@@ -57,6 +57,18 @@ const (
 
 	// Bool is a bool type
 	Bool
+
+	// TNullString represents an optional string value
+	TNullString
+
+	// TNullInt64 represents an optional int64 value
+	TNullInt64
+
+	// TNullFloat64 represents an optional float64 value
+	TNullFloat64
+
+	// TNullBool represents an optional bool value
+	TNullBool
 )
 
 // UUID stores a string format of uuid.
@@ -106,6 +118,14 @@ func FromString(s string) Type {
 		return Timestamp
 	case Bool.String():
 		return Bool
+	case TNullString.String():
+		return TNullString
+	case TNullInt64.String():
+		return TNullInt64
+	case TNullFloat64.String():
+		return TNullFloat64
+	case TNullBool.String():
+		return TNullBool
 	default:
 		return Invalid
 	}

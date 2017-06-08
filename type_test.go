@@ -94,6 +94,22 @@ func TestFromString(t *testing.T) {
 			expected: Bool,
 		},
 		{
+			input:    TNullString.String(),
+			expected: TNullString,
+		},
+		{
+			input:    TNullInt64.String(),
+			expected: TNullInt64,
+		},
+		{
+			input:    TNullFloat64.String(),
+			expected: TNullFloat64,
+		},
+		{
+			input:    TNullBool.String(),
+			expected: TNullBool,
+		},
+		{
 			input:    "invalid",
 			expected: Invalid,
 		},
