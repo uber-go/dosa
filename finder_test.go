@@ -89,6 +89,8 @@ func TestParser(t *testing.T) {
 			continue
 		case "registrytestvalid": // skip, same as above
 			continue
+		case "alltypesscantestentity": // skipping test entity defined in scan_test.go
+			continue
 		default:
 			t.Errorf("entity %s not expected", entity.Name)
 			continue
@@ -115,5 +117,48 @@ func TestFindEntitiesInOtherPkg(t *testing.T) {
 func BenchmarkFinder(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		FindEntities([]string{"."}, []string{})
+	}
+}
+
+func TestStringToDosaType(t *testing.T) {
+	data := []struct {
+		inType   string
+		pkg      string
+		expected Type
+	}{
+		// Tests without package name
+		{"string", "", String},
+		{"[]byte", "", Blob},
+		{"bool", "", Bool},
+		{"int32", "", Int32},
+		{"int64", "", Int64},
+		{"float64", "", Double},
+		{"time.Time", "", Timestamp},
+		{"UUID", "", TUUID},
+		{"NullString", "", TNullString},
+		{"NullInt64", "", TNullInt64},
+		{"NullFloat64", "", TNullFloat64},
+		{"NullBool", "", TNullBool},
+
+		// Tests with package name that doesn't end with dot.
+		{"dosa.UUID", "dosa", TUUID},
+		{"dosa.NullString", "dosa", TNullString},
+		{"dosa.NullInt64", "dosa", TNullInt64},
+		{"dosa.NullFloat64", "dosa", TNullFloat64},
+		{"dosa.NullBool", "dosa", TNullBool},
+
+		// Tests with package name that ends with dot.
+		{"dosa.UUID", "dosa.", TUUID},
+		{"dosa.NullString", "dosa.", TNullString},
+		{"dosa.NullInt64", "dosa.", TNullInt64},
+		{"dosa.NullFloat64", "dosa.", TNullFloat64},
+		{"dosa.NullBool", "dosa.", TNullBool},
+
+		{"unknown", "", Invalid},
+	}
+
+	for _, tc := range data {
+		assert.Equal(t, tc.expected, stringToDosaType(tc.inType, tc.pkg),
+			fmt.Sprintf("stringToDosaType(%q, %q) != %d", tc.inType, tc.pkg, tc.expected))
 	}
 }

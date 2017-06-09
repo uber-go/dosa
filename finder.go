@@ -250,7 +250,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 
 func stringToDosaType(inType string, packagePrefix string) Type {
 	// Append a dot if the package suffix doesn't already have one.
-	if packagePrefix != "" && !strings.HasPrefix(packagePrefix, ".") {
+	if packagePrefix != "" && !strings.HasSuffix(packagePrefix, ".") {
 		packagePrefix += "."
 	}
 
