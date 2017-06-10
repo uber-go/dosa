@@ -111,7 +111,7 @@ func TestRegistrar_FindAll(t *testing.T) {
 	assert.NotNil(t, reg)
 	res, err = reg.FindAll()
 	assert.NoError(t, err)
-	assert.Equal(t, len(res), 1)
+	assert.Equal(t, len(res), 2)
 
 	// found many
 	cfg.EntityPaths = []string{".", "../testentity"}
@@ -120,7 +120,7 @@ func TestRegistrar_FindAll(t *testing.T) {
 	assert.NotNil(t, reg)
 	res, err = reg.FindAll()
 	assert.NoError(t, err)
-	assert.Equal(t, len(res), 3)
+	assert.Equal(t, len(res), 4)
 }
 
 func TestNewRegistrar(t *testing.T) {
