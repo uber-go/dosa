@@ -122,7 +122,7 @@ func TestFromString(t *testing.T) {
 
 func TestIsNullableType(t *testing.T) {
 	tt := []struct {
-		input Type
+		input    Type
 		expected bool
 	}{
 		{
@@ -175,7 +175,7 @@ func TestIsNullableType(t *testing.T) {
 		},
 		{
 			input:    Invalid,
-			expected: true,		// We treat Invalid as nullable type.
+			expected: true, // We treat Invalid as nullable type.
 		},
 	}
 	for _, tc := range tt {

@@ -139,4 +139,3 @@ func isNullableType(t Type) bool {
 		return false
 	}
 }
-

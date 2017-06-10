@@ -354,4 +354,3 @@ func TestEntityDefinition_FindColumnDefinition(t *testing.T) {
 	assert.Nil(t, ed.FindColumnDefinition("notacolumn"))
 
 }
-

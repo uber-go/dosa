@@ -187,15 +187,15 @@ func (e *EntityDefinition) EnsureValid() error {
 func (e *EntityDefinition) ensureNonNullablePrimaryKeys() error {
 	columnTypes := e.ColumnTypes()
 
-	for k, _ := range e.PartitionKeySet() {
+	for k := range e.PartitionKeySet() {
 		if isNullableType(columnTypes[k]) {
-			return errors.Errorf("primary key %q is of nullable type: %q", k)
+			return errors.Errorf("primary key is of nullable type: %q", k)
 		}
 	}
 
-	for k, _ := range e.ClusteringKeySet() {
+	for k := range e.ClusteringKeySet() {
 		if isNullableType(columnTypes[k]) {
-			return errors.Errorf("clustering key %q is of nullable type: %q", k)
+			return errors.Errorf("clustering key is of nullable type: %q", k)
 		}
 	}
 	return nil

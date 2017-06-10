@@ -303,7 +303,7 @@ func TestUnsupportedType(t *testing.T) {
 }
 
 type NullStringPrimaryKeyType struct {
-	Entity    `dosa:"primaryKey=NullStringType"`
+	Entity         `dosa:"primaryKey=NullStringType"`
 	NullStringType NullString
 }
 
@@ -315,7 +315,7 @@ func TestNullStringPrimaryKeyType(t *testing.T) {
 }
 
 type NullInt64PrimaryKeyType struct {
-	Entity    `dosa:"primaryKey=NullInt64Type"`
+	Entity        `dosa:"primaryKey=NullInt64Type"`
 	NullInt64Type NullInt64
 }
 
@@ -327,7 +327,7 @@ func TestNullInt64PrimaryKeyType(t *testing.T) {
 }
 
 type NullFloat64PrimaryKeyType struct {
-	Entity    `dosa:"primaryKey=NullFloat64Type"`
+	Entity          `dosa:"primaryKey=NullFloat64Type"`
 	NullFloat64Type NullFloat64
 }
 
@@ -339,7 +339,7 @@ func TestNullFloat64PrimaryKeyType(t *testing.T) {
 }
 
 type NullBoolPrimaryKeyType struct {
-	Entity    `dosa:"primaryKey=NullBoolType"`
+	Entity       `dosa:"primaryKey=NullBoolType"`
 	NullBoolType NullBool
 }
 
