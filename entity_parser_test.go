@@ -302,6 +302,54 @@ func TestUnsupportedType(t *testing.T) {
 	assert.Contains(t, err.Error(), "UnsupType")
 }
 
+type NullStringPrimaryKeyType struct {
+	Entity    `dosa:"primaryKey=NullStringType"`
+	NullStringType NullString
+}
+
+func TestNullStringPrimaryKeyType(t *testing.T) {
+	dosaTable, err := TableFromInstance(&NullStringPrimaryKeyType{})
+	assert.Nil(t, dosaTable)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Nullable types are not allowed")
+}
+
+type NullInt64PrimaryKeyType struct {
+	Entity    `dosa:"primaryKey=NullInt64Type"`
+	NullInt64Type NullInt64
+}
+
+func TestNullInt64PrimaryKeyType(t *testing.T) {
+	dosaTable, err := TableFromInstance(&NullInt64PrimaryKeyType{})
+	assert.Nil(t, dosaTable)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Nullable types are not allowed")
+}
+
+type NullFloat64PrimaryKeyType struct {
+	Entity    `dosa:"primaryKey=NullFloat64Type"`
+	NullFloat64Type NullFloat64
+}
+
+func TestNullFloat64PrimaryKeyType(t *testing.T) {
+	dosaTable, err := TableFromInstance(&NullFloat64PrimaryKeyType{})
+	assert.Nil(t, dosaTable)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Nullable types are not allowed")
+}
+
+type NullBoolPrimaryKeyType struct {
+	Entity    `dosa:"primaryKey=NullBoolType"`
+	NullBoolType NullBool
+}
+
+func TestNullBoolPrimaryKeyType(t *testing.T) {
+	dosaTable, err := TableFromInstance(&NullBoolPrimaryKeyType{})
+	assert.Nil(t, dosaTable)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Nullable types are not allowed")
+}
+
 type KeyFieldNameTypo struct {
 	Entity   `dosa:"primaryKey=BoolHype"`
 	BoolType bool

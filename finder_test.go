@@ -55,7 +55,7 @@ func TestNonExistentDirectory(t *testing.T) {
 func TestParser(t *testing.T) {
 	entities, errs, err := FindEntities([]string{"."}, []string{})
 	assert.Equal(t, 15, len(entities), fmt.Sprintf("%s", entities))
-	assert.Equal(t, 13, len(errs), fmt.Sprintf("%v", errs))
+	assert.Equal(t, 17, len(errs), fmt.Sprintf("%v", errs))
 	assert.Nil(t, err)
 
 	for _, entity := range entities {

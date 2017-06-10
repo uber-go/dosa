@@ -130,3 +130,13 @@ func FromString(s string) Type {
 		return Invalid
 	}
 }
+
+func isNullableType(t Type) bool {
+	switch t {
+	case Invalid, TNullString, TNullFloat64, TNullInt64, TNullBool:
+		return true
+	default:
+		return false
+	}
+}
+

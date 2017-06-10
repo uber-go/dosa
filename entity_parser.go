@@ -213,7 +213,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 	return t, nil
 }
 
-// primaryKeyNameMatch translate the primary keys to the internal column name based on the maping
+// translateKeyName translate the primary keys to the internal column name based on the mapping
 // between fields and columns.
 func translateKeyName(t *Table) {
 	pk := t.EntityDefinition.Key
