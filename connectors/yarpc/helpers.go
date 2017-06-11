@@ -35,19 +35,19 @@ func RawValueAsInterface(val dosarpc.RawValue, typ dosa.Type) interface{} {
 	case dosa.TUUID:
 		uuid, _ := dosa.BytesToUUID(val.BinaryValue) // TODO: should we handle this error?
 		return uuid
-	case dosa.String:
+	case dosa.String, dosa.TNullString:
 		return *val.StringValue
 	case dosa.Int32:
 		return *val.Int32Value
-	case dosa.Int64:
+	case dosa.Int64, dosa.TNullInt64:
 		return *val.Int64Value
-	case dosa.Double:
+	case dosa.Double, dosa.TNullFloat64:
 		return *val.DoubleValue
 	case dosa.Blob:
 		return val.BinaryValue
 	case dosa.Timestamp:
 		return time.Unix(0, *val.Int64Value)
-	case dosa.Bool:
+	case dosa.Bool, dosa.TNullBool:
 		return *val.BoolValue
 	}
 	panic("bad type")
@@ -86,6 +86,15 @@ func RawValueFromInterface(i interface{}) (*dosarpc.RawValue, error) {
 			return nil, err
 		}
 		return &dosarpc.RawValue{BinaryValue: bytes}, nil
+	// TODO: (UmerAzad) Deal with nil values once NullTime and NullUUID are added. It'll be covered as part of JIRA-927.
+	case dosa.NullString:
+		return &dosarpc.RawValue{StringValue: &v.String}, nil
+	case dosa.NullInt64:
+		return &dosarpc.RawValue{Int64Value: &v.Int64}, nil
+	case dosa.NullFloat64:
+		return &dosarpc.RawValue{DoubleValue: &v.Float64}, nil
+	case dosa.NullBool:
+		return &dosarpc.RawValue{BoolValue: &v.Bool}, nil
 	}
 	panic("bad type")
 }
@@ -109,6 +118,14 @@ func RPCTypeFromClientType(t dosa.Type) dosarpc.ElemType {
 		return dosarpc.ElemTypeTimestamp
 	case dosa.TUUID:
 		return dosarpc.ElemTypeUUID
+	case dosa.TNullBool:
+		return dosarpc.ElemTypeBool
+	case dosa.TNullInt64:
+		return dosarpc.ElemTypeInt64
+	case dosa.TNullFloat64:
+		return dosarpc.ElemTypeDouble
+	case dosa.TNullString:
+		return dosarpc.ElemTypeString
 	}
 	panic("bad type")
 }
@@ -132,6 +149,7 @@ func RPCTypeToClientType(t dosarpc.ElemType) dosa.Type {
 		return dosa.Timestamp
 	case dosarpc.ElemTypeUUID:
 		return dosa.TUUID
+	//TODO: UmerAzad - Handle conversation into Nullable types.
 	}
 	panic("bad type")
 }
