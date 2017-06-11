@@ -149,7 +149,7 @@ func RPCTypeToClientType(t dosarpc.ElemType) dosa.Type {
 		return dosa.Timestamp
 	case dosarpc.ElemTypeUUID:
 		return dosa.TUUID
-	//TODO: UmerAzad - Handle conversation into Nullable types.
+		//TODO: UmerAzad - Handle conversation into Nullable types.
 	}
 	panic("bad type")
 }

@@ -123,42 +123,41 @@ func BenchmarkFinder(b *testing.B) {
 func TestStringToDosaType(t *testing.T) {
 	data := []struct {
 		inType   string
-		pkg      string
 		expected Type
 	}{
 		// Tests without package name
-		{"string", "", String},
-		{"[]byte", "", Blob},
-		{"bool", "", Bool},
-		{"int32", "", Int32},
-		{"int64", "", Int64},
-		{"float64", "", Double},
-		{"time.Time", "", Timestamp},
-		{"UUID", "", TUUID},
-		{"NullString", "", TNullString},
-		{"NullInt64", "", TNullInt64},
-		{"NullFloat64", "", TNullFloat64},
-		{"NullBool", "", TNullBool},
+		{"string", String},
+		{"[]byte", Blob},
+		{"bool", Bool},
+		{"int32", Int32},
+		{"int64", Int64},
+		{"float64", Double},
+		{"time.Time", Timestamp},
+		{"UUID", TUUID},
+		{"NullString", TNullString},
+		{"NullInt64", TNullInt64},
+		{"NullFloat64", TNullFloat64},
+		{"NullBool", TNullBool},
 
 		// Tests with package name that doesn't end with dot.
-		{"dosa.UUID", "dosa", TUUID},
-		{"dosa.NullString", "dosa", TNullString},
-		{"dosa.NullInt64", "dosa", TNullInt64},
-		{"dosa.NullFloat64", "dosa", TNullFloat64},
-		{"dosa.NullBool", "dosa", TNullBool},
+		{"dosa.UUID", TUUID},
+		{"dosa.NullString", TNullString},
+		{"dosa.NullInt64", TNullInt64},
+		{"dosa.NullFloat64", TNullFloat64},
+		{"dosa.NullBool", TNullBool},
 
 		// Tests with package name that ends with dot.
-		{"dosa.UUID", "dosa.", TUUID},
-		{"dosa.NullString", "dosa.", TNullString},
-		{"dosa.NullInt64", "dosa.", TNullInt64},
-		{"dosa.NullFloat64", "dosa.", TNullFloat64},
-		{"dosa.NullBool", "dosa.", TNullBool},
+		{"dosa.UUID", TUUID},
+		{"dosa.NullString", TNullString},
+		{"dosa.NullInt64", TNullInt64},
+		{"dosa.NullFloat64", TNullFloat64},
+		{"dosa.NullBool", TNullBool},
 
-		{"unknown", "", Invalid},
+		{"unknown", Invalid},
 	}
 
 	for _, tc := range data {
-		assert.Equal(t, tc.expected, stringToDosaType(tc.inType, tc.pkg),
-			fmt.Sprintf("stringToDosaType(%q, %q) != %d", tc.inType, tc.pkg, tc.expected))
+		assert.Equal(t, tc.expected, stringToDosaType(tc.inType),
+			fmt.Sprintf("stringToDosaType(%q) != %d", tc.inType, tc.expected))
 	}
 }
