@@ -182,6 +182,17 @@ func (_mr *_MockConnectorRecorder) Remove(arg0, arg1, arg2 interface{}) *gomock.
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Remove", arg0, arg1, arg2)
 }
 
+// RemoveRange is a mock implementation of MockConnector.RemoveRange
+func (_m *MockConnector) RemoveRange(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 map[string][]*dosa.Condition) error {
+	ret := _m.ctrl.Call(_m, "RemoveRange", _param0, _param1, _param2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockConnectorRecorder) RemoveRange(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "RemoveRange", arg0, arg1, arg2)
+}
+
 // Scan is a mock implementation of MockConnector.Scan
 func (_m *MockConnector) Scan(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 []string, _param3 string, _param4 int) ([]map[string]dosa.FieldValue, string, error) {
 	ret := _m.ctrl.Call(_m, "Scan", _param0, _param1, _param2, _param3, _param4)

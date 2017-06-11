@@ -102,6 +102,15 @@ func TestBase_Remove(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestBase_RemoveRange(t *testing.T) {
+	conditions := make(map[string][]*dosa.Condition)
+	err := bc.RemoveRange(ctx, testInfo, conditions)
+	assert.Error(t, err)
+
+	err = bcWNext.RemoveRange(ctx, testInfo, conditions)
+	assert.NoError(t, err)
+}
+
 func TestBase_MultiRemove(t *testing.T) {
 	_, err := bc.MultiRemove(ctx, testInfo, testMultiValues)
 	assert.Error(t, err)
