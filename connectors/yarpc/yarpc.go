@@ -410,6 +410,36 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	return *response.Version, nil
 }
 
+// UpsertSchemaDryRun to validate if the schema to upsert is backward compatible or not.
+func (c *Connector) UpsertSchemaDryRun(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
+	// convert the client EntityDefinition to the RPC EntityDefinition
+	rpcEntityDefinition := make([]*dosarpc.EntityDefinition, len(eds))
+	for i, ed := range eds {
+		rpcEntityDefinition[i] = EntityDefinitionToThrift(ed)
+	}
+	request := dosarpc.UpsertSchemaDryRunRequest{EntityDefs: rpcEntityDefinition, Scope: &scope, NamePrefix: &namePrefix}
+
+	response, err := c.Client.UpsertSchemaDryRun(ctx, &request)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "YARPC UpsertSchemaDryRun failed")
+	}
+
+	status := ""
+	if response.Status != nil {
+		status = *response.Status
+	}
+
+	if response.Version == nil {
+		return nil, errors.New("YARPC UpsertSchemaDryRun failed: server returns version nil")
+	}
+
+	return &dosa.SchemaStatus{
+		Version: *response.Version,
+		Status:  status,
+	}, nil
+}
+
 // UpsertSchema upserts the schema through RPC
 func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
 	rpcEds := make([]*dosarpc.EntityDefinition, len(eds))

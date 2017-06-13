@@ -515,6 +515,36 @@ func TestClient_CheckSchema(t *testing.T) {
 	assert.Equal(t, v, sr)
 }
 
+func TestClient_UpsertSchemaDryRun(t *testing.T) {
+	// build a mock RPC client
+	ctrl := gomock.NewController(t)
+	mockedClient := dosatest.NewMockClient(ctrl)
+	sut := yarpc.Connector{Client: mockedClient}
+
+	ed, err := dosa.TableFromInstance(&TestDosaObject{})
+	assert.NoError(t, err)
+	sp := "scope"
+	prefix := "prefix"
+
+	expectedRequest := &drpc.UpsertSchemaDryRunRequest{
+		Scope:      &sp,
+		NamePrefix: &prefix,
+		EntityDefs: []*drpc.EntityDefinition{yarpc.EntityDefinitionToThrift(&ed.EntityDefinition)},
+	}
+	v := int32(1)
+	mockedClient.EXPECT().UpsertSchemaDryRun(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.UpsertSchemaDryRunRequest) {
+		assert.Equal(t, expectedRequest, request)
+	}).Return(&drpc.UpsertSchemaDryRunResponse{Version: &v}, nil)
+	result, err := sut.UpsertSchemaDryRun(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
+	assert.NoError(t, err)
+	assert.Equal(t, &dosa.SchemaStatus{Version: v}, result)
+
+	mockedClient.EXPECT().UpsertSchemaDryRun(ctx, gomock.Any()).Return(nil, errors.New("test error"))
+	_, err = sut.UpsertSchemaDryRun(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "test error")
+}
+
 func TestClient_CheckSchemaStatus(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)

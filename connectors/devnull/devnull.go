@@ -24,10 +24,13 @@ import (
 	"context"
 
 	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/connectors/base"
 )
 
 // Connector is a connector implementation for testing
-type Connector struct{}
+type Connector struct {
+	base.Connector
+}
 
 // CreateIfNotExists always returns nil
 func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {

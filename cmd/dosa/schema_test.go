@@ -234,14 +234,14 @@ func TestSchema_Check_Happy(t *testing.T) {
 	}
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().CheckSchema(gomock.Any(), "scope", "foo", gomock.Any()).
+		mc.EXPECT().UpsertSchemaDryRun(gomock.Any(), "scope", "foo", gomock.Any()).
 			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)
 				assert.True(t, dl.After(time.Now()))
 				assert.Equal(t, 1, len(ed))
 				assert.Equal(t, "awesome_test_entity", ed[0].Name)
-			}).Return(int32(1), nil)
+			}).Return(&dosa.SchemaStatus{Version: int32(1)}, nil)
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
