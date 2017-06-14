@@ -323,14 +323,14 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 
 // RemoveRange removes all entities within the range specified by the columnConditions.
 func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) error {
-	conditions, err := createRPCConditions(columnConditions)
+	rpcConditions, err := createRPCConditions(columnConditions)
 	if err != nil {
 		return errors.Wrap(err, "RemoveRange failed")
 	}
 
 	request := &dosarpc.RemoveRangeRequest{
 		Ref:        entityInfoToSchemaRef(ei),
-		Conditions: conditions,
+		Conditions: rpcConditions,
 	}
 
 	if err := c.Client.RemoveRange(ctx, request); err != nil {
@@ -348,7 +348,7 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiK
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	limit32 := int32(limit)
 	rpcMinimumFields := makeRPCminimumFields(minimumFields)
-	conditions, err := createRPCConditions(columnConditions)
+	rpcConditions, err := createRPCConditions(columnConditions)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Range failed")
 	}
@@ -356,7 +356,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 		Ref:          entityInfoToSchemaRef(ei),
 		Token:        &token,
 		Limit:        &limit32,
-		Conditions:   conditions,
+		Conditions:   rpcConditions,
 		FieldsToRead: rpcMinimumFields,
 	}
 	response, err := c.Client.Range(ctx, &rangeRequest)
