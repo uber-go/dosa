@@ -30,7 +30,7 @@ import (
 	dosa "github.com/uber-go/dosa"
 )
 
-// MockClient is a mock of Client interface
+// Mock of Client interface
 type MockClient struct {
 	ctrl     *gomock.Controller
 	recorder *_MockClientRecorder
@@ -41,19 +41,16 @@ type _MockClientRecorder struct {
 	mock *MockClient
 }
 
-// NewMockClient creates a new mock
 func NewMockClient(ctrl *gomock.Controller) *MockClient {
 	mock := &MockClient{ctrl: ctrl}
 	mock.recorder = &_MockClientRecorder{mock}
 	return mock
 }
 
-// EXPECT adds an expectation
 func (_m *MockClient) EXPECT() *_MockClientRecorder {
 	return _m.recorder
 }
 
-// CreateIfNotExists is a mock implementation of MockClient.CreateIfNotExists
 func (_m *MockClient) CreateIfNotExists(_param0 context.Context, _param1 dosa.DomainObject) error {
 	ret := _m.ctrl.Call(_m, "CreateIfNotExists", _param0, _param1)
 	ret0, _ := ret[0].(error)
@@ -64,7 +61,6 @@ func (_mr *_MockClientRecorder) CreateIfNotExists(arg0, arg1 interface{}) *gomoc
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateIfNotExists", arg0, arg1)
 }
 
-// Initialize is a mock implementation of MockClient.Initialize
 func (_m *MockClient) Initialize(_param0 context.Context) error {
 	ret := _m.ctrl.Call(_m, "Initialize", _param0)
 	ret0, _ := ret[0].(error)
@@ -75,7 +71,6 @@ func (_mr *_MockClientRecorder) Initialize(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Initialize", arg0)
 }
 
-// Range is a mock implementation of MockClient.Range
 func (_m *MockClient) Range(_param0 context.Context, _param1 *dosa.RangeOp) ([]dosa.DomainObject, string, error) {
 	ret := _m.ctrl.Call(_m, "Range", _param0, _param1)
 	ret0, _ := ret[0].([]dosa.DomainObject)
@@ -88,7 +83,6 @@ func (_mr *_MockClientRecorder) Range(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Range", arg0, arg1)
 }
 
-// Read is a mock implementation of MockClient.Read
 func (_m *MockClient) Read(_param0 context.Context, _param1 []string, _param2 dosa.DomainObject) error {
 	ret := _m.ctrl.Call(_m, "Read", _param0, _param1, _param2)
 	ret0, _ := ret[0].(error)
@@ -99,7 +93,6 @@ func (_mr *_MockClientRecorder) Read(arg0, arg1, arg2 interface{}) *gomock.Call 
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Read", arg0, arg1, arg2)
 }
 
-// Remove is a mock implementation of MockClient.Remove
 func (_m *MockClient) Remove(_param0 context.Context, _param1 dosa.DomainObject) error {
 	ret := _m.ctrl.Call(_m, "Remove", _param0, _param1)
 	ret0, _ := ret[0].(error)
@@ -110,7 +103,6 @@ func (_mr *_MockClientRecorder) Remove(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Remove", arg0, arg1)
 }
 
-// ScanEverything is a mock implementation of MockClient.ScanEverything
 func (_m *MockClient) ScanEverything(_param0 context.Context, _param1 *dosa.ScanOp) ([]dosa.DomainObject, string, error) {
 	ret := _m.ctrl.Call(_m, "ScanEverything", _param0, _param1)
 	ret0, _ := ret[0].([]dosa.DomainObject)
@@ -123,7 +115,6 @@ func (_mr *_MockClientRecorder) ScanEverything(arg0, arg1 interface{}) *gomock.C
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ScanEverything", arg0, arg1)
 }
 
-// Upsert is a mock implementation of MockClient.Upsert
 func (_m *MockClient) Upsert(_param0 context.Context, _param1 []string, _param2 dosa.DomainObject) error {
 	ret := _m.ctrl.Call(_m, "Upsert", _param0, _param1, _param2)
 	ret0, _ := ret[0].(error)
@@ -134,7 +125,7 @@ func (_mr *_MockClientRecorder) Upsert(arg0, arg1, arg2 interface{}) *gomock.Cal
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Upsert", arg0, arg1, arg2)
 }
 
-// MockAdminClient is a mock of AdminClient interface
+// Mock of AdminClient interface
 type MockAdminClient struct {
 	ctrl     *gomock.Controller
 	recorder *_MockAdminClientRecorder
@@ -145,19 +136,16 @@ type _MockAdminClientRecorder struct {
 	mock *MockAdminClient
 }
 
-// NewMockAdminClient creates a new mock
 func NewMockAdminClient(ctrl *gomock.Controller) *MockAdminClient {
 	mock := &MockAdminClient{ctrl: ctrl}
 	mock.recorder = &_MockAdminClientRecorder{mock}
 	return mock
 }
 
-// EXPECT adds an expectation
 func (_m *MockAdminClient) EXPECT() *_MockAdminClientRecorder {
 	return _m.recorder
 }
 
-// CheckSchema is a mock implementation of MockAdminClient.CheckSchema
 func (_m *MockAdminClient) CheckSchema(_param0 context.Context, _param1 string) (*dosa.SchemaStatus, error) {
 	ret := _m.ctrl.Call(_m, "CheckSchema", _param0, _param1)
 	ret0, _ := ret[0].(*dosa.SchemaStatus)
@@ -169,7 +157,6 @@ func (_mr *_MockAdminClientRecorder) CheckSchema(arg0, arg1 interface{}) *gomock
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CheckSchema", arg0, arg1)
 }
 
-// CheckSchemaStatus is a mock implementation of MockAdminClient.CheckSchemaStatus
 func (_m *MockAdminClient) CheckSchemaStatus(_param0 context.Context, _param1 string, _param2 int32) (*dosa.SchemaStatus, error) {
 	ret := _m.ctrl.Call(_m, "CheckSchemaStatus", _param0, _param1, _param2)
 	ret0, _ := ret[0].(*dosa.SchemaStatus)
@@ -181,7 +168,6 @@ func (_mr *_MockAdminClientRecorder) CheckSchemaStatus(arg0, arg1, arg2 interfac
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CheckSchemaStatus", arg0, arg1, arg2)
 }
 
-// CreateScope is a mock implementation of MockAdminClient.CreateScope
 func (_m *MockAdminClient) CreateScope(_param0 context.Context, _param1 string) error {
 	ret := _m.ctrl.Call(_m, "CreateScope", _param0, _param1)
 	ret0, _ := ret[0].(error)
@@ -192,7 +178,6 @@ func (_mr *_MockAdminClientRecorder) CreateScope(arg0, arg1 interface{}) *gomock
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateScope", arg0, arg1)
 }
 
-// Directories is a mock implementation of MockAdminClient.Directories
 func (_m *MockAdminClient) Directories(_param0 []string) dosa.AdminClient {
 	ret := _m.ctrl.Call(_m, "Directories", _param0)
 	ret0, _ := ret[0].(dosa.AdminClient)
@@ -203,7 +188,6 @@ func (_mr *_MockAdminClientRecorder) Directories(arg0 interface{}) *gomock.Call 
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Directories", arg0)
 }
 
-// DropScope is a mock implementation of MockAdminClient.DropScope
 func (_m *MockAdminClient) DropScope(_param0 context.Context, _param1 string) error {
 	ret := _m.ctrl.Call(_m, "DropScope", _param0, _param1)
 	ret0, _ := ret[0].(error)
@@ -214,7 +198,6 @@ func (_mr *_MockAdminClientRecorder) DropScope(arg0, arg1 interface{}) *gomock.C
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "DropScope", arg0, arg1)
 }
 
-// Excludes is a mock implementation of MockAdminClient.Excludes
 func (_m *MockAdminClient) Excludes(_param0 []string) dosa.AdminClient {
 	ret := _m.ctrl.Call(_m, "Excludes", _param0)
 	ret0, _ := ret[0].(dosa.AdminClient)
@@ -225,7 +208,6 @@ func (_mr *_MockAdminClientRecorder) Excludes(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Excludes", arg0)
 }
 
-// GetSchema is a mock implementation of MockAdminClient.GetSchema
 func (_m *MockAdminClient) GetSchema() ([]*dosa.EntityDefinition, error) {
 	ret := _m.ctrl.Call(_m, "GetSchema")
 	ret0, _ := ret[0].([]*dosa.EntityDefinition)
@@ -237,7 +219,6 @@ func (_mr *_MockAdminClientRecorder) GetSchema() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetSchema")
 }
 
-// Scope is a mock implementation of MockAdminClient.Scope
 func (_m *MockAdminClient) Scope(_param0 string) dosa.AdminClient {
 	ret := _m.ctrl.Call(_m, "Scope", _param0)
 	ret0, _ := ret[0].(dosa.AdminClient)
@@ -248,7 +229,6 @@ func (_mr *_MockAdminClientRecorder) Scope(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Scope", arg0)
 }
 
-// TruncateScope is a mock implementation of MockAdminClient.TruncateScope
 func (_m *MockAdminClient) TruncateScope(_param0 context.Context, _param1 string) error {
 	ret := _m.ctrl.Call(_m, "TruncateScope", _param0, _param1)
 	ret0, _ := ret[0].(error)
@@ -259,7 +239,6 @@ func (_mr *_MockAdminClientRecorder) TruncateScope(arg0, arg1 interface{}) *gomo
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TruncateScope", arg0, arg1)
 }
 
-// UpsertSchema is a mock implementation of MockAdminClient.UpsertSchema
 func (_m *MockAdminClient) UpsertSchema(_param0 context.Context, _param1 string) (*dosa.SchemaStatus, error) {
 	ret := _m.ctrl.Call(_m, "UpsertSchema", _param0, _param1)
 	ret0, _ := ret[0].(*dosa.SchemaStatus)

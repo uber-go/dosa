@@ -129,6 +129,8 @@ type Connector interface {
 	CheckSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (version int32, err error)
 	// UpsertSchema updates the schema to match what you provide as entities, if possible
 	UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (status *SchemaStatus, err error)
+	// UpsertSchemaDryRun will test your schema to see if it is backward compatible with existing schema.
+	UpsertSchemaDryRun(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (status *SchemaStatus, err error)
 	// CheckSchemaStatus checks the status of the schema whether it is accepted or in progress of application.
 	CheckSchemaStatus(ctx context.Context, scope string, namePrefix string, version int32) (*SchemaStatus, error)
 

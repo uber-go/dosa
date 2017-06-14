@@ -143,6 +143,14 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 	return c.Next.UpsertSchema(ctx, scope, namePrefix, ed)
 }
 
+// UpsertSchemaDryRun calls Next
+func (c *Connector) UpsertSchemaDryRun(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
+	if c.Next == nil {
+		return nil, ErrNoMoreConnector{}
+	}
+	return c.Next.UpsertSchemaDryRun(ctx, scope, namePrefix, ed)
+}
+
 // CheckSchemaStatus calls Next
 func (c *Connector) CheckSchemaStatus(ctx context.Context, scope string, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
 	if c.Next == nil {

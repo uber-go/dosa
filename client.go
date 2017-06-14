@@ -489,14 +489,12 @@ func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) (*Sche
 	if err != nil {
 		return nil, errors.Wrapf(err, "GetSchema failed")
 	}
-	version, err := c.connector.CheckSchema(ctx, c.scope, namePrefix, defs)
+
+	status, err := c.connector.UpsertSchemaDryRun(ctx, c.scope, namePrefix, defs)
 	if err != nil {
 		return nil, errors.Wrapf(err, "CheckSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
 	}
-	return &SchemaStatus{
-		Version: version,
-		Status:  "OK",
-	}, nil
+	return status, nil
 }
 
 func (c *adminClient) CheckSchemaStatus(ctx context.Context, namePrefix string, version int32) (*SchemaStatus, error) {

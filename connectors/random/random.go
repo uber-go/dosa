@@ -28,6 +28,7 @@ import (
 
 	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/connectors/base"
 )
 
 const (
@@ -36,7 +37,9 @@ const (
 )
 
 // Connector is a connector implementation for testing
-type Connector struct{}
+type Connector struct {
+	base.Connector
+}
 
 // CreateIfNotExists always succeeds
 func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
