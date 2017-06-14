@@ -41,6 +41,7 @@ const (
 	_defaultServiceName        = "dosa-gateway"
 	errCodeNotFound      int32 = 404
 	errCodeAlreadyExists int32 = 409
+	goodToUpsert = "good to upsert"
 )
 
 // Config contains the YARPC client parameters
@@ -420,12 +421,11 @@ func (c *Connector) UpsertSchemaDryRun(ctx context.Context, scope, namePrefix st
 	request := dosarpc.UpsertSchemaDryRunRequest{EntityDefs: rpcEntityDefinition, Scope: &scope, NamePrefix: &namePrefix}
 
 	response, err := c.Client.UpsertSchemaDryRun(ctx, &request)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "YARPC UpsertSchemaDryRun failed")
 	}
 
-	status := ""
+	status := goodToUpsert
 	if response.Status != nil {
 		status = *response.Status
 	}

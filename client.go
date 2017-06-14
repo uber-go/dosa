@@ -489,6 +489,7 @@ func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) (*Sche
 	if err != nil {
 		return nil, errors.Wrapf(err, "GetSchema failed")
 	}
+
 	status, err := c.connector.UpsertSchemaDryRun(ctx, c.scope, namePrefix, defs)
 	if err != nil {
 		return nil, errors.Wrapf(err, "CheckSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
