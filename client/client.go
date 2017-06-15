@@ -31,12 +31,10 @@ import (
 
 // New creates a new DOSA client from the configuration provided. Depending
 // on the configuration, this method will create the appropriate connector
-// and will try to find DOSA entities to register before returning an
-// initialized client or an error. See the config package for defaults.
-func New(cfg *config.Config) (dosa.Client, error) {
-	// create registry from config, by default this will search ./entities/dosa
-	// for types that implement dosa.DomainObject and have valid primary key.
-	reg, err := registry.NewRegistrar(cfg)
+// and will register the entities provided before returning an initialized
+// client or an error. See the config package for defaults.
+func New(cfg *config.Config, entities ...dosa.DomainObject) (dosa.Client, error) {
+	reg, err := registry.NewRegistrar(cfg, entities...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not register DOSA entities in %s", cfg.EntityPaths)
 	}
