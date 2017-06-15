@@ -29,6 +29,7 @@ import (
 	_ "github.com/uber-go/dosa/connectors/devnull"
 	_ "github.com/uber-go/dosa/connectors/memory"
 	_ "github.com/uber-go/dosa/connectors/random"
+	"github.com/uber-go/dosa/testentity"
 )
 
 func TestNew(t *testing.T) {
@@ -84,6 +85,11 @@ func TestNew(t *testing.T) {
 	randomCfg.Connector["name"] = "random"
 	randomCfg.EntityPaths = entityPathsValid
 	c, err = dosaclient.New(&randomCfg)
+	assert.NotNil(t, c)
+	assert.NoError(t, err)
+
+	// explicit entity registration using memory connector
+	c, err = dosaclient.New(&memoryCfg, &testentity.TestEntity{})
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 }
