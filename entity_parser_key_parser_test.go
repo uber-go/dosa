@@ -21,9 +21,8 @@
 package dosa
 
 import (
-	"testing"
-
 	"reflect"
+	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -562,6 +561,202 @@ func TestEntityParse(t *testing.T) {
 		} else {
 			assert.Nil(t, err)
 			assert.Equal(t, tableName, d.TableName)
+			assert.Equal(t, primaryKey, d.PrimaryKey)
+		}
+	}
+}
+
+func TestIndexParse(t *testing.T) {
+	data := []struct {
+		Tag               string
+		InputIndexName    string
+		ExpectedIndexName string
+		PrimaryKey        *PrimaryKey
+		Error             error
+	}{
+		{
+			Tag:               "name=jj key=ok",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Error:          nil,
+		},
+		{
+			Tag:               "name=jj, key=ok",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Error:          nil,
+		},
+		{
+			Tag:               "name=jj, key=(ok)",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Error:          nil,
+		},
+		{
+			Tag:               "key=ok, name=jj",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Error:          nil,
+		},
+		{
+			Tag:               "key=(ok), name=jj",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Error:          nil,
+		},
+		{
+			Tag:               "key=(ok), , ,, name=jj",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Error:          nil,
+		},
+		{
+			Tag:               "key=(ok) name=jj",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Error:          nil,
+		},
+		{
+			Tag:               "key=((ok)) name=jj",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Error:          nil,
+		},
+		{
+			Tag:               "key=((ok, dd), a,b DESC,  c ASC) name=jj",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys: []string{"ok", "dd"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "a",
+						Descending: false,
+					},
+					{
+						Name:       "b",
+						Descending: true,
+					},
+					{
+						Name:       "c",
+						Descending: false,
+					},
+				},
+			},
+			InputIndexName: "SearchByKey",
+			Error:          nil,
+		},
+		{
+			Tag:               "name=jj, key=((ok, dd), a,b DESC,  c ASC) ",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys: []string{"ok", "dd"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "a",
+						Descending: false,
+					},
+					{
+						Name:       "b",
+						Descending: true,
+					},
+					{
+						Name:       "c",
+						Descending: false,
+					},
+				},
+			},
+			InputIndexName: "SearchByKey",
+			Error:          nil,
+		},
+		{
+			Tag:               "key=ok,adsf, name=jj",
+			ExpectedIndexName: "jj",
+			PrimaryKey:        nil,
+			InputIndexName:    "SearchByKey",
+			Error:             errors.New("ok,adsf"),
+		},
+		{
+			Tag:               "primaryK=adsf, name=jj",
+			ExpectedIndexName: "jj",
+			PrimaryKey:        nil,
+			InputIndexName:    "SearchByKey",
+			Error:             errors.New("dosa.Index SearchByKey with an invalid dosa index tag"),
+		},
+		{
+			Tag:               "key=adsf, name=jj**",
+			ExpectedIndexName: "jj",
+			PrimaryKey:        nil,
+			InputIndexName:    "SearchByKey",
+			Error:             errors.New("invalid name tag:  name=jj**"),
+		},
+		{
+			Tag:               "key=(ok) name=jj nxxx",
+			ExpectedIndexName: "jj",
+			PrimaryKey:        nil,
+			InputIndexName:    "SearchByKey",
+			Error:             errors.New("index field SearchByKey with an invalid dosa index tag:   nxxx"),
+		},
+		{
+			Tag:               "key=((ok)) name=jj",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "",
+			Error:          nil,
+		},
+		{
+			Tag:               "key=((ok))",
+			ExpectedIndexName: "",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "",
+			Error:          errors.New("invalid name tag"),
+		},
+	}
+
+	for _, d := range data {
+		name, primaryKey, err := parseIndexTag(d.InputIndexName, d.Tag)
+		if d.Error != nil {
+			assert.Contains(t, err.Error(), d.Error.Error())
+		} else {
+			assert.Nil(t, err)
+			assert.Equal(t, name, d.ExpectedIndexName)
 			assert.Equal(t, primaryKey, d.PrimaryKey)
 		}
 	}
