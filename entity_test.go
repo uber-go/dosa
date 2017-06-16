@@ -182,6 +182,122 @@ func TestEntityDefinitionEnsureValid(t *testing.T) {
 	}
 }
 
+func TestEntityDefinitionEnsureValidForIndex(t *testing.T) {
+	type testData struct {
+		e     *dosa.EntityDefinition
+		valid bool
+		msg   string
+	}
+
+	invalidName := getValidEntityDefinition()
+	invalidName.Indexes[0].Name = "foo=bar"
+
+	nilPK := getValidEntityDefinition()
+	nilPK.Indexes[0].Key = nil
+
+	noPartitionKey := getValidEntityDefinition()
+	noPartitionKey.Indexes[0].Key.PartitionKeys = []string{}
+
+	invalidPartitionKeyName := getValidEntityDefinition()
+	invalidPartitionKeyName.Indexes[0].Key.PartitionKeys[0] = "fox"
+
+	dupParitionKeyNames := getValidEntityDefinition()
+	dupParitionKeyNames.Indexes[0].Key.PartitionKeys = append(dupParitionKeyNames.Key.PartitionKeys, "foo")
+
+	nilClusteringKey := getValidEntityDefinition()
+	nilClusteringKey.Indexes[0].Key.ClusteringKeys = append(nilClusteringKey.Key.ClusteringKeys, nil)
+
+	invalidClusteringKeyName := getValidEntityDefinition()
+	invalidClusteringKeyName.Indexes[0].Key.ClusteringKeys[0].Name = "fox"
+
+	dupClusteringKeyName := getValidEntityDefinition()
+	dupClusteringKeyName.Indexes[0].Key.ClusteringKeys[0].Name = "qux"
+
+	noClusteringKey := getValidEntityDefinition()
+	noClusteringKey.Indexes[0].Key.ClusteringKeys = []*dosa.ClusteringKey{}
+
+	indexSameName := getValidEntityDefinition()
+	indexSameName.Indexes[1].Name = indexSameName.Indexes[0].Name
+
+	data := []testData{
+		{
+			e:     indexSameName,
+			valid: false,
+			msg:   "duplicated",
+		},
+		{
+			e:     invalidName,
+			valid: false,
+			msg:   "name must contain only",
+		},
+		{
+			e:     nilPK,
+			valid: false,
+			msg:   "nil key",
+		},
+		{
+			e:     noPartitionKey,
+			valid: false,
+			msg:   "does not have partition key",
+		},
+		{
+			e:     invalidPartitionKeyName,
+			valid: false,
+			msg:   "partition key does not refer to a column",
+		},
+		{
+			e:     invalidPartitionKeyName,
+			valid: false,
+			msg:   "\"fox\"",
+		},
+		{
+			e:     dupParitionKeyNames,
+			valid: false,
+			msg:   "a column cannot be used twice in index key",
+		},
+		{
+			e:     dupParitionKeyNames,
+			valid: false,
+			msg:   "\"foo\"",
+		},
+		{
+			e:     invalidClusteringKeyName,
+			valid: false,
+			msg:   "\"fox\"",
+		},
+		{
+			e:     invalidClusteringKeyName,
+			valid: false,
+			msg:   "does not refer to",
+		},
+		{
+			e:     dupClusteringKeyName,
+			valid: false,
+			msg:   "a column cannot be used twice in index key",
+		},
+		{
+			e:     noClusteringKey,
+			valid: true,
+			msg:   "no clustering key is ok",
+		},
+		{
+			e:     nilClusteringKey,
+			valid: false,
+			msg:   "nil clustering key",
+		},
+	}
+
+	for _, entry := range data {
+		err := entry.e.EnsureValid()
+		if entry.valid {
+			assert.NoError(t, err, entry.msg)
+		} else {
+			assert.Error(t, err, entry.msg)
+			assert.Contains(t, err.Error(), entry.msg)
+		}
+	}
+}
+
 func TestEntityDefinitionHelpers(t *testing.T) {
 	ed := getValidEntityDefinition()
 
@@ -211,6 +327,26 @@ func getValidEntityDefinition() *dosa.EntityDefinition {
 				{
 					Name:       "bar",
 					Descending: true,
+				},
+			},
+		},
+		Indexes: []*dosa.IndexDefinition{
+			{
+				Name: "index1",
+				Key: &dosa.PrimaryKey{
+					PartitionKeys: []string{"qux"},
+					ClusteringKeys: []*dosa.ClusteringKey{
+						{
+							Name:       "bar",
+							Descending: true,
+						},
+					},
+				},
+			},
+			{
+				Name: "index2",
+				Key: &dosa.PrimaryKey{
+					PartitionKeys: []string{"bar"},
 				},
 			},
 		},

@@ -176,6 +176,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 		EntityDefinition: EntityDefinition{
 			Name:    normalizedName,
 			Columns: []*ColumnDefinition{},
+			Indexes: []*IndexDefinition{},
 		},
 		ColToField: map[string]string{},
 		FieldToCol: map[string]string{},
@@ -209,6 +210,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 		default:
 			return nil, fmt.Errorf("Unexpected field type: %q", typeName)
 		}
+
 		if kind == packagePrefix+"."+entityName || (packagePrefix == "" && kind == entityName) {
 			var err error
 			if t.EntityDefinition.Name, t.Key, err = parseEntityTag(structName, dosaTag); err != nil {
@@ -217,22 +219,33 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 		} else {
 			for _, fieldName := range field.Names {
 				name := fieldName.Name
-				firstRune, _ := utf8.DecodeRuneInString(name)
-				if unicode.IsLower(firstRune) {
-					// skip unexported fields
-					continue
+				if kind == packagePrefix+"."+indexName || (packagePrefix == "" && kind == indexName) {
+					indexName, indexKey, err := parseIndexTag(name, dosaTag)
+					if err != nil {
+						return nil, err
+					}
+					t.Indexes = append(t.Indexes, &IndexDefinition{
+						Name: indexName,
+						Key:  indexKey,
+					})
+				} else {
+					firstRune, _ := utf8.DecodeRuneInString(name)
+					if unicode.IsLower(firstRune) {
+						// skip unexported fields
+						continue
+					}
+					typ := stringToDosaType(kind, packagePrefix)
+					if typ == Invalid {
+						return nil, fmt.Errorf("Column %q has invalid type %q", name, kind)
+					}
+					cd, err := parseField(typ, name, dosaTag)
+					if err != nil {
+						return nil, errors.Wrapf(err, "column %q", name)
+					}
+					t.Columns = append(t.Columns, cd)
+					t.ColToField[cd.Name] = name
+					t.FieldToCol[name] = cd.Name
 				}
-				typ := stringToDosaType(kind, packagePrefix)
-				if typ == Invalid {
-					return nil, fmt.Errorf("Column %q has invalid type %q", name, kind)
-				}
-				cd, err := parseField(typ, name, dosaTag)
-				if err != nil {
-					return nil, errors.Wrapf(err, "column %q", name)
-				}
-				t.Columns = append(t.Columns, cd)
-				t.ColToField[cd.Name] = name
-				t.FieldToCol[name] = cd.Name
 			}
 		}
 	}

@@ -54,7 +54,8 @@ func TestNonExistentDirectory(t *testing.T) {
 
 func TestParser(t *testing.T) {
 	entities, errs, err := FindEntities([]string{"."}, []string{})
-	assert.Equal(t, 15, len(entities), fmt.Sprintf("%s", entities))
+
+	assert.Equal(t, 18, len(entities), fmt.Sprintf("%s", entities))
 	assert.Equal(t, 17, len(errs), fmt.Sprintf("%v", errs))
 	assert.Nil(t, err)
 
@@ -91,6 +92,12 @@ func TestParser(t *testing.T) {
 			continue
 		case "alltypesscantestentity": // skipping test entity defined in scan_test.go
 			continue
+		case "singleindexnoparen":
+			e, _ = TableFromInstance(&SingleIndexNoParen{})
+		case "multipleindexes":
+			e, _ = TableFromInstance(&MultipleIndexes{})
+		case "complexindexes":
+			e, _ = TableFromInstance(&ComplexIndexes{})
 		default:
 			t.Errorf("entity %s not expected", entity.Name)
 			continue
