@@ -26,7 +26,7 @@ imports:
 - name: github.com/uber-go/atomic
   version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
 - name: github.com/uber/dosa-idl
-  version: 74e0688e5ca1e009de399d0f35884ef7163f4b85
+  version: e5e4f97176685e9688ebe6890e856b1cb08312c2 
   subpackages:
   - .gen
   - .gen/dosa

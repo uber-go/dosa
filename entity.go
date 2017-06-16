@@ -101,8 +101,7 @@ type ColumnDefinition struct {
 
 // IndexDefinition stores information about a DOSA entity's index
 type IndexDefinition struct {
-	Name string // normalized index name
-	Key  *PrimaryKey
+	Key *PrimaryKey
 }
 
 // EntityDefinition stores information about a DOSA entity
@@ -110,7 +109,7 @@ type EntityDefinition struct {
 	Name    string // normalized entity name
 	Key     *PrimaryKey
 	Columns []*ColumnDefinition
-	Indexes []*IndexDefinition
+	Indexes map[string]*IndexDefinition
 }
 
 // EnsureValid ensures the entity definition is valid.
@@ -178,21 +177,18 @@ func (e *EntityDefinition) EnsureValid() error {
 	}
 
 	// validate index
-	indexNamesSeen := map[string]struct{}{}
-	for _, index := range e.Indexes {
-		if err := IsValidName(index.Name); err != nil {
+	for indexName, index := range e.Indexes {
+		if err := IsValidName(indexName); err != nil {
 			return errors.Wrap(err, "IndexDefinition has invalid name")
 		}
 
-		if _, ok := indexNamesSeen[index.Name]; ok {
-			return errors.Errorf("index name is duplicated: %s", index.Name)
+		if index == nil {
+			return errors.New("IndexDefinition has nil key")
 		}
 
 		if index.Key == nil {
 			return errors.New("IndexDefinition has nil key")
 		}
-
-		indexNamesSeen[index.Name] = struct{}{}
 
 		if len(index.Key.PartitionKeys) == 0 {
 			return errors.New("index does not have partition key")
