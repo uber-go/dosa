@@ -37,8 +37,11 @@ type SingleIndexNoParen struct {
 func TestSingleIndexNoParen(t *testing.T) {
 	dosaTable, err := TableFromInstance(&SingleIndexNoParen{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"data"}, dosaTable.Indexes[0].Key.PartitionKeys)
-	assert.Equal(t, 1, len(dosaTable.Indexes))
+	assert.Equal(t, map[string]*IndexDefinition{
+		"searchbydata": {
+			Key: &PrimaryKey{PartitionKeys: []string{"data"}},
+		},
+	}, dosaTable.Indexes)
 }
 
 type MultipleIndexes struct {
@@ -53,11 +56,14 @@ type MultipleIndexes struct {
 func TestMultipleIndexes(t *testing.T) {
 	dosaTable, err := TableFromInstance(&MultipleIndexes{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"data"}, dosaTable.Indexes[0].Key.PartitionKeys)
-	assert.Equal(t, []string{"date"}, dosaTable.Indexes[1].Key.PartitionKeys)
-	assert.Equal(t, "searchbydata", dosaTable.Indexes[0].Name)
-	assert.Equal(t, "searchbydate", dosaTable.Indexes[1].Name)
-	assert.Equal(t, 2, len(dosaTable.Indexes))
+	assert.Equal(t, map[string]*IndexDefinition{
+		"searchbydata": {
+			Key: &PrimaryKey{PartitionKeys: []string{"data"}},
+		},
+		"searchbydate": {
+			Key: &PrimaryKey{PartitionKeys: []string{"date"}},
+		},
+	}, dosaTable.Indexes)
 }
 
 type ComplexIndexes struct {
@@ -72,25 +78,32 @@ type ComplexIndexes struct {
 func TestComplexIndexes(t *testing.T) {
 	dosaTable, err := TableFromInstance(&ComplexIndexes{})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"data"}, dosaTable.Indexes[0].Key.PartitionKeys)
-	assert.Equal(t, []*ClusteringKey{
-		{
-			Name:       "date",
-			Descending: false,
+	assert.Equal(t, map[string]*IndexDefinition{
+		"index_data": {
+			Key: &PrimaryKey{
+				PartitionKeys: []string{"data"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "date",
+						Descending: false,
+					},
+					{
+						Name:       "primarykey",
+						Descending: true,
+					},
+				},
+			},
 		},
-		{
-			Name:       "primarykey",
-			Descending: true,
+		"index_date": {
+			Key: &PrimaryKey{
+				PartitionKeys: []string{"date", "primarykey"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "data",
+						Descending: false,
+					},
+				},
+			},
 		},
-	}, dosaTable.Indexes[0].Key.ClusteringKeys)
-	assert.Equal(t, []string{"date", "primarykey"}, dosaTable.Indexes[1].Key.PartitionKeys)
-	assert.Equal(t, []*ClusteringKey{
-		{
-			Name:       "data",
-			Descending: false,
-		},
-	}, dosaTable.Indexes[1].Key.ClusteringKeys)
-	assert.Equal(t, "index_data", dosaTable.Indexes[0].Name)
-	assert.Equal(t, "index_date", dosaTable.Indexes[1].Name)
-	assert.Equal(t, 2, len(dosaTable.Indexes))
+	}, dosaTable.Indexes)
 }

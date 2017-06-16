@@ -177,7 +177,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		FieldToCol: map[string]string{},
 		EntityDefinition: EntityDefinition{
 			Columns: []*ColumnDefinition{},
-			Indexes: []*IndexDefinition{},
+			Indexes: map[string]*IndexDefinition{},
 		},
 	}
 	for i := 0; i < elem.NumField(); i++ {
@@ -202,10 +202,10 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 				if err != nil {
 					return nil, err
 				}
-				t.Indexes = append(t.Indexes, &IndexDefinition{
-					Name: indexName,
-					Key:  indexKey,
-				})
+				if _, exist := t.Indexes[indexName]; exist {
+					return nil, errors.Errorf("index name is duplicated: %s", indexName)
+				}
+				t.Indexes[indexName] = &IndexDefinition{Key: indexKey}
 			} else {
 				cd, err := parseFieldTag(structField, tag)
 				if err != nil {
