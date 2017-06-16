@@ -308,7 +308,7 @@ func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
 		}
 	}
 
-	// TODO Handle tags comparison in the future
+	// TODO Handle tags and index comparison in the future
 
 	return nil
 }
