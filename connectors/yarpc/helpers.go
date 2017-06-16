@@ -170,7 +170,7 @@ func EntityDefinitionToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefiniti
 	}
 }
 
-// FromThriftToPrimaryKey converts thrift primary key type to doas primary key type
+// FromThriftToPrimaryKey converts thrift primary key type to dosa primary key type
 func FromThriftToPrimaryKey(key *dosarpc.PrimaryKey) *dosa.PrimaryKey {
 	pk := key.PartitionKeys
 	ck := make([]*dosa.ClusteringKey, len(key.ClusteringKeys))

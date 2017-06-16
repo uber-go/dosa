@@ -183,7 +183,7 @@ func (e *EntityDefinition) EnsureValid() error {
 		}
 
 		if index == nil {
-			return errors.New("IndexDefinition has nil key")
+			return errors.New("IndexDefinition is nil")
 		}
 
 		if index.Key == nil {

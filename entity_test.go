@@ -195,6 +195,9 @@ func TestEntityDefinitionEnsureValidForIndex(t *testing.T) {
 	nilPK := getValidEntityDefinition()
 	nilPK.Indexes["index1"].Key = nil
 
+	nilIndex := getValidEntityDefinition()
+	nilIndex.Indexes["index1"] = nil
+
 	noPartitionKey := getValidEntityDefinition()
 	noPartitionKey.Indexes["index1"].Key.PartitionKeys = []string{}
 
@@ -226,6 +229,11 @@ func TestEntityDefinitionEnsureValidForIndex(t *testing.T) {
 			e:     nilPK,
 			valid: false,
 			msg:   "nil key",
+		},
+		{
+			e:     nilIndex,
+			valid: false,
+			msg:   "is nil",
 		},
 		{
 			e:     noPartitionKey,
