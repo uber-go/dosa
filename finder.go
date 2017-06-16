@@ -176,7 +176,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 		EntityDefinition: EntityDefinition{
 			Name:    normalizedName,
 			Columns: []*ColumnDefinition{},
-			Indexes: []*IndexDefinition{},
+			Indexes: map[string]*IndexDefinition{},
 		},
 		ColToField: map[string]string{},
 		FieldToCol: map[string]string{},
@@ -224,10 +224,10 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 					if err != nil {
 						return nil, err
 					}
-					t.Indexes = append(t.Indexes, &IndexDefinition{
-						Name: indexName,
-						Key:  indexKey,
-					})
+					if _, exist := t.Indexes[indexName]; exist {
+						return nil, errors.Errorf("index name is duplicated: %s", indexName)
+					}
+					t.Indexes[indexName] = &IndexDefinition{Key: indexKey}
 				} else {
 					firstRune, _ := utf8.DecodeRuneInString(name)
 					if unicode.IsLower(firstRune) {

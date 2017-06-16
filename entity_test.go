@@ -190,41 +190,36 @@ func TestEntityDefinitionEnsureValidForIndex(t *testing.T) {
 	}
 
 	invalidName := getValidEntityDefinition()
-	invalidName.Indexes[0].Name = "foo=bar"
+	invalidName.Indexes["index3=1123"] = invalidName.Indexes["index1"]
 
 	nilPK := getValidEntityDefinition()
-	nilPK.Indexes[0].Key = nil
+	nilPK.Indexes["index1"].Key = nil
+
+	nilIndex := getValidEntityDefinition()
+	nilIndex.Indexes["index1"] = nil
 
 	noPartitionKey := getValidEntityDefinition()
-	noPartitionKey.Indexes[0].Key.PartitionKeys = []string{}
+	noPartitionKey.Indexes["index1"].Key.PartitionKeys = []string{}
 
 	invalidPartitionKeyName := getValidEntityDefinition()
-	invalidPartitionKeyName.Indexes[0].Key.PartitionKeys[0] = "fox"
+	invalidPartitionKeyName.Indexes["index1"].Key.PartitionKeys[0] = "fox"
 
 	dupParitionKeyNames := getValidEntityDefinition()
-	dupParitionKeyNames.Indexes[0].Key.PartitionKeys = append(dupParitionKeyNames.Key.PartitionKeys, "foo")
+	dupParitionKeyNames.Indexes["index1"].Key.PartitionKeys = append(dupParitionKeyNames.Key.PartitionKeys, "foo")
 
 	nilClusteringKey := getValidEntityDefinition()
-	nilClusteringKey.Indexes[0].Key.ClusteringKeys = append(nilClusteringKey.Key.ClusteringKeys, nil)
+	nilClusteringKey.Indexes["index1"].Key.ClusteringKeys = append(nilClusteringKey.Key.ClusteringKeys, nil)
 
 	invalidClusteringKeyName := getValidEntityDefinition()
-	invalidClusteringKeyName.Indexes[0].Key.ClusteringKeys[0].Name = "fox"
+	invalidClusteringKeyName.Indexes["index1"].Key.ClusteringKeys[0].Name = "fox"
 
 	dupClusteringKeyName := getValidEntityDefinition()
-	dupClusteringKeyName.Indexes[0].Key.ClusteringKeys[0].Name = "qux"
+	dupClusteringKeyName.Indexes["index1"].Key.ClusteringKeys[0].Name = "qux"
 
 	noClusteringKey := getValidEntityDefinition()
-	noClusteringKey.Indexes[0].Key.ClusteringKeys = []*dosa.ClusteringKey{}
-
-	indexSameName := getValidEntityDefinition()
-	indexSameName.Indexes[1].Name = indexSameName.Indexes[0].Name
+	noClusteringKey.Indexes["index1"].Key.ClusteringKeys = []*dosa.ClusteringKey{}
 
 	data := []testData{
-		{
-			e:     indexSameName,
-			valid: false,
-			msg:   "duplicated",
-		},
 		{
 			e:     invalidName,
 			valid: false,
@@ -234,6 +229,11 @@ func TestEntityDefinitionEnsureValidForIndex(t *testing.T) {
 			e:     nilPK,
 			valid: false,
 			msg:   "nil key",
+		},
+		{
+			e:     nilIndex,
+			valid: false,
+			msg:   "is nil",
 		},
 		{
 			e:     noPartitionKey,
@@ -330,9 +330,9 @@ func getValidEntityDefinition() *dosa.EntityDefinition {
 				},
 			},
 		},
-		Indexes: []*dosa.IndexDefinition{
-			{
-				Name: "index1",
+		Indexes: map[string]*dosa.IndexDefinition{
+
+			"index1": {
 				Key: &dosa.PrimaryKey{
 					PartitionKeys: []string{"qux"},
 					ClusteringKeys: []*dosa.ClusteringKey{
@@ -343,8 +343,8 @@ func getValidEntityDefinition() *dosa.EntityDefinition {
 					},
 				},
 			},
-			{
-				Name: "index2",
+
+			"index2": {
 				Key: &dosa.PrimaryKey{
 					PartitionKeys: []string{"bar"},
 				},
