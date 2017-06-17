@@ -499,11 +499,6 @@ func (c *Connector) Shutdown() error {
 	return nil
 }
 
-// Name returns the name of the connector
-func Name() string {
-	return name
-}
-
 // NewConnector creates a new in-memory connector
 func NewConnector() *Connector {
 	c := Connector{}
