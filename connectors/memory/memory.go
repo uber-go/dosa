@@ -348,6 +348,8 @@ func (c *Connector) Remove(_ context.Context, ei *dosa.EntityInfo, values map[st
 
 	// no clustering keys? Simple, delete this
 	if len(ei.Def.ClusteringKeySet()) == 0 {
+		// NOT delete(entityRef, encodedPartitionKey)
+		// Unfortunately, Scan relies on the fact that these are not completely deleted
 		entityRef[encodedPartitionKey] = nil
 		return nil
 	}
@@ -521,14 +523,56 @@ func (c *Connector) Scan(_ context.Context, ei *dosa.EntityInfo, minimumFields [
 	}
 	entityRef := c.data[ei.Def.Name]
 	allTheThings := make([]map[string]dosa.FieldValue, 0)
-	// TODO: stop when we reach the limit, and make a token for continuation
-	for _, vals := range entityRef {
-		allTheThings = append(allTheThings, vals...)
+
+	// in order for Scan to be deterministic and continuable, we have
+	// to sort the primary key references
+	keys := make([]string, 0, len(entityRef))
+	for key := range entityRef {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	// if there was a token, decode it so we can determine the starting
+	// partition key
+	var startPartKey string
+	var start map[string]dosa.FieldValue
+	if token != "" {
+		var err error
+		start, err = decodeToken(token)
+		if err != nil {
+			return nil, "", errors.Wrapf(err, "Invalid token %q", token)
+		}
+		startPartKey = partitionKeyBuilder(ei, start)
+	}
+
+	for _, key := range keys {
+		if startPartKey != "" {
+			// had a token, so we need to either partially skip or fully skip
+			// depending on whether we found the token's partition key yet
+			if key == startPartKey {
+				// we reached the starting partition key, so stop skipping
+				// future values, and add a portion of this one to the set
+				startPartKey = ""
+				found, offset := findInsertionPoint(ei, entityRef[key], start)
+				if found {
+					offset++
+				}
+				allTheThings = append(allTheThings, entityRef[key][offset:]...)
+			} // else keep looking for this partition key
+			continue
+		}
+		allTheThings = append(allTheThings, entityRef[key]...)
 	}
 	if len(allTheThings) == 0 {
 		return []map[string]dosa.FieldValue{}, "", nil
 	}
-	return allTheThings, "", nil
+	// see if we need a token to return
+	token = ""
+	if len(allTheThings) > limit {
+		token = makeToken(allTheThings[limit-1])
+		allTheThings = allTheThings[:limit]
+	}
+	return allTheThings, token, nil
 }
 
 // CheckSchema is just a stub; there is no schema management for the in memory connector
