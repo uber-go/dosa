@@ -30,6 +30,9 @@ import (
 
 	"encoding/binary"
 
+	"encoding/base64"
+
+	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
@@ -378,8 +381,51 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 		return []map[string]dosa.FieldValue{}, "", nil
 	}
 
-	// TODO: enforce limits and return a token when there are more rows
-	return partitionRange.values(), "", nil
+	if token != "" {
+		// if we have a token, use it to determine the offset to start from
+		values, err := decodeToken(token)
+		if err != nil {
+			return nil, "", errors.Wrapf(err, "Invalid token %q", token)
+		}
+		found, offset := findInsertionPoint(ei, partitionRange.values(), values)
+		if found {
+			partitionRange.start += offset + 1
+		} else {
+			partitionRange.start += offset
+		}
+	}
+	slice := partitionRange.values()
+	token = ""
+	if len(slice) > limit {
+		token = makeToken(slice[limit-1])
+		slice = slice[:limit]
+	}
+	return slice, token, nil
+}
+
+func makeToken(v map[string]dosa.FieldValue) string {
+	encodedKey := bytes.Buffer{}
+	encoder := gob.NewEncoder(&encodedKey)
+	gob.Register(dosa.UUID(""))
+	err := encoder.Encode(v)
+	if err != nil {
+		// this should really be impossible, unless someone forgot to
+		// register some newly supported type with the encoder
+		panic(err)
+	}
+	return base64.StdEncoding.EncodeToString([]byte(encodedKey.String()))
+}
+
+func decodeToken(token string) (values map[string]dosa.FieldValue, err error) {
+	gobData, err := base64.StdEncoding.DecodeString(token)
+	if err != nil {
+		return nil, err
+	}
+	gobReader := bytes.NewBuffer(gobData)
+	gob.Register(dosa.UUID(""))
+	decoder := gob.NewDecoder(gobReader)
+	err = decoder.Decode(&values)
+	return values, err
 }
 
 // findRange finds the partitionRange specified by the given entity info and column conditions.
