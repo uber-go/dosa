@@ -1,5 +1,5 @@
-hash: da4961ee3d7589c108093b1619064cfd760e48ad248d8c96da03b1dd33e4f09a
-updated: 2017-06-21T11:47:23.052061296-07:00
+hash: 02f3d4673cc82887370acf28f9bfd06665401eb79f43a932ff4f8c3a4d169237
+updated: 2017-07-02T19:47:25.259021278-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -9,18 +9,28 @@ imports:
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
+- name: github.com/gocql/gocql
+  version: 3e8b36f5e9e52cdeb265f385808c504a53db55fc
+  subpackages:
+  - internal/lru
+  - internal/murmur
+  - internal/streams
 - name: github.com/gogo/protobuf
   version: 100ba4e885062801d56799d78530b73b178a78f3
   subpackages:
   - proto
 - name: github.com/golang/mock
-  version: b2105fd81bd2667d699d23c10d5a299bfe859d56
+  version: 9e3cfa9279f269a4c4d703dacd64b05184cec28e
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: 1fb8fd32a09087bcd727225167edd31e1b9ceb24
+  version: 6a1fa9404c0aebf36c879bc50152edcc953910d2
   subpackages:
   - proto
+- name: github.com/golang/snappy
+  version: 553a641470496b2327abcac10b36396bd98e45c9
+- name: github.com/hailocab/go-hostpool
+  version: e80d13ce29ede4452c43dea11e79b9bc8a15b478
 - name: github.com/jessevdk/go-flags
   version: 48cf8722c3375517aba351d1f7577c40663a4407
 - name: github.com/matttproud/golang_protobuf_extensions
@@ -62,9 +72,9 @@ imports:
   subpackages:
   - internal/mapstructure
 - name: github.com/uber-go/tally
-  version: e9b601813b0be4771b1b3995390567b67ab2b3fc
+  version: 88e9c75b0cfc84139ad1bae3b7f123786cfd0770
 - name: github.com/uber/dosa-idl
-  version: 601b423bd673c3c9242ce996cdaa31595fdeeafb
+  version: 741c2b509f47fbd398358eb862a5f2187b1c59f2
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -81,7 +91,7 @@ imports:
 - name: go.uber.org/atomic
   version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
 - name: go.uber.org/multierr
-  version: ef109dc7f883f3a99db2d89edc701c25cac40571
+  version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - name: go.uber.org/thriftrw
   version: dde90c2a40f45fb2b6361d13c1b4bf09465401c0
   subpackages:
@@ -136,7 +146,7 @@ imports:
   - internal/multierror
   - zapcore
 - name: golang.org/x/net
-  version: 057a25b06247e0c51ba15d8ae475feb2fcb72164
+  version: 1f9224279e98554b6a6432d4dd998a739f8b2b7c
   repo: https://github.com/golang/net
   subpackages:
   - bpf
@@ -145,6 +155,8 @@ imports:
   - internal/socket
   - ipv4
   - ipv6
+- name: gopkg.in/inf.v0
+  version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/yaml.v2
   version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
 testImports:
@@ -183,9 +195,9 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/russross/blackfriday
-  version: 70c446a327c4e69c0f661dc092d9729c3af7472c
+  version: 5ebfae50aacdef0dacd1a1acc469c2c1c7a7d4d8
 - name: github.com/sectioneight/md-to-godoc
-  version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
+  version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 541ff5ee47f1dddf6a5281af78307d921524bcb5
 - name: github.com/stretchr/testify
@@ -195,6 +207,6 @@ testImports:
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: golang.org/x/tools
-  version: cd6e398dae38fb8b0b57f221b13c4b75c0a53fb9
+  version: f2cd9d3b518cfa0e287637dd02a895ce2b587f14
   subpackages:
   - cover

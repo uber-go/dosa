@@ -1,18 +1,33 @@
+// Copyright (c) 2017 Uber Technologies, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 package cassandra_test
 
 import (
 	"context"
-	"log"
-	"os"
+
 	"testing"
 
-	"code.uber.internal/infra/dosa-gateway/datastore/common"
-	"code.uber.internal/infra/dosa-gateway/datastore/engine"
-	"code.uber.internal/infra/dosa-gateway/datastore/engine/cassandra"
-	"code.uber.internal/infra/dosa-gateway/datastore/mgmt"
-	"code.uber.internal/infra/dosa-gateway/datastore/testutil"
-	"code.uber.internal/infra/dosa-gateway/schema"
+	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
+	. "github.com/uber-go/dosa/connectors/cassandra"
 )
 
 const (
@@ -31,35 +46,18 @@ const (
 	boolField      = "boolfield"
 )
 
-var (
-	testStore *cassandra.Connector
-)
+var testStore *Connector
 
-func initTestStore() error {
-	management := mgmt.OpenManagement("127.0.0.1", cassandra.StapiPort, cassandra.EmbeddedAppID)
-	testConfig := testutil.GetTestConfiguration()
-	r := common.NewSimpleResolver()
-	p := engine.NewSimpleProvider(testConfig.Engines)
-	sh := schema.NewConnector(management, p, schema.NewMemoryStore(), nil, nil)
-	var err error
-	testStore, err = cassandra.NewConnector(
-		map[string]cassandra.Config{
-			testConfig.Engines[0].Name: testConfig.Engines[0].Cassandra,
-		},
-		r,
-		sh,
-	)
-	if err != nil {
-		panic(err)
-	}
-	return nil
+func initTestStore(t *testing.T) {
+	ts := GetTestConnector(t)
+	testStore = ts.(*Connector)
 }
 
 func initTestSchema(ks string, entityInfo *dosa.EntityInfo) error {
 	ctx := context.Background()
 	err := testStore.CreateScope(ctx, ks)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Could not create keyspace %q", ks)
 	}
 	_, err = testStore.UpsertSchema(
 		ctx, entityInfo.Ref.Scope, entityInfo.Ref.NamePrefix, []*dosa.EntityDefinition{entityInfo.Def},
@@ -144,26 +142,4 @@ func newTestEntityInfo(sp string) *dosa.EntityInfo {
 			},
 		},
 	}
-}
-
-func TestMain(m *testing.M) {
-
-	if err := cassandra.EnsureServerUp("../../../embedded"); err != nil {
-		log.Fatalf("Failed to started embedded STAPI server: %s", err.Error())
-	}
-
-	err := initTestStore()
-	if err != nil {
-		log.Fatal("failed to create test datastore: ", err)
-	}
-
-	err = initTestSchema(keyspace, testEntityInfo)
-	if err != nil {
-		log.Fatal("failed to upsert test schema: ", err)
-	}
-
-	// run the tests
-	os.Exit(m.Run())
-
-	removeTestSchema(keyspace)
 }

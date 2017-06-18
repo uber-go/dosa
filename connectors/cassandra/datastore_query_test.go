@@ -1,10 +1,29 @@
+// Copyright (c) 2017 Uber Technologies, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 package cassandra_test
 
 import (
 	"context"
 	"testing"
 
-	"code.uber.internal/infra/dosa-gateway/datastore/common"
 	gouuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
@@ -17,6 +36,7 @@ var (
 )
 
 func TestRangeQuery(t *testing.T) {
+	sut := GetTestConnector(t)
 	partitionKey := dosa.UUID(gouuid.NewV4().String())
 	populateEntityRange(t, partitionKey)
 
@@ -27,7 +47,7 @@ func TestRangeQuery(t *testing.T) {
 	)
 	// range query with paging for entire partition
 	for i := range strKeys {
-		res, token, err = testStore.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
+		res, token, err = sut.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
 			uuidKeyField: {{Op: dosa.Eq, Value: partitionKey}},
 		}, []string{uuidKeyField, stringKeyField, int64KeyField, int32Field}, token, pageSize)
 		assert.NoError(t, err)
@@ -44,7 +64,7 @@ func TestRangeQuery(t *testing.T) {
 	}
 
 	// range query with constraints on first clustering key
-	res, token, err = testStore.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
+	res, token, err = sut.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
 		uuidKeyField:   {{Op: dosa.Eq, Value: partitionKey}},
 		stringKeyField: {{Op: dosa.Gt, Value: strKeys[0]}, {Op: dosa.Lt, Value: strKeys[2]}}, // "aa" < strKey < "cc"
 	}, []string{uuidKeyField, stringKeyField, int64KeyField, int32Field}, "", pageSize*2)
@@ -61,7 +81,7 @@ func TestRangeQuery(t *testing.T) {
 	}
 
 	// range query with constraints for all clustering keys
-	res, token, err = testStore.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
+	res, token, err = sut.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
 		uuidKeyField:   {{Op: dosa.Eq, Value: partitionKey}},
 		stringKeyField: {{Op: dosa.Eq, Value: strKeys[0]}},
 		int64KeyField:  {{Op: dosa.GtOrEq, Value: int64(1)}, {Op: dosa.LtOrEq, Value: int64(3)}},
@@ -80,19 +100,20 @@ func TestRangeQuery(t *testing.T) {
 }
 
 func TestRangeQueryInvalidToken(t *testing.T) {
-	_, _, err := testStore.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
+	sut := GetTestConnector(t)
+	_, _, err := sut.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
 		uuidKeyField: {{Op: dosa.Eq, Value: dosa.UUID(gouuid.NewV4().String())}},
 	}, []string{int32Field}, "西瓜", pageSize)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "bad token")
-	assert.True(t, common.IsBadTokenErr(err))
 }
 
 func TestRangeQueryFieldsToRead(t *testing.T) {
+	sut := GetTestConnector(t)
 	partitionKey := dosa.UUID(gouuid.NewV4().String())
 	populateEntityRange(t, partitionKey)
 
-	res, token, err := testStore.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
+	res, token, err := sut.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
 		uuidKeyField:   {{Op: dosa.Eq, Value: partitionKey}},
 		stringKeyField: {{Op: dosa.Eq, Value: strKeys[0]}},
 		int64KeyField:  {{Op: dosa.GtOrEq, Value: int64(1)}, {Op: dosa.LtOrEq, Value: int64(3)}},
@@ -110,24 +131,29 @@ func TestRangeQueryFieldsToRead(t *testing.T) {
 
 // as Scan shares doCommonQuery code path with Range, we'll skip invalid token test and fieldsToRead test
 func TestScan(t *testing.T) {
+	sut := GetTestConnector(t)
 	sp := "datastore_scan_test"
 	entityInfo := newTestEntityInfo(sp)
-	// has to be done in separate keyspace in order to avoid interference from other tests
-	err := initTestSchema(sp, entityInfo)
-	if !assert.NoError(t, err) {
-		assert.FailNow(t, "failed to create scope for scan test", err.Error())
-	}
-
-	defer removeTestSchema(sp)
 
 	expectedUUIDSet := make(map[dosa.UUID]struct{})
 	expectedIntValueSet := make(map[int]struct{})
+
+	// remove any entities from any previous test
+	for {
+		res, _, err := sut.Scan(context.TODO(), entityInfo, []string{uuidKeyField, stringKeyField, int64KeyField}, "", 200)
+		if err != nil || len(res) == 0 {
+			break
+		}
+		for _, e := range res {
+			_ = sut.Remove(context.TODO(), entityInfo, e)
+		}
+	}
 
 	for i := 0; i < 100; i++ {
 		id := dosa.UUID(gouuid.NewV4().String())
 		expectedUUIDSet[id] = struct{}{}
 		expectedIntValueSet[i] = struct{}{}
-		err := testStore.Upsert(context.TODO(), entityInfo, map[string]dosa.FieldValue{
+		err := sut.Upsert(context.TODO(), entityInfo, map[string]dosa.FieldValue{
 			uuidKeyField:   id,
 			stringKeyField: "apple",
 			int64KeyField:  int64(i),
@@ -145,13 +171,13 @@ func TestScan(t *testing.T) {
 		token string
 	)
 	for {
-		res, token, err = testStore.Scan(context.TODO(), entityInfo, []string{uuidKeyField, int32Field}, token, 39)
+		var err error
+		res, token, err = sut.Scan(context.TODO(), entityInfo, []string{uuidKeyField, int32Field}, token, 39)
 		assert.NoError(t, err)
 		for _, row := range res {
 			actualUUIDSet[row[uuidKeyField].(dosa.UUID)] = struct{}{}
 			actualIntValueSet[int(row[int32Field].(int32))] = struct{}{}
 		}
-		t.Log("token: ", token)
 		if len(token) == 0 {
 			break
 		}
@@ -162,9 +188,10 @@ func TestScan(t *testing.T) {
 }
 
 func populateEntityRange(t *testing.T, uuid dosa.UUID) {
+	sut := GetTestConnector(t)
 	for _, strKey := range strKeys {
 		for i := 0; i < pageSize; i++ {
-			err := testStore.Upsert(context.TODO(), testEntityInfo, map[string]dosa.FieldValue{
+			err := sut.Upsert(context.TODO(), testEntityInfo, map[string]dosa.FieldValue{
 				uuidKeyField:   uuid,
 				stringKeyField: strKey,
 				int64KeyField:  int64(i),

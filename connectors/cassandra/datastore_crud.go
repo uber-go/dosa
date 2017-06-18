@@ -1,10 +1,29 @@
+// Copyright (c) 2017 Uber Technologies, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 package cassandra
 
 import (
 	"context"
 	"sort"
 
-	"code.uber.internal/infra/dosa-gateway/datastore/common"
 	"github.com/gocql/gocql"
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
@@ -19,7 +38,7 @@ func sortFieldValue(obj map[string]dosa.FieldValue) ([]string, []interface{}, er
 		pos++
 	}
 
-	sort.Sort(sortedFields(columns))
+	sort.Strings(columns)
 
 	values := make([]interface{}, len(obj))
 	for pos, c := range columns {
@@ -39,10 +58,8 @@ func sortFieldValue(obj map[string]dosa.FieldValue) ([]string, []interface{}, er
 
 // CreateIfNotExists creates an object if not exists
 func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	cluster, keyspace, table, err := c.resolve(ei)
-	if err != nil {
-		return err
-	}
+	keyspace := c.KsMapper.Keyspace(ei.Ref.Scope, ei.Ref.NamePrefix)
+	table := ei.Def.Name
 
 	sortedColumns, sortedValues, err := sortFieldValue(values)
 	if err != nil {
@@ -60,13 +77,13 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 		return errors.Wrap(err, "failed to create cql statement")
 	}
 
-	applied, err := cluster.session.Query(stmt, sortedValues...).MapScanCAS(map[string]interface{}{})
+	applied, err := c.Session.Query(stmt, sortedValues...).MapScanCAS(map[string]interface{}{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute CreateIfNotExists query in cassandra: %s", stmt)
 	}
 
 	if !applied {
-		return common.NewErrAlreadyExists("entity already exists")
+		return &dosa.ErrAlreadyExists{}
 	}
 
 	return nil
@@ -74,17 +91,15 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 
 // Read reads an object based on primary key
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, fieldsToRead []string) (map[string]dosa.FieldValue, error) {
-	cluster, keyspace, table, err := c.resolve(ei)
-	if err != nil {
-		return nil, err
-	}
+	keyspace := c.KsMapper.Keyspace(ei.Ref.Scope, ei.Ref.NamePrefix)
+	table := ei.Def.Name
 
 	fields := fieldsToRead
 	if len(fields) == 0 {
 		fields = extractNonKeyColumns(ei.Def)
 	}
 
-	sort.Sort(sortedFields(fields))
+	sort.Strings(fields)
 
 	conds := make([]*ColumnCondition, len(keys))
 	pos := 0
@@ -118,9 +133,9 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 
 	result := make(map[string]interface{})
 	// TODO workon timeout trace features
-	if err := cluster.session.Query(stmt, sortedValues...).MapScan(result); err != nil {
+	if err := c.Session.Query(stmt, sortedValues...).MapScan(result); err != nil {
 		if err == gocql.ErrNotFound {
-			return nil, common.NewErrNotFound("entity not found")
+			return nil, &dosa.ErrNotFound{}
 		}
 		return nil, errors.Wrapf(err, "failed to execute read query in Cassandra: %s", stmt)
 	}
@@ -130,10 +145,8 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 
 // Upsert means update an existing object or create a new object
 func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	cluster, keyspace, table, err := c.resolve(ei)
-	if err != nil {
-		return err
-	}
+	keyspace := c.KsMapper.Keyspace(ei.Ref.Scope, ei.Ref.NamePrefix)
+	table := ei.Def.Name
 
 	sortedColumns, sortedValues, err := sortFieldValue(values)
 	if err != nil {
@@ -151,7 +164,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		return errors.Wrap(err, "failed to create cql statement")
 	}
 
-	if err := cluster.session.Query(stmt, sortedValues...).Exec(); err != nil {
+	if err := c.Session.Query(stmt, sortedValues...).Exec(); err != nil {
 		return errors.Wrapf(err, "failed to execute upsert query in cassandra: %s", stmt)
 	}
 
@@ -192,10 +205,8 @@ func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, column
 }
 
 func (c *Connector) remove(ctx context.Context, ei *dosa.EntityInfo, conds []*ColumnCondition, values []interface{}) error {
-	cluster, keyspace, table, err := c.resolve(ei)
-	if err != nil {
-		return err
-	}
+	keyspace := c.KsMapper.Keyspace(ei.Ref.Scope, ei.Ref.NamePrefix)
+	table := ei.Def.Name
 
 	stmt, err := DeleteStmt(
 		Keyspace(keyspace),
@@ -207,7 +218,7 @@ func (c *Connector) remove(ctx context.Context, ei *dosa.EntityInfo, conds []*Co
 		return errors.Wrap(err, "failed to create cql statement")
 	}
 
-	if err := cluster.session.Query(stmt, values...).Exec(); err != nil {
+	if err := c.Session.Query(stmt, values...).Exec(); err != nil {
 		return errors.Wrapf(err, "failed to execute remove query in Cassandra: %s", stmt)
 	}
 

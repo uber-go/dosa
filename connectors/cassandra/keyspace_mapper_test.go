@@ -18,33 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package cassandra
+package cassandra_test
 
 import (
-	"github.com/gocql/gocql"
-	"github.com/pkg/errors"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/dosa/connectors/cassandra"
 )
 
-// Cluster contains the cluster configuration and session info
-type Cluster struct {
-	config  gocql.ClusterConfig
-	session *gocql.Session
-}
+func TestUseNamePrefix_Keyspace(t *testing.T) {
+	sut := cassandra.KeyspaceMapper(&cassandra.UseNamePrefix{})
 
-// NewCluster creates a Cluster instance based on config
-func NewCluster(config gocql.ClusterConfig) (*Cluster, error) {
-	session, err := config.CreateSession()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create session to Cassandra")
-	}
-
-	return &Cluster{
-		config:  config,
-		session: session,
-	}, nil
-}
-
-// Close closes the session to cassandra
-func (c *Cluster) Close() {
-	c.session.Close()
+	assert.Equal(t, "nameprefix_test", sut.Keyspace("unused", "nameprefix.test"))
 }

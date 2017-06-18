@@ -21,30 +21,41 @@
 package cassandra
 
 import (
-	"github.com/gocql/gocql"
-	"github.com/pkg/errors"
+	"context"
+	"github.com/uber-go/dosa"
 )
 
-// Cluster contains the cluster configuration and session info
-type Cluster struct {
-	config  gocql.ClusterConfig
-	session *gocql.Session
+// CreateScope is not implemented
+func (c *Connector) CreateScope(ctx context.Context, scope string) error {
+	panic("next diff")
 }
 
-// NewCluster creates a Cluster instance based on config
-func NewCluster(config gocql.ClusterConfig) (*Cluster, error) {
-	session, err := config.CreateSession()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create session to Cassandra")
-	}
-
-	return &Cluster{
-		config:  config,
-		session: session,
-	}, nil
+// TruncateScope is not implemented
+func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
+	panic("not implemented")
 }
 
-// Close closes the session to cassandra
-func (c *Cluster) Close() {
-	c.session.Close()
+// DropScope is not implemented
+func (c *Connector) DropScope(ctx context.Context, scope string) error {
+	panic("next diff")
+}
+
+// CheckSchema is not implemented
+func (c *Connector) CheckSchema(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
+	return 0, nil
+}
+
+// UpsertSchema is not implemented
+func (c *Connector) UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
+	panic("next diff")
+}
+
+// ScopeExists is not implemented
+func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error) {
+	panic("not implemented")
+}
+
+// CheckSchemaStatus is not implemented
+func (c *Connector) CheckSchemaStatus(context.Context, string, string, int32) (*dosa.SchemaStatus, error) {
+	panic("not implemented")
 }

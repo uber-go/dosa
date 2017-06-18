@@ -1,3 +1,23 @@
+// Copyright (c) 2017 Uber Technologies, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 package cassandra_test
 
 import (
@@ -5,7 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"code.uber.internal/infra/dosa-gateway/datastore/common"
 	"github.com/pkg/errors"
 	gouuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -18,21 +37,23 @@ var (
 )
 
 func TestReadNotFound(t *testing.T) {
+	sut := GetTestConnector(t)
 	id := constructKeys(dosa.UUID(gouuid.NewV4().String()))
-	_, err := testStore.Read(context.TODO(), testEntityInfo, id, []string{int32Field})
+	_, err := sut.Read(context.TODO(), testEntityInfo, id, []string{int32Field})
 	assert.Error(t, err)
-	assert.IsType(t, common.ErrNotFound{}, errors.Cause(err))
+	assert.IsType(t, &dosa.ErrNotFound{}, errors.Cause(err), err.Error())
 }
 
 func TestUpsertAndRead(t *testing.T) {
+	sut := GetTestConnector(t)
 	uuid := dosa.UUID(gouuid.NewV4().String())
 	values := constructFullValues(uuid)
-	err := testStore.Upsert(context.TODO(), testEntityInfo, values)
+	err := sut.Upsert(context.TODO(), testEntityInfo, values)
 	assert.NoError(t, err)
 
 	id := constructKeys(uuid)
 	allValueFields := []string{int32Field, doubleField, blobField, boolField, timestampField, int64Field, stringField, uuidField}
-	readRes, err := testStore.Read(context.TODO(), testEntityInfo, id, allValueFields)
+	readRes, err := sut.Read(context.TODO(), testEntityInfo, id, allValueFields)
 	assert.NoError(t, err)
 	assert.Equal(t, len(allValueFields), len(readRes))
 	for _, field := range allValueFields {
@@ -56,21 +77,20 @@ func TestUpsertAndRead(t *testing.T) {
 		int32Field:     int32(-100),
 	}
 
-	err = testStore.Upsert(context.TODO(), testEntityInfo, pu)
+	err = sut.Upsert(context.TODO(), testEntityInfo, pu)
 	assert.NoError(t, err)
-	err = testStore.Upsert(context.TODO(), testEntityInfo, pc2)
+	err = sut.Upsert(context.TODO(), testEntityInfo, pc2)
 	assert.NoError(t, err)
 
 	// check updated int32 field
-	updated, err := testStore.Read(context.TODO(), testEntityInfo, id, []string{int32Field})
+	updated, err := sut.Read(context.TODO(), testEntityInfo, id, []string{int32Field})
 	assert.NoError(t, err)
 	assert.Len(t, updated, 1)
-	t.Log(updated)
 	assert.Equal(t, updated[int32Field], int32(-100))
 
 	// read second object with nil `fieldsToRead`
 	id2 := constructKeys(uuid2)
-	res, err := testStore.Read(context.TODO(), testEntityInfo, id2, nil)
+	res, err := sut.Read(context.TODO(), testEntityInfo, id2, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, len(allValueFields), len(res)) // should read all non-key fields
 	expectedPartialValues := map[string]dosa.FieldValue{
@@ -88,14 +108,15 @@ func TestUpsertAndRead(t *testing.T) {
 }
 
 func TestCreateIfNotExists(t *testing.T) {
+	sut := GetTestConnector(t)
 	uuid := dosa.UUID(gouuid.NewV4().String())
 	values := constructFullValues(uuid)
-	err := testStore.CreateIfNotExists(context.TODO(), testEntityInfo, values)
+	err := sut.CreateIfNotExists(context.TODO(), testEntityInfo, values)
 	assert.NoError(t, err)
 
 	id := constructKeys(uuid)
 	allValueFields := []string{int32Field, doubleField, blobField, boolField, timestampField, int64Field, stringField, uuidField}
-	readRes, err := testStore.Read(context.TODO(), testEntityInfo, id, allValueFields)
+	readRes, err := sut.Read(context.TODO(), testEntityInfo, id, allValueFields)
 	assert.NoError(t, err)
 	assert.Equal(t, len(allValueFields), len(readRes))
 	for _, field := range allValueFields {
@@ -103,35 +124,37 @@ func TestCreateIfNotExists(t *testing.T) {
 	}
 
 	// should fail if already exists
-	err = testStore.CreateIfNotExists(context.TODO(), testEntityInfo, values)
+	err = sut.CreateIfNotExists(context.TODO(), testEntityInfo, values)
 	assert.Error(t, err)
-	assert.IsType(t, common.ErrAlreadyExists{}, err)
+	assert.IsType(t, &dosa.ErrAlreadyExists{}, err)
 }
 
 func TestDelete(t *testing.T) {
+	sut := GetTestConnector(t)
 	uuid1 := dosa.UUID(gouuid.NewV4().String())
 	id1 := constructKeys(uuid1)
 	v1 := constructFullValues(uuid1)
 
-	err := testStore.Upsert(context.TODO(), testEntityInfo, v1)
+	err := sut.Upsert(context.TODO(), testEntityInfo, v1)
 	assert.NoError(t, err)
 
-	_, err = testStore.Read(context.TODO(), testEntityInfo, id1, []string{int32Field})
+	_, err = sut.Read(context.TODO(), testEntityInfo, id1, []string{int32Field})
 	assert.NoError(t, err)
 
-	err = testStore.Remove(context.TODO(), testEntityInfo, id1)
+	err = sut.Remove(context.TODO(), testEntityInfo, id1)
 	assert.NoError(t, err)
 
-	_, err = testStore.Read(context.TODO(), testEntityInfo, id1, []string{int32Field})
+	_, err = sut.Read(context.TODO(), testEntityInfo, id1, []string{int32Field})
 	assert.Error(t, err)
-	assert.IsType(t, common.ErrNotFound{}, err)
+	assert.IsType(t, &dosa.ErrNotFound{}, err)
 
 	// no-op
-	err = testStore.Remove(context.TODO(), testEntityInfo, id1)
+	err = sut.Remove(context.TODO(), testEntityInfo, id1)
 	assert.NoError(t, err)
 }
 
 func TestRemoveRange(t *testing.T) {
+	sut := GetTestConnector(t)
 	uuid1 := dosa.UUID(gouuid.NewV4().String())
 	v1 := constructFullValues(uuid1)
 	v1[int64KeyField] = 1
@@ -145,16 +168,16 @@ func TestRemoveRange(t *testing.T) {
 		uuidKeyField:   {&dosa.Condition{Op: dosa.Eq, Value: uuid1}},
 		stringKeyField: {&dosa.Condition{Op: dosa.Eq, Value: defaultStringKeyValue}},
 	}
-	err := testStore.RemoveRange(context.TODO(), testEntityInfo, conds1)
+	err := sut.RemoveRange(context.TODO(), testEntityInfo, conds1)
 
 	// Upsert all values
-	err = testStore.Upsert(context.TODO(), testEntityInfo, v1)
+	err = sut.Upsert(context.TODO(), testEntityInfo, v1)
 	assert.NoError(t, err)
 
-	err = testStore.Upsert(context.TODO(), testEntityInfo, v2)
+	err = sut.Upsert(context.TODO(), testEntityInfo, v2)
 	assert.NoError(t, err)
 
-	err = testStore.Upsert(context.TODO(), testEntityInfo, v3)
+	err = sut.Upsert(context.TODO(), testEntityInfo, v3)
 	assert.NoError(t, err)
 
 	// Remove Values larger than 200
@@ -163,7 +186,7 @@ func TestRemoveRange(t *testing.T) {
 		stringKeyField: {&dosa.Condition{Op: dosa.Eq, Value: defaultStringKeyValue}},
 		int64KeyField:  {&dosa.Condition{Op: dosa.Gt, Value: 2}},
 	}
-	err = testStore.RemoveRange(context.TODO(), testEntityInfo, conds2)
+	err = sut.RemoveRange(context.TODO(), testEntityInfo, conds2)
 	assert.NoError(t, err)
 
 	// Ensure 100 and 200 are still in the range
@@ -184,7 +207,7 @@ func TestRemoveRange(t *testing.T) {
 		stringKeyField: {&dosa.Condition{Op: dosa.Eq, Value: defaultStringKeyValue}},
 		int64KeyField:  {&dosa.Condition{Op: dosa.Lt, Value: 2}},
 	}
-	err = testStore.RemoveRange(context.TODO(), testEntityInfo, conds4)
+	err = sut.RemoveRange(context.TODO(), testEntityInfo, conds4)
 	assert.NoError(t, err)
 
 	// Ensure the 200 value is still in the range. It's the only value that should be left.
@@ -193,7 +216,7 @@ func TestRemoveRange(t *testing.T) {
 		stringKeyField: {&dosa.Condition{Op: dosa.Eq, Value: defaultStringKeyValue}},
 	}
 
-	res, _, err = testStore.Range(context.TODO(), testEntityInfo, conds5, dosa.All(), "", 5)
+	res, _, err = sut.Range(context.TODO(), testEntityInfo, conds5, dosa.All(), "", 5)
 	assert.NoError(t, err)
 	assert.Len(t, res, 1)
 	assert.Equal(t, int64(2), res[0][int64KeyField])

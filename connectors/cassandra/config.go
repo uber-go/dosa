@@ -1,17 +1,36 @@
+// Copyright (c) 2017 Uber Technologies, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 package cassandra
 
 import (
+	"fmt"
 	"time"
 
-	"code.uber.internal/infra/dosa-gateway/datastore/unsutils"
-	"fmt"
 	"github.com/gocql/gocql"
 )
 
-// Config contains the setting information for cassandra cluster and uns
+// Config is a wrapper for the gocql.ClusterConfig, adding
+// support for yaml
 type Config struct {
 	gocql.ClusterConfig `yaml:",inline"`
-	UNS                 unsutils.Config `yaml:"uns"`
 }
 
 // UnmarshalYAML unmarshals the config into gocql cluster config
@@ -23,35 +42,35 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	c.ClusterConfig = *gocql.NewCluster(internal.Hosts...)
 	if internal.CQLVersion != nil {
-		c.ClusterConfig.CQLVersion = *internal.CQLVersion
+		c.CQLVersion = *internal.CQLVersion
 	}
 
 	if internal.ProtoVersion != nil {
-		c.ClusterConfig.ProtoVersion = *internal.ProtoVersion
+		c.ProtoVersion = *internal.ProtoVersion
 	}
 
 	if internal.Timeout != nil {
-		c.ClusterConfig.Timeout = *internal.Timeout
+		c.Timeout = *internal.Timeout
 	}
 
 	if internal.ConnectTimeout != nil {
-		c.ClusterConfig.ConnectTimeout = *internal.ConnectTimeout
+		c.ConnectTimeout = *internal.ConnectTimeout
 	}
 
 	if internal.Port != nil {
-		c.ClusterConfig.Port = *internal.Port
+		c.Port = *internal.Port
 	}
 
 	if internal.NumConns != nil {
-		c.ClusterConfig.NumConns = *internal.NumConns
+		c.NumConns = *internal.NumConns
 	}
 
 	if internal.Consistency != nil {
-		c.ClusterConfig.Consistency = gocql.ParseConsistency(*internal.Consistency)
+		c.Consistency = gocql.ParseConsistency(*internal.Consistency)
 	}
 
 	if internal.RetryPolicy != nil {
-		c.ClusterConfig.RetryPolicy = &gocql.SimpleRetryPolicy{NumRetries: *internal.RetryPolicy}
+		c.RetryPolicy = &gocql.SimpleRetryPolicy{NumRetries: *internal.RetryPolicy}
 	}
 
 	if internal.SocketKeepalive != nil {
@@ -76,6 +95,8 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			c.ClusterConfig.SerialConsistency = gocql.Serial
 		case gocql.LocalSerial.String():
 			c.ClusterConfig.SerialConsistency = gocql.LocalSerial
+		default:
+			return fmt.Errorf("invalid serial consistency %q", *internal.SerialConsistency)
 		}
 	}
 
