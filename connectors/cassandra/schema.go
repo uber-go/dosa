@@ -22,12 +22,30 @@ package cassandra
 
 import (
 	"context"
+	"fmt"
+
+	"bytes"
+
+	"github.com/gocql/gocql"
+	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 )
 
-// CreateScope is not implemented
+// CreateScope creates a keyspace
 func (c *Connector) CreateScope(ctx context.Context, scope string) error {
-	panic("next diff")
+	// drop the old scope, ignoring errors
+	_ = c.DropScope(ctx, scope)
+
+	ksn := CleanupKeyspaceName(scope)
+	// TODO: improve the replication factor, should have 3 replicas in each datacenter
+	err := c.Session.Query(
+		fmt.Sprintf(`CREATE KEYSPACE "%s" WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': 1}`,
+			ksn)).
+		Exec()
+	if err != nil {
+		return errors.Wrapf(err, "Unable to create keyspace %q", ksn)
+	}
+	return nil
 }
 
 // TruncateScope is not implemented
@@ -37,17 +55,197 @@ func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
 
 // DropScope is not implemented
 func (c *Connector) DropScope(ctx context.Context, scope string) error {
-	panic("next diff")
+	ksn := CleanupKeyspaceName(scope)
+	err := c.Session.Query(fmt.Sprintf(`DROP KEYSPACE IF EXISTS "%s"`, ksn)).Exec()
+	if err != nil {
+		return errors.Wrapf(err, "Unable to drop keyspace %q", ksn)
+	}
+	return nil
 }
 
-// CheckSchema is not implemented
+// RepairableSchemaMismatchError is an error describing what can be added to make
+// this schema current. It might include a lot of tables or columns
+type RepairableSchemaMismatchError struct {
+	MissingColumns []MissingColumn
+	MissingTables  []string
+}
+
+// MissingColumn describes a column that is missing
+type MissingColumn struct {
+	Column    dosa.ColumnDefinition
+	Tablename string
+}
+
+// HasMissing returns true if there are missing columns
+func (m *RepairableSchemaMismatchError) HasMissing() bool {
+	return m.MissingColumns != nil || m.MissingTables != nil
+}
+
+// Error prints a human-readable error message describing the first missing table or column
+func (m *RepairableSchemaMismatchError) Error() string {
+	if m.MissingTables != nil {
+		return fmt.Sprintf("Missing %d tables (first is %q)", len(m.MissingTables), m.MissingTables[0])
+	}
+	return fmt.Sprintf("Missing %d columns (first is %q in table %q)", len(m.MissingColumns), m.MissingColumns[0].Column.Name, m.MissingColumns[0].Tablename)
+}
+
+// compareStructToSchema compares a dosa EntityDefinition to the gocql TableMetadata
+// There are two main cases, one that we can fix by adding some columns and all the other mismatches that we can't fix
+func compareStructToSchema(ed *dosa.EntityDefinition, md *gocql.TableMetadata, schemaErrors *RepairableSchemaMismatchError) error {
+	// Check partition keys
+	if len(ed.Key.PartitionKeys) != len(md.PartitionKey) {
+		return fmt.Errorf("Table %q primary key length mismatch (was %d should be %d)", ed.Name, len(md.PartitionKey), len(ed.Key.PartitionKeys))
+	}
+	for i, pk := range ed.Key.PartitionKeys {
+		if md.PartitionKey[i].Name != pk {
+			return fmt.Errorf("Table %q primary key mismatch (should be %q)", ed.Name, ed.Key.PartitionKeys)
+		}
+	}
+
+	// Check clustering keys
+	if len(ed.Key.ClusteringKeys) != len(md.ClusteringColumns) {
+		return fmt.Errorf("Table %q clustering key length mismatch (should be %q)", ed.Name, ed.Key.ClusteringKeys)
+	}
+	for i, ck := range ed.Key.ClusteringKeys {
+		if md.ClusteringColumns[i].Name != ck.Name {
+			return fmt.Errorf("Table %q clustering key mismatch (column %d should be %q)", ed.Name, i+1, ck.Name)
+		}
+	}
+
+	// Check each column
+	for _, col := range ed.Columns {
+		_, ok := md.Columns[col.Name]
+		if !ok {
+			schemaErrors.MissingColumns = append(schemaErrors.MissingColumns, MissingColumn{Column: *col, Tablename: ed.Name})
+		}
+		// TODO: check column type
+	}
+
+	return nil
+
+}
+
+// CheckSchema verifies that the schema passed in the registered entities matches the database
 func (c *Connector) CheckSchema(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
-	return 0, nil
+	schemaErrors := new(RepairableSchemaMismatchError)
+
+	// TODO: unfortunately, gocql doesn't have a way to pass the context to this operation :(
+	km, err := c.Session.KeyspaceMetadata(c.KsMapper.Keyspace(scope, namePrefix))
+	if err != nil {
+		return 0, err
+	}
+	for _, ed := range ed {
+		tableMetadata, ok := km.Tables[ed.Name]
+		if !ok {
+			schemaErrors.MissingTables = append(schemaErrors.MissingTables, ed.Name)
+			continue
+		}
+		if err := compareStructToSchema(ed, tableMetadata, schemaErrors); err != nil {
+			return 0, err
+		}
+
+	}
+	if schemaErrors.HasMissing() {
+		return 0, schemaErrors
+	}
+	return int32(1), nil
 }
 
-// UpsertSchema is not implemented
+// UpsertSchema checks the schema and then updates it
 func (c *Connector) UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
-	panic("next diff")
+	sr, err := c.CheckSchema(ctx, scope, namePrefix, ed)
+	if repairs, ok := err.(*RepairableSchemaMismatchError); ok {
+		for _, table := range repairs.MissingTables {
+			for _, def := range ed {
+				if def.Name == table {
+					err = c.createTable(c.KsMapper.Keyspace(scope, namePrefix), def)
+					if err != nil {
+						return nil, errors.Wrapf(err, "Unable to create table %q", def.Name)
+					}
+				}
+			}
+		}
+		for _, col := range repairs.MissingColumns {
+			if err := c.alterTable(c.KsMapper.Keyspace(scope, namePrefix), col.Tablename, col.Column); err != nil {
+				return nil, errors.Wrapf(err, "Unable to add column %q to table %q", col.Column.Name, col.Tablename)
+			}
+		}
+	}
+	return &dosa.SchemaStatus{Version: sr, Status: "ready"}, err
+}
+
+func (c *Connector) alterTable(keyspace, table string, col dosa.ColumnDefinition) error {
+	return c.Session.Query(alterTableString(keyspace, table, col)).Exec()
+}
+
+func alterTableString(keyspace, table string, col dosa.ColumnDefinition) string {
+	cts := &bytes.Buffer{}
+	fmt.Fprintf(cts, `ALTER TABLE "%s"."%s" ( ADD "%s" %s )`, keyspace, table, col.Name, cassandraType(col.Type))
+	return cts.String()
+}
+
+func (c *Connector) createTable(keyspace string, ed *dosa.EntityDefinition) error {
+	return c.Session.Query(createTableString(keyspace, ed)).Exec()
+}
+
+func createTableString(keyspace string, ed *dosa.EntityDefinition) string {
+	cts := &bytes.Buffer{}
+	fmt.Fprintf(cts, `CREATE TABLE "%s"."%s" (`, keyspace, ed.Name)
+	for _, col := range ed.Columns {
+		fmt.Fprintf(cts, `"%s" %s, `, col.Name, cassandraType(col.Type))
+	}
+	fmt.Fprintf(cts, "PRIMARY KEY ((")
+	for inx, partKey := range ed.Key.PartitionKeys {
+		if inx != 0 {
+			fmt.Fprintf(cts, ",")
+		}
+		fmt.Fprintf(cts, `"%s"`, partKey)
+	}
+	fmt.Fprintf(cts, ")")
+	needsCob := false
+	for _, clustKey := range ed.Key.ClusteringKeys {
+		fmt.Fprintf(cts, `,"%s"`, clustKey.Name)
+		needsCob = needsCob || clustKey.Descending
+	}
+	fmt.Fprintf(cts, "))")
+	if needsCob {
+		fmt.Fprintf(cts, " WITH CLUSTERING ORDER BY (")
+		for inx, clustKey := range ed.Key.ClusteringKeys {
+			if inx != 0 {
+				fmt.Fprintf(cts, ",")
+			}
+			desc := "ASC"
+			if clustKey.Descending {
+				desc = "DESC"
+			}
+			fmt.Fprintf(cts, `"%s" %s`, clustKey.Name, desc)
+		}
+		fmt.Fprintf(cts, ")")
+	}
+	fmt.Fprintf(cts, " AND compaction = {'class':'LeveledCompactionStrategy'}")
+	return cts.String()
+}
+
+func cassandraType(t dosa.Type) string {
+	switch t {
+	case dosa.TUUID:
+		return "uuid"
+	case dosa.String:
+		return "text"
+	case dosa.Blob:
+		return "blob"
+	case dosa.Int32:
+		return "int"
+	case dosa.Int64:
+		return "bigint"
+	case dosa.Timestamp:
+		return "timestamp"
+	case dosa.Bool:
+		return "boolean"
+	case dosa.Double:
+		return "double"
+	}
+	panic(t)
 }
 
 // ScopeExists is not implemented
