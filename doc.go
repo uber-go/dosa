@@ -22,13 +22,13 @@
 //
 // Abstract
 //
-// :warning: DOSA is *BETA* software. It is not recommended for production use.
+// :warning: DOSA is BETA software. It is not recommended for production use.
 // We will announce when it's ready.
 //
 //
 // DOSA (https://github.com/uber-go/dosa/wiki) is a storage framework that
 // provides a
-// *delcarative object storage abstraction* for applications in Golang
+// delcarative object storage abstraction for applications in Golang
 // and (eventually) Java. DOSA is designed to relieve common headaches developers
 // face while building stateful, database-dependent services.
 //

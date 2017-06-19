@@ -294,11 +294,11 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 	}
 
 	for _, c := range validCases {
-		assert.NoError(t, dosa.EnsureValidRangeConditions(testEntityRange, c.conds, simpleTransformer), c.desc)
+		assert.NoError(t, dosa.EnsureValidRangeConditions(testEntityRange, testEntityRange.Key, c.conds, simpleTransformer), c.desc)
 	}
 
 	for _, c := range invalidCases {
-		err := dosa.EnsureValidRangeConditions(testEntityRange, c.conds, simpleTransformer)
+		err := dosa.EnsureValidRangeConditions(testEntityRange, testEntityRange.Key, c.conds, simpleTransformer)
 		if assert.Error(t, err, c.desc) {
 			assert.Contains(t, err.Error(), c.errMsg, c.desc)
 			assert.Contains(t, err.Error(), c.errField, c.desc)
