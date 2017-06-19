@@ -43,7 +43,7 @@ func EnsureValidRangeConditions(ed *EntityDefinition, pk *PrimaryKey, columnCond
 	unconstrainedPartitionKeySet := pk.PartitionKeySet()
 	columnTypes := ed.ColumnTypes()
 
-	clusteringKeyConditions := make([][]*Condition, len(ed.Key.ClusteringKeys))
+	clusteringKeyConditions := make([][]*Condition, len(pk.ClusteringKeys))
 
 COND:
 	for column, conds := range columnConditions {
@@ -55,7 +55,7 @@ COND:
 			continue
 		}
 
-		for i, c := range ed.Key.ClusteringKeys {
+		for i, c := range pk.ClusteringKeys {
 			if column == c.Name {
 				clusteringKeyConditions[i] = conds
 				continue COND
@@ -73,7 +73,7 @@ COND:
 		return errors.Errorf("missing Eq condition on partition keys: %v", names)
 	}
 
-	if err := ensureClusteringKeyConditions(ed, pk.ClusteringKeys, columnTypes, clusteringKeyConditions, transform); err != nil {
+	if err := ensureClusteringKeyConditions(pk.ClusteringKeys, columnTypes, clusteringKeyConditions, transform); err != nil {
 		return errors.Wrap(err, "conditions for clustering keys are invalid")
 	}
 
@@ -96,7 +96,7 @@ func ensureExactOneEqCondition(t Type, conditions []*Condition) error {
 	return nil
 }
 
-func ensureClusteringKeyConditions(ed *EntityDefinition, cks []*ClusteringKey, columnTypes map[string]Type,
+func ensureClusteringKeyConditions(cks []*ClusteringKey, columnTypes map[string]Type,
 	clusteringKeyConditions [][]*Condition, transform func(string) string) error {
 	// ensure conditions are applied to consecutive clustering keys
 	lastConstrainedIndex := -1
@@ -104,7 +104,7 @@ func ensureClusteringKeyConditions(ed *EntityDefinition, cks []*ClusteringKey, c
 		if len(conditions) > 0 {
 			if lastConstrainedIndex != i-1 {
 				return errors.Errorf("conditions must be applied consecutively on clustering keys, "+
-					"but at least one clustering key is unconstrained before: %s", transform(ed.Key.ClusteringKeys[i].Name))
+					"but at least one clustering key is unconstrained before: %s", transform(cks[i].Name))
 			}
 			lastConstrainedIndex = i
 		}
