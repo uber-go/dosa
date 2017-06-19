@@ -35,6 +35,16 @@ import (
 	_ "github.com/uber-go/dosa/connectors/devnull"
 )
 
+func TestScopeFlag_String(t *testing.T) {
+	f := scopeFlag("")
+	f.setString("foo.bar.baz")
+	assert.Equal(t, "foo_bar_baz", f.String())
+
+	err := f.UnmarshalFlag("qux.quux.corge")
+	assert.NoError(t, err)
+	assert.Equal(t, "qux_quux_corge", f.String())
+}
+
 func TestSchema_ExpandDirectories(t *testing.T) {
 	assert := assert.New(t)
 	const tmpdir = ".testexpanddirectories"
