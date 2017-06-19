@@ -27,6 +27,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCallerFlag_String(t *testing.T) {
+	f := callerFlag("")
+	f.setString("foo.bar.baz")
+	assert.Equal(t, "foo_bar_baz", f.String())
+
+	err := f.UnmarshalFlag("qux.quux.corge")
+	assert.NoError(t, err)
+	assert.Equal(t, "qux_quux_corge", f.String())
+}
+
 func TestTimeFlag_Duration(t *testing.T) {
 	sut := timeFlag(0)
 	sut.setDuration(time.Minute)

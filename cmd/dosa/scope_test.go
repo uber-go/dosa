@@ -51,7 +51,6 @@ func TestScope_ServiceDefault(t *testing.T) {
 			os.Args = []string{
 				"dosa",
 				"--service", tc.serviceName,
-				"--caller", "foo.bar",
 				"--connector", "devnull",
 				"scope",
 				cmd,
