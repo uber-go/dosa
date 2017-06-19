@@ -44,6 +44,16 @@ func TestReadNotFound(t *testing.T) {
 	assert.IsType(t, &dosa.ErrNotFound{}, errors.Cause(err), err.Error())
 }
 
+func TestReadTimeout(t *testing.T) {
+	sut := GetTestConnector(t)
+	id := constructKeys(dosa.UUID(gouuid.NewV4().String()))
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Microsecond)
+	defer cancel()
+	_, err := sut.Read(ctx, testEntityInfo, id, []string{int32Field})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "context deadline exceeded")
+}
+
 func TestUpsertAndRead(t *testing.T) {
 	sut := GetTestConnector(t)
 	uuid := dosa.UUID(gouuid.NewV4().String())

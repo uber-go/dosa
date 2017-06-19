@@ -77,7 +77,7 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 		return errors.Wrap(err, "failed to create cql statement")
 	}
 
-	applied, err := c.Session.Query(stmt, sortedValues...).MapScanCAS(map[string]interface{}{})
+	applied, err := c.Session.Query(stmt, sortedValues...).WithContext(ctx).MapScanCAS(map[string]interface{}{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute CreateIfNotExists query in cassandra: %s", stmt)
 	}
@@ -133,7 +133,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 
 	result := make(map[string]interface{})
 	// TODO workon timeout trace features
-	if err := c.Session.Query(stmt, sortedValues...).MapScan(result); err != nil {
+	if err := c.Session.Query(stmt, sortedValues...).WithContext(ctx).MapScan(result); err != nil {
 		if err == gocql.ErrNotFound {
 			return nil, &dosa.ErrNotFound{}
 		}
@@ -164,7 +164,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		return errors.Wrap(err, "failed to create cql statement")
 	}
 
-	if err := c.Session.Query(stmt, sortedValues...).Exec(); err != nil {
+	if err := c.Session.Query(stmt, sortedValues...).WithContext(ctx).Exec(); err != nil {
 		return errors.Wrapf(err, "failed to execute upsert query in cassandra: %s", stmt)
 	}
 
@@ -218,7 +218,7 @@ func (c *Connector) remove(ctx context.Context, ei *dosa.EntityInfo, conds []*Co
 		return errors.Wrap(err, "failed to create cql statement")
 	}
 
-	if err := c.Session.Query(stmt, values...).Exec(); err != nil {
+	if err := c.Session.Query(stmt, values...).WithContext(ctx).Exec(); err != nil {
 		return errors.Wrapf(err, "failed to execute remove query in Cassandra: %s", stmt)
 	}
 
