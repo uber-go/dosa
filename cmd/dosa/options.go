@@ -42,7 +42,7 @@ var validNameRegex = regexp.MustCompile("^[a-z]+([a-z0-9]|[^-]-)*[^-]$")
 type callerFlag string
 
 func (s *callerFlag) setString(value string) {
-	*s = callerFlag(strings.Replace(value, ".", "_", -1))
+	*s = callerFlag(strings.Replace(value, ".", "-", -1))
 }
 
 // String implements the stringer interface
