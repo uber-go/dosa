@@ -42,6 +42,7 @@ func getTestEntityNameMap() map[string]bool {
 		"named_import_entity":           true,
 		"testnullablenamedimportentity": true,
 	}
+}
 
 func TestScopeFlag_String(t *testing.T) {
 	f := scopeFlag("")
