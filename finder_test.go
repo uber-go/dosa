@@ -110,7 +110,7 @@ func TestExclusion(t *testing.T) {
 func TestFindEntitiesInOtherPkg(t *testing.T) {
 	entities, warnings, err := FindEntities([]string{"testentity"}, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(entities))
+	assert.Equal(t, 4, len(entities))
 	assert.Empty(t, warnings)
 }
 
@@ -123,41 +123,43 @@ func BenchmarkFinder(b *testing.B) {
 func TestStringToDosaType(t *testing.T) {
 	data := []struct {
 		inType   string
+		pkg      string
 		expected Type
 	}{
 		// Tests without package name
-		{"string", String},
-		{"[]byte", Blob},
-		{"bool", Bool},
-		{"int32", Int32},
-		{"int64", Int64},
-		{"float64", Double},
-		{"time.Time", Timestamp},
-		{"UUID", TUUID},
-		{"NullString", TNullString},
-		{"NullInt64", TNullInt64},
-		{"NullFloat64", TNullFloat64},
-		{"NullBool", TNullBool},
+		{"string", "", String},
+		{"[]byte", "", Blob},
+		{"bool", "", Bool},
+		{"int32", "", Int32},
+		{"int64", "", Int64},
+		{"float64", "", Double},
+		{"time.Time", "", Timestamp},
+		{"UUID", "", TUUID},
+		{"NullString", "", TNullString},
+		{"NullInt64", "", TNullInt64},
+		{"NullFloat64", "", TNullFloat64},
+		{"NullBool", "", TNullBool},
 
 		// Tests with package name that doesn't end with dot.
-		{"dosa.UUID", TUUID},
-		{"dosa.NullString", TNullString},
-		{"dosa.NullInt64", TNullInt64},
-		{"dosa.NullFloat64", TNullFloat64},
-		{"dosa.NullBool", TNullBool},
+		{"dosa.UUID", "dosa", TUUID},
+		{"dosa.NullString", "dosa", TNullString},
+		{"dosa.NullInt64", "dosa", TNullInt64},
+		{"dosa.NullFloat64", "dosa", TNullFloat64},
+		{"dosa.NullBool", "dosa", TNullBool},
 
 		// Tests with package name that ends with dot.
-		{"dosa.UUID", TUUID},
-		{"dosa.NullString", TNullString},
-		{"dosa.NullInt64", TNullInt64},
-		{"dosa.NullFloat64", TNullFloat64},
-		{"dosa.NullBool", TNullBool},
+		{"dosav2.UUID", "dosav2.", TUUID},
+		{"dosav2.NullString", "dosav2.", TNullString},
+		{"dosav2.NullInt64", "dosav2.", TNullInt64},
+		{"dosav2.NullFloat64", "dosav2.", TNullFloat64},
+		{"dosav2.NullBool", "dosav2.", TNullBool},
 
-		{"unknown", Invalid},
+		{"unknown", "", Invalid},
 	}
 
 	for _, tc := range data {
-		assert.Equal(t, tc.expected, stringToDosaType(tc.inType),
-			fmt.Sprintf("stringToDosaType(%q) != %d", tc.inType, tc.expected))
+		actual := stringToDosaType(tc.inType, tc.pkg)
+		assert.Equal(t, tc.expected, actual,
+			fmt.Sprintf("stringToDosaType(%q, %q) != %d -- actual: %d", tc.inType, tc.pkg, tc.expected, actual))
 	}
 }

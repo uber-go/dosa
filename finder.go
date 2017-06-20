@@ -222,7 +222,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 					// skip unexported fields
 					continue
 				}
-				typ := stringToDosaType(kind)
+				typ := stringToDosaType(kind, packagePrefix)
 				if typ == Invalid {
 					return nil, fmt.Errorf("Column %q has invalid type %q", name, kind)
 				}
@@ -248,7 +248,13 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 	return t, nil
 }
 
-func stringToDosaType(inType string) Type {
+func stringToDosaType(inType, pkg string) Type {
+
+	// Append a dot if the package suffix doesn't already have one.
+	if pkg != "" && !strings.HasSuffix(pkg, ".") {
+		pkg += "."
+	}
+
 	switch inType {
 	case "string":
 		return String
@@ -264,15 +270,15 @@ func stringToDosaType(inType string) Type {
 		return Double
 	case "time.Time":
 		return Timestamp
-	case "UUID", "dosa.UUID":
+	case "UUID", pkg + "UUID":
 		return TUUID
-	case "NullString", "dosa.NullString":
+	case "NullString", pkg + "NullString":
 		return TNullString
-	case "NullInt64", "dosa.NullInt64":
+	case "NullInt64", pkg + "NullInt64":
 		return TNullInt64
-	case "NullFloat64", "dosa.NullFloat64":
+	case "NullFloat64", pkg + "NullFloat64":
 		return TNullFloat64
-	case "NullBool", "dosa.NullBool":
+	case "NullBool", pkg + "NullBool":
 		return TNullBool
 	default:
 		return Invalid
