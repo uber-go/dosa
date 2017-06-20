@@ -58,6 +58,15 @@ type PrimaryKey struct {
 	ClusteringKeys []*ClusteringKey
 }
 
+// PartitionKeySet returns the set of partition keys
+func (pk PrimaryKey) PartitionKeySet() map[string]struct{} {
+	m := make(map[string]struct{})
+	for _, p := range pk.PartitionKeys {
+		m[p] = struct{}{}
+	}
+	return m
+}
+
 // formatClusteringKeys takes an array of ClusteringKeys and returns
 // a string that shows all of them, separated by commas
 func formatClusteringKeys(keys []*ClusteringKey) string {

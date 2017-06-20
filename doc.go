@@ -22,7 +22,7 @@
 //
 // Abstract
 //
-// :warning: DOSA is *BETA* software. It is not recommended for production use.
+// :warning: DOSA is BETA software. It is not recommended for production use.
 // We will announce when it's ready.
 //
 //
