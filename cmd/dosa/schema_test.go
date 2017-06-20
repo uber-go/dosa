@@ -212,6 +212,7 @@ func TestSchema_NoEntitiesFound(t *testing.T) {
 		}
 		os.Args = append(os.Args, []string{
 			"-e", "testentity.go",
+			"-e", "named_import_testentity.go",
 			"../../testentity",
 		}...)
 		main()
