@@ -30,7 +30,7 @@ import (
 
 // TestNamedImportEntity uses common key types and all types in value fields.
 type TestNamedImportEntity struct {
-	dosav2.Entity `dosa:"name=awesome_test_entity, primaryKey=(UUIDKey, StrKey ASC, Int64Key DESC)"`
+	dosav2.Entity `dosa:"name=named_import_entity, primaryKey=(UUIDKey, StrKey ASC, Int64Key DESC)"`
 	UUIDKey       dosav2.UUID `dosa:"name=an_uuid_key"`
 	StrKey        string
 	Int64Key      int64

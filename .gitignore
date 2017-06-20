@@ -81,8 +81,6 @@ vendor/
 # JIRA plugin
 atlassian-ide-plugin.xml
 
-# VSCode
-.vscode/
 # Crashlytics plugin (for Android Studio and IntelliJ)
 com_crashlytics_export_strings.xml
 crashlytics.properties
@@ -171,6 +169,13 @@ cscope.out
 cscope.in.out
 cscope.po.out
 
+
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
 # End of https://www.gitignore.io/api/go,node,intellij+iml,tags
 

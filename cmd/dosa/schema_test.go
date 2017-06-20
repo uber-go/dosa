@@ -278,6 +278,14 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 	exit = func(r int) {
 		assert.Equal(t, 0, r)
 	}
+
+	nameMap := map[string]bool{
+		"awesome_test_entity":           true,
+		"testnullableentity":            true,
+		"named_import_entity":           true,
+		"testnullablenamedimportentity": true,
+	}
+
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().UpsertSchema(gomock.Any(), "scope", "foo", gomock.Any()).
@@ -286,7 +294,10 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 				assert.True(t, ok)
 				assert.True(t, dl.After(time.Now()))
 				assert.Equal(t, 4, len(ed))
-				assert.Equal(t, "awesome_test_entity", ed[0].Name)
+
+				for _, e := range ed {
+					assert.True(t, nameMap[e.Name])
+				}
 			}).Return(&dosa.SchemaStatus{Version: int32(1)}, nil)
 		return mc, nil
 	})

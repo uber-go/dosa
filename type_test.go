@@ -179,6 +179,6 @@ func TestIsNullableType(t *testing.T) {
 		},
 	}
 	for _, tc := range tt {
-		assert.Equal(t, isValidPrimaryKeyType(tc.input), tc.expected)
+		assert.Equal(t, isInvalidPrimaryKeyType(tc.input), tc.expected)
 	}
 }

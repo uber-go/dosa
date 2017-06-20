@@ -311,7 +311,7 @@ func TestNullStringPrimaryKeyType(t *testing.T) {
 	dosaTable, err := TableFromInstance(&NullStringPrimaryKeyType{})
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Nullable types are not allowed")
+	assert.Contains(t, err.Error(), "primary key is of nullable type")
 }
 
 type NullInt64PrimaryKeyType struct {
@@ -323,7 +323,7 @@ func TestNullInt64PrimaryKeyType(t *testing.T) {
 	dosaTable, err := TableFromInstance(&NullInt64PrimaryKeyType{})
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Nullable types are not allowed")
+	assert.Contains(t, err.Error(), "primary key is of nullable type")
 }
 
 type NullFloat64PrimaryKeyType struct {
@@ -335,7 +335,7 @@ func TestNullFloat64PrimaryKeyType(t *testing.T) {
 	dosaTable, err := TableFromInstance(&NullFloat64PrimaryKeyType{})
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Nullable types are not allowed")
+	assert.Contains(t, err.Error(), "primary key is of nullable type")
 }
 
 type NullBoolPrimaryKeyType struct {
@@ -347,7 +347,7 @@ func TestNullBoolPrimaryKeyType(t *testing.T) {
 	dosaTable, err := TableFromInstance(&NullBoolPrimaryKeyType{})
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Nullable types are not allowed")
+	assert.Contains(t, err.Error(), "primary key is of nullable type")
 }
 
 type KeyFieldNameTypo struct {

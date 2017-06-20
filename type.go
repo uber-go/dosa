@@ -131,7 +131,7 @@ func FromString(s string) Type {
 	}
 }
 
-func isValidPrimaryKeyType(t Type) bool {
+func isInvalidPrimaryKeyType(t Type) bool {
 	switch t {
 	case Invalid, TNullString, TNullFloat64, TNullInt64, TNullBool:
 		return true
