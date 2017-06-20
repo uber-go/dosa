@@ -310,6 +310,7 @@ func TestEntityDefinitionHelpers(t *testing.T) {
 
 	expectedPartitionKeySet := map[string]struct{}{"foo": {}}
 	assert.Equal(t, expectedPartitionKeySet, ed.PartitionKeySet())
+	assert.Equal(t, expectedPartitionKeySet, ed.Key.PartitionKeySet())
 
 	expectedClusteringKeySet := map[string]struct{}{"bar": {}}
 	assert.Equal(t, expectedClusteringKeySet, ed.ClusteringKeySet())

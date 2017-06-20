@@ -63,6 +63,7 @@ type SchemaRef struct {
 	Scope      string
 	NamePrefix string
 	EntityName string
+	IndexName  string
 	Version    int32
 }
 
