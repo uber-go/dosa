@@ -70,7 +70,16 @@ func (r *registrar) FindAll() ([]*dosa.RegisteredEntity, error) {
 }
 
 // NewRegistrar returns a new Registrar for the configuration provided.
-func NewRegistrar(cfg *config.Config) (dosa.Registrar, error) {
+func NewRegistrar(cfg *config.Config, entities ...dosa.DomainObject) (dosa.Registrar, error) {
+	// when entities are provided explicitly, discovery isn't necessary. In
+	// fact, the whole "auto-discovery" feature should only be used as a
+	// convenience for the CLI -- it's fundamentally problematic for
+	// environments where the source is not distributed alongside the binary
+	// where there is nothing to be discovered.
+	if len(entities) > 0 {
+		return dosa.NewRegistrar(cfg.Scope, cfg.NamePrefix, entities...)
+	}
+
 	idx := make(map[dosa.FQN]*dosa.RegisteredEntity)
 	baseFQN, err := dosa.ToFQN(cfg.NamePrefix)
 	// invalid prefix/FQN

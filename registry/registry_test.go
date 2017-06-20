@@ -125,11 +125,19 @@ func TestRegistrar_FindAll(t *testing.T) {
 
 func TestNewRegistrar(t *testing.T) {
 	cases := []struct {
-		scope  string
-		prefix string
-		paths  []string
-		err    string
+		scope    string
+		prefix   string
+		entities []dosa.DomainObject
+		paths    []string
+		err      string
 	}{
+		// explicit entity registration
+		{
+			entities: []dosa.DomainObject{
+				&TestEntity1{},
+				&TestEntity2{},
+			},
+		},
 		// invalid prefix
 		{
 			prefix: "--",
@@ -160,7 +168,7 @@ func TestNewRegistrar(t *testing.T) {
 			NamePrefix:  c.prefix,
 			EntityPaths: c.paths,
 		}
-		reg, err := registry.NewRegistrar(cfg)
+		reg, err := registry.NewRegistrar(cfg, c.entities...)
 		if c.err != "" {
 			assert.Contains(t, err.Error(), c.err)
 			continue

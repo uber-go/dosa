@@ -95,6 +95,14 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[
 	return c.Next.Remove(ctx, ei, values)
 }
 
+// RemoveRange calls Next.
+func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) error {
+	if c.Next == nil {
+		return ErrNoMoreConnector{}
+	}
+	return c.Next.RemoveRange(ctx, ei, columnConditions)
+}
+
 // MultiRemove calls Next
 func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
 	if c.Next == nil {

@@ -43,6 +43,22 @@ var (
 	}
 )
 
+type scopeFlag string
+
+func (s *scopeFlag) setString(value string) {
+	*s = scopeFlag(strings.Replace(value, ".", "_", -1))
+}
+
+// String implements the stringer interface
+func (s *scopeFlag) String() string {
+	return string(*s)
+}
+
+func (s *scopeFlag) UnmarshalFlag(value string) error {
+	s.setString(value)
+	return nil
+}
+
 // SchemaOptions contains configuration for schema command flags.
 type SchemaOptions struct {
 	Excludes []string `short:"e" long:"exclude" description:"Exclude files matching pattern."`
@@ -52,8 +68,8 @@ type SchemaOptions struct {
 // SchemaCmd is a placeholder for all schema commands
 type SchemaCmd struct {
 	*SchemaOptions
-	Scope      string `short:"s" long:"scope" description:"Storage scope for the given operation."`
-	NamePrefix string `long:"prefix" description:"Name prefix for schema types." required:"true"`
+	Scope      scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation."`
+	NamePrefix string    `long:"prefix" description:"Name prefix for schema types." required:"true"`
 }
 
 func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) (*dosa.SchemaStatus, error), args []string) error {
@@ -86,7 +102,7 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 		client.Excludes(c.Excludes)
 	}
 	if c.Scope != "" {
-		client.Scope(c.Scope)
+		client.Scope(c.Scope.String())
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
@@ -158,8 +174,8 @@ func (c *SchemaStatus) Execute(args []string) error {
 		return err
 	}
 
-	if c.Scope != "" {
-		client.Scope(c.Scope)
+	if c.Scope.String() != "" {
+		client.Scope(c.Scope.String())
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())

@@ -375,7 +375,7 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 
 	partitionRange := c.findRange(ei, columnConditions)
 	if partitionRange == nil {
-		return nil, "", &dosa.ErrNotFound{}
+		return []map[string]dosa.FieldValue{}, "", nil
 	}
 
 	// TODO: enforce limits and return a token when there are more rows
@@ -470,7 +470,8 @@ func (c *Connector) Scan(_ context.Context, ei *dosa.EntityInfo, minimumFields [
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	if c.data[ei.Def.Name] == nil {
-		return nil, "", &dosa.ErrNotFound{}
+		return []map[string]dosa.FieldValue{}, "", nil
+
 	}
 	entityRef := c.data[ei.Def.Name]
 	allTheThings := make([]map[string]dosa.FieldValue, 0)
@@ -479,7 +480,7 @@ func (c *Connector) Scan(_ context.Context, ei *dosa.EntityInfo, minimumFields [
 		allTheThings = append(allTheThings, vals...)
 	}
 	if len(allTheThings) == 0 {
-		return nil, "", &dosa.ErrNotFound{}
+		return []map[string]dosa.FieldValue{}, "", nil
 	}
 	return allTheThings, "", nil
 }

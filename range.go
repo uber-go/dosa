@@ -111,8 +111,9 @@ func (r *RangeOp) Fields(fieldsToRead []string) *RangeOp {
 	return r
 }
 
-// Limit sets the number of rows returned per call. If not set, a default
-// value would be applied
+// Limit sets the number of rows returned per call. A limit must be provided.
+// If a limit is not provided, an error will be generated at query
+// execution-time.
 func (r *RangeOp) Limit(n int) *RangeOp {
 	r.sop.limit = n
 	return r

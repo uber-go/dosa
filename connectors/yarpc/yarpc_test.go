@@ -701,6 +701,63 @@ func TestConnector_Range(t *testing.T) {
 	assert.Empty(t, token)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
+
+	// perform remove range with a bad field value
+	_, _, err = sut.Range(ctx, testEi, map[string][]*dosa.Condition{
+		"c7": {&dosa.Condition{
+			Value: dosa.UUID("baduuid"),
+			Op:    dosa.Eq,
+		}},
+	}, nil, "", 64)
+	assert.Error(t, err)
+	assert.EqualError(t, errors.Cause(err), "uuid: UUID string too short: baduuid")
+}
+
+func TestConnector_RemoveRange(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockedClient := dosatest.NewMockClient(ctrl)
+
+	sut := yarpc.Connector{Client: mockedClient}
+	fieldName := "c1"
+	field := drpc.Field{&fieldName, &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}}}
+	op := drpc.OperatorEq
+
+	mockedClient.EXPECT().RemoveRange(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.RemoveRangeRequest) {
+		assert.Equal(t, testRPCSchemaRef, *request.Ref)
+		assert.Equal(t, len(request.Conditions), 1)
+		condition := request.Conditions[0]
+		assert.Equal(t, fieldName, *condition.Field.Name)
+		assert.Equal(t, field.Value, condition.Field.Value)
+		assert.Equal(t, &op, condition.Op)
+	}).Return(nil)
+
+	err := sut.RemoveRange(ctx, testEi, map[string][]*dosa.Condition{
+		"c1": {&dosa.Condition{
+			Value: int64(10),
+			Op:    dosa.Eq,
+		}},
+	})
+	assert.NoError(t, err)
+
+	// perform a generic error request
+	mockedClient.EXPECT().RemoveRange(ctx, gomock.Any()).Return(errors.New("test error")).Times(1)
+	err = sut.RemoveRange(ctx, testEi, map[string][]*dosa.Condition{"c2": {&dosa.Condition{
+		Value: 3.3,
+		Op:    dosa.Eq,
+	}}})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "test error")
+
+	// perform remove range with a bad field value
+	err = sut.RemoveRange(ctx, testEi, map[string][]*dosa.Condition{
+		"c7": {&dosa.Condition{
+			Value: dosa.UUID("baduuid"),
+			Op:    dosa.Eq,
+		}},
+	})
+	assert.Error(t, err)
+	assert.EqualError(t, errors.Cause(err), "uuid: UUID string too short: baduuid")
 }
 
 func TestConnector_Scan(t *testing.T) {
