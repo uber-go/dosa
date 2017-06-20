@@ -239,7 +239,7 @@ func TestSchema_Check_Happy(t *testing.T) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)
 				assert.True(t, dl.After(time.Now()))
-				assert.Equal(t, 2, len(ed))
+				assert.Equal(t, 4, len(ed))
 				assert.Equal(t, "awesome_test_entity", ed[0].Name)
 			}).Return(int32(1), nil)
 		return mc, nil
@@ -284,7 +284,7 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)
 				assert.True(t, dl.After(time.Now()))
-				assert.Equal(t, 2, len(ed))
+				assert.Equal(t, 4, len(ed))
 				assert.Equal(t, "awesome_test_entity", ed[0].Name)
 			}).Return(&dosa.SchemaStatus{Version: int32(1)}, nil)
 		return mc, nil
