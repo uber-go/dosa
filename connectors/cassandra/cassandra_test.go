@@ -35,7 +35,7 @@ import (
 )
 
 func TestNewConnector(t *testing.T) {
-	VerifyOrStartCassandra()
+	EnsureLocalCassandraStarted()
 
 	c, err := cassandra.NewConnector(
 		gocql.NewCluster("127.0.0.1:"+strconv.Itoa(cassandra.CassandraPort)),

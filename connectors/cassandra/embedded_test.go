@@ -35,7 +35,7 @@ import (
 
 var testConnector dosa.Connector
 
-func VerifyOrStartCassandra() error {
+func EnsureLocalCassandraStarted() error {
 	if IsRunning() {
 		return nil
 	}
@@ -44,7 +44,7 @@ func VerifyOrStartCassandra() error {
 
 func GetTestConnector(t *testing.T) dosa.Connector {
 	if testConnector == nil {
-		err := VerifyOrStartCassandra()
+		err := EnsureLocalCassandraStarted()
 		if err != nil {
 			t.Fatal(err)
 			return nil
@@ -71,16 +71,6 @@ func GetTestConnector(t *testing.T) dosa.Connector {
 func ShutdownTestConnector() {
 	testConnector.Shutdown()
 	testConnector = nil
-}
-
-func ShouldSkip() bool {
-	if IsRunning() {
-		return false
-	}
-	if err := startViaCcm(); err != nil {
-		return true
-	}
-	return false
 }
 
 const ccm = "ccm"

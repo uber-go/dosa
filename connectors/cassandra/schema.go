@@ -89,20 +89,20 @@ func (m *RepairableSchemaMismatchError) Error() string {
 	return fmt.Sprintf("Missing %d columns (first is %q in table %q)", len(m.MissingColumns), m.MissingColumns[0].Column.Name, m.MissingColumns[0].Tablename)
 }
 
-// compareStructToSchema compares a dosa EntityDefinition to the gocql TableMetadata
-// There are two main cases, one that we can fix by adding some columns and all the other mismatches that we can't fix
-func compareStructToSchema(ed *dosa.EntityDefinition, md *gocql.TableMetadata, schemaErrors *RepairableSchemaMismatchError) error {
-	// Check partition keys
+// Check partition keys
+func checkPartitionKeys(ed *dosa.EntityDefinition, md *gocql.TableMetadata) error {
 	if len(ed.Key.PartitionKeys) != len(md.PartitionKey) {
-		return fmt.Errorf("Table %q primary key length mismatch (was %d should be %d)", ed.Name, len(md.PartitionKey), len(ed.Key.PartitionKeys))
+		return fmt.Errorf("Table %q partition key length mismatch (was %d should be %d)", ed.Name, len(md.PartitionKey), len(ed.Key.PartitionKeys))
 	}
 	for i, pk := range ed.Key.PartitionKeys {
 		if md.PartitionKey[i].Name != pk {
-			return fmt.Errorf("Table %q primary key mismatch (should be %q)", ed.Name, ed.Key.PartitionKeys)
+			return fmt.Errorf("Table %q partition key mismatch (should be %q)", ed.Name, ed.Key.PartitionKeys)
 		}
 	}
+	return nil
+}
 
-	// Check clustering keys
+func checkClusteringKeys(ed *dosa.EntityDefinition, md *gocql.TableMetadata) error {
 	if len(ed.Key.ClusteringKeys) != len(md.ClusteringColumns) {
 		return fmt.Errorf("Table %q clustering key length mismatch (should be %q)", ed.Name, ed.Key.ClusteringKeys)
 	}
@@ -111,7 +111,9 @@ func compareStructToSchema(ed *dosa.EntityDefinition, md *gocql.TableMetadata, s
 			return fmt.Errorf("Table %q clustering key mismatch (column %d should be %q)", ed.Name, i+1, ck.Name)
 		}
 	}
-
+	return nil
+}
+func checkColumns(ed *dosa.EntityDefinition, md *gocql.TableMetadata, schemaErrors *RepairableSchemaMismatchError) {
 	// Check each column
 	for _, col := range ed.Columns {
 		_, ok := md.Columns[col.Name]
@@ -120,12 +122,27 @@ func compareStructToSchema(ed *dosa.EntityDefinition, md *gocql.TableMetadata, s
 		}
 		// TODO: check column type
 	}
+}
+
+// compareStructToSchema compares a dosa EntityDefinition to the gocql TableMetadata
+// There are two main cases, one that we can fix by adding some columns and all the other mismatches that we can't fix
+func compareStructToSchema(ed *dosa.EntityDefinition, md *gocql.TableMetadata, schemaErrors *RepairableSchemaMismatchError) error {
+	if err := checkPartitionKeys(ed, md); err != nil {
+		return err
+	}
+	if err := checkClusteringKeys(ed, md); err != nil {
+		return err
+	}
+
+	checkColumns(ed, md, schemaErrors)
 
 	return nil
 
 }
 
 // CheckSchema verifies that the schema passed in the registered entities matches the database
+// This implementation only returns 0 or 1, since we are not storing schema
+// version information anywhere else
 func (c *Connector) CheckSchema(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
 	schemaErrors := new(RepairableSchemaMismatchError)
 
@@ -152,6 +169,8 @@ func (c *Connector) CheckSchema(ctx context.Context, scope string, namePrefix st
 }
 
 // UpsertSchema checks the schema and then updates it
+// We handle RepairableSchemaMismatchErrors, and return any
+// other error from CheckSchema
 func (c *Connector) UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
 	sr, err := c.CheckSchema(ctx, scope, namePrefix, ed)
 	if repairs, ok := err.(*RepairableSchemaMismatchError); ok {
@@ -189,63 +208,17 @@ func (c *Connector) createTable(keyspace string, ed *dosa.EntityDefinition) erro
 }
 
 func createTableString(keyspace string, ed *dosa.EntityDefinition) string {
-	cts := &bytes.Buffer{}
-	fmt.Fprintf(cts, `CREATE TABLE "%s"."%s" (`, keyspace, ed.Name)
-	for _, col := range ed.Columns {
-		fmt.Fprintf(cts, `"%s" %s, `, col.Name, cassandraType(col.Type))
-	}
-	fmt.Fprintf(cts, "PRIMARY KEY ((")
-	for inx, partKey := range ed.Key.PartitionKeys {
-		if inx != 0 {
-			fmt.Fprintf(cts, ",")
-		}
-		fmt.Fprintf(cts, `"%s"`, partKey)
-	}
-	fmt.Fprintf(cts, ")")
-	needsCob := false
-	for _, clustKey := range ed.Key.ClusteringKeys {
-		fmt.Fprintf(cts, `,"%s"`, clustKey.Name)
-		needsCob = needsCob || clustKey.Descending
-	}
-	fmt.Fprintf(cts, "))")
-	if needsCob {
-		fmt.Fprintf(cts, " WITH CLUSTERING ORDER BY (")
-		for inx, clustKey := range ed.Key.ClusteringKeys {
-			if inx != 0 {
-				fmt.Fprintf(cts, ",")
-			}
-			desc := "ASC"
-			if clustKey.Descending {
-				desc = "DESC"
-			}
-			fmt.Fprintf(cts, `"%s" %s`, clustKey.Name, desc)
-		}
-		fmt.Fprintf(cts, ")")
-	}
-	fmt.Fprintf(cts, " AND compaction = {'class':'LeveledCompactionStrategy'}")
-	return cts.String()
-}
+	stmt, err := CreateStmt(
+		Keyspace(keyspace),
+		Table(ed.Name),
+		ColumnsWithType(ed.Columns),
+		PrimaryKey(ed.Key),
+	)
 
-func cassandraType(t dosa.Type) string {
-	switch t {
-	case dosa.TUUID:
-		return "uuid"
-	case dosa.String:
-		return "text"
-	case dosa.Blob:
-		return "blob"
-	case dosa.Int32:
-		return "int"
-	case dosa.Int64:
-		return "bigint"
-	case dosa.Timestamp:
-		return "timestamp"
-	case dosa.Bool:
-		return "boolean"
-	case dosa.Double:
-		return "double"
+	if err != nil {
+		panic(err)
 	}
-	panic(t)
+	return stmt
 }
 
 // ScopeExists is not implemented

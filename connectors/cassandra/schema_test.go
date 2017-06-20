@@ -26,6 +26,7 @@ import (
 	"github.com/gocql/gocql"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/testentity"
 )
 
 func TestCompareStructToSchemaWrongPk(t *testing.T) {
@@ -89,4 +90,50 @@ func (t TestType) Custom() string {
 }
 func (t TestType) Type() gocql.Type {
 	return t.typ
+}
+
+func TestCreateTableString(t *testing.T) {
+	// grab this full-featured entity from the code
+	testEntity, _ := dosa.TableFromInstance(&testentity.TestEntity{})
+	testCases := []struct {
+		name     string
+		ed       dosa.EntityDefinition
+		expected string
+	}{
+		{"simple",
+			dosa.EntityDefinition{Key: &dosa.PrimaryKey{
+				PartitionKeys: []string{"c1"}},
+				Name: "t1",
+				Columns: []*dosa.ColumnDefinition{
+					{Name: "c1", Type: dosa.String},
+				},
+			},
+			`CREATE TABLE "keyspace"."t1" (` +
+				`"c1" text, ` +
+				`PRIMARY KEY (("c1"))) ` +
+				`WITH COMPACTION = {'class':'LeveledCompactionStrategy'}`,
+		},
+		{"testentity",
+			testEntity.EntityDefinition,
+			`CREATE TABLE "keyspace"."awesome_test_entity" (` +
+				`"an_uuid_key" uuid, ` +
+				`"strkey" text, ` +
+				`"int64key" bigint, ` +
+				`"uuidv" uuid, ` +
+				`"strv" text, ` +
+				`"an_int64_value" bigint, ` +
+				`"int32v" int, ` +
+				`"doublev" double, ` +
+				`"boolv" boolean, ` +
+				`"blobv" blob, ` +
+				`"tsv" timestamp, ` +
+				`PRIMARY KEY (("an_uuid_key"),"strkey","int64key")) ` +
+				`WITH CLUSTERING ORDER BY ("strkey" ASC,"int64key" DESC) ` +
+				`AND COMPACTION = {'class':'LeveledCompactionStrategy'}`},
+	}
+	for _, testcase := range testCases {
+		t.Run(testcase.name, func(t *testing.T) {
+			assert.Equal(t, testcase.expected, createTableString("keyspace", &testcase.ed))
+		})
+	}
 }

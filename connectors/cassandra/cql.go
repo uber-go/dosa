@@ -31,31 +31,81 @@ import (
 )
 
 const (
-	keyspace       = "Keyspace"
-	table          = "Table"
-	values         = "Values"
-	columns        = "Columns"
-	ifNotExist     = "IfNotExist"
-	limit          = "Limit"
-	conditions     = "Conditions"
-	insertTemplate = `INSERT INTO {{.Keyspace}}.{{.Table}} ({{ColumnFunc .Columns ", "}}) VALUES ({{QuestionMark .Values ", "}}){{ExistsFunc .IfNotExist}};`
-	selectTemplate = `SELECT {{ColumnFunc .Columns ", "}} FROM {{.Keyspace}}.{{.Table}}{{WhereFunc .Conditions}}{{ConditionsFunc .Conditions " AND "}}{{LimitFunc .Limit}};`
-	deleteTemplate = `DELETE FROM {{.Keyspace}}.{{.Table}} WHERE {{ConditionsFunc .Conditions " AND "}};`
+	keyspace        = "Keyspace"
+	table           = "Table"
+	values          = "Values"
+	columns         = "Columns"
+	columnsWithType = "ColumnsWithType"
+	ifNotExist      = "IfNotExist"
+	limit           = "Limit"
+	conditions      = "Conditions"
+	key             = "Key"
+	insertTemplate  = `INSERT INTO {{.Keyspace}}.{{.Table}} ({{ColumnFunc .Columns ", "}}) VALUES ({{QuestionMark .Values ", "}}){{ExistsFunc .IfNotExist}};`
+	selectTemplate  = `SELECT {{ColumnFunc .Columns ", "}} FROM {{.Keyspace}}.{{.Table}}{{WhereFunc .Conditions}}{{ConditionsFunc .Conditions " AND "}}{{LimitFunc .Limit}};`
+	deleteTemplate  = `DELETE FROM {{.Keyspace}}.{{.Table}} WHERE {{ConditionsFunc .Conditions " AND "}};`
+	createTemplate  = `CREATE TABLE {{.Keyspace}}.{{.Table}} ({{ColumnWithType .ColumnsWithType ", "}}, PRIMARY KEY (({{PrimaryKeyClause .Key}}){{ClusteringKeyFunc .Key}})) WITH {{ClusteringOrderBy .Key}}COMPACTION = {'class':'LeveledCompactionStrategy'}`
 )
 
 var (
 	funcMap = template.FuncMap{
-		"ColumnFunc":     strings.Join,
-		"QuestionMark":   questionMarkFunc,
-		"ExistsFunc":     existsFunc,
-		"LimitFunc":      limitFunc,
-		"ConditionsFunc": conditionsFunc,
-		"WhereFunc":      whereFunc,
+		"ColumnFunc":        strings.Join,
+		"QuestionMark":      questionMarkFunc,
+		"ExistsFunc":        existsFunc,
+		"LimitFunc":         limitFunc,
+		"ConditionsFunc":    conditionsFunc,
+		"WhereFunc":         whereFunc,
+		"ColumnWithType":    columnWithTypeFunc,
+		"PrimaryKeyClause":  primaryKeyClauseFunc,
+		"ClusteringKeyFunc": clusteringKeyClauseFunc,
+		"ClusteringOrderBy": clusteringOrderByFunc,
 	}
 	insertTmpl = template.Must(template.New("insert").Funcs(funcMap).Parse(insertTemplate))
 	selectTmpl = template.Must(template.New("select").Funcs(funcMap).Parse(selectTemplate))
 	deleteTmpl = template.Must(template.New("delete").Funcs(funcMap).Parse(deleteTemplate))
+	createTmpl = template.Must(template.New("create").Funcs(funcMap).Parse(createTemplate))
 )
+
+func columnWithTypeFunc(ct []*dosa.ColumnDefinition, sep string) string {
+	cols := make([]string, len(ct))
+	for i, col := range ct {
+		cols[i] = strconv.Quote(col.Name) + " " + cassandraType(col.Type)
+	}
+	return strings.Join(cols, sep)
+}
+
+func primaryKeyClauseFunc(key *dosa.PrimaryKey) string {
+	partkeys := make([]string, len(key.PartitionKeys))
+	for i, partKey := range key.PartitionKeys {
+		partkeys[i] = strconv.Quote(partKey)
+	}
+	return strings.Join(partkeys, ",")
+}
+
+func clusteringKeyClauseFunc(key *dosa.PrimaryKey) string {
+	if len(key.ClusteringKeys) == 0 {
+		return ""
+	}
+	cluskeys := make([]string, len(key.ClusteringKeys))
+	for i, clusKey := range key.ClusteringKeys {
+		cluskeys[i] = strconv.Quote(clusKey.Name)
+	}
+	return "," + strings.Join(cluskeys, ",")
+}
+func clusteringOrderByFunc(key *dosa.PrimaryKey) string {
+	if len(key.ClusteringKeys) == 0 {
+		return ""
+	}
+	obc := make([]string, len(key.ClusteringKeys))
+	for i, ckc := range key.ClusteringKeys {
+		obc[i] = strconv.Quote(ckc.Name)
+		if ckc.Descending {
+			obc[i] += " DESC"
+		} else {
+			obc[i] += " ASC"
+		}
+	}
+	return "CLUSTERING ORDER BY (" + strings.Join(obc, ",") + ") AND "
+}
 
 func questionMarkFunc(qs []interface{}, sep string) string {
 	questions := make([]string, len(qs))
@@ -138,6 +188,21 @@ func Columns(v []string) OptFunc {
 	}
 }
 
+// PrimaryKey sets the primary key structure for create table
+func PrimaryKey(pk *dosa.PrimaryKey) OptFunc {
+	return func(opt Option) {
+		opt[key] = pk
+	}
+}
+
+// ColumnsWithType sets the column definitions for each column
+// which is needed by create table
+func ColumnsWithType(cols []*dosa.ColumnDefinition) OptFunc {
+	return func(opt Option) {
+		opt[columnsWithType] = cols
+	}
+}
+
 // Values sets the `values` clause to the cql statement
 func Values(v interface{}) OptFunc {
 	return func(opt Option) {
@@ -201,4 +266,37 @@ func DeleteStmt(opts ...OptFunc) (string, error) {
 	}
 	err := deleteTmpl.Execute(&bb, option)
 	return bb.String(), err
+}
+
+// CreateStmt creates a create statement
+func CreateStmt(opts ...OptFunc) (string, error) {
+	var bb bytes.Buffer
+	option := Option{}
+	for _, opt := range opts {
+		opt(option)
+	}
+	err := createTmpl.Execute(&bb, option)
+	return bb.String(), err
+}
+
+func cassandraType(t dosa.Type) string {
+	switch t {
+	case dosa.TUUID:
+		return "uuid"
+	case dosa.String:
+		return "text"
+	case dosa.Blob:
+		return "blob"
+	case dosa.Int32:
+		return "int"
+	case dosa.Int64:
+		return "bigint"
+	case dosa.Timestamp:
+		return "timestamp"
+	case dosa.Bool:
+		return "boolean"
+	case dosa.Double:
+		return "double"
+	}
+	panic(t)
 }
