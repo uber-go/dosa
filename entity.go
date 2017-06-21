@@ -177,6 +177,27 @@ func (e *EntityDefinition) EnsureValid() error {
 		keyNamesSeen[c.Name] = struct{}{}
 	}
 
+	if err := e.ensureNonNullablePrimaryKeys(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *EntityDefinition) ensureNonNullablePrimaryKeys() error {
+	columnTypes := e.ColumnTypes()
+
+	for k := range e.PartitionKeySet() {
+		if isInvalidPrimaryKeyType(columnTypes[k]) {
+			return errors.Errorf("primary key is of nullable type: %q", k)
+		}
+	}
+
+	for k := range e.ClusteringKeySet() {
+		if isInvalidPrimaryKeyType(columnTypes[k]) {
+			return errors.Errorf("clustering key is of nullable type: %q", k)
+		}
+	}
 	return nil
 }
 

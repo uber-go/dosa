@@ -30,16 +30,20 @@ import (
 	"github.com/uber-go/dosa"
 )
 
-type AllTypes struct {
-	dosa.Entity `dosa:"primaryKey=BoolType"`
-	BoolType    bool
-	Int32Type   int32
-	Int64Type   int64
-	DoubleType  float64
-	StringType  string
-	BlobType    []byte
-	TimeType    time.Time
-	UUIDType    dosa.UUID
+type AllTypesScanTestEntity struct {
+	dosa.Entity     `dosa:"primaryKey=BoolType"`
+	BoolType        bool
+	Int32Type       int32
+	Int64Type       int64
+	DoubleType      float64
+	StringType      string
+	BlobType        []byte
+	TimeType        time.Time
+	UUIDType        dosa.UUID
+	NullStringType  dosa.NullString
+	NullInt64Type   dosa.NullInt64
+	NullFloat64Type dosa.NullFloat64
+	NullBoolType    dosa.NullBool
 }
 
 func TestNewScanOp(t *testing.T) {
@@ -61,31 +65,31 @@ var ScanTestCases = []struct {
 }{
 	{
 		descript: "empty scanop, valid",
-		sop:      dosa.NewScanOp(&AllTypes{}),
+		sop:      dosa.NewScanOp(&AllTypesScanTestEntity{}),
 		stringer: "ScanOp",
 	},
 	{
 		descript: "empty with limit",
-		sop:      dosa.NewScanOp(&AllTypes{}).Limit(10),
+		sop:      dosa.NewScanOp(&AllTypesScanTestEntity{}).Limit(10),
 		stringer: "ScanOp limit 10",
 	},
 	{
 		descript: "empty with token",
-		sop:      dosa.NewScanOp(&AllTypes{}).Offset("toketoketoke"),
+		sop:      dosa.NewScanOp(&AllTypesScanTestEntity{}).Offset("toketoketoke"),
 		stringer: "ScanOp token \"toketoketoke\"",
 	},
 	{
 		descript: "with valid field list",
-		sop:      dosa.NewScanOp(&AllTypes{}).Fields([]string{"StringType"}),
+		sop:      dosa.NewScanOp(&AllTypesScanTestEntity{}).Fields([]string{"StringType"}),
 		stringer: "ScanOp",
 	},
 }
 
 func TestScanOpMatcher(t *testing.T) {
-	scanOp0 := dosa.NewScanOp(&AllTypes{}).Limit(1)
-	scanOp1 := dosa.NewScanOp(&AllTypes{}).Limit(1)
-	scanOp2 := dosa.NewScanOp(&AllTypes{}).Limit(1).Offset("token1")
-	scanOp3 := dosa.NewScanOp(&AllTypes{}).Limit(1).Fields([]string{"BoolType", "TimeType"})
+	scanOp0 := dosa.NewScanOp(&AllTypesScanTestEntity{}).Limit(1)
+	scanOp1 := dosa.NewScanOp(&AllTypesScanTestEntity{}).Limit(1)
+	scanOp2 := dosa.NewScanOp(&AllTypesScanTestEntity{}).Limit(1).Offset("token1")
+	scanOp3 := dosa.NewScanOp(&AllTypesScanTestEntity{}).Limit(1).Fields([]string{"BoolType", "TimeType"})
 	scanOp4 := dosa.NewScanOp(&dosa.Entity{}).Limit(1)
 
 	matcher := dosa.EqScanOp(scanOp0)

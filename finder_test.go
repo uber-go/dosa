@@ -54,8 +54,8 @@ func TestNonExistentDirectory(t *testing.T) {
 
 func TestParser(t *testing.T) {
 	entities, errs, err := FindEntities([]string{"."}, []string{})
-	assert.Equal(t, 13, len(entities), fmt.Sprintf("%s", entities))
-	assert.Equal(t, 14, len(errs), fmt.Sprintf("%v", errs))
+	assert.Equal(t, 15, len(entities), fmt.Sprintf("%s", entities))
+	assert.Equal(t, 17, len(errs), fmt.Sprintf("%v", errs))
 	assert.Nil(t, err)
 
 	for _, entity := range entities {
@@ -73,6 +73,8 @@ func TestParser(t *testing.T) {
 			e, _ = TableFromInstance(&PrimaryKeyWithDescendingRange{})
 		case "multicomponentprimarykey":
 			e, _ = TableFromInstance(&MultiComponentPrimaryKey{})
+		case "nullabletype":
+			e, _ = TableFromInstance(&NullableType{})
 		case "alltypes":
 			e, _ = TableFromInstance(&AllTypes{})
 		case "unexportedfieldtype":
@@ -87,10 +89,13 @@ func TestParser(t *testing.T) {
 			continue
 		case "registrytestvalid": // skip, same as above
 			continue
+		case "alltypesscantestentity": // skipping test entity defined in scan_test.go
+			continue
 		default:
 			t.Errorf("entity %s not expected", entity.Name)
 			continue
 		}
+
 		assert.Equal(t, e, entity)
 	}
 }
@@ -103,13 +108,58 @@ func TestExclusion(t *testing.T) {
 }
 
 func TestFindEntitiesInOtherPkg(t *testing.T) {
-	_, warnings, err := FindEntities([]string{"testentity"}, []string{})
+	entities, warnings, err := FindEntities([]string{"testentity"}, []string{})
 	assert.NoError(t, err)
+	assert.Equal(t, 4, len(entities))
 	assert.Empty(t, warnings)
 }
 
 func BenchmarkFinder(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		FindEntities([]string{"."}, []string{})
+	}
+}
+
+func TestStringToDosaType(t *testing.T) {
+	data := []struct {
+		inType   string
+		pkg      string
+		expected Type
+	}{
+		// Tests without package name
+		{"string", "", String},
+		{"[]byte", "", Blob},
+		{"bool", "", Bool},
+		{"int32", "", Int32},
+		{"int64", "", Int64},
+		{"float64", "", Double},
+		{"time.Time", "", Timestamp},
+		{"UUID", "", TUUID},
+		{"NullString", "", TNullString},
+		{"NullInt64", "", TNullInt64},
+		{"NullFloat64", "", TNullFloat64},
+		{"NullBool", "", TNullBool},
+
+		// Tests with package name that doesn't end with dot.
+		{"dosa.UUID", "dosa", TUUID},
+		{"dosa.NullString", "dosa", TNullString},
+		{"dosa.NullInt64", "dosa", TNullInt64},
+		{"dosa.NullFloat64", "dosa", TNullFloat64},
+		{"dosa.NullBool", "dosa", TNullBool},
+
+		// Tests with package name that ends with dot.
+		{"dosav2.UUID", "dosav2.", TUUID},
+		{"dosav2.NullString", "dosav2.", TNullString},
+		{"dosav2.NullInt64", "dosav2.", TNullInt64},
+		{"dosav2.NullFloat64", "dosav2.", TNullFloat64},
+		{"dosav2.NullBool", "dosav2.", TNullBool},
+
+		{"unknown", "", Invalid},
+	}
+
+	for _, tc := range data {
+		actual := stringToDosaType(tc.inType, tc.pkg)
+		assert.Equal(t, tc.expected, actual,
+			fmt.Sprintf("stringToDosaType(%q, %q) != %d -- actual: %d", tc.inType, tc.pkg, tc.expected, actual))
 	}
 }

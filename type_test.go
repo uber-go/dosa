@@ -94,6 +94,22 @@ func TestFromString(t *testing.T) {
 			expected: Bool,
 		},
 		{
+			input:    TNullString.String(),
+			expected: TNullString,
+		},
+		{
+			input:    TNullInt64.String(),
+			expected: TNullInt64,
+		},
+		{
+			input:    TNullFloat64.String(),
+			expected: TNullFloat64,
+		},
+		{
+			input:    TNullBool.String(),
+			expected: TNullBool,
+		},
+		{
 			input:    "invalid",
 			expected: Invalid,
 		},
@@ -101,5 +117,68 @@ func TestFromString(t *testing.T) {
 
 	for _, tc := range tt {
 		assert.Equal(t, FromString(tc.input), tc.expected)
+	}
+}
+
+func TestIsNullableType(t *testing.T) {
+	tt := []struct {
+		input    Type
+		expected bool
+	}{
+		{
+			input:    TUUID,
+			expected: false,
+		},
+		{
+			input:    String,
+			expected: false,
+		},
+		{
+			input:    Int32,
+			expected: false,
+		},
+		{
+			input:    Int64,
+			expected: false,
+		},
+		{
+			input:    Double,
+			expected: false,
+		},
+		{
+			input:    Blob,
+			expected: false,
+		},
+		{
+			input:    Timestamp,
+			expected: false,
+		},
+		{
+			input:    Bool,
+			expected: false,
+		},
+		{
+			input:    TNullString,
+			expected: true,
+		},
+		{
+			input:    TNullInt64,
+			expected: true,
+		},
+		{
+			input:    TNullFloat64,
+			expected: true,
+		},
+		{
+			input:    TNullBool,
+			expected: true,
+		},
+		{
+			input:    Invalid,
+			expected: true, // We treat Invalid as nullable type.
+		},
+	}
+	for _, tc := range tt {
+		assert.Equal(t, isInvalidPrimaryKeyType(tc.input), tc.expected)
 	}
 }

@@ -18,39 +18,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package dosa is the DOSA - Declarative Object Storage Abstraction.
-//
-// Abstract
-//
-// :warning: DOSA is BETA software. It is not recommended for production use.
-// We will announce when it's ready.
-//
-//
-// DOSA (https://github.com/uber-go/dosa/wiki) is a storage framework that
-// provides a
-// delcarative object storage abstraction for applications in Golang
-// and (eventually) Java. DOSA is designed to relieve common headaches developers
-// face while building stateful, database-dependent services.
-//
-//
-// If you'd like to start by writing a small DOSA-enabled program, check out
-// the getting started guide (https://github.com/uber-go/dosa/wiki/Getting-Started-Guide).
-//
-// Overview
-//
-// DOSA is a storage library that supports:
-//
-// • methods to store and retrieve go structs
-//
-// • struct annotations to describe queries against data
-//
-// • tools to create and/or migrate database schemas
-//
-// • implementations that serialize requests to remote stateless servers
-//
-// Annotations
-//
-// This project is released under the MIT License (LICENSE.txt).
-//
-//
-package dosa
+package testentity
+
+import (
+	"time"
+
+	// Using a named import is the key change in this file. This is
+	// used to test the entity parser against named dosa imports.
+	dosav2 "github.com/uber-go/dosa"
+)
+
+// TestNamedImportEntity uses common key types and all types in value fields.
+type TestNamedImportEntity struct {
+	dosav2.Entity `dosa:"name=named_import_entity, primaryKey=(UUIDKey, StrKey ASC, Int64Key DESC)"`
+	UUIDKey       dosav2.UUID `dosa:"name=an_uuid_key"`
+	StrKey        string
+	Int64Key      int64
+	UUIDV         dosav2.UUID
+	StrV          string
+	Int64V        int64 `dosa:"name=an_int64_value"`
+	Int32V        int32
+	DoubleV       float64
+	BoolV         bool
+	BlobV         []byte
+	TSV           time.Time
+}
+
+// TestNullableNamedImportEntity uses nullable fields.
+type TestNullableNamedImportEntity struct {
+	dosav2.Entity   `dosa:"primaryKey=BoolType"`
+	BoolType        bool
+	NullStringType  dosav2.NullString
+	NullInt64Type   dosav2.NullInt64
+	NullFloat64Type dosav2.NullFloat64
+	NullBoolType    dosav2.NullBool
+}

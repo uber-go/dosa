@@ -213,7 +213,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 	return t, nil
 }
 
-// primaryKeyNameMatch translate the primary keys to the internal column name based on the maping
+// translateKeyName translate the primary keys to the internal column name based on the mapping
 // between fields and columns.
 func translateKeyName(t *Table) {
 	pk := t.EntityDefinition.Key
@@ -311,14 +311,18 @@ func parseField(typ Type, name string, tag string) (*ColumnDefinition, error) {
 }
 
 var (
-	uuidType      = reflect.TypeOf(UUID(""))
-	blobType      = reflect.TypeOf([]byte{})
-	timestampType = reflect.TypeOf(time.Time{})
-	int32Type     = reflect.TypeOf(int32(0))
-	int64Type     = reflect.TypeOf(int64(0))
-	doubleType    = reflect.TypeOf(float64(0.0))
-	stringType    = reflect.TypeOf("")
-	boolType      = reflect.TypeOf(true)
+	uuidType        = reflect.TypeOf(UUID(""))
+	blobType        = reflect.TypeOf([]byte{})
+	timestampType   = reflect.TypeOf(time.Time{})
+	int32Type       = reflect.TypeOf(int32(0))
+	int64Type       = reflect.TypeOf(int64(0))
+	doubleType      = reflect.TypeOf(float64(0.0))
+	stringType      = reflect.TypeOf("")
+	boolType        = reflect.TypeOf(true)
+	nullBoolType    = reflect.TypeOf(NullBool{})
+	nullInt64Type   = reflect.TypeOf(NullInt64{})
+	nullFloat64Type = reflect.TypeOf(NullFloat64{})
+	nullStringType  = reflect.TypeOf(NullString{})
 )
 
 func typify(f reflect.Type) (Type, error) {
@@ -339,6 +343,14 @@ func typify(f reflect.Type) (Type, error) {
 		return String, nil
 	case boolType:
 		return Bool, nil
+	case nullStringType:
+		return TNullString, nil
+	case nullInt64Type:
+		return TNullInt64, nil
+	case nullFloat64Type:
+		return TNullFloat64, nil
+	case nullBoolType:
+		return TNullBool, nil
 	}
 
 	return Invalid, fmt.Errorf("Invalid type %v", f)

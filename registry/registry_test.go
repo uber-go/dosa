@@ -104,23 +104,23 @@ func TestRegistrar_FindAll(t *testing.T) {
 	res, err := reg.FindAll()
 	assert.Error(t, err)
 
-	// found 1
+	// found 4
 	cfg.EntityPaths = []string{"../testentity"}
 	reg, err = registry.NewRegistrar(cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, reg)
 	res, err = reg.FindAll()
 	assert.NoError(t, err)
-	assert.Equal(t, len(res), 1)
+	assert.Equal(t, len(res), 4)
 
-	// found many
+	// found all i.e. 6 (4 under testentity, two in this file)
 	cfg.EntityPaths = []string{".", "../testentity"}
 	reg, err = registry.NewRegistrar(cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, reg)
 	res, err = reg.FindAll()
 	assert.NoError(t, err)
-	assert.Equal(t, len(res), 3)
+	assert.Equal(t, len(res), 6)
 }
 
 func TestNewRegistrar(t *testing.T) {

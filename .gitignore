@@ -170,5 +170,12 @@ cscope.in.out
 cscope.po.out
 
 
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
 # End of https://www.gitignore.io/api/go,node,intellij+iml,tags
 

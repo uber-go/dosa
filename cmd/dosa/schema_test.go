@@ -35,6 +35,15 @@ import (
 	_ "github.com/uber-go/dosa/connectors/devnull"
 )
 
+func getTestEntityNameMap() map[string]bool {
+	return map[string]bool{
+		"awesome_test_entity":           true,
+		"testnullableentity":            true,
+		"named_import_entity":           true,
+		"testnullablenamedimportentity": true,
+	}
+}
+
 func TestScopeFlag_String(t *testing.T) {
 	f := scopeFlag("")
 	f.setString("foo.bar.baz")
@@ -222,6 +231,7 @@ func TestSchema_NoEntitiesFound(t *testing.T) {
 		}
 		os.Args = append(os.Args, []string{
 			"-e", "testentity.go",
+			"-e", "named_import_testentity.go",
 			"../../testentity",
 		}...)
 		main()
@@ -249,8 +259,11 @@ func TestSchema_Check_Happy(t *testing.T) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)
 				assert.True(t, dl.After(time.Now()))
-				assert.Equal(t, 1, len(ed))
-				assert.Equal(t, "awesome_test_entity", ed[0].Name)
+				assert.Equal(t, 4, len(ed))
+				nameMap := getTestEntityNameMap()
+				for _, e := range ed {
+					assert.True(t, nameMap[e.Name])
+				}
 			}).Return(int32(1), nil)
 		return mc, nil
 	})
@@ -287,6 +300,7 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 	exit = func(r int) {
 		assert.Equal(t, 0, r)
 	}
+
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().UpsertSchema(gomock.Any(), "scope", "foo", gomock.Any()).
@@ -294,8 +308,12 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)
 				assert.True(t, dl.After(time.Now()))
-				assert.Equal(t, 1, len(ed))
-				assert.Equal(t, "awesome_test_entity", ed[0].Name)
+				assert.Equal(t, 4, len(ed))
+
+				nameMap := getTestEntityNameMap()
+				for _, e := range ed {
+					assert.True(t, nameMap[e.Name])
+				}
 			}).Return(&dosa.SchemaStatus{Version: int32(1)}, nil)
 		return mc, nil
 	})
