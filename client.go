@@ -128,6 +128,12 @@ type Client interface {
 	// the primary key field values, all other fields are ignored.
 	Remove(ctx context.Context, objectToRemove DomainObject) error
 
+	// RemoveRange removes all of the rows that fall within the range specified by the
+	// given RangeOp.
+	//
+	// Note that any Fields, Limit, or Offest on the given rangeOp are ignored by this function.
+	RemoveRange(ctx context.Context, rangeOp *RangeOp) error
+
 	// TODO: Coming in v2.1
 	// MultiRemove removes multiple rows by primary key. The passed-in entity should
 	// contain the primary key field values.
@@ -352,6 +358,30 @@ func (c *client) Remove(ctx context.Context, entity DomainObject) error {
 
 	err = c.connector.Remove(ctx, re.EntityInfo(), keyFieldValues)
 	return err
+}
+
+// RemoveRange removes all of the rows that fall within the range specified by the
+// given RangeOp.
+//
+// Note that any Fields, Limit, or Offest on the given rangeOp are ignored by this function.
+func (c *client) RemoveRange(ctx context.Context, r *RangeOp) error {
+	if !c.initialized {
+		return &ErrNotInitialized{}
+	}
+
+	// look up the entity in the registry
+	re, err := c.registrar.Find(r.sop.object)
+	if err != nil {
+		return errors.Wrap(err, "RemoveRange")
+	}
+
+	// now convert the client range columns to server side column conditions structure
+	columnConditions, err := convertRangeOpConditions(r, re.table)
+	if err != nil {
+		return errors.Wrap(err, "RemoveRange")
+	}
+
+	return errors.Wrap(c.connector.RemoveRange(ctx, re.info, columnConditions), "RemoveRange")
 }
 
 // MultiRemove deletes several entities by primary key, The entities provided

@@ -329,6 +329,42 @@ func TestClient_Upsert_Errors(t *testing.T) {
 	assert.Contains(t, err.Error(), "badcol")
 }
 
+func TestClient_RemoveRange(t *testing.T) {
+	reg1, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1)
+
+	c1 := dosaRenamed.NewClient(reg1, nullConnector)
+	rop := dosaRenamed.NewRangeOp(cte1).Eq("ID", "123")
+	err := c1.RemoveRange(ctx, rop)
+	assert.True(t, dosaRenamed.ErrorIsNotInitialized(err))
+
+	c1.Initialize(ctx)
+
+	//bad entity
+	rop = dosaRenamed.NewRangeOp(cte2)
+	err = c1.RemoveRange(ctx, rop)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity2")
+
+	// bad column in range
+	rop = dosaRenamed.NewRangeOp(cte1).Eq("borkborkbork", int64(1))
+	err = c1.RemoveRange(ctx, rop)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity1")
+	assert.Contains(t, err.Error(), "borkborkbork")
+
+	// success case
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().RemoveRange(ctx, gomock.Any(), gomock.Any()).Return(nil)
+	c2 := dosaRenamed.NewClient(reg1, mockConn)
+	c2.Initialize(ctx)
+	rop = dosaRenamed.NewRangeOp(cte1)
+	err = c2.RemoveRange(ctx, rop)
+	assert.NoError(t, err)
+}
+
 func TestClient_Range(t *testing.T) {
 	reg1, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1)
 	fieldsToRead := []string{"ID", "Email"}
