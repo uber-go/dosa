@@ -1,32 +1,31 @@
 package: github.com/uber-go/dosa
 import:
+- package: github.com/elodina/go-avro
+- package: github.com/golang/mock
+  subpackages:
+  - gomock
+- package: github.com/jessevdk/go-flags
+  version: ^1.2.0
 - package: github.com/pkg/errors
   version: ^0.8.0
 - package: github.com/satori/go.uuid
   version: ^1.1.0
-- package: github.com/elodina/go-avro
 - package: github.com/uber/dosa-idl
   subpackages:
-  - .gen
+  - .gen/dosa
+  - .gen/dosa/dosaclient
+- package: go.uber.org/yarpc
+  version: ^1.7.1
+  subpackages:
+  - api/transport
+  - transport/http
+  - transport/tchannel
+testImport:
+- package: github.com/yookoala/realpath
 - package: github.com/stretchr/testify
   version: ^1.1.4
   subpackages:
   - assert
-  - mock
-- package: github.com/golang/mock
-  subpackages:
-  - gomock
-- package: github.com/yookoala/realpath
-- package: github.com/jessevdk/go-flags
-
-# github.com/yarpc/yarpc-go and go.uber.org/yarpc are the same thing. Since we _need_ to pin yarpc-go
-# (we directly depend on it), we also pin go.uber.org/yarpc since some of our other dependencies use it.
-# These version pins should always be the same.
-- package: github.com/yarpc/yarpc-go
-  version: ~1.7.1
-- package: go.uber.org/yarpc
-  version: ~1.7.1
-testImport:
 - package: golang.org/x/tools
   subpackages:
   - cover
