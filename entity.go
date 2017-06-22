@@ -384,8 +384,7 @@ func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
 	cks1 := e1.Key.ClusteringKeys
 	cks2 := e2.Key.ClusteringKeys
 	if len(cks2) != 0 || len(cks1) != 0 {
-		b = reflect.DeepEqual(cks1, cks2)
-		if !b {
+		if !reflect.DeepEqual(cks1, cks2) {
 			return errors.Errorf("clustering key mismatch: (%v vs %v)", cks1, cks2)
 		}
 	}
@@ -396,14 +395,31 @@ func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
 	for name, colType2 := range colsMap2 {
 		colType1, ok := colsMap1[name]
 		if !ok {
-			return errors.Errorf("the column %s in entity %s but not in entity %s", name, e1.Name, e2.Name)
+			return errors.Errorf("the column %s in old entity %s but not in new entity", name, e2.Name)
 		}
 		if colType1 != colType2 {
 			return errors.Errorf("the type for column %s mismatch: (%v vs %v)", name, colType1, colType2)
 		}
 	}
 
-	// TODO Handle tags and index comparison in the future
+	// Index can only be added, not mutated
+	if len(e2.Indexes) > len(e1.Indexes) {
+		return errors.Errorf("Indexes in the old entity %s are missing in the new entity", e2.Name)
+	}
+
+	if e2.Indexes != nil {
+		for name, index2 := range e2.Indexes {
+			index1, ok := e1.Indexes[name]
+			if !ok {
+				return errors.Errorf("Index %s in the old entity %s are missing in the new entity", name, e2.Name)
+			}
+
+			if !reflect.DeepEqual(index1, index2) {
+				return errors.Errorf("index mismatch: (%v vs %v)", index1, index2)
+			}
+		}
+	}
+	// TODO Handle tags in the future
 
 	return nil
 }
