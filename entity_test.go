@@ -489,5 +489,10 @@ func TestEntityDefinition_FindColumnDefinition(t *testing.T) {
 	}
 
 	assert.Nil(t, ed.FindColumnDefinition("notacolumn"))
+}
 
+func TestClone(t *testing.T) {
+	ed := getValidEntityDefinition()
+	ed1 := ed.Clone()
+	assert.Equal(t, ed, ed1)
 }
