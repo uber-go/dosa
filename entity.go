@@ -33,7 +33,6 @@ import (
 // In addition to shared EntityDefinition, it records struct name and field names.
 type Table struct {
 	EntityDefinition
-	Indexes    []*IndexDefinition
 	StructName string
 	ColToField map[string]string // map from column name -> field name
 	FieldToCol map[string]string // map from field name -> column name
@@ -57,6 +56,40 @@ func (ck ClusteringKey) String() string {
 type PrimaryKey struct {
 	PartitionKeys  []string
 	ClusteringKeys []*ClusteringKey
+}
+
+// Clone returns a deep copy of PrimaryKey
+func (pk PrimaryKey) Clone() *PrimaryKey {
+	npk := &PrimaryKey{}
+	if pk.PartitionKeys != nil {
+		npk.PartitionKeys = make([]string, len(pk.PartitionKeys))
+
+		for i, k := range pk.PartitionKeys {
+			npk.PartitionKeys[i] = k
+		}
+
+	}
+
+	if pk.ClusteringKeys != nil {
+		npk.ClusteringKeys = make([]*ClusteringKey, len(pk.ClusteringKeys))
+		for i, c := range pk.ClusteringKeys {
+			npk.ClusteringKeys[i] = &ClusteringKey{
+				Name:       c.Name,
+				Descending: c.Descending,
+			}
+		}
+	}
+
+	return npk
+}
+
+// PartitionKeySet returns the set of partition keys
+func (pk PrimaryKey) PartitionKeySet() map[string]struct{} {
+	m := make(map[string]struct{})
+	for _, p := range pk.PartitionKeys {
+		m[p] = struct{}{}
+	}
+	return m
 }
 
 // formatClusteringKeys takes an array of ClusteringKeys and returns
@@ -100,10 +133,25 @@ type ColumnDefinition struct {
 	Tags map[string]string
 }
 
+// Clone returns a deep copy of ColumnDefinition
+func (cd *ColumnDefinition) Clone() *ColumnDefinition {
+	// TODO: clone tag
+	return &ColumnDefinition{
+		Name: cd.Name,
+		Type: cd.Type,
+	}
+}
+
 // IndexDefinition stores information about a DOSA entity's index
 type IndexDefinition struct {
-	Name string // normalized index name
-	Key  *PrimaryKey
+	Key *PrimaryKey
+}
+
+// Clone returns a deep copy of IndexDefinition
+func (id *IndexDefinition) Clone() *IndexDefinition {
+	return &IndexDefinition{
+		Key: id.Key.Clone(),
+	}
 }
 
 // EntityDefinition stores information about a DOSA entity
@@ -111,6 +159,34 @@ type EntityDefinition struct {
 	Name    string // normalized entity name
 	Key     *PrimaryKey
 	Columns []*ColumnDefinition
+	Indexes map[string]*IndexDefinition
+}
+
+// Clone returns a deep copy of EntityDefinition
+func (e *EntityDefinition) Clone() *EntityDefinition {
+	newEd := &EntityDefinition{
+		Name: e.Name,
+		Key:  e.Key.Clone(),
+	}
+
+	if e.Columns != nil {
+		newEd.Columns = make([]*ColumnDefinition, len(e.Columns))
+		for i, col := range e.Columns {
+			newEd.Columns[i] = col.Clone()
+		}
+	}
+
+	if e.Indexes != nil {
+		newEd.Indexes = make(map[string]*IndexDefinition)
+		if e.Indexes == nil {
+			newEd.Indexes = nil
+		}
+		for k, index := range e.Indexes {
+			newEd.Indexes[k] = index.Clone()
+		}
+	}
+
+	return newEd
 }
 
 // EnsureValid ensures the entity definition is valid.
@@ -181,6 +257,51 @@ func (e *EntityDefinition) EnsureValid() error {
 		return err
 	}
 
+	// validate index
+	for indexName, index := range e.Indexes {
+		if err := IsValidName(indexName); err != nil {
+			return errors.Wrap(err, "IndexDefinition has invalid name")
+		}
+
+		if index == nil {
+			return errors.New("IndexDefinition is nil")
+		}
+
+		if index.Key == nil {
+			return errors.New("IndexDefinition has nil key")
+		}
+
+		if len(index.Key.PartitionKeys) == 0 {
+			return errors.New("index does not have partition key")
+		}
+
+		keyNamesSeen := map[string]struct{}{}
+		for _, p := range index.Key.PartitionKeys {
+			if _, ok := columnNamesSeen[p]; !ok {
+				return errors.Errorf("index partition key does not refer to a column: %q", p)
+			}
+			if _, ok := keyNamesSeen[p]; ok {
+				return errors.Errorf("a column cannot be used twice in index key: %q", p)
+			}
+			keyNamesSeen[p] = struct{}{}
+		}
+
+		for _, c := range index.Key.ClusteringKeys {
+			if c == nil {
+				return errors.New("IndexDefinition has invalid nil clustering key")
+			}
+
+			if _, ok := columnNamesSeen[c.Name]; !ok {
+				return errors.Errorf("clustering key does not refer to a column: %q", c.Name)
+			}
+
+			if _, ok := keyNamesSeen[c.Name]; ok {
+				return errors.Errorf("a column cannot be used twice in index key: %q", c.Name)
+			}
+			keyNamesSeen[c.Name] = struct{}{}
+		}
+	}
+
 	return nil
 }
 
@@ -198,6 +319,7 @@ func (e *EntityDefinition) ensureNonNullablePrimaryKeys() error {
 			return errors.Errorf("clustering key is of nullable type: %q", k)
 		}
 	}
+
 	return nil
 }
 
@@ -281,7 +403,7 @@ func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
 		}
 	}
 
-	// TODO Handle tags comparison in the future
+	// TODO Handle tags and index comparison in the future
 
 	return nil
 }

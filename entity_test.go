@@ -182,6 +182,122 @@ func TestEntityDefinitionEnsureValid(t *testing.T) {
 	}
 }
 
+func TestEntityDefinitionEnsureValidForIndex(t *testing.T) {
+	type testData struct {
+		e     *dosa.EntityDefinition
+		valid bool
+		msg   string
+	}
+
+	invalidName := getValidEntityDefinition()
+	invalidName.Indexes["index3=1123"] = invalidName.Indexes["index1"]
+
+	nilPK := getValidEntityDefinition()
+	nilPK.Indexes["index1"].Key = nil
+
+	nilIndex := getValidEntityDefinition()
+	nilIndex.Indexes["index1"] = nil
+
+	noPartitionKey := getValidEntityDefinition()
+	noPartitionKey.Indexes["index1"].Key.PartitionKeys = []string{}
+
+	invalidPartitionKeyName := getValidEntityDefinition()
+	invalidPartitionKeyName.Indexes["index1"].Key.PartitionKeys[0] = "fox"
+
+	dupParitionKeyNames := getValidEntityDefinition()
+	dupParitionKeyNames.Indexes["index1"].Key.PartitionKeys = append(dupParitionKeyNames.Key.PartitionKeys, "foo")
+
+	nilClusteringKey := getValidEntityDefinition()
+	nilClusteringKey.Indexes["index1"].Key.ClusteringKeys = append(nilClusteringKey.Key.ClusteringKeys, nil)
+
+	invalidClusteringKeyName := getValidEntityDefinition()
+	invalidClusteringKeyName.Indexes["index1"].Key.ClusteringKeys[0].Name = "fox"
+
+	dupClusteringKeyName := getValidEntityDefinition()
+	dupClusteringKeyName.Indexes["index1"].Key.ClusteringKeys[0].Name = "qux"
+
+	noClusteringKey := getValidEntityDefinition()
+	noClusteringKey.Indexes["index1"].Key.ClusteringKeys = []*dosa.ClusteringKey{}
+
+	data := []testData{
+		{
+			e:     invalidName,
+			valid: false,
+			msg:   "name must contain only",
+		},
+		{
+			e:     nilPK,
+			valid: false,
+			msg:   "nil key",
+		},
+		{
+			e:     nilIndex,
+			valid: false,
+			msg:   "is nil",
+		},
+		{
+			e:     noPartitionKey,
+			valid: false,
+			msg:   "does not have partition key",
+		},
+		{
+			e:     invalidPartitionKeyName,
+			valid: false,
+			msg:   "partition key does not refer to a column",
+		},
+		{
+			e:     invalidPartitionKeyName,
+			valid: false,
+			msg:   "\"fox\"",
+		},
+		{
+			e:     dupParitionKeyNames,
+			valid: false,
+			msg:   "a column cannot be used twice in index key",
+		},
+		{
+			e:     dupParitionKeyNames,
+			valid: false,
+			msg:   "\"foo\"",
+		},
+		{
+			e:     invalidClusteringKeyName,
+			valid: false,
+			msg:   "\"fox\"",
+		},
+		{
+			e:     invalidClusteringKeyName,
+			valid: false,
+			msg:   "does not refer to",
+		},
+		{
+			e:     dupClusteringKeyName,
+			valid: false,
+			msg:   "a column cannot be used twice in index key",
+		},
+		{
+			e:     noClusteringKey,
+			valid: true,
+			msg:   "no clustering key is ok",
+		},
+		{
+			e:     nilClusteringKey,
+			valid: false,
+			msg:   "nil clustering key",
+		},
+	}
+
+	for _, entry := range data {
+		err := entry.e.EnsureValid()
+		if entry.valid {
+			assert.NoError(t, err, entry.msg)
+		} else {
+			assert.Error(t, err, entry.msg)
+			assert.Contains(t, err.Error(), entry.msg)
+		}
+	}
+}
+
 func TestEntityDefinitionHelpers(t *testing.T) {
 	ed := getValidEntityDefinition()
 
@@ -194,6 +310,7 @@ func TestEntityDefinitionHelpers(t *testing.T) {
 
 	expectedPartitionKeySet := map[string]struct{}{"foo": {}}
 	assert.Equal(t, expectedPartitionKeySet, ed.PartitionKeySet())
+	assert.Equal(t, expectedPartitionKeySet, ed.Key.PartitionKeySet())
 
 	expectedClusteringKeySet := map[string]struct{}{"bar": {}}
 	assert.Equal(t, expectedClusteringKeySet, ed.ClusteringKeySet())
@@ -211,6 +328,26 @@ func getValidEntityDefinition() *dosa.EntityDefinition {
 				{
 					Name:       "bar",
 					Descending: true,
+				},
+			},
+		},
+		Indexes: map[string]*dosa.IndexDefinition{
+
+			"index1": {
+				Key: &dosa.PrimaryKey{
+					PartitionKeys: []string{"qux"},
+					ClusteringKeys: []*dosa.ClusteringKey{
+						{
+							Name:       "bar",
+							Descending: true,
+						},
+					},
+				},
+			},
+
+			"index2": {
+				Key: &dosa.PrimaryKey{
+					PartitionKeys: []string{"bar"},
 				},
 			},
 		},
@@ -352,5 +489,10 @@ func TestEntityDefinition_FindColumnDefinition(t *testing.T) {
 	}
 
 	assert.Nil(t, ed.FindColumnDefinition("notacolumn"))
+}
 
+func TestClone(t *testing.T) {
+	ed := getValidEntityDefinition()
+	ed1 := ed.Clone()
+	assert.Equal(t, ed, ed1)
 }

@@ -39,11 +39,11 @@ type Condition struct {
 // The transform arg is a function to transform the column name to a better representation for error message under
 // different circumstances. For example, on client side it can transform the column name to actual go struct field name;
 // and on the server side, an identity transformer func can be used.
-func EnsureValidRangeConditions(ed *EntityDefinition, columnConditions map[string][]*Condition, transform func(string) string) error {
-	unconstrainedPartitionKeySet := ed.PartitionKeySet()
+func EnsureValidRangeConditions(ed *EntityDefinition, pk *PrimaryKey, columnConditions map[string][]*Condition, transform func(string) string) error {
+	unconstrainedPartitionKeySet := pk.PartitionKeySet()
 	columnTypes := ed.ColumnTypes()
 
-	clusteringKeyConditions := make([][]*Condition, len(ed.Key.ClusteringKeys))
+	clusteringKeyConditions := make([][]*Condition, len(pk.ClusteringKeys))
 
 COND:
 	for column, conds := range columnConditions {
@@ -55,7 +55,7 @@ COND:
 			continue
 		}
 
-		for i, c := range ed.Key.ClusteringKeys {
+		for i, c := range pk.ClusteringKeys {
 			if column == c.Name {
 				clusteringKeyConditions[i] = conds
 				continue COND
@@ -73,7 +73,7 @@ COND:
 		return errors.Errorf("missing Eq condition on partition keys: %v", names)
 	}
 
-	if err := ensureClusteringKeyConditions(ed, columnTypes, clusteringKeyConditions, transform); err != nil {
+	if err := ensureClusteringKeyConditions(pk.ClusteringKeys, columnTypes, clusteringKeyConditions, transform); err != nil {
 		return errors.Wrap(err, "conditions for clustering keys are invalid")
 	}
 
@@ -96,7 +96,7 @@ func ensureExactOneEqCondition(t Type, conditions []*Condition) error {
 	return nil
 }
 
-func ensureClusteringKeyConditions(ed *EntityDefinition, columnTypes map[string]Type,
+func ensureClusteringKeyConditions(cks []*ClusteringKey, columnTypes map[string]Type,
 	clusteringKeyConditions [][]*Condition, transform func(string) string) error {
 	// ensure conditions are applied to consecutive clustering keys
 	lastConstrainedIndex := -1
@@ -104,7 +104,7 @@ func ensureClusteringKeyConditions(ed *EntityDefinition, columnTypes map[string]
 		if len(conditions) > 0 {
 			if lastConstrainedIndex != i-1 {
 				return errors.Errorf("conditions must be applied consecutively on clustering keys, "+
-					"but at least one clustering key is unconstrained before: %s", transform(ed.Key.ClusteringKeys[i].Name))
+					"but at least one clustering key is unconstrained before: %s", transform(cks[i].Name))
 			}
 			lastConstrainedIndex = i
 		}
@@ -112,7 +112,7 @@ func ensureClusteringKeyConditions(ed *EntityDefinition, columnTypes map[string]
 
 	// ensure only Eq is applied to clustering keys except for the last constrained one
 	for i := 0; i < lastConstrainedIndex; i++ {
-		name := ed.Key.ClusteringKeys[i].Name
+		name := cks[i].Name
 		if err := ensureExactOneEqCondition(columnTypes[name], clusteringKeyConditions[i]); err != nil {
 			return errors.Wrapf(err, "exact one Eq condition can be applied except for the last "+
 				"constrained clustering key, found invalid condition for key: %s", transform(name))
@@ -121,7 +121,7 @@ func ensureClusteringKeyConditions(ed *EntityDefinition, columnTypes map[string]
 
 	// ensure the last constrained clustering key has valid conditions
 	if lastConstrainedIndex >= 0 {
-		name := ed.Key.ClusteringKeys[lastConstrainedIndex].Name
+		name := cks[lastConstrainedIndex].Name
 		if err := ensureValidConditions(columnTypes[name], clusteringKeyConditions[lastConstrainedIndex]); err != nil {
 			return errors.Wrapf(err, "invalid or unsupported conditions for clustering key: %s", transform(name))
 		}

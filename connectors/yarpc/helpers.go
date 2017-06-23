@@ -154,23 +154,55 @@ func RPCTypeToClientType(t dosarpc.ElemType) dosa.Type {
 	panic("bad type")
 }
 
-// EntityDefinitionToThrift converts the client EntityDefinition to the RPC EntityDefinition
-func EntityDefinitionToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
-	ck := make([]*dosarpc.ClusteringKey, len(ed.Key.ClusteringKeys))
-	for ckinx, clusteringKey := range ed.Key.ClusteringKeys {
+// PrimaryKeyToThrift converts the dosa primary key to the thrift primary key type
+func PrimaryKeyToThrift(key *dosa.PrimaryKey) *dosarpc.PrimaryKey {
+	ck := make([]*dosarpc.ClusteringKey, len(key.ClusteringKeys))
+	for ckinx, clusteringKey := range key.ClusteringKeys {
 		// TODO: The client uses 'descending' but the RPC uses 'ascending'? Fix this insanity!
 		ascending := !clusteringKey.Descending
 		name := clusteringKey.Name
 		ck[ckinx] = &dosarpc.ClusteringKey{Name: &name, Asc: &ascending}
 	}
-	pk := dosarpc.PrimaryKey{PartitionKeys: ed.Key.PartitionKeys, ClusteringKeys: ck}
+	return &dosarpc.PrimaryKey{PartitionKeys: key.PartitionKeys, ClusteringKeys: ck}
+}
+
+// EntityDefinitionToThrift converts the client EntityDefinition to the RPC EntityDefinition
+func EntityDefinitionToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
 	fd := make(map[string]*dosarpc.FieldDesc, len(ed.Columns))
 	for _, column := range ed.Columns {
 		rpcType := RPCTypeFromClientType(column.Type)
 		fd[column.Name] = &dosarpc.FieldDesc{Type: &rpcType}
 	}
-	name := ed.Name
-	return &dosarpc.EntityDefinition{PrimaryKey: &pk, FieldDescs: fd, Name: &name}
+
+	// indexes
+	indexes := make(map[string]*dosarpc.IndexDefinition)
+	for name, index := range ed.Indexes {
+		pkI := PrimaryKeyToThrift(index.Key)
+		indexes[name] = &dosarpc.IndexDefinition{Key: pkI}
+	}
+	return &dosarpc.EntityDefinition{
+		PrimaryKey: PrimaryKeyToThrift(ed.Key),
+		FieldDescs: fd,
+		Name:       &ed.Name,
+		Indexes:    indexes,
+	}
+}
+
+// FromThriftToPrimaryKey converts thrift primary key type to dosa primary key type
+func FromThriftToPrimaryKey(key *dosarpc.PrimaryKey) *dosa.PrimaryKey {
+	pk := key.PartitionKeys
+	ck := make([]*dosa.ClusteringKey, len(key.ClusteringKeys))
+	for i, v := range key.ClusteringKeys {
+		ck[i] = &dosa.ClusteringKey{
+			Name:       *v.Name,
+			Descending: !*v.Asc,
+		}
+	}
+
+	return &dosa.PrimaryKey{
+		PartitionKeys:  pk,
+		ClusteringKeys: ck,
+	}
 }
 
 // FromThriftToEntityDefinition converts the RPC EntityDefinition to client EntityDefinition
@@ -185,22 +217,19 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 		}
 		i++
 	}
-	pk := ed.PrimaryKey.PartitionKeys
-	ck := make([]*dosa.ClusteringKey, len(ed.PrimaryKey.ClusteringKeys))
-	for i, v := range ed.PrimaryKey.ClusteringKeys {
-		ck[i] = &dosa.ClusteringKey{
-			Name:       *v.Name,
-			Descending: !*v.Asc,
+
+	indexes := make(map[string]*dosa.IndexDefinition)
+	for name, index := range ed.Indexes {
+		indexes[name] = &dosa.IndexDefinition{
+			Key: FromThriftToPrimaryKey(index.Key),
 		}
 	}
 
 	return &dosa.EntityDefinition{
 		Name:    *ed.Name,
 		Columns: fields,
-		Key: &dosa.PrimaryKey{
-			PartitionKeys:  pk,
-			ClusteringKeys: ck,
-		},
+		Key:     FromThriftToPrimaryKey(ed.PrimaryKey),
+		Indexes: indexes,
 	}
 }
 func encodeOperator(o dosa.Operator) *dosarpc.Operator {

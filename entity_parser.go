@@ -33,6 +33,7 @@ import (
 
 const (
 	entityName = "Entity"
+	indexName  = "Index"
 	dosaTagKey = "dosa"
 	asc        = "asc"
 	desc       = "desc"
@@ -44,7 +45,11 @@ var (
 	primaryKeyPattern2 = regexp.MustCompile(`\(\s*([^,\s]+),?(.*)\)`)
 	primaryKeyPattern3 = regexp.MustCompile(`^\s*([^(),\s]+)\s*$`)
 
+	indexKeyPattern0 = regexp.MustCompile(`key\s*=\s*([^=]*)((\s+.*=)|$)`)
+
 	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
+
+	indexType = reflect.TypeOf((*Index)(nil)).Elem()
 )
 
 // parseClusteringKeys func parses the clustering key of DOSA object
@@ -172,6 +177,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		FieldToCol: map[string]string{},
 		EntityDefinition: EntityDefinition{
 			Columns: []*ColumnDefinition{},
+			Indexes: map[string]*IndexDefinition{},
 		},
 	}
 	for i := 0; i < elem.NumField(); i++ {
@@ -190,13 +196,25 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 				return nil, err
 			}
 		} else {
-			cd, err := parseFieldTag(structField, tag)
-			if err != nil {
-				return nil, errors.Wrapf(err, "column %q had invalid type", name)
+			// parse index fields
+			if structField.Type == indexType {
+				indexName, indexKey, err := parseIndexTag(structField.Name, tag)
+				if err != nil {
+					return nil, err
+				}
+				if _, exist := t.Indexes[indexName]; exist {
+					return nil, errors.Errorf("index name is duplicated: %s", indexName)
+				}
+				t.Indexes[indexName] = &IndexDefinition{Key: indexKey}
+			} else {
+				cd, err := parseFieldTag(structField, tag)
+				if err != nil {
+					return nil, errors.Wrapf(err, "column %q had invalid type", name)
+				}
+				t.Columns = append(t.Columns, cd)
+				t.ColToField[cd.Name] = name
+				t.FieldToCol[name] = cd.Name
 			}
-			t.Columns = append(t.Columns, cd)
-			t.ColToField[cd.Name] = name
-			t.FieldToCol[name] = cd.Name
 		}
 	}
 
@@ -230,6 +248,54 @@ func translateKeyName(t *Table) {
 			pk.ClusteringKeys[i].Name = v
 		}
 	}
+
+	for _, index := range t.Indexes {
+		pk := index.Key
+		for i := range pk.PartitionKeys {
+			name := pk.PartitionKeys[i]
+			if v, ok := t.FieldToCol[name]; ok {
+				pk.PartitionKeys[i] = v
+			}
+		}
+
+		for i := range pk.ClusteringKeys {
+			name := pk.ClusteringKeys[i].Name
+			if v, ok := t.FieldToCol[name]; ok {
+				pk.ClusteringKeys[i].Name = v
+			}
+		}
+	}
+}
+
+// parseIndexTag functions parses DOSA index tag
+func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, error) {
+	tag := dosaAnnotation
+	// find the primaryKey
+	matchs := indexKeyPattern0.FindStringSubmatch(tag)
+	if len(matchs) != 4 {
+		return "", nil, fmt.Errorf("dosa.Index %s with an invalid dosa index tag %q", indexName, tag)
+	}
+	pkString := matchs[1]
+	key, err := parsePrimaryKey(indexName, pkString)
+	if err != nil {
+		return "", nil, errors.Wrapf(err, "struct %s has an invalid index key %q", indexName, pkString)
+	}
+	toRemove := strings.TrimSuffix(matchs[0], matchs[2])
+	toRemove = strings.TrimSuffix(matchs[0], matchs[3])
+	tag = strings.Replace(tag, toRemove, "", 1)
+
+	//find the name
+	fullNameTag, name, err := parseNameTag(tag, indexName)
+	if err != nil {
+		return "", nil, errors.Wrapf(err, "invalid name tag: %s", tag)
+	}
+
+	tag = strings.Replace(tag, fullNameTag, "", 1)
+	if strings.TrimSpace(tag) != "" {
+		return "", nil, fmt.Errorf("index field %s with an invalid dosa index tag: %s", indexName, tag)
+	}
+
+	return name, key, nil
 }
 
 // parseNameTag functions parses DOSA "name" tag

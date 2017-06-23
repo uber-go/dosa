@@ -108,6 +108,30 @@ var testEntityDefinition = &dosa.EntityDefinition{
 			},
 		},
 	},
+	Indexes: map[string]*dosa.IndexDefinition{
+		"index1": {
+			Key: &dosa.PrimaryKey{
+				PartitionKeys: []string{uuidField},
+				ClusteringKeys: []*dosa.ClusteringKey{
+					{
+						Name:       stringKeyField,
+						Descending: false,
+					},
+				},
+			},
+		},
+		"index2": {
+			Key: &dosa.PrimaryKey{
+				PartitionKeys: []string{int64Field, uuidKeyField},
+				ClusteringKeys: []*dosa.ClusteringKey{
+					{
+						Name:       stringKeyField,
+						Descending: false,
+					},
+				},
+			},
+		},
+	},
 	Columns: []*dosa.ColumnDefinition{
 		{
 			Name: uuidKeyField,
@@ -162,6 +186,7 @@ func TestEntityDefinitionConvert(t *testing.T) {
 	ed := FromThriftToEntityDefinition(rpcEd)
 	assert.Equal(t, testEntityDefinition.Key, ed.Key)
 	assert.Equal(t, testEntityDefinition.Name, ed.Name)
+	assert.Equal(t, testEntityDefinition.Indexes, ed.Indexes)
 	edCols := make(map[string]*dosa.ColumnDefinition)
 	for _, c := range ed.Columns {
 		edCols[c.Name] = c

@@ -41,6 +41,7 @@ import (
 
 type ClientTestEntity1 struct {
 	dosaRenamed.Entity `dosa:"primaryKey=(ID)"`
+	dosaRenamed.Index  `dosa:"key=Name, name=username"`
 	ID                 int64
 	Name               string
 	Email              string
@@ -48,6 +49,7 @@ type ClientTestEntity1 struct {
 
 type ClientTestEntity2 struct {
 	dosaRenamed.Entity `dosa:"primaryKey=(UUID,Color)"`
+	SearchByColor      dosaRenamed.Index `dosa:"key=Color"`
 	UUID               string
 	Color              string
 	IsActive           bool
