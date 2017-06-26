@@ -30,6 +30,9 @@ import (
 
 	"encoding/binary"
 
+	"encoding/base64"
+
+	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
@@ -345,6 +348,8 @@ func (c *Connector) Remove(_ context.Context, ei *dosa.EntityInfo, values map[st
 
 	// no clustering keys? Simple, delete this
 	if len(ei.Def.ClusteringKeySet()) == 0 {
+		// NOT delete(entityRef, encodedPartitionKey)
+		// Unfortunately, Scan relies on the fact that these are not completely deleted
 		entityRef[encodedPartitionKey] = nil
 		return nil
 	}
@@ -378,8 +383,51 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 		return []map[string]dosa.FieldValue{}, "", nil
 	}
 
-	// TODO: enforce limits and return a token when there are more rows
-	return partitionRange.values(), "", nil
+	if token != "" {
+		// if we have a token, use it to determine the offset to start from
+		values, err := decodeToken(token)
+		if err != nil {
+			return nil, "", errors.Wrapf(err, "Invalid token %q", token)
+		}
+		found, offset := findInsertionPoint(ei, partitionRange.values(), values)
+		if found {
+			partitionRange.start += offset + 1
+		} else {
+			partitionRange.start += offset
+		}
+	}
+	slice := partitionRange.values()
+	token = ""
+	if len(slice) > limit {
+		token = makeToken(slice[limit-1])
+		slice = slice[:limit]
+	}
+	return slice, token, nil
+}
+
+func makeToken(v map[string]dosa.FieldValue) string {
+	encodedKey := bytes.Buffer{}
+	encoder := gob.NewEncoder(&encodedKey)
+	gob.Register(dosa.UUID(""))
+	err := encoder.Encode(v)
+	if err != nil {
+		// this should really be impossible, unless someone forgot to
+		// register some newly supported type with the encoder
+		panic(err)
+	}
+	return base64.StdEncoding.EncodeToString([]byte(encodedKey.String()))
+}
+
+func decodeToken(token string) (values map[string]dosa.FieldValue, err error) {
+	gobData, err := base64.StdEncoding.DecodeString(token)
+	if err != nil {
+		return nil, err
+	}
+	gobReader := bytes.NewBuffer(gobData)
+	gob.Register(dosa.UUID(""))
+	decoder := gob.NewDecoder(gobReader)
+	err = decoder.Decode(&values)
+	return values, err
 }
 
 // findRange finds the partitionRange specified by the given entity info and column conditions.
@@ -475,14 +523,64 @@ func (c *Connector) Scan(_ context.Context, ei *dosa.EntityInfo, minimumFields [
 	}
 	entityRef := c.data[ei.Def.Name]
 	allTheThings := make([]map[string]dosa.FieldValue, 0)
-	// TODO: stop when we reach the limit, and make a token for continuation
-	for _, vals := range entityRef {
-		allTheThings = append(allTheThings, vals...)
+
+	// in order for Scan to be deterministic and continuable, we have
+	// to sort the primary key references
+	keys := make([]string, 0, len(entityRef))
+	for key := range entityRef {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	// if there was a token, decode it so we can determine the starting
+	// partition key
+	startPartKey, start, err := getStartingPoint(ei, token)
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "Invalid token %s", token)
+	}
+
+	for _, key := range keys {
+		if startPartKey != "" {
+			// had a token, so we need to either partially skip or fully skip
+			// depending on whether we found the token's partition key yet
+			if key == startPartKey {
+				// we reached the starting partition key, so stop skipping
+				// future values, and add a portion of this one to the set
+				startPartKey = ""
+				found, offset := findInsertionPoint(ei, entityRef[key], start)
+				if found {
+					offset++
+				}
+				allTheThings = append(allTheThings, entityRef[key][offset:]...)
+			} // else keep looking for this partition key
+			continue
+		}
+		allTheThings = append(allTheThings, entityRef[key]...)
 	}
 	if len(allTheThings) == 0 {
 		return []map[string]dosa.FieldValue{}, "", nil
 	}
-	return allTheThings, "", nil
+	// see if we need a token to return
+	token = ""
+	if len(allTheThings) > limit {
+		token = makeToken(allTheThings[limit-1])
+		allTheThings = allTheThings[:limit]
+	}
+	return allTheThings, token, nil
+}
+
+// getStartingPoint determines the partition key of the starting point to resume a scan
+// when a token is provided
+func getStartingPoint(ei *dosa.EntityInfo, token string) (start string, startPartKey map[string]dosa.FieldValue, err error) {
+	if token == "" {
+		return "", map[string]dosa.FieldValue{}, nil
+	}
+	startPartKey, err = decodeToken(token)
+	if err != nil {
+		return "", map[string]dosa.FieldValue{}, errors.Wrapf(err, "Invalid token %q", token)
+	}
+	start = partitionKeyBuilder(ei, startPartKey)
+	return start, startPartKey, nil
 }
 
 // CheckSchema is just a stub; there is no schema management for the in memory connector
@@ -497,11 +595,6 @@ func (c *Connector) Shutdown() error {
 	defer c.lock.Unlock()
 	c.data = nil
 	return nil
-}
-
-// Name returns the name of the connector
-func Name() string {
-	return name
 }
 
 // NewConnector creates a new in-memory connector

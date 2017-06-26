@@ -655,8 +655,10 @@ func TestCompareType(t *testing.T) {
 
 func TestConnector_Scan(t *testing.T) {
 	sut := NewConnector()
-	testUUIDs := make([]dosa.UUID, 10)
-	for x := 0; x < 10; x++ {
+	const idcount = 10
+
+	testUUIDs := make([]dosa.UUID, idcount)
+	for x := 0; x < idcount; x++ {
 		testUUIDs[x] = dosa.NewUUID()
 	}
 	// scan with nothing there yet
@@ -664,8 +666,8 @@ func TestConnector_Scan(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, token)
 
-	// first, insert 10 random UUID values into two partition keys
-	for x := 0; x < 10; x++ {
+	// first, insert some random UUID values into two partition keys
+	for x := 0; x < idcount; x++ {
 		err := sut.Upsert(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data" + string(x%2)),
 			"c1": dosa.FieldValue(int64(1)),
@@ -675,11 +677,11 @@ func TestConnector_Scan(t *testing.T) {
 
 	data, token, err := sut.Scan(context.TODO(), clusteredEi, dosa.All(), "", 100)
 	assert.NoError(t, err)
-	assert.Len(t, data, 10)
+	assert.Len(t, data, idcount)
 	assert.Empty(t, token)
 
 	// there's an odd edge case when you delete everything, so do that, then call scan
-	for x := 0; x < 10; x++ {
+	for x := 0; x < idcount; x++ {
 		err := sut.Remove(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data" + string(x%2)),
 			"c1": dosa.FieldValue(int64(1)),
@@ -690,6 +692,81 @@ func TestConnector_Scan(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, data)
 	assert.Empty(t, token)
+}
+
+func TestConnector_ScanWithToken(t *testing.T) {
+	sut := NewConnector()
+	const idcount = 100
+	createTestData(t, sut, func(id int) string {
+		return "data" + string(id%3)
+	}, idcount)
+	var token string
+	var err error
+	var data []map[string]dosa.FieldValue
+	for x := 0; x < idcount; x++ {
+		data, token, err = sut.Scan(context.TODO(), clusteredEi, dosa.All(), token, 1)
+		assert.NoError(t, err)
+		assert.Len(t, data, 1)
+		if x < idcount-1 {
+			assert.NotEmpty(t, token)
+		} else {
+			assert.Empty(t, token)
+		}
+	}
+	// now walk through again, but delete the item returned
+	// (note: we don't have to reset token, because it should be empty now)
+	for x := 0; x < idcount; x++ {
+		data, token, err = sut.Scan(context.TODO(), clusteredEi, dosa.All(), token, 1)
+		assert.NoError(t, err)
+		assert.Len(t, data, 1)
+		if x < idcount-1 {
+			assert.NotEmpty(t, token)
+		} else {
+			assert.Empty(t, token)
+		}
+		err = sut.Remove(context.TODO(), clusteredEi, data[0])
+		assert.NoError(t, err)
+	}
+
+}
+
+func TestConnector_ScanWithTokenNoClustering(t *testing.T) {
+	sut := NewConnector()
+
+	// add some data
+	const idcount = 100
+	for x := 0; x < idcount; x++ {
+		sut.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{
+			"f1": dosa.FieldValue("data" + string(x)),
+		})
+	}
+	var token string
+	var err error
+	var data []map[string]dosa.FieldValue
+	for x := 0; x < idcount; x++ {
+		data, token, err = sut.Scan(context.TODO(), testEi, dosa.All(), token, 1)
+		assert.NoError(t, err)
+		assert.Len(t, data, 1)
+		if x < idcount-1 {
+			assert.NotEmpty(t, token)
+		} else {
+			assert.Empty(t, token)
+		}
+	}
+	// and again, this time deleting as we go
+	for x := 0; x < idcount; x++ {
+		data, token, err = sut.Scan(context.TODO(), testEi, dosa.All(), token, 1)
+		assert.NoError(t, err)
+		assert.Len(t, data, 1)
+		if x < idcount-1 {
+			assert.NotEmpty(t, token)
+		} else {
+			assert.Empty(t, token)
+		}
+		err = sut.Remove(context.TODO(), testEi, data[0])
+		assert.NoError(t, err)
+	}
+
 }
 
 func TestConstruction(t *testing.T) {
@@ -706,4 +783,94 @@ func TestPanics(t *testing.T) {
 	assert.Panics(t, func() {
 		passCol(dosa.FieldValue(int64(1)), &dosa.Condition{Op: 0, Value: dosa.FieldValue(int64(1))})
 	})
+}
+
+func TestRangePager(t *testing.T) {
+	sut := NewConnector()
+	idcount := 5
+	// create test data in one partition "data"
+	createTestData(t, sut, func(_ int) string { return "data" }, idcount)
+	var token string
+	var err error
+	var data []map[string]dosa.FieldValue
+	for x := 0; x < idcount; x++ {
+		data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+			"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+			"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
+		}, dosa.All(), token, 1)
+		assert.NoError(t, err)
+		assert.Len(t, data, 1)
+		if x < idcount-1 {
+			assert.NotEmpty(t, token)
+		} else {
+			assert.Empty(t, token)
+		}
+	}
+	// now walk through again, but delete the item returned
+	// (note: we don't have to reset token, because it should be empty now)
+	for x := 0; x < idcount; x++ {
+		data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+			"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+			"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
+		}, dosa.All(), token, 1)
+		assert.NoError(t, err)
+		assert.Len(t, data, 1)
+		if x < idcount-1 {
+			assert.NotEmpty(t, token)
+		} else {
+			assert.Empty(t, token)
+		}
+		err = sut.Remove(context.TODO(), clusteredEi, data[0])
+		assert.NoError(t, err)
+	}
+}
+func TestInvalidToken(t *testing.T) {
+	sut := NewConnector()
+
+	// we don't use the token if there's no data that matches, so lets
+	// create one row
+	createTestData(t, sut, func(id int) string {
+		return "data"
+	}, 1)
+
+	token := "this is not a token and not a hot dog"
+	t.Run("testInvalidTokenRange", func(t *testing.T) {
+		_, _, err := sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+			"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+			"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
+		}, dosa.All(), token, 1)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "Invalid token")
+	})
+	t.Run("testInvalidTokenScan", func(t *testing.T) {
+		_, _, err := sut.Scan(context.TODO(), clusteredEi, dosa.All(), token, 1)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "Invalid token")
+	})
+}
+
+// TestEncoderPanic covers the one panic() in makeToken
+// This panic should only happen if someone passes a dosa.FieldValue that points to
+// something we don't know how to handle
+func TestEncoderPanic(t *testing.T) {
+	assert.Panics(t, func() {
+		makeToken(map[string]dosa.FieldValue{
+			"oops": func() {},
+		})
+	})
+}
+
+// createTestData populates some test data. The keyGenFunc can either return a constant,
+// which gives you a single partition of data, or some function of the current offset, which
+// will scatter the data across different partition keys
+func createTestData(t *testing.T, sut *Connector, keyGenFunc func(int) string, idcount int) {
+	// insert a bunch of values with V1 timestamps as clustering keys
+	for x := 0; x < idcount; x++ {
+		err := sut.Upsert(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
+			"f1": dosa.FieldValue(keyGenFunc(x)),
+			"c1": dosa.FieldValue(int64(1)),
+			"c6": dosa.FieldValue(int32(x)),
+			"c7": dosa.FieldValue(dosa.UUID(uuid.NewV1().String()))})
+		assert.NoError(t, err)
+	}
 }
