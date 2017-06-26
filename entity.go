@@ -404,7 +404,7 @@ func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
 
 	// Index can only be added, not mutated
 	if len(e2.Indexes) > len(e1.Indexes) {
-		return errors.Errorf("Indexes in the old entity %s are missing in the new entity", e2.Name)
+		return errors.Errorf("Old entity %s has %d indexes but new entity has %d indexes", e2.Name, len(e2.Indexes), len(e1.Indexes))
 	}
 
 	if e2.Indexes != nil {
