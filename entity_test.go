@@ -332,7 +332,6 @@ func getValidEntityDefinition() *dosa.EntityDefinition {
 			},
 		},
 		Indexes: map[string]*dosa.IndexDefinition{
-
 			"index1": {
 				Key: &dosa.PrimaryKey{
 					PartitionKeys: []string{"qux"},
@@ -460,6 +459,17 @@ func TestEntityDefinitionIsCompatible(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "type")
 
+	// index not match
+	errEd = getValidEntityDefinition()
+	errEd.Indexes["index1"] = &dosa.IndexDefinition{
+		Key: &dosa.PrimaryKey{
+			PartitionKeys: []string{"bar, qux"},
+		},
+	}
+	err = validEd.IsCompatible(errEd)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "index")
+
 	// same entity
 	// name not match
 	aEd := getValidEntityDefinition()
@@ -478,6 +488,17 @@ func TestEntityDefinitionIsCompatible(t *testing.T) {
 	// reverse
 	err = validEd.IsCompatible(aEd)
 	assert.Error(t, err)
+
+	// add new index
+	aEd = getValidEntityDefinition()
+	aEd.Indexes["newindex"] = &dosa.IndexDefinition{
+		Key: &dosa.PrimaryKey{
+			PartitionKeys: []string{"bar, qux"},
+		},
+	}
+
+	err = aEd.IsCompatible(validEd)
+	assert.NoError(t, err)
 }
 
 func TestEntityDefinition_FindColumnDefinition(t *testing.T) {
