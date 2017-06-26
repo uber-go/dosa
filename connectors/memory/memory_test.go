@@ -785,21 +785,6 @@ func TestPanics(t *testing.T) {
 	})
 }
 
-// createTestData populates some test data. The keyGenFunc can either return a constant,
-// which gives you a single partition of data, or some function of the current offset, which
-// will scatter the data across different partition keys
-func createTestData(t *testing.T, sut *Connector, keyGenFunc func(int) string, idcount int) {
-	// insert a bunch of values with V1 timestamps as clustering keys
-	for x := 0; x < idcount; x++ {
-		err := sut.Upsert(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
-			"f1": dosa.FieldValue(keyGenFunc(x)),
-			"c1": dosa.FieldValue(int64(1)),
-			"c6": dosa.FieldValue(int32(x)),
-			"c7": dosa.FieldValue(dosa.UUID(uuid.NewV1().String()))})
-		assert.NoError(t, err)
-	}
-}
-
 func TestRangePager(t *testing.T) {
 	sut := NewConnector()
 	idcount := 5
@@ -873,4 +858,19 @@ func TestEncoderPanic(t *testing.T) {
 			"oops": func() {},
 		})
 	})
+}
+
+// createTestData populates some test data. The keyGenFunc can either return a constant,
+// which gives you a single partition of data, or some function of the current offset, which
+// will scatter the data across different partition keys
+func createTestData(t *testing.T, sut *Connector, keyGenFunc func(int) string, idcount int) {
+	// insert a bunch of values with V1 timestamps as clustering keys
+	for x := 0; x < idcount; x++ {
+		err := sut.Upsert(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
+			"f1": dosa.FieldValue(keyGenFunc(x)),
+			"c1": dosa.FieldValue(int64(1)),
+			"c6": dosa.FieldValue(int32(x)),
+			"c7": dosa.FieldValue(dosa.UUID(uuid.NewV1().String()))})
+		assert.NoError(t, err)
+	}
 }

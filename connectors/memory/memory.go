@@ -534,15 +534,9 @@ func (c *Connector) Scan(_ context.Context, ei *dosa.EntityInfo, minimumFields [
 
 	// if there was a token, decode it so we can determine the starting
 	// partition key
-	var startPartKey string
-	var start map[string]dosa.FieldValue
-	if token != "" {
-		var err error
-		start, err = decodeToken(token)
-		if err != nil {
-			return nil, "", errors.Wrapf(err, "Invalid token %q", token)
-		}
-		startPartKey = partitionKeyBuilder(ei, start)
+	startPartKey, start, err := getStartingPoint(ei, token)
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "Invalid token %s", token)
 	}
 
 	for _, key := range keys {
@@ -573,6 +567,20 @@ func (c *Connector) Scan(_ context.Context, ei *dosa.EntityInfo, minimumFields [
 		allTheThings = allTheThings[:limit]
 	}
 	return allTheThings, token, nil
+}
+
+// getStartingPoint determines the partition key of the starting point to resume a scan
+// when a token is provided
+func getStartingPoint(ei *dosa.EntityInfo, token string) (start string, startPartKey map[string]dosa.FieldValue, err error) {
+	if token == "" {
+		return "", map[string]dosa.FieldValue{}, nil
+	}
+	startPartKey, err = decodeToken(token)
+	if err != nil {
+		return "", map[string]dosa.FieldValue{}, errors.Wrapf(err, "Invalid token %q", token)
+	}
+	start = partitionKeyBuilder(ei, startPartKey)
+	return start, startPartKey, nil
 }
 
 // CheckSchema is just a stub; there is no schema management for the in memory connector
