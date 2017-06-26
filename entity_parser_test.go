@@ -219,7 +219,7 @@ func TestAllTypes(t *testing.T) {
 	assert.NotNil(t, dosaTable)
 	assert.NoError(t, err)
 	cds := dosaTable.Columns
-	assert.Len(t, cds, 12)
+	assert.Len(t, cds, 13)
 	for _, cd := range cds {
 		name, err := NormalizeName(cd.Name)
 		assert.NoError(t, err)
@@ -271,7 +271,7 @@ func TestNullableType(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, dosaTable)
 	cds := dosaTable.Columns
-	assert.Len(t, cds, 5)
+	assert.Len(t, cds, 6)
 	for _, cd := range cds {
 		name, err := NormalizeName(cd.Name)
 		assert.NoError(t, err)

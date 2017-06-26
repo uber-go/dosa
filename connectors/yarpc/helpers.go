@@ -130,7 +130,7 @@ func RPCTypeFromClientType(t dosa.Type) dosarpc.ElemType {
 	case dosa.TNullString:
 		return dosarpc.ElemTypeNullstring
 	case dosa.TNullTime:
-		return dosarpc.ElemTypeTimestamp
+		return dosarpc.ElemTypeNulltime
 	}
 	panic("bad type")
 }
