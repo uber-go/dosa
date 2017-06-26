@@ -69,6 +69,9 @@ const (
 
 	// TNullBool represents an optional bool value
 	TNullBool
+
+	// TNullTime represents an optional time.Time value.
+	TNullTime
 )
 
 // UUID stores a string format of uuid.
@@ -126,6 +129,8 @@ func FromString(s string) Type {
 		return TNullFloat64
 	case TNullBool.String():
 		return TNullBool
+	case TNullTime.String():
+		return TNullTime
 	default:
 		return Invalid
 	}
@@ -133,7 +138,7 @@ func FromString(s string) Type {
 
 func isInvalidPrimaryKeyType(t Type) bool {
 	switch t {
-	case Invalid, TNullString, TNullFloat64, TNullInt64, TNullBool:
+	case Invalid, TNullString, TNullFloat64, TNullInt64, TNullBool, TNullTime:
 		return true
 	default:
 		return false

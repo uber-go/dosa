@@ -73,6 +73,7 @@ var testEi = &dosa.EntityInfo{
 			{Name: "c9", Type: dosa.TNullString},
 			{Name: "c10", Type: dosa.TNullInt64},
 			{Name: "c11", Type: dosa.TNullFloat64},
+			{Name: "c12", Type: dosa.TNullTime},
 		},
 		Key: &dosa.PrimaryKey{
 			PartitionKeys: []string{"f1"},
@@ -216,6 +217,7 @@ func TestYaRPCClient_Read(t *testing.T) {
 		"c9":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f9value")}},
 		"c10":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}},
 		"c11":              {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(3.14)}},
+		"c12":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(99)}},
 	}}, nil)
 
 	// Prepare the dosa client interface using the mocked RPC layer
@@ -236,6 +238,7 @@ func TestYaRPCClient_Read(t *testing.T) {
 	assert.Equal(t, "f9value", values["c9"])
 	assert.Equal(t, int64(10), values["c10"])
 	assert.Equal(t, float64(3.14), values["c11"])
+	assert.Equal(t, time.Unix(0, 99), values["c12"])
 
 	errCode := int32(404)
 	mockedClient.EXPECT().Read(ctx, readRequest).Return(nil, &drpc.BadRequestError{ErrorCode: &errCode})
@@ -287,6 +290,7 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 							"c9":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f9value")}},
 							"c10":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}},
 							"c11":              {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(3.14)}},
+							"c12":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(99)}},
 						},
 						Error: nil,
 					},
@@ -303,6 +307,7 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 							"c9":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f9value")}},
 							"c10":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}},
 							"c11":              {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(3.14)}},
+							"c12":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(time.Unix(0, 99).UnixNano())}},
 						},
 						Error: nil,
 					},
@@ -354,6 +359,7 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 							"c9":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f9value")}},
 							"c10":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}},
 							"c11":              {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(3.14)}},
+							"c12":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(time.Unix(0, 99).UnixNano())}},
 						},
 						Error: nil,
 					},
@@ -389,6 +395,7 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 				assert.Equal(t, v.Values["c9"], *d.Response.Results[i].EntityValues["c9"].ElemValue.StringValue)
 				assert.Equal(t, v.Values["c10"], *d.Response.Results[i].EntityValues["c10"].ElemValue.Int64Value)
 				assert.Equal(t, v.Values["c11"], *d.Response.Results[i].EntityValues["c11"].ElemValue.DoubleValue)
+				assert.Equal(t, v.Values["c12"], time.Unix(0, *d.Response.Results[i].EntityValues["c12"].ElemValue.Int64Value))
 			}
 			continue
 		}
@@ -417,11 +424,12 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 		{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
 		{"c5", false},
 		{"c6", int32(2)},
-		{"c7", time.Now()},
+		{"c7", time.Unix(0, 99)},
 		{"c8", dosa.NewNullBool(true)},
 		{"c9", dosa.NewNullString("optionalString")},
 		{"c10", dosa.NewNullInt64(10)},
 		{"c11", dosa.NewNullFloat64(9.9)},
+		{"c12", dosa.NewNullTime(time.Now())},
 	}
 
 	// build up the input field list and the output field list
@@ -484,6 +492,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 		{"c9", dosa.NewNullString("optionalString")},
 		{"c10", dosa.NewNullInt64(10)},
 		{"c11", dosa.NewNullFloat64(9.9)},
+		{"c12", dosa.NewNullTime(time.Now())},
 	}
 
 	// build up the input field list and the output field list

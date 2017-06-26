@@ -45,6 +45,7 @@ var (
 	nullFloat64Field = "nullFloat64Field"
 	nullBoolField    = "nullBoolField"
 	nullStringField  = "nullStringField"
+	nullTimeField    = "nullTimeField"
 )
 
 func TestRawValueFromInterfaceBadType(t *testing.T) {
@@ -197,6 +198,10 @@ var testEntityDefinition = &dosa.EntityDefinition{
 		{
 			Name: nullBoolField,
 			Type: dosa.TNullBool,
+		},
+		{
+			Name: nullTimeField,
+			Type: dosa.TNullTime,
 		},
 	},
 }

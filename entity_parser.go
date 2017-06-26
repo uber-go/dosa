@@ -389,6 +389,7 @@ var (
 	nullInt64Type   = reflect.TypeOf(NullInt64{})
 	nullFloat64Type = reflect.TypeOf(NullFloat64{})
 	nullStringType  = reflect.TypeOf(NullString{})
+	nullTimeType    = reflect.TypeOf(NullTime{})
 )
 
 func typify(f reflect.Type) (Type, error) {
@@ -417,6 +418,8 @@ func typify(f reflect.Type) (Type, error) {
 		return TNullFloat64, nil
 	case nullBoolType:
 		return TNullBool, nil
+	case nullTimeType:
+		return TNullTime, nil
 	}
 
 	return Invalid, fmt.Errorf("Invalid type %v", f)

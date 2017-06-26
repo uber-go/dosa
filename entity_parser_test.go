@@ -211,6 +211,7 @@ type AllTypes struct {
 	NullInt64Type   NullInt64
 	NullFloat64Type NullFloat64
 	NullBoolType    NullBool
+	NullTimeType    NullTime
 }
 
 func TestAllTypes(t *testing.T) {
@@ -218,7 +219,7 @@ func TestAllTypes(t *testing.T) {
 	assert.NotNil(t, dosaTable)
 	assert.NoError(t, err)
 	cds := dosaTable.Columns
-	assert.Len(t, cds, 12)
+	assert.Len(t, cds, 13)
 	for _, cd := range cds {
 		name, err := NormalizeName(cd.Name)
 		assert.NoError(t, err)
@@ -247,6 +248,8 @@ func TestAllTypes(t *testing.T) {
 			assert.Equal(t, TNullFloat64, cd.Type)
 		case "nullstringtype":
 			assert.Equal(t, TNullString, cd.Type)
+		case "nulltimetype":
+			assert.Equal(t, TNullTime, cd.Type)
 		default:
 			assert.Fail(t, "unexpected column name", name)
 		}
@@ -260,6 +263,7 @@ type NullableType struct {
 	NullInt64Type   NullInt64
 	NullFloat64Type NullFloat64
 	NullBoolType    NullBool
+	NullTimeType    NullTime
 }
 
 func TestNullableType(t *testing.T) {
@@ -267,7 +271,7 @@ func TestNullableType(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, dosaTable)
 	cds := dosaTable.Columns
-	assert.Len(t, cds, 5)
+	assert.Len(t, cds, 6)
 	for _, cd := range cds {
 		name, err := NormalizeName(cd.Name)
 		assert.NoError(t, err)
@@ -282,6 +286,8 @@ func TestNullableType(t *testing.T) {
 			assert.Equal(t, TNullFloat64, cd.Type)
 		case "nullstringtype":
 			assert.Equal(t, TNullString, cd.Type)
+		case "nulltimetype":
+			assert.Equal(t, TNullTime, cd.Type)
 		default:
 			assert.Fail(t, "unexpected column name", name)
 		}
