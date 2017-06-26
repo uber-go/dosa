@@ -293,6 +293,8 @@ func stringToDosaType(inType, pkg string) Type {
 		return TNullFloat64
 	case "NullBool", pkg + "NullBool":
 		return TNullBool
+	case "NullTime", pkg + "NullTime":
+		return TNullTime
 	default:
 		return Invalid
 	}

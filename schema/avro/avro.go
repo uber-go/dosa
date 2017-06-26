@@ -51,6 +51,7 @@ var avroTypes = map[dosa.Type]gv.Schema{
 	dosa.TNullInt64:   &gv.LongSchema{},
 	dosa.TNullFloat64: &gv.DoubleSchema{},
 	dosa.TNullBool:    &gv.BooleanSchema{},
+	dosa.TNullTime:    &gv.LongSchema{},
 }
 
 // Record implements Schema and represents Avro record type.

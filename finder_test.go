@@ -146,6 +146,7 @@ func TestStringToDosaType(t *testing.T) {
 		{"NullInt64", "", TNullInt64},
 		{"NullFloat64", "", TNullFloat64},
 		{"NullBool", "", TNullBool},
+		{"NullTime", "", TNullTime},
 
 		// Tests with package name that doesn't end with dot.
 		{"dosa.UUID", "dosa", TUUID},
@@ -153,6 +154,7 @@ func TestStringToDosaType(t *testing.T) {
 		{"dosa.NullInt64", "dosa", TNullInt64},
 		{"dosa.NullFloat64", "dosa", TNullFloat64},
 		{"dosa.NullBool", "dosa", TNullBool},
+		{"dosa.NullTime", "dosa", TNullTime},
 
 		// Tests with package name that ends with dot.
 		{"dosav2.UUID", "dosav2.", TUUID},
@@ -160,6 +162,7 @@ func TestStringToDosaType(t *testing.T) {
 		{"dosav2.NullInt64", "dosav2.", TNullInt64},
 		{"dosav2.NullFloat64", "dosav2.", TNullFloat64},
 		{"dosav2.NullBool", "dosav2.", TNullBool},
+		{"dosav2.NullTime", "dosav2.", TNullTime},
 
 		{"unknown", "", Invalid},
 	}
