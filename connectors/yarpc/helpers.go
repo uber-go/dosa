@@ -119,13 +119,13 @@ func RPCTypeFromClientType(t dosa.Type) dosarpc.ElemType {
 	case dosa.TUUID:
 		return dosarpc.ElemTypeUUID
 	case dosa.TNullBool:
-		return dosarpc.ElemTypeBool
+		return dosarpc.ElemTypeNullbool
 	case dosa.TNullInt64:
-		return dosarpc.ElemTypeInt64
+		return dosarpc.ElemTypeNullint64
 	case dosa.TNullFloat64:
-		return dosarpc.ElemTypeDouble
+		return dosarpc.ElemTypeNullfloat64
 	case dosa.TNullString:
-		return dosarpc.ElemTypeString
+		return dosarpc.ElemTypeNullstring
 	}
 	panic("bad type")
 }
@@ -149,7 +149,14 @@ func RPCTypeToClientType(t dosarpc.ElemType) dosa.Type {
 		return dosa.Timestamp
 	case dosarpc.ElemTypeUUID:
 		return dosa.TUUID
-		//TODO: UmerAzad - Handle conversation into Nullable types.
+	case dosarpc.ElemTypeNullstring:
+		return dosa.TNullString
+	case dosarpc.ElemTypeNullint64:
+		return dosa.TNullInt64
+	case dosarpc.ElemTypeNullfloat64:
+		return dosa.TNullFloat64
+	case dosarpc.ElemTypeNullbool:
+		return dosa.TNullBool
 	}
 	panic("bad type")
 }

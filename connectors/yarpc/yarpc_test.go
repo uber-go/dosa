@@ -69,6 +69,10 @@ var testEi = &dosa.EntityInfo{
 			{Name: "c5", Type: dosa.Bool},
 			{Name: "c6", Type: dosa.Int32},
 			{Name: "c7", Type: dosa.TUUID},
+			{Name: "c8", Type: dosa.TNullBool},
+			{Name: "c9", Type: dosa.TNullString},
+			{Name: "c10", Type: dosa.TNullInt64},
+			{Name: "c11", Type: dosa.TNullFloat64},
 		},
 		Key: &dosa.PrimaryKey{
 			PartitionKeys: []string{"f1"},
@@ -208,6 +212,10 @@ func TestYaRPCClient_Read(t *testing.T) {
 		"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
 		"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(false)}},
 		"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(1)}},
+		"c8":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(true)}},
+		"c9":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f9value")}},
+		"c10":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}},
+		"c11":              {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(3.14)}},
 	}}, nil)
 
 	// Prepare the dosa client interface using the mocked RPC layer
@@ -224,6 +232,10 @@ func TestYaRPCClient_Read(t *testing.T) {
 	assert.Equal(t, false, values["c5"])
 	assert.Equal(t, int32(1), values["c6"])
 	assert.Empty(t, values["fieldNotInSchema"]) // the unknown field is not present
+	assert.Equal(t, true, values["c8"])
+	assert.Equal(t, "f9value", values["c9"])
+	assert.Equal(t, int64(10), values["c10"])
+	assert.Equal(t, float64(3.14), values["c11"])
 
 	errCode := int32(404)
 	mockedClient.EXPECT().Read(ctx, readRequest).Return(nil, &drpc.BadRequestError{ErrorCode: &errCode})
@@ -271,6 +283,10 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
 							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(false)}},
 							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(1)}},
+							"c8":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(true)}},
+							"c9":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f9value")}},
+							"c10":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}},
+							"c11":              {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(3.14)}},
 						},
 						Error: nil,
 					},
@@ -283,6 +299,10 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'a', 'i', '1', 'a', 'r', 'y'}}},
 							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(true)}},
 							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(2)}},
+							"c8":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(true)}},
+							"c9":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f9value")}},
+							"c10":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}},
+							"c11":              {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(3.14)}},
 						},
 						Error: nil,
 					},
@@ -330,6 +350,10 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
 							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(false)}},
 							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(1)}},
+							"c8":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(true)}},
+							"c9":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f9value")}},
+							"c10":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}},
+							"c11":              {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(3.14)}},
 						},
 						Error: nil,
 					},
@@ -361,6 +385,10 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 				assert.Equal(t, v.Values["c4"], d.Response.Results[i].EntityValues["c4"].ElemValue.BinaryValue)
 				assert.Equal(t, v.Values["c5"], *d.Response.Results[i].EntityValues["c5"].ElemValue.BoolValue)
 				assert.Equal(t, v.Values["c6"], *d.Response.Results[i].EntityValues["c6"].ElemValue.Int32Value)
+				assert.Equal(t, v.Values["c8"], *d.Response.Results[i].EntityValues["c8"].ElemValue.BoolValue)
+				assert.Equal(t, v.Values["c9"], *d.Response.Results[i].EntityValues["c9"].ElemValue.StringValue)
+				assert.Equal(t, v.Values["c10"], *d.Response.Results[i].EntityValues["c10"].ElemValue.Int64Value)
+				assert.Equal(t, v.Values["c11"], *d.Response.Results[i].EntityValues["c11"].ElemValue.DoubleValue)
 			}
 			continue
 		}
@@ -390,6 +418,10 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 		{"c5", false},
 		{"c6", int32(2)},
 		{"c7", time.Now()},
+		{"c8", dosa.NewNullBool(true)},
+		{"c9", dosa.NewNullString("optionalString")},
+		{"c10", dosa.NewNullInt64(10)},
+		{"c11", dosa.NewNullFloat64(9.9)},
 	}
 
 	// build up the input field list and the output field list
@@ -448,6 +480,10 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 		{"c5", false},
 		{"c6", int32(2)},
 		{"c7", time.Now()},
+		{"c8", dosa.NewNullBool(true)},
+		{"c9", dosa.NewNullString("optionalString")},
+		{"c10", dosa.NewNullInt64(10)},
+		{"c11", dosa.NewNullFloat64(9.9)},
 	}
 
 	// build up the input field list and the output field list
