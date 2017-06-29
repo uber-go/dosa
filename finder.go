@@ -295,6 +295,8 @@ func stringToDosaType(inType, pkg string) Type {
 		return TNullBool
 	case "NullTime", pkg + "NullTime":
 		return TNullTime
+	case "NullUUID", pkg + "NullUUID":
+		return TNullUUID
 	default:
 		return Invalid
 	}

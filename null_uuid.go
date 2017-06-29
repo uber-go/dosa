@@ -52,6 +52,19 @@ func NullUUIDFromString(v string) (NullUUID, error) {
 	return result, nil
 }
 
+// NullUUIDFromBytes returns a NullUUID object from specified byte slice.
+func NullUUIDFromBytes(v []byte) (NullUUID, error) {
+	result := NullUUID{}
+	guid, err := uuid.FromBytes(v)
+	if err != nil {
+		return result, err
+	}
+
+	result.Valid = true
+	result.UUID = guid.String()
+	return result, nil
+}
+
 // Bytes gets the bytes from a UUID
 func (u NullUUID) Bytes() ([]byte, error) {
 	if u.Valid {

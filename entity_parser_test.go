@@ -212,6 +212,7 @@ type AllTypes struct {
 	NullFloat64Type NullFloat64
 	NullBoolType    NullBool
 	NullTimeType    NullTime
+	NullUUIDType    NullUUID
 }
 
 func TestAllTypes(t *testing.T) {
@@ -219,7 +220,7 @@ func TestAllTypes(t *testing.T) {
 	assert.NotNil(t, dosaTable)
 	assert.NoError(t, err)
 	cds := dosaTable.Columns
-	assert.Len(t, cds, 13)
+	assert.Len(t, cds, 14)
 	for _, cd := range cds {
 		name, err := NormalizeName(cd.Name)
 		assert.NoError(t, err)
@@ -250,6 +251,8 @@ func TestAllTypes(t *testing.T) {
 			assert.Equal(t, TNullString, cd.Type)
 		case "nulltimetype":
 			assert.Equal(t, TNullTime, cd.Type)
+		case "nulluuidtype":
+			assert.Equal(t, TNullUUID, cd.Type)
 		default:
 			assert.Fail(t, "unexpected column name", name)
 		}
@@ -264,6 +267,7 @@ type NullableType struct {
 	NullFloat64Type NullFloat64
 	NullBoolType    NullBool
 	NullTimeType    NullTime
+	NullUUIDType    NullUUID
 }
 
 func TestNullableType(t *testing.T) {
@@ -271,7 +275,7 @@ func TestNullableType(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, dosaTable)
 	cds := dosaTable.Columns
-	assert.Len(t, cds, 6)
+	assert.Len(t, cds, 7)
 	for _, cd := range cds {
 		name, err := NormalizeName(cd.Name)
 		assert.NoError(t, err)
@@ -288,6 +292,8 @@ func TestNullableType(t *testing.T) {
 			assert.Equal(t, TNullString, cd.Type)
 		case "nulltimetype":
 			assert.Equal(t, TNullTime, cd.Type)
+		case "nulluuidtype":
+			assert.Equal(t, TNullUUID, cd.Type)
 		default:
 			assert.Fail(t, "unexpected column name", name)
 		}
@@ -351,6 +357,30 @@ type NullBoolPrimaryKeyType struct {
 
 func TestNullBoolPrimaryKeyType(t *testing.T) {
 	dosaTable, err := TableFromInstance(&NullBoolPrimaryKeyType{})
+	assert.Nil(t, dosaTable)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "primary key is of nullable type")
+}
+
+type NullTimePrimaryKeyType struct {
+	Entity       `dosa:"primaryKey=NullTimeType"`
+	NullTimeType NullTime
+}
+
+func TestNullTimePrimaryKeyType(t *testing.T) {
+	dosaTable, err := TableFromInstance(&NullTimePrimaryKeyType{})
+	assert.Nil(t, dosaTable)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "primary key is of nullable type")
+}
+
+type NullUUIDPrimaryKeyType struct {
+	Entity       `dosa:"primaryKey=NullUUIDType"`
+	NullUUIDType NullUUID
+}
+
+func TestNullUUIDPrimaryKeyType(t *testing.T) {
+	dosaTable, err := TableFromInstance(&NullUUIDPrimaryKeyType{})
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "primary key is of nullable type")

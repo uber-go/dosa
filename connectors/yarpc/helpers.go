@@ -49,6 +49,9 @@ func RawValueAsInterface(val dosarpc.RawValue, typ dosa.Type) interface{} {
 		return time.Unix(0, *val.Int64Value)
 	case dosa.Bool, dosa.TNullBool:
 		return *val.BoolValue
+	case dosa.TNullUUID:
+		uuid, _ := dosa.NullUUIDFromBytes(val.BinaryValue) // TODO: handle the error.
+		return uuid
 	}
 	panic("bad type")
 }
@@ -131,6 +134,8 @@ func RPCTypeFromClientType(t dosa.Type) dosarpc.ElemType {
 		return dosarpc.ElemTypeNullstring
 	case dosa.TNullTime:
 		return dosarpc.ElemTypeNulltime
+	case dosa.TNullUUID:
+		return dosarpc.ElemTypeNulluuid
 	}
 	panic("bad type")
 }
@@ -164,6 +169,8 @@ func RPCTypeToClientType(t dosarpc.ElemType) dosa.Type {
 		return dosa.TNullBool
 	case dosarpc.ElemTypeNulltime:
 		return dosa.TNullTime
+	case dosarpc.ElemTypeNulluuid:
+		return dosa.TNullUUID
 	}
 	panic("bad type")
 }

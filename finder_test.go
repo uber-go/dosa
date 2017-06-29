@@ -56,7 +56,7 @@ func TestParser(t *testing.T) {
 	entities, errs, err := FindEntities([]string{"."}, []string{})
 
 	assert.Equal(t, 18, len(entities), fmt.Sprintf("%s", entities))
-	assert.Equal(t, 17, len(errs), fmt.Sprintf("%v", errs))
+	assert.Equal(t, 19, len(errs), fmt.Sprintf("%v", errs))
 	assert.Nil(t, err)
 
 	for _, entity := range entities {
@@ -147,6 +147,7 @@ func TestStringToDosaType(t *testing.T) {
 		{"NullFloat64", "", TNullFloat64},
 		{"NullBool", "", TNullBool},
 		{"NullTime", "", TNullTime},
+		{"NullUUID", "", TNullUUID},
 
 		// Tests with package name that doesn't end with dot.
 		{"dosa.UUID", "dosa", TUUID},
@@ -155,6 +156,7 @@ func TestStringToDosaType(t *testing.T) {
 		{"dosa.NullFloat64", "dosa", TNullFloat64},
 		{"dosa.NullBool", "dosa", TNullBool},
 		{"dosa.NullTime", "dosa", TNullTime},
+		{"dosa.NullUUID", "dosa", TNullUUID},
 
 		// Tests with package name that ends with dot.
 		{"dosav2.UUID", "dosav2.", TUUID},
@@ -163,6 +165,7 @@ func TestStringToDosaType(t *testing.T) {
 		{"dosav2.NullFloat64", "dosav2.", TNullFloat64},
 		{"dosav2.NullBool", "dosav2.", TNullBool},
 		{"dosav2.NullTime", "dosav2.", TNullTime},
+		{"dosav2.NullUUID", "dosav2.", TNullUUID},
 
 		{"unknown", "", Invalid},
 	}
