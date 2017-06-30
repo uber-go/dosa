@@ -83,6 +83,15 @@ func (pk PrimaryKey) Clone() *PrimaryKey {
 	return npk
 }
 
+// ClusteringKeySet returns a set of all clustering keys.
+func (pk PrimaryKey) ClusteringKeySet() map[string]struct{} {
+	m := make(map[string]struct{})
+	for _, c := range pk.ClusteringKeys {
+		m[c.Name] = struct{}{}
+	}
+	return m
+}
+
 // PartitionKeySet returns the set of partition keys
 func (pk PrimaryKey) PartitionKeySet() map[string]struct{} {
 	m := make(map[string]struct{})
@@ -314,7 +323,7 @@ func (e *EntityDefinition) ensureNonNullablePrimaryKeys() error {
 		}
 	}
 
-	for k := range e.ClusteringKeySet() {
+	for k := range e.Key.ClusteringKeySet() {
 		if isInvalidPrimaryKeyType(columnTypes[k]) {
 			return errors.Errorf("clustering key is of nullable type: %q", k)
 		}
@@ -341,18 +350,9 @@ func (e *EntityDefinition) PartitionKeySet() map[string]struct{} {
 	return m
 }
 
-// ClusteringKeySet returns a set of all clustering keys.
-func (e *EntityDefinition) ClusteringKeySet() map[string]struct{} {
-	m := make(map[string]struct{})
-	for _, c := range e.Key.ClusteringKeys {
-		m[c.Name] = struct{}{}
-	}
-	return m
-}
-
 // KeySet returns a set of all keys, including partition keys and clustering keys.
 func (e *EntityDefinition) KeySet() map[string]struct{} {
-	m := e.ClusteringKeySet()
+	m := e.Key.ClusteringKeySet()
 	pks := e.PartitionKeySet()
 	for p := range pks {
 		m[p] = struct{}{}

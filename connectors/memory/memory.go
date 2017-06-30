@@ -267,7 +267,7 @@ func (c *Connector) Read(_ context.Context, ei *dosa.EntityInfo, values map[stri
 		return nil, &dosa.ErrNotFound{}
 	}
 
-	if len(ei.Def.ClusteringKeySet()) == 0 {
+	if len(ei.Def.Key.ClusteringKeySet()) == 0 {
 		return partitionRef[0], nil
 	}
 	// clustering key, search for the value in the set
@@ -309,7 +309,7 @@ func (c *Connector) mergedInsert(ei *dosa.EntityInfo,
 		return nil
 	}
 
-	if len(ei.Def.ClusteringKeySet()) == 0 {
+	if len(ei.Def.Key.ClusteringKeySet()) == 0 {
 		// no clustering key, so the row must already exist, merge it
 		return mergeFunc(partitionRef[0], values)
 	}
@@ -347,7 +347,7 @@ func (c *Connector) Remove(_ context.Context, ei *dosa.EntityInfo, values map[st
 	}
 
 	// no clustering keys? Simple, delete this
-	if len(ei.Def.ClusteringKeySet()) == 0 {
+	if len(ei.Def.Key.ClusteringKeySet()) == 0 {
 		// NOT delete(entityRef, encodedPartitionKey)
 		// Unfortunately, Scan relies on the fact that these are not completely deleted
 		entityRef[encodedPartitionKey] = nil
