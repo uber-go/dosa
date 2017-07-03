@@ -1,5 +1,5 @@
 hash: 02f3d4673cc82887370acf28f9bfd06665401eb79f43a932ff4f8c3a4d169237
-updated: 2017-07-02T19:47:25.259021278-07:00
+updated: 2017-07-03T07:02:52.92311482-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -10,7 +10,7 @@ imports:
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
 - name: github.com/gocql/gocql
-  version: 3e8b36f5e9e52cdeb265f385808c504a53db55fc
+  version: c9b77994a03e50771f1c56f7a2ed6381cb9be797
   subpackages:
   - internal/lru
   - internal/murmur
@@ -20,7 +20,7 @@ imports:
   subpackages:
   - proto
 - name: github.com/golang/mock
-  version: 9e3cfa9279f269a4c4d703dacd64b05184cec28e
+  version: 93f6609a15b7de76bd49259f1f9a6b58df358936
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
@@ -60,7 +60,7 @@ imports:
   - internal/bitbucket.org/ww/goautoneg
   - model
 - name: github.com/prometheus/procfs
-  version: 822d4a1f8edcbcbc71e8d1fd6527b12331a6d0ad
+  version: e645f4e5aaa8506fc71d6edbc5c4ff02c04c46f2
   subpackages:
   - xfs
 - name: github.com/satori/go.uuid
@@ -74,7 +74,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 88e9c75b0cfc84139ad1bae3b7f123786cfd0770
 - name: github.com/uber/dosa-idl
-  version: 741c2b509f47fbd398358eb862a5f2187b1c59f2
+  version: 601b423bd673c3c9242ce996cdaa31595fdeeafb
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -167,7 +167,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 346938d642f2ec3594ed81d874461961cd0faa76
+  version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
@@ -195,9 +195,9 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/russross/blackfriday
-  version: 5ebfae50aacdef0dacd1a1acc469c2c1c7a7d4d8
+  version: 70c446a327c4e69c0f661dc092d9729c3af7472c
 - name: github.com/sectioneight/md-to-godoc
-  version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
+  version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 541ff5ee47f1dddf6a5281af78307d921524bcb5
 - name: github.com/stretchr/testify
@@ -207,6 +207,6 @@ testImports:
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: golang.org/x/tools
-  version: f2cd9d3b518cfa0e287637dd02a895ce2b587f14
+  version: 1b3bb8de7d39fe135abc674c1e6d642cce854d4a
   subpackages:
   - cover
