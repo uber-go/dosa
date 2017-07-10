@@ -38,8 +38,6 @@ import (
 	"github.com/uber-go/dosa/connectors/base"
 )
 
-const name = "memory"
-
 // Connector is an in-memory connector.
 // The in-memory connector stores its data like this:
 // map[string]map[string][]map[string]dosa.FieldValue
@@ -67,12 +65,12 @@ type partitionRange struct {
 	end          int
 }
 
-// delete deletes the values referenced by the partitionRange. Since this function modifies
+// remove deletes the values referenced by the partitionRange. Since this function modifies
 // the data stored in the in-memory connector, a write lock must be held when calling
 // this function.
 //
 // Note this function can't be called more than once. Calling it more than once will cause a panic.
-func (pr *partitionRange) delete() {
+func (pr *partitionRange) remove() {
 	partitionRef := pr.entityRef[pr.partitionKey]
 	pr.entityRef[pr.partitionKey] = append(partitionRef[:pr.start], partitionRef[pr.end+1:]...)
 	pr.entityRef = nil
@@ -89,13 +87,17 @@ func (pr *partitionRange) values() []map[string]dosa.FieldValue {
 // partitionKeyBuilder extracts the partition key components from the map and encodes them,
 // generating a unique string. It uses the encoding/gob method to make a byte array as the
 // key, and returns this as a string
-func partitionKeyBuilder(pk *dosa.PrimaryKey, values map[string]dosa.FieldValue) string {
+func partitionKeyBuilder(pk *dosa.PrimaryKey, values map[string]dosa.FieldValue) (string, error) {
 	encodedKey := bytes.Buffer{}
 	encoder := gob.NewEncoder(&encodedKey)
 	for _, k := range pk.PartitionKeys {
-		_ = encoder.Encode(values[k])
+		if v, ok := values[k]; ok {
+			_ = encoder.Encode(v)
+		} else {
+			return "", errors.Errorf("Missing value for partition key %q", k)
+		}
 	}
-	return string(encodedKey.Bytes())
+	return string(encodedKey.Bytes()), nil
 }
 
 // findInsertionPoint locates the place within a partition where the data belongs.
@@ -245,9 +247,20 @@ func compareType(d1 dosa.FieldValue, d2 dosa.FieldValue) int8 {
 // Otherwise, search the partition for the exact same clustering keys. If there, fail
 // if not, then insert it at the right spot (sort.Search does most of the heavy lifting here)
 func (c *Connector) CreateIfNotExists(_ context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	return c.mergedInsert(ei.Def.Name, ei.Def.Key, values, func(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	err := c.mergedInsert(ei.Def.Name, ei.Def.Key, values, func(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
 		return &dosa.ErrAlreadyExists{}
 	})
+	if err != nil {
+		return err
+	}
+	for iName, iDef := range ei.Def.Indexes {
+		// this error must be ignored, so we skip indexes when the value
+		// for one of the index fields is not specified
+		_ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), values, overwriteValuesFunc)
+	}
+	return nil
 }
 
 // Read searches for a row. First, it finds the partition, then it searches in the partition for
@@ -256,11 +269,14 @@ func (c *Connector) CreateIfNotExists(_ context.Context, ei *dosa.EntityInfo, va
 func (c *Connector) Read(_ context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, minimumFields []string) (map[string]dosa.FieldValue, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
+	entityRef := c.data[ei.Def.Name]
+	encodedPartitionKey, err := partitionKeyBuilder(ei.Def.Key, values)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Cannot build partition key for entity %q", ei.Def.Name)
+	}
 	if c.data[ei.Def.Name] == nil {
 		return nil, &dosa.ErrNotFound{}
 	}
-	entityRef := c.data[ei.Def.Name]
-	encodedPartitionKey := partitionKeyBuilder(ei.Def.Key, values)
 	partitionRef := entityRef[encodedPartitionKey]
 	// no data in this partition? easy out!
 	if len(partitionRef) == 0 {
@@ -278,28 +294,40 @@ func (c *Connector) Read(_ context.Context, ei *dosa.EntityInfo, values map[stri
 	return partitionRef[inx], nil
 }
 
+func overwriteValuesFunc(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
+	for k, v := range from {
+		into[k] = v
+	}
+	return nil
+}
+
 // Upsert works a lot like CreateIfNotExists but merges the data when it finds an existing row
 func (c *Connector) Upsert(_ context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	return c.mergedInsert(ei.Def.Name, ei.Def.Key, values, func(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
-		for k, v := range from {
-			into[k] = v
-		}
-		return nil
-	})
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if err := c.mergedInsert(ei.Def.Name, ei.Def.Key, values, overwriteValuesFunc); err != nil {
+		return err
+	}
+	for iName, iDef := range ei.Def.Indexes {
+		_ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), values, overwriteValuesFunc)
+	}
+
+	return nil
 }
 
 func (c *Connector) mergedInsert(name string,
 	pk *dosa.PrimaryKey,
 	values map[string]dosa.FieldValue,
 	mergeFunc func(map[string]dosa.FieldValue, map[string]dosa.FieldValue) error) error {
-	c.lock.Lock()
-	defer c.lock.Unlock()
 
 	if c.data[name] == nil {
 		c.data[name] = make(map[string][]map[string]dosa.FieldValue)
 	}
 	entityRef := c.data[name]
-	encodedPartitionKey := partitionKeyBuilder(pk, values)
+	encodedPartitionKey, err := partitionKeyBuilder(pk, values)
+	if err != nil {
+		return errors.Wrapf(err, "Cannot build partition key for %q", name)
+	}
 	if entityRef[encodedPartitionKey] == nil {
 		entityRef[encodedPartitionKey] = make([]map[string]dosa.FieldValue, 0, 1)
 	}
@@ -330,35 +358,44 @@ func (c *Connector) mergedInsert(name string,
 }
 
 // Remove deletes a single row
+// There's no way to return an error from this method
 func (c *Connector) Remove(_ context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if c.data[ei.Def.Name] == nil {
 		return nil
 	}
-	entityRef := c.data[ei.Def.Name]
-	encodedPartitionKey := partitionKeyBuilder(ei.Def.Key, values)
-	if entityRef[encodedPartitionKey] == nil {
-		return nil
+	for iName, iDef := range ei.Def.Indexes {
+		c.removeItem(iName, ei.Def.UniqueKey(iDef.Key), values)
+	}
+	c.removeItem(ei.Def.Name, ei.Def.Key, values)
+	return nil
+}
+
+func (c *Connector) removeItem(name string, key *dosa.PrimaryKey, values map[string]dosa.FieldValue) {
+	entityRef := c.data[name]
+	encodedPartitionKey, err := partitionKeyBuilder(key, values)
+	if err != nil || entityRef[encodedPartitionKey] == nil {
+		return
 	}
 	partitionRef := entityRef[encodedPartitionKey]
 	// no data in this partition? easy out!
 	if len(partitionRef) == 0 {
-		return nil
+		return
 	}
 
 	// no clustering keys? Simple, delete this
-	if len(ei.Def.Key.ClusteringKeySet()) == 0 {
+	if len(key.ClusteringKeySet()) == 0 {
 		// NOT delete(entityRef, encodedPartitionKey)
 		// Unfortunately, Scan relies on the fact that these are not completely deleted
 		entityRef[encodedPartitionKey] = nil
-		return nil
+		return
 	}
-	found, offset := findInsertionPoint(ei.Def.Key, partitionRef, values)
+	found, offset := findInsertionPoint(key, partitionRef, values)
 	if found {
 		entityRef[encodedPartitionKey] = append(entityRef[encodedPartitionKey][:offset], entityRef[encodedPartitionKey][offset+1:]...)
 	}
-	return nil
+	return
 }
 
 // RemoveRange removes all of the elements in the range specified by the entity info and the column conditions.
@@ -366,9 +403,18 @@ func (c *Connector) RemoveRange(_ context.Context, ei *dosa.EntityInfo, columnCo
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	partitionRange := c.findRange(ei, columnConditions)
+	partitionRange, err := c.findRange(ei, columnConditions)
+	if err != nil {
+		return err
+	}
+	// TODO: this should have been from a primary key lookup, not an index lookup
 	if partitionRange != nil {
-		partitionRange.delete()
+		for iName, iDef := range ei.Def.Indexes {
+			for _, vals := range partitionRange.values() {
+				c.removeItem(iName, ei.Def.UniqueKey(iDef.Key), vals)
+			}
+		}
+		partitionRange.remove()
 	}
 
 	return nil
@@ -379,7 +425,10 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	partitionRange := c.findRange(ei, columnConditions)
+	partitionRange, err := c.findRange(ei, columnConditions)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "Invalid range conditions")
+	}
 	if partitionRange == nil {
 		return []map[string]dosa.FieldValue{}, "", nil
 	}
@@ -436,25 +485,32 @@ func decodeToken(token string) (values map[string]dosa.FieldValue, err error) {
 //
 // Note that this function reads from the connector's data map. Any calling functions should hold
 // at least a read lock on the map.
-func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) *partitionRange {
+func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) (*partitionRange, error) {
+	// no data at all, fine
 	if c.data[ei.Def.Name] == nil {
-		return nil
+		return nil, nil
 	}
-	entityRef := c.data[ei.Def.Name]
 
 	// find the equals conditions on each of the partition keys
 	values := make(map[string]dosa.FieldValue)
-	for _, pk := range ei.Def.Key.PartitionKeys {
-		// TODO: assert len(columnConditions[pk] == 1
-		// TODO: assert columnConditions[pk][0].Op is equals
+
+	// figure out which "table" or "index" to use based on the supplied conditions
+	name, key, err := ei.IndexFromConditions(columnConditions)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, pk := range key.PartitionKeys {
 		values[pk] = columnConditions[pk][0].Value
 	}
 
-	encodedPartitionKey := partitionKeyBuilder(ei.Def.Key, values)
+	entityRef := c.data[name]
+	// an error is impossible here, since the partition keys must be set from IndexFromConditions
+	encodedPartitionKey, _ := partitionKeyBuilder(key, values)
 	partitionRef := entityRef[encodedPartitionKey]
 	// no data in this partition? easy out!
 	if len(partitionRef) == 0 {
-		return nil
+		return nil, nil
 	}
 	// hunt through the partitionRef and return values that match search criteria
 	// TODO: This can be done much faster using a binary search
@@ -462,13 +518,12 @@ func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][
 	for startinx < len(partitionRef) && !matchesClusteringConditions(ei, columnConditions, partitionRef[startinx]) {
 		startinx++
 	}
-	// TODO: adjust startinx with a passed in token
 	for endinx >= startinx && !matchesClusteringConditions(ei, columnConditions, partitionRef[endinx]) {
 		endinx--
 
 	}
 	if endinx < startinx {
-		return nil
+		return nil, nil
 	}
 
 	return &partitionRange{
@@ -476,7 +531,7 @@ func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][
 		partitionKey: encodedPartitionKey,
 		start:        startinx,
 		end:          endinx,
-	}
+	}, nil
 }
 
 // matchesClusteringConditions checks if a data row matches the conditions in the columnConditions that apply to
@@ -580,7 +635,10 @@ func getStartingPoint(ei *dosa.EntityInfo, token string) (start string, startPar
 	if err != nil {
 		return "", map[string]dosa.FieldValue{}, errors.Wrapf(err, "Invalid token %q", token)
 	}
-	start = partitionKeyBuilder(ei.Def.Key, startPartKey)
+	start, err = partitionKeyBuilder(ei.Def.Key, startPartKey)
+	if err != nil {
+		return "", map[string]dosa.FieldValue{}, errors.Wrapf(err, "Can't build partition key for %q", ei.Def.Name)
+	}
 	return start, startPartKey, nil
 }
 

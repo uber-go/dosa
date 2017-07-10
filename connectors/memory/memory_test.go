@@ -43,7 +43,7 @@ var testEi = &dosa.EntityInfo{
 	Ref: &testSchemaRef,
 	Def: &dosa.EntityDefinition{
 		Columns: []*dosa.ColumnDefinition{
-			{Name: "f1", Type: dosa.String},
+			{Name: "p1", Type: dosa.String},
 			{Name: "c1", Type: dosa.Int64},
 			{Name: "c2", Type: dosa.Double},
 			{Name: "c3", Type: dosa.String},
@@ -53,9 +53,11 @@ var testEi = &dosa.EntityInfo{
 			{Name: "c7", Type: dosa.TUUID},
 		},
 		Key: &dosa.PrimaryKey{
-			PartitionKeys: []string{"f1"},
+			PartitionKeys: []string{"p1"},
 		},
 		Name: "t1",
+		Indexes: map[string]*dosa.IndexDefinition{
+			"i1": {Key: &dosa.PrimaryKey{PartitionKeys: []string{"c1"}}}},
 	},
 }
 var clusteredEi = &dosa.EntityInfo{
@@ -78,7 +80,9 @@ var clusteredEi = &dosa.EntityInfo{
 				{Name: "c7", Descending: true},
 			},
 		},
-		Name: "t1",
+		Name: "t2",
+		Indexes: map[string]*dosa.IndexDefinition{
+			"i2": {Key: &dosa.PrimaryKey{PartitionKeys: []string{"c1"}}}},
 	},
 }
 
@@ -86,12 +90,12 @@ func TestConnector_CreateIfNotExists(t *testing.T) {
 	sut := NewConnector()
 
 	err := sut.CreateIfNotExists(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data"),
+		"p1": dosa.FieldValue("data"),
 	})
 	assert.NoError(t, err)
 
 	err = sut.CreateIfNotExists(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data"),
+		"p1": dosa.FieldValue("data"),
 	})
 
 	assert.True(t, dosa.ErrorIsAlreadyExists(err))
@@ -99,23 +103,29 @@ func TestConnector_CreateIfNotExists(t *testing.T) {
 func TestConnector_Upsert(t *testing.T) {
 	sut := NewConnector()
 
-	err := sut.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data"),
+	// no key value specified
+	err := sut.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `partition key "p1"`)
+
+	// regular upsert
+	err = sut.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{
+		"p1": dosa.FieldValue("data"),
 	})
 	assert.NoError(t, err)
 	vals, err := sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data")}, []string{"c1"})
+		"p1": dosa.FieldValue("data")}, []string{"c1"})
 	assert.NoError(t, err)
 	assert.Nil(t, vals["c1"])
 
 	err = sut.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data"),
+		"p1": dosa.FieldValue("data"),
 		"c1": dosa.FieldValue(int64(1)),
 	})
 	assert.NoError(t, err)
 
 	vals, err = sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data")}, []string{"c1"})
+		"p1": dosa.FieldValue("data")}, []string{"c1"})
 	assert.NoError(t, err)
 	assert.Equal(t, dosa.FieldValue(int64(1)), vals["c1"])
 }
@@ -125,41 +135,46 @@ func TestConnector_Read(t *testing.T) {
 
 	// read with no data
 	vals, err := sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data")}, []string{"c1"})
+		"p1": dosa.FieldValue("data")}, []string{"c1"})
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
+	// read with no key field
+	vals, err = sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{}, dosa.All())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `partition key "p1"`)
+
 	err = sut.CreateIfNotExists(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data"),
+		"p1": dosa.FieldValue("data"),
 		"c1": dosa.FieldValue(int64(1)),
 		"c2": dosa.FieldValue(float64(2)),
 	})
 	assert.NoError(t, err)
 
 	vals, err = sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data")}, []string{"c1"})
+		"p1": dosa.FieldValue("data")}, []string{"c1"})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), vals["c1"])
 
 	vals, err = sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data")}, dosa.All())
+		"p1": dosa.FieldValue("data")}, dosa.All())
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), vals["c1"])
 	assert.Equal(t, float64(2), vals["c2"])
-	assert.Equal(t, "data", vals["f1"])
+	assert.Equal(t, "data", vals["p1"])
 
 	// read a key that isn't there
 	vals, err = sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("not there")}, dosa.All())
+		"p1": dosa.FieldValue("not there")}, dosa.All())
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	// now delete the one that is
 	err = sut.Remove(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data")})
+		"p1": dosa.FieldValue("data")})
 	assert.NoError(t, err)
 
 	// read the deleted key
 	vals, err = sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data")}, dosa.All())
+		"p1": dosa.FieldValue("data")}, dosa.All())
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	// insert into clustered entity
@@ -192,12 +207,12 @@ func TestConnector_Remove(t *testing.T) {
 
 	// remove with no data
 	err := sut.Remove(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data")})
+		"p1": dosa.FieldValue("data")})
 	assert.NoError(t, err)
 
 	// create a single row
 	err = sut.CreateIfNotExists(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("data"),
+		"p1": dosa.FieldValue("data"),
 		"c1": dosa.FieldValue(int64(1)),
 		"c2": dosa.FieldValue(float64(2)),
 	})
@@ -205,7 +220,7 @@ func TestConnector_Remove(t *testing.T) {
 
 	// remove something not there
 	err = sut.Remove(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"f1": dosa.FieldValue("nothere")})
+		"p1": dosa.FieldValue("nothere")})
 	assert.NoError(t, err)
 
 	// insert into clustered entity
@@ -258,7 +273,16 @@ func TestConnector_RemoveRange(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	// delete all values greater than those with 4 for c1
+	// remove with missing primary key values
+	err = sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(int64(4))}},
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "f1")
+	assert.Contains(t, err.Error(), "missing")
+
+		// delete all values greater than those with 4 for c1
 	err = sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Gt, Value: dosa.FieldValue(int64(4))}},
@@ -341,6 +365,7 @@ func TestConnector_CreateIfNotExists2(t *testing.T) {
 			"f1": dosa.FieldValue("data"),
 			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
+		assert.Error(t, err, string(testUUIDs[x]))
 		assert.True(t, dosa.ErrorIsAlreadyExists(err))
 	}
 	// now, insert them again, but this time with a different secondary key
@@ -727,7 +752,29 @@ func TestConnector_ScanWithToken(t *testing.T) {
 		err = sut.Remove(context.TODO(), clusteredEi, data[0])
 		assert.NoError(t, err)
 	}
+}
 
+func TestConnector_ScanWithTokenFromWrongTable(t *testing.T) {
+	sut := NewConnector()
+	const idcount = 100
+	createTestData(t, sut, func(id int) string {
+		return "data" + string(id%3)
+	}, idcount)
+	err := sut.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{
+		"p1": dosa.FieldValue("test"),
+	})
+	assert.NoError(t, err)
+
+	// get a token from one table
+	_, token, err := sut.Scan(context.TODO(), clusteredEi, dosa.All(), "", 1)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, token)
+
+	// now use it for another scan (oops)
+	_, _, err = sut.Scan(context.TODO(), testEi, dosa.All(), token, 1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Invalid token")
+	assert.Contains(t, err.Error(), "Missing value")
 }
 
 func TestConnector_ScanWithTokenNoClustering(t *testing.T) {
@@ -737,7 +784,7 @@ func TestConnector_ScanWithTokenNoClustering(t *testing.T) {
 	const idcount = 100
 	for x := 0; x < idcount; x++ {
 		sut.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{
-			"f1": dosa.FieldValue("data" + string(x)),
+			"p1": dosa.FieldValue("data" + string(x)),
 		})
 	}
 	var token string
@@ -858,6 +905,21 @@ func TestEncoderPanic(t *testing.T) {
 			"oops": func() {},
 		})
 	})
+}
+
+func TestConnector_RangeWithBadCriteria(t *testing.T) {
+	sut := NewConnector()
+	// we don't look at the criteria unless there is at least one row
+	createTestData(t, sut, func(id int) string {
+		return "data"
+	}, 1)
+
+	_, _, err := sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"c2": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c3": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
+	}, dosa.All(), "", 1)
+	assert.Error(t, err)
+
 }
 
 // createTestData populates some test data. The keyGenFunc can either return a constant,

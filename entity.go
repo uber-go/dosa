@@ -101,6 +101,15 @@ func (pk PrimaryKey) PartitionKeySet() map[string]struct{} {
 	return m
 }
 
+// PrimaryKeySet returns the union of the set of partition keys and clustering keys
+func (pk PrimaryKey) PrimaryKeySet() map[string]struct{} {
+	m := pk.ClusteringKeySet()
+	for _, p := range pk.PartitionKeys {
+		m[p] = struct{}{}
+	}
+	return m
+}
+
 // formatClusteringKeys takes an array of ClusteringKeys and returns
 // a string that shows all of them, separated by commas
 func formatClusteringKeys(keys []*ClusteringKey) string {
@@ -432,4 +441,30 @@ func (e *EntityDefinition) FindColumnDefinition(name string) *ColumnDefinition {
 		}
 	}
 	return nil
+}
+
+// UniqueKey adds any missing keys from the entity's primary key to the keys
+// specified in the index, to guarantee that the returned key is unique
+// This method is used to create materialized views
+func (e *EntityDefinition) UniqueKey(oldKey *PrimaryKey) *PrimaryKey {
+	indexHas := oldKey.PrimaryKeySet()
+	result := *oldKey
+
+	// look for missing primary keys
+	for _, key := range e.Key.PartitionKeys {
+		if _, ok := indexHas[key]; !ok {
+			result.ClusteringKeys = append(result.ClusteringKeys, &ClusteringKey{
+				Name: key})
+		}
+	}
+
+	// look for missing clustering keys
+	for _, key := range e.Key.ClusteringKeys {
+		if _, ok := indexHas[key.Name]; !ok {
+			result.ClusteringKeys = append(result.ClusteringKeys, &ClusteringKey{
+				Name: key.Name})
+		}
+	}
+
+	return &result
 }
