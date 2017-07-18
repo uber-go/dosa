@@ -46,7 +46,7 @@ func TestSingleIndexNoParen(t *testing.T) {
 
 type MultipleIndexes struct {
 	Entity       `dosa:"primaryKey=PrimaryKey"`
-	SearchByData Index `dosa:"key=Data"`
+	Index        `dosa:"key=Data, name=SearchByData"`
 	SearchByDate Index `dosa:"key=Date"`
 	PrimaryKey   int64
 	Data         string

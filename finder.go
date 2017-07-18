@@ -247,6 +247,19 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 					t.FieldToCol[name] = cd.Name
 				}
 			}
+
+			if len(field.Names) == 0 {
+				if kind == packagePrefix+"."+indexName || (packagePrefix == "" && kind == indexName) {
+					indexName, indexKey, err := parseIndexTag("", dosaTag)
+					if err != nil {
+						return nil, err
+					}
+					if _, exist := t.Indexes[indexName]; exist {
+						return nil, errors.Errorf("index name is duplicated: %s", indexName)
+					}
+					t.Indexes[indexName] = &IndexDefinition{Key: indexKey}
+				}
+			}
 		}
 	}
 
