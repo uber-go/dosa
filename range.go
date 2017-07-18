@@ -197,3 +197,28 @@ func (m rangeOpMatcher) String() string {
 		m.eqScanOp.String(),
 	)
 }
+
+// IndexFromConditions returns the name of the index or the base table to use, along with the key info
+// for that index. If no suitable index could be found, an error is returned
+func (ei *EntityInfo) IndexFromConditions(conditions map[string][]*Condition) (name string, key *PrimaryKey, err error) {
+	identityFunc := func(s string) string { return s }
+	// see if we match the primary key for this table
+	var baseTableError error
+	if baseTableError = EnsureValidRangeConditions(ei.Def, ei.Def.Key, conditions, identityFunc); baseTableError == nil {
+		return ei.Def.Name, ei.Def.Key, nil
+	}
+	if len(ei.Def.Indexes) == 0 {
+		return "", nil, baseTableError
+	}
+	// see if we match an index on this table
+	var indexDef *IndexDefinition
+	for name, indexDef = range ei.Def.Indexes {
+		key = indexDef.Key
+		// we check the range conditions before adding the uniqueness columns
+		if err := EnsureValidRangeConditions(ei.Def, key, conditions, identityFunc); err == nil {
+			return name, ei.Def.UniqueKey(key), nil
+		}
+	}
+	// none of the indexes work, so fail
+	return "", nil, errors.Wrapf(baseTableError, "No index matches specified conditions")
+}

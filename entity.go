@@ -83,9 +83,27 @@ func (pk PrimaryKey) Clone() *PrimaryKey {
 	return npk
 }
 
+// ClusteringKeySet returns a set of all clustering keys.
+func (pk PrimaryKey) ClusteringKeySet() map[string]struct{} {
+	m := make(map[string]struct{})
+	for _, c := range pk.ClusteringKeys {
+		m[c.Name] = struct{}{}
+	}
+	return m
+}
+
 // PartitionKeySet returns the set of partition keys
 func (pk PrimaryKey) PartitionKeySet() map[string]struct{} {
 	m := make(map[string]struct{})
+	for _, p := range pk.PartitionKeys {
+		m[p] = struct{}{}
+	}
+	return m
+}
+
+// PrimaryKeySet returns the union of the set of partition keys and clustering keys
+func (pk PrimaryKey) PrimaryKeySet() map[string]struct{} {
+	m := pk.ClusteringKeySet()
 	for _, p := range pk.PartitionKeys {
 		m[p] = struct{}{}
 	}
@@ -314,7 +332,7 @@ func (e *EntityDefinition) ensureNonNullablePrimaryKeys() error {
 		}
 	}
 
-	for k := range e.ClusteringKeySet() {
+	for k := range e.Key.ClusteringKeySet() {
 		if isInvalidPrimaryKeyType(columnTypes[k]) {
 			return errors.Errorf("clustering key is of nullable type: %q", k)
 		}
@@ -341,18 +359,9 @@ func (e *EntityDefinition) PartitionKeySet() map[string]struct{} {
 	return m
 }
 
-// ClusteringKeySet returns a set of all clustering keys.
-func (e *EntityDefinition) ClusteringKeySet() map[string]struct{} {
-	m := make(map[string]struct{})
-	for _, c := range e.Key.ClusteringKeys {
-		m[c.Name] = struct{}{}
-	}
-	return m
-}
-
 // KeySet returns a set of all keys, including partition keys and clustering keys.
 func (e *EntityDefinition) KeySet() map[string]struct{} {
-	m := e.ClusteringKeySet()
+	m := e.Key.ClusteringKeySet()
 	pks := e.PartitionKeySet()
 	for p := range pks {
 		m[p] = struct{}{}
@@ -432,4 +441,30 @@ func (e *EntityDefinition) FindColumnDefinition(name string) *ColumnDefinition {
 		}
 	}
 	return nil
+}
+
+// UniqueKey adds any missing keys from the entity's primary key to the keys
+// specified in the index, to guarantee that the returned key is unique
+// This method is used to create materialized views
+func (e *EntityDefinition) UniqueKey(oldKey *PrimaryKey) *PrimaryKey {
+	indexHas := oldKey.PrimaryKeySet()
+	result := *oldKey
+
+	// look for missing primary keys
+	for _, key := range e.Key.PartitionKeys {
+		if _, ok := indexHas[key]; !ok {
+			result.ClusteringKeys = append(result.ClusteringKeys, &ClusteringKey{
+				Name: key})
+		}
+	}
+
+	// look for missing clustering keys
+	for _, key := range e.Key.ClusteringKeys {
+		if _, ok := indexHas[key.Name]; !ok {
+			result.ClusteringKeys = append(result.ClusteringKeys, &ClusteringKey{
+				Name: key.Name})
+		}
+	}
+
+	return &result
 }
