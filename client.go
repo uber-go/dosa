@@ -156,8 +156,16 @@ type Client interface {
 	// Before calling range, create a RangeOp and fill in the table
 	// along with the partition key information. You will get back
 	// an array of DomainObjects, which will be of the type you requested
-	// in the rangeOp
+	// in the rangeOp.
+	//
+	// Range only fetches a portion of the range at a time (the size of that portion is defined
+	// by the Limit parameter of the RangeOp). A continuation token is returned so subsequent portions
+	// of the range can be fetched with additional calls to the range function.
 	Range(ctx context.Context, rangeOp *RangeOp) ([]DomainObject, string, error)
+
+	// FetchRange fetches the entire range of values specified by the RangeOp. For each value fetched,
+	// the provided onNext function is called with the value as it's argument.
+	FetchRange(ctx context.Context, r *RangeOp, onNext func(value DomainObject) error) error
 
 	// Search fetches entities by fields that have been marked "searchable"
 	// TODO: Coming in v2.1
@@ -435,6 +443,27 @@ func (c *client) Range(ctx context.Context, r *RangeOp) ([]DomainObject, string,
 
 	objectArray := objectsFromValueArray(r.sop.object, values, re, nil)
 	return objectArray, token, nil
+}
+
+func (c *client) FetchRange(ctx context.Context, r *RangeOp, onNext func(value DomainObject) error) error {
+	for {
+		results, nextToken, err := c.Range(ctx, r)
+
+		if err != nil {
+			return err
+		}
+
+		for _, result := range results {
+			if cerr := onNext(result); cerr != nil {
+				return cerr
+			}
+		}
+
+		if len(nextToken) == 0 {
+			return nil
+		}
+		r = r.Offset(nextToken)
+	}
 }
 
 func objectsFromValueArray(object DomainObject, values []map[string]FieldValue, re *RegisteredEntity, columnsToRead []string) []DomainObject {

@@ -432,6 +432,70 @@ func TestClient_Range(t *testing.T) {
 	assert.True(t, dosaRenamed.ErrorIsNotFound(err))
 }
 
+func TestClient_FetchRange(t *testing.T) {
+	reg1, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1)
+	fieldsToRead := []string{"ID", "Email"}
+	resultRow0 := map[string]dosaRenamed.FieldValue{
+		"id":    int64(2),
+		"name":  "bar",
+		"email": "bar@email.com",
+	}
+	resultRow1 := map[string]dosaRenamed.FieldValue{
+		"id":    int64(3),
+		"name":  "jeff",
+		"email": "jeff@email.com",
+	}
+
+	// uninitialized
+	c0 := dosaRenamed.NewClient(reg1, nullConnector)
+	rop := dosaRenamed.NewRangeOp(cte1).Fields(fieldsToRead).Eq("ID", "123").Offset("tokeytoketoke")
+	err := c0.FetchRange(ctx, rop, func(value dosaRenamed.DomainObject) error {
+		return nil
+	})
+	assert.True(t, dosaRenamed.ErrorIsNotInitialized(err))
+
+	// success case
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn1 := mocks.NewMockConnector(ctrl)
+	mockConn1.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn1.EXPECT().Range(ctx, gomock.Any(), gomock.Any(), gomock.Any(), "", gomock.Any()).
+		Return([]map[string]dosaRenamed.FieldValue{resultRow0}, "token0", nil)
+	mockConn1.EXPECT().Range(ctx, gomock.Any(), gomock.Any(), gomock.Any(), "token0", gomock.Any()).
+		Return([]map[string]dosaRenamed.FieldValue{resultRow1}, "", nil)
+	c1 := dosaRenamed.NewClient(reg1, mockConn1)
+	c1.Initialize(ctx)
+	rop = dosaRenamed.NewRangeOp(cte1)
+
+	var fetched []*ClientTestEntity1
+	err = c1.FetchRange(ctx, rop, func(value dosaRenamed.DomainObject) error {
+		fetched = append(fetched, value.(*ClientTestEntity1))
+		return nil
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, fetched)
+	assert.Equal(t, 2, len(fetched))
+	assert.Equal(t, resultRow0["id"], fetched[0].ID)
+	assert.Equal(t, resultRow0["name"], fetched[0].Name)
+	assert.Equal(t, resultRow0["email"], fetched[0].Email)
+	assert.Equal(t, resultRow1["id"], fetched[1].ID)
+	assert.Equal(t, resultRow1["name"], fetched[1].Name)
+	assert.Equal(t, resultRow1["email"], fetched[1].Email)
+
+	// Range with closure error
+	mockConn2 := mocks.NewMockConnector(ctrl)
+	mockConn2.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil)
+	mockConn2.EXPECT().Range(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return([]map[string]dosaRenamed.FieldValue{resultRow0}, "", nil)
+	c2 := dosaRenamed.NewClient(reg1, mockConn2)
+	c2.Initialize(ctx)
+	rop = dosaRenamed.NewRangeOp(cte1)
+	err = c2.FetchRange(ctx, rop, func(value dosaRenamed.DomainObject) error {
+		return errors.New("woops!")
+	})
+	assert.EqualError(t, err, "woops!")
+}
+
 func TestClient_ScanEverything(t *testing.T) {
 	reg1, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1)
 	fieldsToRead := []string{"ID", "Email"}
