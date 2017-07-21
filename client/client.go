@@ -26,7 +26,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/config"
-	"github.com/uber-go/dosa/registry"
 )
 
 // New creates a new DOSA client from the configuration provided. Depending
@@ -34,9 +33,9 @@ import (
 // and will register the entities provided before returning an initialized
 // client or an error. See the config package for defaults.
 func New(cfg *config.Config, entities ...dosa.DomainObject) (dosa.Client, error) {
-	reg, err := registry.NewRegistrar(cfg, entities...)
+	reg, err := dosa.NewRegistrar(cfg.Scope, cfg.NamePrefix, entities...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not register DOSA entities in %s", cfg.EntityPaths)
+		return nil, errors.Wrapf(err, "could not register DOSA entities in %v", entities)
 	}
 
 	if cfg.Connector == nil {

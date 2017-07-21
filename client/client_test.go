@@ -33,63 +33,49 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	entityPathsValid := []string{"../testentity"}
-	entityPathsInvalid := []string{"/does/not/exist"}
-
-	parseErrCfg := config.NewDefaultConfig()
-	parseErrCfg.EntityPaths = entityPathsInvalid
-	c, err := dosaclient.New(&parseErrCfg)
+	regErrCfg := config.NewDefaultConfig()
+	regErrCfg.NamePrefix = "1invalid"
+	c, err := dosaclient.New(&regErrCfg)
 	assert.Nil(t, c)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "could not register")
 
 	nilCfg := config.NewDefaultConfig()
 	nilCfg.Connector = nil
-	nilCfg.EntityPaths = entityPathsValid
-	c, err = dosaclient.New(&nilCfg)
+	c, err = dosaclient.New(&nilCfg, &testentity.TestEntity{})
 	assert.Nil(t, c)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "configuration is nil")
 
 	invalidCfg := config.NewDefaultConfig()
 	invalidCfg.Connector = make(map[string]interface{})
-	invalidCfg.EntityPaths = entityPathsValid
-	c, err = dosaclient.New(&invalidCfg)
+	c, err = dosaclient.New(&invalidCfg, &testentity.TestEntity{})
 	assert.Nil(t, c)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "must contain a string 'name' value")
 
 	unknownCfg := config.NewDefaultConfig()
 	unknownCfg.Connector["name"] = "foo"
-	unknownCfg.EntityPaths = entityPathsValid
-	c, err = dosaclient.New(&unknownCfg)
+	c, err = dosaclient.New(&unknownCfg, &testentity.TestEntity{})
 	assert.Nil(t, c)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "GetConnector failed for connector with name: foo")
 
 	devnullCfg := config.NewDefaultConfig()
 	devnullCfg.Connector["name"] = "devnull"
-	devnullCfg.EntityPaths = entityPathsValid
-	c, err = dosaclient.New(&devnullCfg)
+	c, err = dosaclient.New(&devnullCfg, &testentity.TestEntity{})
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
 	memoryCfg := config.NewDefaultConfig()
 	memoryCfg.Connector["name"] = "memory"
-	memoryCfg.EntityPaths = entityPathsValid
-	c, err = dosaclient.New(&memoryCfg)
+	c, err = dosaclient.New(&memoryCfg, &testentity.TestEntity{})
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
 	randomCfg := config.NewDefaultConfig()
 	randomCfg.Connector["name"] = "random"
-	randomCfg.EntityPaths = entityPathsValid
-	c, err = dosaclient.New(&randomCfg)
-	assert.NotNil(t, c)
-	assert.NoError(t, err)
-
-	// explicit entity registration using memory connector
-	c, err = dosaclient.New(&memoryCfg, &testentity.TestEntity{})
+	c, err = dosaclient.New(&randomCfg, &testentity.TestEntity{})
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 }
