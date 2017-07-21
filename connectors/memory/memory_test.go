@@ -282,7 +282,7 @@ func TestConnector_RemoveRange(t *testing.T) {
 	assert.Contains(t, err.Error(), "f1")
 	assert.Contains(t, err.Error(), "missing")
 
-		// delete all values greater than those with 4 for c1
+	// delete all values greater than those with 4 for c1
 	err = sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Gt, Value: dosa.FieldValue(int64(4))}},
