@@ -108,10 +108,10 @@ else ifeq ($(target), Linux)
 endif
 endif
 
-mocks/client.go:
+mocks/client.go: client.go
 	mockgen -package mocks github.com/uber-go/dosa Client,AdminClient > ./mocks/client.go
 
-mocks/connector.go:
+mocks/connector.go: connector.go
 	mockgen -package mocks github.com/uber-go/dosa Connector > ./mocks/connector.go
 
 .PHONY: mocks

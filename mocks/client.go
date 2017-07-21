@@ -64,6 +64,17 @@ func (_mr *_MockClientRecorder) CreateIfNotExists(arg0, arg1 interface{}) *gomoc
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateIfNotExists", arg0, arg1)
 }
 
+// FetchRange is a mock implementation of MockClient.FetchRange
+func (_m *MockClient) FetchRange(_param0 context.Context, _param1 *dosa.RangeOp, _param2 func(dosa.DomainObject) error) error {
+	ret := _m.ctrl.Call(_m, "FetchRange", _param0, _param1, _param2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockClientRecorder) FetchRange(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "FetchRange", arg0, arg1, arg2)
+}
+
 // Initialize is a mock implementation of MockClient.Initialize
 func (_m *MockClient) Initialize(_param0 context.Context) error {
 	ret := _m.ctrl.Call(_m, "Initialize", _param0)
