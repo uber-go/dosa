@@ -540,6 +540,24 @@ func TestConnector_Range(t *testing.T) {
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Empty(t, data)
+
+	// Test Ranging on an Index
+
+	// Get "1" partition
+	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
+	}, dosa.All(), "", 200)
+	assert.NoError(t, err)
+	assert.Len(t, data, 10)
+	assert.Empty(t, token)
+
+	// Get the "2" partition, should be empty
+	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(2))}},
+	}, dosa.All(), "", 200)
+	assert.NoError(t, err)
+	assert.Empty(t, data)
+	assert.Empty(t, token)
 }
 
 func TestConnector_TimeUUIDs(t *testing.T) {

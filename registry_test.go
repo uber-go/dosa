@@ -69,6 +69,7 @@ func TestNewRegisteredEntity(t *testing.T) {
 	assert.Equal(t, ref.EntityName, entityName)
 	assert.Equal(t, ref.Version, version)
 	assert.Equal(t, def.Name, entityName)
+	assert.Equal(t, table.EntityDefinition, *def)
 }
 
 func TestRegisteredEntity_KeyFieldValues(t *testing.T) {
