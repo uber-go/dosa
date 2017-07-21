@@ -47,7 +47,7 @@ func NewRegisteredEntity(scope, prefix string, table *Table) *RegisteredEntity {
 			NamePrefix: prefix,
 			EntityName: table.Name,
 		},
-		Def: &(table.EntityDefinition),
+		Def: &table.EntityDefinition,
 	}
 	return &RegisteredEntity{
 		scope:  scope,
