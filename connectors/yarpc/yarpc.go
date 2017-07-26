@@ -558,21 +558,26 @@ func getWithDefault(args map[string]interface{}, elem string, def string) string
 
 func init() {
 	dosa.RegisterConnector("yarpc", func(args dosa.CreationArgs) (dosa.Connector, error) {
-		if host, ok := args["host"]; ok {
-			if port, ok := args["port"]; ok {
-				trans := getWithDefault(args, "transport", "tchannel")
-				callername := getWithDefault(args, "callername", os.Getenv("USER"))
-				servicename := getWithDefault(args, "servicename", "test")
-				cfg := Config{
-					Transport:   trans,
-					Host:        host.(string),
-					Port:        port.(string),
-					CallerName:  callername,
-					ServiceName: servicename,
-				}
-				return NewConnector(&cfg)
-			}
+		host, ok := args["host"]
+		if !ok {
+			return nil, errors.New("Missing host for yarpc connector")
 		}
-		return nil, errors.New("both host and port must be specified")
+
+		port, ok := args["port"]
+		if !ok {
+			return nil, errors.New("Missing port for yarpc connector")
+		}
+
+		trans := getWithDefault(args, "transport", "tchannel")
+		callername := getWithDefault(args, "callername", os.Getenv("USER"))
+		servicename := getWithDefault(args, "servicename", "test")
+		cfg := Config{
+			Transport:   trans,
+			Host:        host.(string),
+			Port:        port.(string),
+			CallerName:  callername,
+			ServiceName: servicename,
+		}
+		return NewConnector(&cfg)
 	})
 }
