@@ -23,6 +23,7 @@ package dosa
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"sort"
 
 	"github.com/golang/mock/gomock"
@@ -31,14 +32,37 @@ import (
 
 // RangeOp is used to specify constraints to Range calls
 type RangeOp struct {
-	sop        ScanOp
+	pager
+	object     DomainObject
 	conditions map[string][]*Condition
 }
 
 // NewRangeOp returns a new RangeOp instance
 func NewRangeOp(object DomainObject) *RangeOp {
-	rop := &RangeOp{conditions: map[string][]*Condition{}, sop: ScanOp{object: object}}
+	rop := &RangeOp{
+		object:     object,
+		conditions: map[string][]*Condition{},
+	}
 	return rop
+}
+
+// Limit sets the number of rows returned per call. Default is 100
+func (r *RangeOp) Limit(n int) *RangeOp {
+	r.limit = n
+	return r
+}
+
+// Offset sets the pagination token. If not set, an empty token would be used.
+func (r *RangeOp) Offset(token string) *RangeOp {
+	r.token = token
+	return r
+}
+
+// Fields list the non-key fields users want to fetch.
+// PrimaryKey fields are always fetched.
+func (r *RangeOp) Fields(fields []string) *RangeOp {
+	r.fieldsToRead = fields
+	return r
 }
 
 // String satisfies the Stringer interface
@@ -68,7 +92,7 @@ func (r *RangeOp) String() string {
 			}
 		}
 	}
-	addLimitTokenString(result, r.sop.limit, r.sop.token)
+	addLimitTokenString(result, r.limit, r.token)
 	return result.String()
 }
 
@@ -104,27 +128,6 @@ func (r *RangeOp) LtOrEq(fieldName string, value interface{}) *RangeOp {
 	return r.appendOp(LtOrEq, fieldName, value)
 }
 
-// Fields list the non-key fields users want to fetch. If not set, all fields would be fetched.
-// PrimaryKey fields are always fetched.
-func (r *RangeOp) Fields(fieldsToRead []string) *RangeOp {
-	r.sop.fieldsToRead = fieldsToRead
-	return r
-}
-
-// Limit sets the number of rows returned per call. A limit must be provided.
-// If a limit is not provided, an error will be generated at query
-// execution-time.
-func (r *RangeOp) Limit(n int) *RangeOp {
-	r.sop.limit = n
-	return r
-}
-
-// Offset sets the pagination token. If not set, an empty token would be used.
-func (r *RangeOp) Offset(token string) *RangeOp {
-	r.sop.token = token
-	return r
-}
-
 // convertRangeOp converts a list of client field names to server side field names
 //
 func convertRangeOpConditions(r *RangeOp, t *Table) (map[string][]*Condition, error) {
@@ -147,8 +150,9 @@ func convertRangeOpConditions(r *RangeOp, t *Table) (map[string][]*Condition, er
 }
 
 type rangeOpMatcher struct {
-	conds    map[string]map[Condition]bool
-	eqScanOp gomock.Matcher
+	conds map[string]map[Condition]bool
+	p     pager
+	typ   reflect.Type
 }
 
 // EqRangeOp creates a gomock Matcher that will match any RangeOp with the same conditions, limit, token, and fields
@@ -163,8 +167,9 @@ func EqRangeOp(op *RangeOp) gomock.Matcher {
 	}
 
 	return rangeOpMatcher{
-		conds:    conds,
-		eqScanOp: EqScanOp(&(op.sop)),
+		conds: conds,
+		p:     op.pager,
+		typ:   reflect.TypeOf(op.object).Elem(),
 	}
 }
 
@@ -183,19 +188,18 @@ func (m rangeOpMatcher) Matches(x interface{}) bool {
 		}
 	}
 
-	if !m.eqScanOp.Matches(&(op.sop)) {
-		return false
-	}
-	return true
+	return m.p.equals(op.pager) && reflect.TypeOf(op.object).Elem() == m.typ
 }
 
 // String satisfies the gomock.Matcher and Stringer interface
 func (m rangeOpMatcher) String() string {
 	return fmt.Sprintf(
-		" is equal to RangeOp with conditions %v, and scan op %s",
+		" is equal to RangeOp with conditions %v, token %s, limit %d, fields %v, and entity type %v",
 		m.conds,
-		m.eqScanOp.String(),
-	)
+		m.p.token,
+		m.p.limit,
+		m.p.fieldsToRead,
+		m.typ)
 }
 
 // IndexFromConditions returns the name of the index or the base table to use, along with the key info
