@@ -335,20 +335,20 @@ func TestClient_RemoveRange(t *testing.T) {
 	reg1, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1)
 
 	c1 := dosaRenamed.NewClient(reg1, nullConnector)
-	rop := dosaRenamed.NewRangeOp(cte1).Eq("ID", "123")
+	rop := dosaRenamed.NewRemoveRangeOp(cte1).Eq("ID", "123")
 	err := c1.RemoveRange(ctx, rop)
 	assert.True(t, dosaRenamed.ErrorIsNotInitialized(err))
 
 	c1.Initialize(ctx)
 
 	//bad entity
-	rop = dosaRenamed.NewRangeOp(cte2)
+	rop = dosaRenamed.NewRemoveRangeOp(cte2)
 	err = c1.RemoveRange(ctx, rop)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "ClientTestEntity2")
 
 	// bad column in range
-	rop = dosaRenamed.NewRangeOp(cte1).Eq("borkborkbork", int64(1))
+	rop = dosaRenamed.NewRemoveRangeOp(cte1).Eq("borkborkbork", int64(1))
 	err = c1.RemoveRange(ctx, rop)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "ClientTestEntity1")
@@ -362,7 +362,7 @@ func TestClient_RemoveRange(t *testing.T) {
 	mockConn.EXPECT().RemoveRange(ctx, gomock.Any(), gomock.Any()).Return(nil)
 	c2 := dosaRenamed.NewClient(reg1, mockConn)
 	c2.Initialize(ctx)
-	rop = dosaRenamed.NewRangeOp(cte1)
+	rop = dosaRenamed.NewRemoveRangeOp(cte1)
 	err = c2.RemoveRange(ctx, rop)
 	assert.NoError(t, err)
 }

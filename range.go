@@ -33,15 +33,16 @@ import (
 // RangeOp is used to specify constraints to Range calls
 type RangeOp struct {
 	pager
-	object     DomainObject
-	conditions map[string][]*Condition
+	conditioner
 }
 
 // NewRangeOp returns a new RangeOp instance
 func NewRangeOp(object DomainObject) *RangeOp {
 	rop := &RangeOp{
-		object:     object,
-		conditions: map[string][]*Condition{},
+		conditioner: conditioner{
+			object:     object,
+			conditions: map[string][]*Condition{},
+		},
 	}
 	return rop
 }
@@ -96,57 +97,36 @@ func (r *RangeOp) String() string {
 	return result.String()
 }
 
-func (r *RangeOp) appendOp(op Operator, fieldName string, value interface{}) *RangeOp {
-	r.conditions[fieldName] = append(r.conditions[fieldName], &Condition{Op: op, Value: value})
-	return r
-}
-
 // Eq is used to express an equality constraint for a range query
 func (r *RangeOp) Eq(fieldName string, value interface{}) *RangeOp {
-	return r.appendOp(Eq, fieldName, value)
+	r.appendOp(Eq, fieldName, value)
+	return r
 }
 
 // Gt is used to express an "greater than" constraint for a range query
 func (r *RangeOp) Gt(fieldName string, value interface{}) *RangeOp {
-	return r.appendOp(Gt, fieldName, value)
+	r.appendOp(Gt, fieldName, value)
+	return r
 }
 
 // GtOrEq is used to express an "greater than or equal" constraint for a
 // range query
 func (r *RangeOp) GtOrEq(fieldName string, value interface{}) *RangeOp {
-	return r.appendOp(GtOrEq, fieldName, value)
+	r.appendOp(GtOrEq, fieldName, value)
+	return r
 }
 
 // Lt is used to express a "less than" constraint for a range query
 func (r *RangeOp) Lt(fieldName string, value interface{}) *RangeOp {
-	return r.appendOp(Lt, fieldName, value)
+	r.appendOp(Lt, fieldName, value)
+	return r
 }
 
 // LtOrEq is used to express a "less than or equal" constraint for a
 // range query
 func (r *RangeOp) LtOrEq(fieldName string, value interface{}) *RangeOp {
-	return r.appendOp(LtOrEq, fieldName, value)
-}
-
-// convertRangeOp converts a list of client field names to server side field names
-//
-func convertRangeOpConditions(r *RangeOp, t *Table) (map[string][]*Condition, error) {
-	serverConditions := map[string][]*Condition{}
-	for colName, conds := range r.conditions {
-		if scolName, ok := t.FieldToCol[colName]; ok {
-			serverConditions[scolName] = conds
-			// we need to be sure each of the types are correct for marshaling
-			cd := t.FindColumnDefinition(scolName)
-			for _, cond := range conds {
-				if err := ensureTypeMatch(cd.Type, cond.Value); err != nil {
-					return nil, errors.Wrapf(err, "column %s", colName)
-				}
-			}
-		} else {
-			return nil, errors.Errorf("Cannot find column %q in struct %q", colName, t.StructName)
-		}
-	}
-	return serverConditions, nil
+	r.appendOp(LtOrEq, fieldName, value)
+	return r
 }
 
 type rangeOpMatcher struct {
