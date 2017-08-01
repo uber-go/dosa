@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var RangeTestCases = []struct {
+var rangeTestCases = []struct {
 	descript  string
 	rop       *RangeOp
 	stringer  string
@@ -101,27 +101,8 @@ func TestNewRangeOp(t *testing.T) {
 
 func TestRangeOpStringer(t *testing.T) {
 
-	for _, test := range RangeTestCases {
+	for _, test := range rangeTestCases {
 		assert.Equal(t, test.stringer, test.rop.String(), test.descript)
-	}
-}
-
-func TestConvertRangeOpConditions(t *testing.T) {
-	alltypesTable, _ := TableFromInstance((*AllTypes)(nil))
-	for _, test := range RangeTestCases {
-		result, err := convertRangeOpConditions(test.rop, alltypesTable)
-		if err != nil {
-			assert.Contains(t, err.Error(), test.err, test.descript)
-		} else {
-			if assert.NoError(t, err) {
-				// we don't have a stringify method on just the conditions bit
-				// so just build a new RangeOp from the old one
-				newRop := *test.rop
-				newRop.conditions = result
-				final := (&newRop).String()
-				assert.Equal(t, test.converted, final, test.descript)
-			}
-		}
 	}
 }
 
@@ -131,11 +112,13 @@ func TestRangeOpMatcher(t *testing.T) {
 	RangeOp2 := NewRangeOp(&AllTypes{}).Lt("StringType", "Hello")
 	RangeOp3 := NewRangeOp(&AllTypes{}).Eq("StringType", "Hello").Offset("token1")
 	RangeOp4 := NewRangeOp(&AllTypes{}).Eq("StringType", "Hello").Limit(5)
+	RangeOp5 := NewRangeOp(&AllTypes{}).Eq("StringType", "Hello").Fields([]string{"BoolType"})
 
 	matcher := EqRangeOp(RangeOp0)
 	assert.True(t, matcher.Matches(RangeOp1))
 	assert.False(t, matcher.Matches(RangeOp2))
 	assert.False(t, matcher.Matches(RangeOp3))
 	assert.False(t, matcher.Matches(RangeOp4))
+	assert.False(t, matcher.Matches(RangeOp5))
 	assert.False(t, matcher.Matches(3))
 }

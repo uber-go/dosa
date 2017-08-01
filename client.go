@@ -142,10 +142,8 @@ type Client interface {
 	Remove(ctx context.Context, objectToRemove DomainObject) error
 
 	// RemoveRange removes all of the rows that fall within the range specified by the
-	// given RangeOp.
-	//
-	// Note that any Fields, Limit, or Offest on the given rangeOp are ignored by this function.
-	RemoveRange(ctx context.Context, rangeOp *RangeOp) error
+	// given RemoveRangeOp.
+	RemoveRange(ctx context.Context, removeRangeOp *RemoveRangeOp) error
 
 	// TODO: Coming in v2.1
 	// MultiRemove removes multiple rows by primary key. The passed-in entity should
@@ -374,22 +372,20 @@ func (c *client) Remove(ctx context.Context, entity DomainObject) error {
 }
 
 // RemoveRange removes all of the rows that fall within the range specified by the
-// given RangeOp.
-//
-// Note that any Fields, Limit, or Offest on the given rangeOp are ignored by this function.
-func (c *client) RemoveRange(ctx context.Context, r *RangeOp) error {
+// given RemoveRangeOp.
+func (c *client) RemoveRange(ctx context.Context, r *RemoveRangeOp) error {
 	if !c.initialized {
 		return &ErrNotInitialized{}
 	}
 
 	// look up the entity in the registry
-	re, err := c.registrar.Find(r.sop.object)
+	re, err := c.registrar.Find(r.object)
 	if err != nil {
 		return errors.Wrap(err, "RemoveRange")
 	}
 
 	// now convert the client range columns to server side column conditions structure
-	columnConditions, err := convertRangeOpConditions(r, re.table)
+	columnConditions, err := convertConditions(r.conditions, re.table)
 	if err != nil {
 		return errors.Wrap(err, "RemoveRange")
 	}
@@ -410,30 +406,30 @@ func (c *client) Range(ctx context.Context, r *RangeOp) ([]DomainObject, string,
 		return nil, "", &ErrNotInitialized{}
 	}
 	// look up the entity in the registry
-	re, err := c.registrar.Find(r.sop.object)
+	re, err := c.registrar.Find(r.object)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Range")
 	}
 
 	// now convert the client range columns to server side column conditions structure
-	columnConditions, err := convertRangeOpConditions(r, re.table)
+	columnConditions, err := convertConditions(r.conditions, re.table)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Range")
 	}
 
 	// convert the fieldsToRead to the server side equivalent
-	fieldsToRead, err := re.ColumnNames(r.sop.fieldsToRead)
+	fieldsToRead, err := re.ColumnNames(r.fieldsToRead)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Range")
 	}
 
 	// call the server side method
-	values, token, err := c.connector.Range(ctx, re.info, columnConditions, fieldsToRead, r.sop.token, r.sop.limit)
+	values, token, err := c.connector.Range(ctx, re.info, columnConditions, fieldsToRead, r.token, r.limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Range")
 	}
 
-	objectArray := objectsFromValueArray(r.sop.object, values, re, nil)
+	objectArray := objectsFromValueArray(r.object, values, re, nil)
 	return objectArray, token, nil
 }
 

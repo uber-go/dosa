@@ -25,7 +25,6 @@ package mocks
 
 import (
 	context "context"
-
 	gomock "github.com/golang/mock/gomock"
 	dosa "github.com/uber-go/dosa"
 )
@@ -111,7 +110,7 @@ func (_mr *_MockClientRecorder) Remove(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // RemoveRange is a mock implementation of MockClient.RemoveRange
-func (_m *MockClient) RemoveRange(_param0 context.Context, _param1 *dosa.RangeOp) error {
+func (_m *MockClient) RemoveRange(_param0 context.Context, _param1 *dosa.RemoveRangeOp) error {
 	ret := _m.ctrl.Call(_m, "RemoveRange", _param0, _param1)
 	ret0, _ := ret[0].(error)
 	return ret0

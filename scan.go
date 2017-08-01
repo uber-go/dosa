@@ -23,8 +23,6 @@ package dosa
 import (
 	"bytes"
 	"fmt"
-	"io"
-
 	"reflect"
 
 	"github.com/golang/mock/gomock"
@@ -32,10 +30,8 @@ import (
 
 // ScanOp represents the scan query
 type ScanOp struct {
-	object       DomainObject
-	limit        int
-	token        string
-	fieldsToRead []string
+	pager
+	object DomainObject
 }
 
 // NewScanOp returns a new ScanOp instance
@@ -43,24 +39,7 @@ func NewScanOp(obj DomainObject) *ScanOp {
 	return &ScanOp{object: obj}
 }
 
-// String satisfies the Stringer interface
-func (s *ScanOp) String() string {
-	result := &bytes.Buffer{}
-	result.WriteString("ScanOp")
-	addLimitTokenString(result, s.limit, s.token)
-	return result.String()
-}
-
-func addLimitTokenString(w io.Writer, limit int, token string) {
-	if limit > 0 {
-		fmt.Fprintf(w, " limit %d", limit)
-	}
-	if token != "" {
-		fmt.Fprintf(w, " token %q", token)
-	}
-}
-
-// Limit sets the number of rows returned per call. Default is 128.
+// Limit sets the number of rows returned per call. Default is 100
 func (s *ScanOp) Limit(n int) *ScanOp {
 	s.limit = n
 	return s
@@ -79,26 +58,25 @@ func (s *ScanOp) Fields(fields []string) *ScanOp {
 	return s
 }
 
+// String satisfies the Stringer interface
+func (s *ScanOp) String() string {
+	result := &bytes.Buffer{}
+	result.WriteString("ScanOp")
+	addLimitTokenString(result, s.limit, s.token)
+	return result.String()
+}
+
 type scanOpMatcher struct {
-	limit  int
-	token  string
-	fields map[string]bool
-	typ    reflect.Type
+	p   pager
+	typ reflect.Type
 }
 
 // EqScanOp provides a gomock Matcher that matches any ScanOp with a limit,
 // token, and fields to read that are the same as those specificed by the op argument.
 func EqScanOp(op *ScanOp) gomock.Matcher {
-	fields := make(map[string]bool, len(op.fieldsToRead))
-	for _, field := range op.fieldsToRead {
-		fields[field] = true
-	}
-
 	return scanOpMatcher{
-		limit:  op.limit,
-		token:  op.token,
-		fields: fields,
-		typ:    reflect.TypeOf(op.object).Elem(),
+		p:   op.pager,
+		typ: reflect.TypeOf(op.object).Elem(),
 	}
 }
 
@@ -109,26 +87,15 @@ func (m scanOpMatcher) Matches(x interface{}) bool {
 		return false
 	}
 
-	for _, field := range op.fieldsToRead {
-		if !m.fields[field] {
-			return false
-		}
-	}
-
-	return op.limit == m.limit && op.token == m.token && reflect.TypeOf(op.object).Elem() == m.typ
+	return m.p.equals(op.pager) && reflect.TypeOf(op.object).Elem() == m.typ
 }
 
 // String satisfies the gomock.Matcher and Stringer interface
 func (m scanOpMatcher) String() string {
-	fieldList := make([]string, 0, len(m.fields))
-	for field := range m.fields {
-		fieldList = append(fieldList, field)
-	}
 	return fmt.Sprintf(
-		" is equal to ScanOp with limit %d, token %q, dosa entity type %v, and fields %v",
-		m.limit,
-		m.token,
-		m.typ,
-		fieldList,
-	)
+		" is equal to ScanOp with token %s, limit %d, fields %v, and entity type %v",
+		m.p.token,
+		m.p.limit,
+		m.p.fieldsToRead,
+		m.typ)
 }
