@@ -163,9 +163,12 @@ type Client interface {
 	// of the range can be fetched with additional calls to the range function.
 	Range(ctx context.Context, rangeOp *RangeOp) ([]DomainObject, string, error)
 
-	// FetchRange fetches the entire range of values specified by the RangeOp. For each value fetched,
-	// the provided onNext function is called with the value as it's argument.
-	FetchRange(ctx context.Context, r *RangeOp, onNext func(value DomainObject) error) error
+	// RangeIter starts at the offset specified by the RangeOp and fetches the entire
+	// range of values that fall within the RangeOp conditions. It will make multiple, sequential
+	// range requests, fetching values until there are no more left in the range.
+	//
+	// For each value fetched, the provided onNext function is called with the value as it's argument.
+	RangeIter(ctx context.Context, r *RangeOp, onNext func(value DomainObject) error) error
 
 	// Search fetches entities by fields that have been marked "searchable"
 	// TODO: Coming in v2.1
@@ -445,7 +448,7 @@ func (c *client) Range(ctx context.Context, r *RangeOp) ([]DomainObject, string,
 	return objectArray, token, nil
 }
 
-func (c *client) FetchRange(ctx context.Context, r *RangeOp, onNext func(value DomainObject) error) error {
+func (c *client) RangeIter(ctx context.Context, r *RangeOp, onNext func(value DomainObject) error) error {
 	for {
 		results, nextToken, err := c.Range(ctx, r)
 
