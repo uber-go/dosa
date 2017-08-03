@@ -358,6 +358,6 @@ func TestSchema_Dump_Avro(t *testing.T) {
 	main()
 	output := c.stop(false)
 	assert.Contains(t, output, "executing schema dump")
-	assert.Contains(t, output, "123 34 99 108 117 115")
-	assert.Contains(t, output, "99 111 114 100 34 125")
+	assert.Contains(t, output, "testnullablenamedimportentity")
+	assert.Contains(t, output, "name\":\"nullfloat64type")
 }

@@ -59,7 +59,7 @@ func createEntityDefinition() *dosa.EntityDefinition {
 			{
 				Name: "boolcol",
 				Type: dosa.Bool,
-		},
+			},
 			{
 				Name: "timestampcol",
 				Type: dosa.Timestamp,
