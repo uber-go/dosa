@@ -30,11 +30,13 @@ import (
 )
 
 const (
-	clusteringKeys = "clusteringKeys"
-	partitionKeys  = "partitionKeys"
+	clusteringKeys = "ClusteringKeys"
+	partitionKeys  = "PartitionKeys"
 	nameKey        = "Name"
 	descendingKey  = "Descending"
 	dosaTypeKey    = "dosaType"
+	indexKeys      = "Indexes"
+	indexKeyField  = "Key"
 )
 
 // map from dosa type to avro type
@@ -152,6 +154,7 @@ func ToAvro(fqn dosa.FQN, ed *dosa.EntityDefinition) ([]byte, error) {
 	meta := make(map[string]interface{})
 	meta[partitionKeys] = ed.Key.PartitionKeys
 	meta[clusteringKeys] = ed.Key.ClusteringKeys
+	meta[indexKeys] = ed.Indexes
 
 	ar := &Record{
 		Name:       ed.Name,
@@ -174,12 +177,12 @@ func FromAvro(data string) (*dosa.EntityDefinition, error) {
 		return nil, errors.Wrap(err, "failed to parse avro schema from json")
 	}
 
-	pks, err := decodePartitionKeys(schema)
+	pks, err := decodePartitionKeysFromSchema(schema)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse avro schema for partition keys")
 	}
 
-	cks, err := decodeClusteringKeys(schema)
+	cks, err := decodeClusteringKeysFromSchema(schema)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse avro schema for clustering keys")
 	}
@@ -194,6 +197,12 @@ func FromAvro(data string) (*dosa.EntityDefinition, error) {
 		return nil, errors.Wrap(err, "failed to parse avro schema for fields")
 	}
 
+	// index
+	idx, err := decodeIndexes(schema)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse avro schema for index")
+	}
+
 	return &dosa.EntityDefinition{
 		Name: schema.GetName(),
 		Key: &dosa.PrimaryKey{
@@ -201,6 +210,7 @@ func FromAvro(data string) (*dosa.EntityDefinition, error) {
 			ClusteringKeys: cks,
 		},
 		Columns: cols,
+		Indexes: idx,
 	}, nil
 }
 
@@ -226,63 +236,116 @@ func decodeFields(fields []*gv.SchemaField) ([]*dosa.ColumnDefinition, error) {
 	return cols, nil
 }
 
-func decodePartitionKeys(schema gv.Schema) ([]string, error) {
+func decodePartitionKeysFromSchema(schema gv.Schema) ([]string, error) {
 	if prop, ok := schema.Prop(partitionKeys); ok {
-		realPks, ok := prop.([]interface{})
-		if !ok {
-			return nil, fmt.Errorf("failed to parse partition keys: %v", prop)
-		}
-
-		pks := make([]string, len(realPks))
-		for i, v := range realPks {
-			pks[i], ok = v.(string)
-			if !ok {
-				return nil, fmt.Errorf("failed to parse partition keys: %v", prop)
-			}
-		}
-		return pks, nil
+		return decodePartitionKeys(prop)
 	}
 	return nil, fmt.Errorf("cannot find %s key in the schema", partitionKeys)
 }
 
-func decodeClusteringKeys(schema gv.Schema) ([]*dosa.ClusteringKey, error) {
-	if prop, ok := schema.Prop(clusteringKeys); ok {
-		realCks, ok := prop.([]interface{})
-		if !ok {
-			return nil, fmt.Errorf("failed to parse clustering keys: %v", prop)
-		}
-
-		cks := make([]*dosa.ClusteringKey, len(realCks))
-		for i, v := range realCks {
-			pair, ok := v.(map[string]interface{})
-			if !ok {
-				return nil, fmt.Errorf("failed to parse clustering key: %v", v)
-			}
-
-			name, ok := pair[nameKey]
-			if !ok {
-				return nil, fmt.Errorf("cannot find %s key in %v", nameKey, pair)
-			}
-			ck := &dosa.ClusteringKey{}
-			ck.Name, ok = name.(string)
-			if !ok {
-				return nil, fmt.Errorf("failed to convert %v to string", name)
-			}
-
-			descending, ok := pair[descendingKey]
-			if !ok {
-				return nil, fmt.Errorf("cannot find %s key in %v", descendingKey, pair)
-			}
-			ck.Descending, ok = descending.(bool)
-			if !ok {
-				return nil, fmt.Errorf("failed to convert %v to bool", descending)
-			}
-
-			cks[i] = ck
-		}
-
-		return cks, nil
+func decodePartitionKeys(prop interface{}) ([]string, error) {
+	realPks, ok := prop.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("failed to parse partition keys: %v", prop)
 	}
 
+	pks := make([]string, len(realPks))
+	for i, v := range realPks {
+		pks[i], ok = v.(string)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse partition keys: %v", prop)
+		}
+	}
+	return pks, nil
+}
+
+func decodeIndexes(schema gv.Schema) (map[string]*dosa.IndexDefinition, error) {
+	idx := make(map[string]*dosa.IndexDefinition)
+	if prop, ok := schema.Prop(indexKeys); ok {
+		realIndexes, ok := prop.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("failed to parse index: %v", prop)
+		}
+
+		for key, index := range realIndexes {
+			realIndex, ok := index.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("failed to parse index: %v", index)
+			}
+
+			realKey, ok := realIndex[indexKeyField].(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("failed to parse index key: %v", index)
+			}
+
+			pks, err := decodePartitionKeys(realKey[partitionKeys])
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse avro index partition keys")
+			}
+
+			cks, err := decodeClusteringKeys(realKey[clusteringKeys])
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse avro index clustering keys")
+			}
+
+			idx[key] = &dosa.IndexDefinition{
+				Key: &dosa.PrimaryKey{
+					PartitionKeys:  pks,
+					ClusteringKeys: cks,
+				},
+			}
+		}
+		return idx, nil
+	}
+	return nil, fmt.Errorf("cannot find %s index in the schema", indexKeys)
+}
+
+func decodeClusteringKeysFromSchema(schema gv.Schema) ([]*dosa.ClusteringKey, error) {
+	if prop, ok := schema.Prop(clusteringKeys); ok {
+		return decodeClusteringKeys(prop)
+	}
 	return nil, fmt.Errorf("cannot find %s key in the schema", clusteringKeys)
+}
+
+func decodeClusteringKeys(prop interface{}) ([]*dosa.ClusteringKey, error) {
+	// cluster key is optional
+	if prop == nil {
+		return nil, nil
+	}
+
+	realCks, ok := prop.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("failed to parse clustering keys: %v", prop)
+	}
+
+	cks := make([]*dosa.ClusteringKey, len(realCks))
+	for i, v := range realCks {
+		pair, ok := v.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("failed to parse clustering key: %v", v)
+		}
+
+		name, ok := pair[nameKey]
+		if !ok {
+			return nil, fmt.Errorf("cannot find %s key in %v", nameKey, pair)
+		}
+		ck := &dosa.ClusteringKey{}
+		ck.Name, ok = name.(string)
+		if !ok {
+			return nil, fmt.Errorf("failed to convert %v to string", name)
+		}
+
+		descending, ok := pair[descendingKey]
+		if !ok {
+			return nil, fmt.Errorf("cannot find %s key in %v", descendingKey, pair)
+		}
+		ck.Descending, ok = descending.(bool)
+		if !ok {
+			return nil, fmt.Errorf("failed to convert %v to bool", descending)
+		}
+
+		cks[i] = ck
+	}
+
+	return cks, nil
 }
