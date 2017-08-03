@@ -65,6 +65,13 @@ func createEntityDefinition() *dosa.EntityDefinition {
 				Type: dosa.Timestamp,
 			},
 		},
+		Indexes: map[string]*dosa.IndexDefinition{
+			"index1": {
+				Key: &dosa.PrimaryKey{
+					PartitionKeys: []string{"timestampcol"},
+				},
+			},
+		},
 		Key: &dosa.PrimaryKey{
 			PartitionKeys: []string{
 				"stringcol",
@@ -102,7 +109,7 @@ func TestDecodeFailure(t *testing.T) {
 	}{
 		{
 			Schema: `{
-				"clusteringKeys":[
+				"ClusteringKeys":[
 					{"Name":"doublecol","Descending":false},
 					{"Name":"boolcol","Descending":true}
 				],
@@ -110,14 +117,14 @@ func TestDecodeFailure(t *testing.T) {
 					{"dosaType":"String","name":"stringcol","type":"string"}
 				],
 				"name":"test",
-				"partitionKeys":{},
+				"PartitionKeys":{},
 				"type":"record"
 			}`,
 			Err: errors.New("failed to parse partition keys"),
 		},
 		{
 			Schema: `{
-				"clusteringKeys":[
+				"ClusteringKeys":[
 					{"Name":"doublecol","Descending":false},
 					{"Name":"boolcol","Descending":true}
 				],
@@ -125,47 +132,47 @@ func TestDecodeFailure(t *testing.T) {
 					{"dosaType":"String","name":"stringcol","type":"string"}]
 		 		,
 				"name":"test",
-				"partitionKeys":[{},"uuidcol"],
+				"PartitionKeys":[{},"uuidcol"],
 				"type":"record"
 			}`,
 			Err: errors.New("failed to parse partition keys"),
 		},
 		{
 			Schema: `{
-				"clusteringKeys":{},
+				"ClusteringKeys":{},
 				"fields":[
 					{"dosaType":"String","name":"stringcol","type":"string"}]
 		 		,
 				"name":"test",
-				"partitionKeys":["stringcol","uuidcol"],
+				"PartitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
-			Err: errors.New("failed to parse clustering keys"),
+			Err: errors.New("clustering keys"),
 		},
 		{
 			Schema: `{
-				"clusteringKeys":[
+				"ClusteringKeys":[
 					{"A":"doublecol","Descending":false}
 				],
 				"fields":[
 					{"dosaType":"String","name":"stringcol","type":"string"}]
 		 		,
 				"name":"test",
-				"partitionKeys":["stringcol","uuidcol"],
+				"PartitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
 			Err: errors.New("cannot find Name key in map"),
 		},
 		{
 			Schema: `{
-				"clusteringKeys":[
+				"ClusteringKeys":[
 					{"Name":"doublecol","A":false}
 				],
 				"fields":[
 					{"dosaType":"String","name":"stringcol","type":"string"}]
 		 		,
 				"name":"test",
-				"partitionKeys":["stringcol","uuidcol"],
+				"PartitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
 			Err: errors.New("cannot find Descending key in map"),
@@ -179,14 +186,14 @@ func TestDecodeFailure(t *testing.T) {
 					{"dosaType":"String","name":"stringcol","type":"string"}]
 		 		,
 				"name":"test",
-				"partitionKeys":["stringcol","uuidcol"],
+				"PartitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
-			Err: errors.New("cannot find clusteringKeys key"),
+			Err: errors.New("cannot find ClusteringKeys key"),
 		},
 		{
 			Schema: `{
-				"clusteringKeys":[
+				"ClusteringKeys":[
 					{"Name":"doublecol","Descending":false}
 				],
 				"fields":[
@@ -196,11 +203,11 @@ func TestDecodeFailure(t *testing.T) {
 				"p":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
-			Err: errors.New("cannot find partitionKeys key"),
+			Err: errors.New("cannot find PartitionKeys key"),
 		},
 		{
 			Schema: `{
-				"clusteringKeys":[
+				"ClusteringKeys":[
 					{"Name":"doublecol","Descending":false},
 					{"Name":"boolcol","Descending":true}
 				],
@@ -208,14 +215,14 @@ func TestDecodeFailure(t *testing.T) {
 					{"d":"String","name":"stringcol","type":"string"}
 		 		],
 				"name":"test",
-				"partitionKeys":["stringcol","uuidcol"],
+				"PartitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
 			Err: errors.New("cannot find dosaType key"),
 		},
 		{
 			Schema: `{
-				"clusteringKeys":[
+				"ClusteringKeys":[
 					{"Name":"doublecol","Descending":false},
 					{"Name":"boolcol","Descending":true}
 				],
@@ -223,14 +230,14 @@ func TestDecodeFailure(t *testing.T) {
 					{"d":{},"name":"stringcol","type":"string"}
 		 		],
 				"name":"test",
-				"partitionKeys":["stringcol","uuidcol"],
+				"PartitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
 			Err: errors.New("cannot find dosaType key"),
 		},
 		{
 			Schema: `{
-				"clusteringKeys":[
+				"ClusteringKeys":[
 					{"Name":"doublecol","Descending":false},
 					{"Name":"boolcol","Descending":true}
 				],
@@ -238,7 +245,7 @@ func TestDecodeFailure(t *testing.T) {
 					{"d":1,"name":"stringcol","type":"string"}
 		 		],
 				"name":"test",
-				"partitionKeys":["stringcol","uuidcol"],
+				"PartitionKeys":["stringcol","uuidcol"],
 				"type":"record"
 			}`,
 			Err: errors.New("cannot find dosaType key"),

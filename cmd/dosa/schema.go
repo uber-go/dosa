@@ -238,7 +238,8 @@ func (c *SchemaDump) Execute(args []string) error {
 		case "uql":
 			fmt.Println(uql.ToUQL(d))
 		case "avro":
-			fmt.Println(avro.ToAvro("TODO", d))
+			s, err := avro.ToAvro("TODO", d)
+			fmt.Println(string(s), err)
 		}
 	}
 
