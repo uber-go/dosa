@@ -32,6 +32,8 @@ import (
 
 type AllTypes struct {
 	dosa.Entity `dosa:"primaryKey=BoolType"`
+	I1          dosa.Index `dosa:"key=Int32Type"`
+	I2          dosa.Index `dosa:"key=Int64Type"`
 	BoolType    bool
 	Int32Type   int32
 	Int64Type   int64
@@ -58,8 +60,16 @@ func TestCQL(t *testing.T) {
 			Statement: `create table "singleprimarykey" ("primarykey" bigint, "data" text, primary key (primarykey));`,
 		},
 		{
-			Instance:  &AllTypes{},
-			Statement: `create table "alltypes" ("booltype" boolean, "int32type" int, "int64type" bigint, "doubletype" double, "stringtype" text, "blobtype" blob, "timetype" timestamp, "uuidtype" uuid, primary key (booltype));`,
+			Instance: &AllTypes{},
+			Statement: `create table "alltypes" ("booltype" boolean, "int32type" int, "int64type" bigint, "doubletype" double, "stringtype" text, "blobtype" blob, "timetype" timestamp, "uuidtype" uuid, primary key (booltype));
+create materialized view "i1" as
+  select * from "alltypes"
+  where "int32type" is not null
+  primary key (int32type, booltype ASC);
+create materialized view "i2" as
+  select * from "alltypes"
+  where "int64type" is not null
+  primary key (int64type, booltype ASC);`,
 		},
 		// TODO: Add more test cases
 	}
@@ -68,7 +78,7 @@ func TestCQL(t *testing.T) {
 		table, err := dosa.TableFromInstance(d.Instance)
 		assert.Nil(t, err) // this code does not test TableFromInstance
 		statement := ToCQL(&table.EntityDefinition)
-		assert.Equal(t, statement, d.Statement, fmt.Sprintf("Instance: %T", d.Instance))
+		assert.Equal(t, d.Statement, statement, fmt.Sprintf("Instance: %T", d.Instance))
 	}
 }
 
