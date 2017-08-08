@@ -18,7 +18,7 @@ ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
 	-e ".*/\..*" \
 	-e ".*/_.*")
 
-TEST_TIMEOUT := "-timeout=3s"
+TEST_TIMEOUT := "-timeout=60s"
 
 .PHONY: test
 test: clean vendor
@@ -70,6 +70,7 @@ include $(SUPPORT_FILES)/lint.mk
 gendoc:
 	$(ECHO_V)find . \( \
 		-path ./vendor -o  \
+		-path ./ccm -o \
 		-path ./node_modules -o \
 		-path ./.glide \
 	\) -prune -o -name README.md -print | \
