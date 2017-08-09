@@ -29,23 +29,18 @@ import (
 )
 
 var (
-	tableName        = "testentity"
-	uuidKeyField     = "uuidkeyfield"
-	uuidField        = "uuidfield"
-	stringKeyField   = "stringkeyfield"
-	stringField      = "stringfield"
-	int32Field       = "int32field"
-	int64KeyField    = "int64keyfield"
-	int64Field       = "int64field"
-	doubleField      = "doublefield"
-	blobField        = "blobfield"
-	timestampField   = "timestampfield"
-	boolField        = "boolfield"
-	nullInt64Field   = "nullInt64Field"
-	nullFloat64Field = "nullFloat64Field"
-	nullBoolField    = "nullBoolField"
-	nullStringField  = "nullStringField"
-	nullTimeField    = "nullTimeField"
+	tableName      = "testentity"
+	uuidKeyField   = "uuidkeyfield"
+	uuidField      = "uuidfield"
+	stringKeyField = "stringkeyfield"
+	stringField    = "stringfield"
+	int32Field     = "int32field"
+	int64KeyField  = "int64keyfield"
+	int64Field     = "int64field"
+	doubleField    = "doublefield"
+	blobField      = "blobfield"
+	timestampField = "timestampfield"
+	boolField      = "boolfield"
 )
 
 func TestRawValueFromInterfaceBadType(t *testing.T) {
@@ -182,26 +177,6 @@ var testEntityDefinition = &dosa.EntityDefinition{
 		{
 			Name: int64Field,
 			Type: dosa.Int64,
-		},
-		{
-			Name: nullInt64Field,
-			Type: dosa.TNullInt64,
-		},
-		{
-			Name: nullFloat64Field,
-			Type: dosa.TNullFloat64,
-		},
-		{
-			Name: nullStringField,
-			Type: dosa.TNullString,
-		},
-		{
-			Name: nullBoolField,
-			Type: dosa.TNullBool,
-		},
-		{
-			Name: nullTimeField,
-			Type: dosa.TNullTime,
 		},
 	},
 }

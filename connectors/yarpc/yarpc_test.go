@@ -22,6 +22,8 @@ package yarpc_test
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -43,6 +45,10 @@ func testInt64Ptr(i int64) *int64 {
 
 func testInt32Ptr(i int32) *int32 {
 	return &i
+}
+
+func testTimePtr(t time.Time) *time.Time {
+	return &t
 }
 
 func testFloat64Ptr(f float64) *float64 {
@@ -69,11 +75,6 @@ var testEi = &dosa.EntityInfo{
 			{Name: "c5", Type: dosa.Bool},
 			{Name: "c6", Type: dosa.Int32},
 			{Name: "c7", Type: dosa.TUUID},
-			{Name: "c8", Type: dosa.TNullBool},
-			{Name: "c9", Type: dosa.TNullString},
-			{Name: "c10", Type: dosa.TNullInt64},
-			{Name: "c11", Type: dosa.TNullFloat64},
-			{Name: "c12", Type: dosa.TNullTime},
 		},
 		Key: &dosa.PrimaryKey{
 			PartitionKeys: []string{"f1"},
@@ -191,6 +192,29 @@ func TestYaRPCClient_NewConnector(t *testing.T) {
 	}
 }
 
+func assertEqForPointer(t *testing.T, expected interface{}, p interface{}) {
+	switch v := p.(type) {
+	case *int32:
+		assert.Equal(t, *v, expected)
+	case *int64:
+		assert.Equal(t, *v, expected)
+	case *float64:
+		assert.Equal(t, *v, expected)
+	case *string:
+		assert.Equal(t, *v, expected)
+	case *dosa.UUID:
+		assert.Equal(t, *v, expected)
+	case *time.Time:
+		assert.Equal(t, *v, expected)
+	case *bool:
+		assert.Equal(t, *v, expected)
+	case *[]byte:
+		assert.Equal(t, *v, expected)
+	default:
+		assert.Fail(t, fmt.Sprintf("invalid type %v", reflect.TypeOf(v)))
+	}
+}
+
 // Test a happy path read of one column and specify the primary key
 func TestYaRPCClient_Read(t *testing.T) {
 	// build a mock RPC client
@@ -213,11 +237,6 @@ func TestYaRPCClient_Read(t *testing.T) {
 		"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
 		"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(false)}},
 		"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(1)}},
-		"c8":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(true)}},
-		"c9":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f9value")}},
-		"c10":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}},
-		"c11":              {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(3.14)}},
-		"c12":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(99)}},
 	}}, nil)
 
 	// Prepare the dosa client interface using the mocked RPC layer
@@ -225,20 +244,15 @@ func TestYaRPCClient_Read(t *testing.T) {
 
 	// perform the read
 	values, err := sut.Read(ctx, testEi, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))}, []string{"f1"})
-	assert.Nil(t, err)                      // not an error
-	assert.NotNil(t, values)                // found some values
-	assert.Equal(t, int64(1), values["c1"]) // the mapped field is found, and is the right type
-	assert.Equal(t, float64(2.2), values["c2"])
-	assert.Equal(t, "f3value", values["c3"])
+	assert.Nil(t, err)                            // not an error
+	assert.NotNil(t, values)                      // found some values
+	assertEqForPointer(t, int64(1), values["c1"]) // the mapped field is found, and is the right type
+	assertEqForPointer(t, float64(2.2), values["c2"])
+	assertEqForPointer(t, "f3value", values["c3"])
 	assert.Equal(t, []byte{'b', 'i', 'n', 'a', 'r', 'y'}, values["c4"])
-	assert.Equal(t, false, values["c5"])
-	assert.Equal(t, int32(1), values["c6"])
+	assertEqForPointer(t, false, values["c5"])
+	assertEqForPointer(t, int32(1), values["c6"])
 	assert.Empty(t, values["fieldNotInSchema"]) // the unknown field is not present
-	assert.Equal(t, true, values["c8"])
-	assert.Equal(t, "f9value", values["c9"])
-	assert.Equal(t, int64(10), values["c10"])
-	assert.Equal(t, float64(3.14), values["c11"])
-	assert.Equal(t, time.Unix(0, 99), values["c12"])
 
 	errCode := int32(404)
 	mockedClient.EXPECT().Read(ctx, readRequest).Return(nil, &drpc.BadRequestError{ErrorCode: &errCode})
@@ -286,11 +300,6 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
 							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(false)}},
 							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(1)}},
-							"c8":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(true)}},
-							"c9":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f9value")}},
-							"c10":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}},
-							"c11":              {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(3.14)}},
-							"c12":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(99)}},
 						},
 						Error: nil,
 					},
@@ -303,11 +312,6 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'a', 'i', '1', 'a', 'r', 'y'}}},
 							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(true)}},
 							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(2)}},
-							"c8":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(true)}},
-							"c9":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f9value")}},
-							"c10":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}},
-							"c11":              {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(3.14)}},
-							"c12":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(time.Unix(0, 99).UnixNano())}},
 						},
 						Error: nil,
 					},
@@ -355,11 +359,6 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
 							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(false)}},
 							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testInt32Ptr(1)}},
-							"c8":               {ElemValue: &drpc.RawValue{BoolValue: testBoolPtr(true)}},
-							"c9":               {ElemValue: &drpc.RawValue{StringValue: testStringPtr("f9value")}},
-							"c10":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(10)}},
-							"c11":              {ElemValue: &drpc.RawValue{DoubleValue: testFloat64Ptr(3.14)}},
-							"c12":              {ElemValue: &drpc.RawValue{Int64Value: testInt64Ptr(time.Unix(0, 99).UnixNano())}},
 						},
 						Error: nil,
 					},
@@ -384,18 +383,13 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 					assert.Contains(t, v.Error.Error(), *d.Response.Results[i].Error.Msg)
 					continue
 				}
-				assert.Equal(t, v.Values["c1"], *d.Response.Results[i].EntityValues["c1"].ElemValue.Int64Value)
+				assertEqForPointer(t, *d.Response.Results[i].EntityValues["c1"].ElemValue.Int64Value, v.Values["c1"])
 				assert.Empty(t, v.Values["fieldNotInSchema"])
-				assert.Equal(t, v.Values["c2"], *d.Response.Results[i].EntityValues["c2"].ElemValue.DoubleValue)
-				assert.Equal(t, v.Values["c3"], *d.Response.Results[i].EntityValues["c3"].ElemValue.StringValue)
-				assert.Equal(t, v.Values["c4"], d.Response.Results[i].EntityValues["c4"].ElemValue.BinaryValue)
-				assert.Equal(t, v.Values["c5"], *d.Response.Results[i].EntityValues["c5"].ElemValue.BoolValue)
-				assert.Equal(t, v.Values["c6"], *d.Response.Results[i].EntityValues["c6"].ElemValue.Int32Value)
-				assert.Equal(t, v.Values["c8"], *d.Response.Results[i].EntityValues["c8"].ElemValue.BoolValue)
-				assert.Equal(t, v.Values["c9"], *d.Response.Results[i].EntityValues["c9"].ElemValue.StringValue)
-				assert.Equal(t, v.Values["c10"], *d.Response.Results[i].EntityValues["c10"].ElemValue.Int64Value)
-				assert.Equal(t, v.Values["c11"], *d.Response.Results[i].EntityValues["c11"].ElemValue.DoubleValue)
-				assert.Equal(t, v.Values["c12"], time.Unix(0, *d.Response.Results[i].EntityValues["c12"].ElemValue.Int64Value))
+				assertEqForPointer(t, *d.Response.Results[i].EntityValues["c2"].ElemValue.DoubleValue, v.Values["c2"])
+				assertEqForPointer(t, *d.Response.Results[i].EntityValues["c3"].ElemValue.StringValue, v.Values["c3"])
+				assert.Equal(t, d.Response.Results[i].EntityValues["c4"].ElemValue.BinaryValue, v.Values["c4"])
+				assertEqForPointer(t, *d.Response.Results[i].EntityValues["c5"].ElemValue.BoolValue, v.Values["c5"])
+				assertEqForPointer(t, *d.Response.Results[i].EntityValues["c6"].ElemValue.Int32Value, v.Values["c6"])
 			}
 			continue
 		}
@@ -414,61 +408,69 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	// here are the data types to test; the names are random
-	vals := []struct {
+	valss := [][]struct {
 		Name  string
 		Value interface{}
 	}{
-		{"c1", int64(1)},
-		{"c2", float64(2.2)},
-		{"c3", "string"},
-		{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
-		{"c5", false},
-		{"c6", int32(2)},
-		{"c7", time.Unix(0, 99)},
-		{"c8", dosa.NewNullBool(true)},
-		{"c9", dosa.NewNullString("optionalString")},
-		{"c10", dosa.NewNullInt64(10)},
-		{"c11", dosa.NewNullFloat64(9.9)},
-		{"c12", dosa.NewNullTime(time.Now())},
+		{
+			{"c1", int64(1)},
+			{"c2", float64(2.2)},
+			{"c3", "string"},
+			{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
+			{"c5", false},
+			{"c6", int32(2)},
+			{"c7", time.Now()},
+		},
+		{
+			{"c1", testInt64Ptr(1)},
+			{"c2", testFloat64Ptr(2.2)},
+			{"c3", testStringPtr("string")},
+			{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
+			{"c5", testBoolPtr(false)},
+			{"c6", testInt32Ptr(2)},
+			{"c7", testTimePtr(time.Now())},
+		},
 	}
 
-	// build up the input field list and the output field list
-	// the layout is quite different; inputs are a simple map but the actual RPC call expects a messier format
-	inFields := map[string]dosa.FieldValue{}
-	outFields := drpc.FieldValueMap{}
-	for _, item := range vals {
-		inFields[item.Name] = item.Value
-		rv, _ := yarpc.RawValueFromInterface(item.Value)
-		outFields[item.Name] = &drpc.Value{ElemValue: rv}
+	for _, vals := range valss {
+		// build up the input field list and the output field list
+		// the layout is quite different; inputs are a simple map but the actual RPC call expects a messier format
+		inFields := map[string]dosa.FieldValue{}
+		outFields := drpc.FieldValueMap{}
+		for _, item := range vals {
+			inFields[item.Name] = item.Value
+			rv, _ := yarpc.RawValueFromInterface(item.Value)
+			outFields[item.Name] = &drpc.Value{ElemValue: rv}
+		}
+
+		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields})
+
+		// create the YaRPCClient and give it the mocked RPC interface
+		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
+		sut := yarpc.Connector{Client: mockedClient}
+
+		// and run the test
+		err := sut.CreateIfNotExists(ctx, testEi, inFields)
+		assert.Nil(t, err)
+
+		errCode := int32(409)
+		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields}).Return(
+			&drpc.BadRequestError{ErrorCode: &errCode},
+		)
+
+		err = sut.CreateIfNotExists(ctx, testEi, inFields)
+		assert.True(t, dosa.ErrorIsAlreadyExists(err))
+		// make sure we actually called CreateIfNotExists on the interface
+		ctrl.Finish()
+
+		// cover the conversion error case
+		err = sut.CreateIfNotExists(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "\"c7\"")    // must contain name of bad field
+		assert.Contains(t, err.Error(), "too short") // must mention that the uuid is too short
+
+		assert.NoError(t, sut.Shutdown())
 	}
-
-	mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields})
-
-	// create the YaRPCClient and give it the mocked RPC interface
-	// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
-	sut := yarpc.Connector{Client: mockedClient}
-
-	// and run the test
-	err := sut.CreateIfNotExists(ctx, testEi, inFields)
-	assert.Nil(t, err)
-
-	errCode := int32(409)
-	mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields}).Return(
-		&drpc.BadRequestError{ErrorCode: &errCode},
-	)
-
-	err = sut.CreateIfNotExists(ctx, testEi, inFields)
-	assert.True(t, dosa.ErrorIsAlreadyExists(err))
-	// make sure we actually called CreateIfNotExists on the interface
-	ctrl.Finish()
-
-	// cover the conversion error case
-	err = sut.CreateIfNotExists(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "\"c7\"")    // must contain name of bad field
-	assert.Contains(t, err.Error(), "too short") // must mention that the uuid is too short
-
-	assert.NoError(t, sut.Shutdown())
 }
 
 func TestYaRPCClient_Upsert(t *testing.T) {
@@ -477,55 +479,63 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	// here are the data types to test; the names are random
-	vals := []struct {
+	valss := [][]struct {
 		Name  string
 		Value interface{}
 	}{
-		{"c1", int64(1)},
-		{"c2", float64(2.2)},
-		{"c3", "string"},
-		{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
-		{"c5", false},
-		{"c6", int32(2)},
-		{"c7", time.Now()},
-		{"c8", dosa.NewNullBool(true)},
-		{"c9", dosa.NewNullString("optionalString")},
-		{"c10", dosa.NewNullInt64(10)},
-		{"c11", dosa.NewNullFloat64(9.9)},
-		{"c12", dosa.NewNullTime(time.Now())},
+		{
+			{"c1", int64(1)},
+			{"c2", float64(2.2)},
+			{"c3", "string"},
+			{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
+			{"c5", false},
+			{"c6", int32(2)},
+			{"c7", time.Now()},
+		},
+		{
+			{"c1", testInt64Ptr(1)},
+			{"c2", testFloat64Ptr(2.2)},
+			{"c3", testStringPtr("string")},
+			{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
+			{"c5", testBoolPtr(false)},
+			{"c6", testInt32Ptr(2)},
+			{"c7", testTimePtr(time.Now())},
+		},
 	}
 
-	// build up the input field list and the output field list
-	// the layout is quite different; inputs are a simple map but the actual RPC call expects a messier format
-	inFields := map[string]dosa.FieldValue{}
-	outFields := map[string]*drpc.Value{}
-	for _, item := range vals {
-		inFields[item.Name] = item.Value
-		rv, _ := yarpc.RawValueFromInterface(item.Value)
-		outFields[item.Name] = &drpc.Value{ElemValue: rv}
+	for _, vals := range valss {
+		// build up the input field list and the output field list
+		// the layout is quite different; inputs are a simple map but the actual RPC call expects a messier format
+		inFields := map[string]dosa.FieldValue{}
+		outFields := map[string]*drpc.Value{}
+		for _, item := range vals {
+			inFields[item.Name] = item.Value
+			rv, _ := yarpc.RawValueFromInterface(item.Value)
+			outFields[item.Name] = &drpc.Value{ElemValue: rv}
+		}
+
+		mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
+			Ref:          &testRPCSchemaRef,
+			EntityValues: outFields,
+		})
+
+		// create the YaRPCClient and give it the mocked RPC interface
+		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
+		sut := yarpc.Connector{Client: mockedClient}
+
+		// and run the test, first with a nil FieldsToUpdate, then with a specific list
+		err := sut.Upsert(ctx, testEi, inFields)
+		assert.Nil(t, err)
+
+		// cover the conversion error case
+		err = sut.Upsert(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "\"c7\"")    // must contain name of bad field
+		assert.Contains(t, err.Error(), "too short") // must mention that the uuid is too short
+
+		// make sure we actually called CreateIfNotExists on the interface
+		ctrl.Finish()
 	}
-
-	mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
-		Ref:          &testRPCSchemaRef,
-		EntityValues: outFields,
-	})
-
-	// create the YaRPCClient and give it the mocked RPC interface
-	// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
-	sut := yarpc.Connector{Client: mockedClient}
-
-	// and run the test, first with a nil FieldsToUpdate, then with a specific list
-	err := sut.Upsert(ctx, testEi, inFields)
-	assert.Nil(t, err)
-
-	// cover the conversion error case
-	err = sut.Upsert(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "\"c7\"")    // must contain name of bad field
-	assert.Contains(t, err.Error(), "too short") // must mention that the uuid is too short
-
-	// make sure we actually called CreateIfNotExists on the interface
-	ctrl.Finish()
 }
 
 type TestDosaObject struct {
@@ -720,8 +730,8 @@ func TestConnector_Range(t *testing.T) {
 	assert.Equal(t, responseToken, token)
 	assert.NotNil(t, values)
 	assert.Equal(t, 1, len(values))
-	assert.Equal(t, int64(1), values[0]["c1"])
-	assert.Equal(t, float64(2.2), values[0]["c2"])
+	assertEqForPointer(t, int64(1), values[0]["c1"])
+	assertEqForPointer(t, float64(2.2), values[0]["c2"])
 
 	// perform a not found request
 	mockedClient.EXPECT().Range(ctx, gomock.Any()).
@@ -851,8 +861,8 @@ func TestConnector_Scan(t *testing.T) {
 	assert.Equal(t, responseToken, token)
 	assert.NotNil(t, values)
 	assert.Equal(t, 1, len(values))
-	assert.Equal(t, int64(1), values[0]["c1"])
-	assert.Equal(t, float64(2.2), values[0]["c2"])
+	assertEqForPointer(t, int64(1), values[0]["c1"])
+	assertEqForPointer(t, float64(2.2), values[0]["c2"])
 
 	// perform a not found request
 	values, token, err = sut.Scan(ctx, testEi, nil, "", 64)

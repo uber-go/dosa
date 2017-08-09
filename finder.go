@@ -163,6 +163,37 @@ func isDosaEntity(structType *ast.StructType) bool {
 	return true
 }
 
+func parseASTType(expr ast.Expr) (string, error) {
+	var kind string
+	var err error
+	switch typeName := expr.(type) {
+	case *ast.Ident:
+		kind = typeName.Name
+		// not an Entity type, perhaps another primitive type
+	case *ast.ArrayType:
+		// only dosa allowed array type is []byte
+		if typeName, ok := typeName.Elt.(*ast.Ident); ok {
+			if typeName.Name == "byte" {
+				kind = "[]byte"
+			}
+		}
+	case *ast.SelectorExpr:
+		// only dosa allowed selector is time.Time
+		if innerName, ok := typeName.X.(*ast.Ident); ok {
+			kind = innerName.Name + "." + typeName.Sel.Name
+		}
+	case *ast.StarExpr:
+		// pointer types
+		// need to recursively parse the type
+		kind, err = parseASTType(typeName.X)
+		kind = "*" + kind
+	default:
+		err = fmt.Errorf("Unexpected field type: %v", typeName)
+	}
+
+	return kind, err
+}
+
 // tableFromStructType takes an ast StructType and converts it into a Table object
 func tableFromStructType(structName string, structType *ast.StructType, packagePrefix string) (*Table, error) {
 	normalizedName, err := NormalizeName(structName)
@@ -190,25 +221,10 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 		if dosaTag == "-" { // skip explicitly ignored fields
 			continue
 		}
-		var kind string
-		switch typeName := field.Type.(type) {
-		case *ast.Ident:
-			kind = typeName.Name
-			// not an Entity type, perhaps another primitive type
-		case *ast.ArrayType:
-			// only dosa allowed array type is []byte
-			if typeName, ok := typeName.Elt.(*ast.Ident); ok {
-				if typeName.Name == "byte" {
-					kind = "[]byte"
-				}
-			}
-		case *ast.SelectorExpr:
-			// only dosa allowed selector is time.Time
-			if innerName, ok := typeName.X.(*ast.Ident); ok {
-				kind = innerName.Name + "." + typeName.Sel.Name
-			}
-		default:
-			return nil, fmt.Errorf("Unexpected field type: %q", typeName)
+
+		kind, err := parseASTType(field.Type)
+		if err != nil {
+			return nil, err
 		}
 
 		if kind == packagePrefix+"."+entityName || (packagePrefix == "" && kind == entityName) {
@@ -234,11 +250,11 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 						// skip unexported fields
 						continue
 					}
-					typ := stringToDosaType(kind, packagePrefix)
+					typ, isPointer := stringToDosaType(kind, packagePrefix)
 					if typ == Invalid {
 						return nil, fmt.Errorf("Column %q has invalid type %q", name, kind)
 					}
-					cd, err := parseField(typ, name, dosaTag)
+					cd, err := parseField(typ, isPointer, name, dosaTag)
 					if err != nil {
 						return nil, errors.Wrapf(err, "column %q", name)
 					}
@@ -274,7 +290,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 	return t, nil
 }
 
-func stringToDosaType(inType, pkg string) Type {
+func stringToDosaType(inType, pkg string) (Type, bool) {
 
 	// Append a dot if the package suffix doesn't already have one.
 	if pkg != "" && !strings.HasSuffix(pkg, ".") {
@@ -283,32 +299,36 @@ func stringToDosaType(inType, pkg string) Type {
 
 	switch inType {
 	case "string":
-		return String
+		return String, false
 	case "[]byte":
-		return Blob
+		return Blob, false
 	case "bool":
-		return Bool
+		return Bool, false
 	case "int32":
-		return Int32
+		return Int32, false
 	case "int64":
-		return Int64
+		return Int64, false
 	case "float64":
-		return Double
+		return Double, false
 	case "time.Time":
-		return Timestamp
+		return Timestamp, false
 	case "UUID", pkg + "UUID":
-		return TUUID
-	case "NullString", pkg + "NullString":
-		return TNullString
-	case "NullInt64", pkg + "NullInt64":
-		return TNullInt64
-	case "NullFloat64", pkg + "NullFloat64":
-		return TNullFloat64
-	case "NullBool", pkg + "NullBool":
-		return TNullBool
-	case "NullTime", pkg + "NullTime":
-		return TNullTime
+		return TUUID, false
+	case "*string":
+		return String, true
+	case "*bool":
+		return Bool, true
+	case "*int32":
+		return Int32, true
+	case "*int64":
+		return Int64, true
+	case "*float64":
+		return Double, true
+	case "*time.Time":
+		return Timestamp, true
+	case "*UUID", "*" + pkg + "UUID":
+		return TUUID, true
 	default:
-		return Invalid
+		return Invalid, false
 	}
 }
