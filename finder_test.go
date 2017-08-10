@@ -55,7 +55,7 @@ func TestNonExistentDirectory(t *testing.T) {
 func TestParser(t *testing.T) {
 	entities, errs, err := FindEntities([]string{"."}, []string{})
 
-	assert.Equal(t, 18, len(entities), fmt.Sprintf("%s", entities))
+	assert.Equal(t, 19, len(entities), fmt.Sprintf("%s", entities))
 	assert.Equal(t, 20, len(errs), fmt.Sprintf("%v", errs))
 	assert.Nil(t, err)
 
@@ -89,6 +89,8 @@ func TestParser(t *testing.T) {
 		case "clienttestentity2": // skip, same as above
 			continue
 		case "registrytestvalid": // skip, same as above
+			continue
+		case "allfieldtypes":
 			continue
 		case "alltypesscantestentity": // skipping test entity defined in scan_test.go
 			continue

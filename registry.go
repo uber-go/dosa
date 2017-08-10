@@ -23,6 +23,8 @@ package dosa
 import (
 	"reflect"
 
+	"time"
+
 	"github.com/pkg/errors"
 )
 
@@ -173,7 +175,61 @@ func (e *RegisteredEntity) SetFieldValues(entity DomainObject, fieldValues map[s
 		if !val.IsValid() {
 			panic("Field " + fieldName + " is is not a valid field for " + e.table.StructName)
 		}
-		val.Set(reflect.ValueOf(fieldValue))
+
+		// if same type e.g. both pointer or both value
+		if val.Kind() == reflect.TypeOf(fieldValue).Kind() {
+			val.Set(reflect.ValueOf(fieldValue))
+			continue
+		}
+
+		switch val.Type() {
+		case uuidType:
+			v, _ := fieldValue.(*string)
+			val.Set(reflect.ValueOf(*v))
+		case boolType:
+			b, _ := fieldValue.(*bool)
+			val.Set(reflect.ValueOf(*b))
+		case int64Type:
+			i, _ := fieldValue.(*int64)
+			val.Set(reflect.ValueOf(*i))
+		case stringType:
+			s, _ := fieldValue.(*string)
+			val.Set(reflect.ValueOf(*s))
+		case int32Type:
+			i, _ := fieldValue.(*int32)
+			val.Set(reflect.ValueOf(*i))
+		case doubleType:
+			f, _ := fieldValue.(*float64)
+			val.Set(reflect.ValueOf(*f))
+		case timestampType:
+			t, _ := fieldValue.(*time.Time)
+			val.Set(reflect.ValueOf(*t))
+		case uuidType:
+			u, _ := fieldValue.(*UUID)
+			val.Set(reflect.ValueOf(*u))
+		case nullUUIDType:
+			u, _ := fieldValue.(UUID)
+			val.Set(reflect.ValueOf(&u))
+		case nullStringType:
+			s, _ := fieldValue.(string)
+			val.Set(reflect.ValueOf(&s))
+		case nullInt32Type:
+			i, _ := fieldValue.(int32)
+			val.Set(reflect.ValueOf(&i))
+		case nullInt64Type:
+			i, _ := fieldValue.(int64)
+			val.Set(reflect.ValueOf(&i))
+		case nullDoubleType:
+			f, _ := fieldValue.(float64)
+			val.Set(reflect.ValueOf(&f))
+		case nullBoolType:
+			b, _ := fieldValue.(bool)
+			val.Set(reflect.ValueOf(&b))
+		case nullTimeType:
+			t, _ := fieldValue.(time.Time)
+			val.Set(reflect.ValueOf(&t))
+		}
+
 	}
 }
 

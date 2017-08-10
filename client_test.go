@@ -32,11 +32,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"fmt"
+	"time"
 
 	dosaRenamed "github.com/uber-go/dosa"
 	_ "github.com/uber-go/dosa/connectors/devnull"
 	_ "github.com/uber-go/dosa/connectors/memory"
 	"github.com/uber-go/dosa/mocks"
+	"github.com/uber-go/dosa/testutil"
 )
 
 type ClientTestEntity1 struct {
@@ -219,6 +221,122 @@ func TestClient_Read(t *testing.T) {
 	assert.Equal(t, cte1.ID, results["id"])
 	assert.NotEqual(t, cte1.Name, results["name"])
 	assert.Equal(t, cte1.Email, results["email"])
+}
+
+func TestClient_Read_pointer_result(t *testing.T) {
+	reg1, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1)
+	reg2, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1, cte2)
+	fieldsToRead := []string{"ID", "Email"}
+	results := map[string]dosaRenamed.FieldValue{
+		"id":    testutil.TestInt64Ptr(int64(2)),
+		"name":  testutil.TestStringPtr("bar"),
+		"email": testutil.TestStringPtr("bar@email.com"),
+	}
+
+	// uninitialized
+	c1 := dosaRenamed.NewClient(reg1, nullConnector)
+	assert.Error(t, c1.Read(ctx, fieldsToRead, cte1))
+
+	// unregistered object
+	c1.Initialize(ctx)
+	err := c1.Read(ctx, dosaRenamed.All(), cte2)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity2")
+
+	// happy path, mock connector
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().Read(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ *dosaRenamed.EntityInfo, columnValues map[string]dosaRenamed.FieldValue, columnsToRead []string) {
+			assert.Equal(t, columnValues["id"], cte1.ID)
+			assert.Equal(t, columnsToRead, []string{"id", "email"})
+
+		}).Return(results, nil).MinTimes(1)
+	c3 := dosaRenamed.NewClient(reg2, mockConn)
+	assert.NoError(t, c3.Initialize(ctx))
+	assert.NoError(t, c3.Read(ctx, fieldsToRead, cte1))
+	testutil.AssertEqForPointer(t, cte1.ID, results["id"])
+	assert.NotEqual(t, cte1.Name, results["name"])
+	testutil.AssertEqForPointer(t, cte1.Email, results["email"])
+}
+
+type AllFieldTypes struct {
+	dosaRenamed.Entity `dosa:"primaryKey=ID"`
+	ID                 int64
+	BoolType           bool
+	Int32Type          int32
+	Int64Type          int64
+	DoubleType         float64
+	StringType         string
+	BlobType           []byte
+	TimeType           time.Time
+	UUIDType           dosaRenamed.UUID
+	NullBoolType       *bool
+	NullInt32Type      *int32
+	NullInt64Type      *int64
+	NullDoubleType     *float64
+	NullStringType     *string
+	NullTimeType       *time.Time
+	NullUUIDType       *dosaRenamed.UUID
+}
+
+func TestClient_Read_pointer(t *testing.T) {
+	allTypes := &AllFieldTypes{ID: int64(3212)}
+	reg1, err := dosaRenamed.NewRegistrar(scope, namePrefix, allTypes)
+	assert.NoError(t, err)
+	results := map[string]dosaRenamed.FieldValue{
+		"id":             int64(3212),
+		"booltype":       true,
+		"int32type":      int32(1),
+		"int64type":      int64(2),
+		"doubletype":     float64(8.9),
+		"stringtype":     "faa@email.com",
+		"blobtype":       []byte("hello world"),
+		"timetype":       time.Now(),
+		"uuidtype":       dosaRenamed.NewUUID(),
+		"nullbooltype":   testutil.TestBoolPtr(true),
+		"nullint32type":  testutil.TestInt32Ptr(int32(123)),
+		"nullint64type":  testutil.TestInt64Ptr(int64(2)),
+		"nulldoubletype": testutil.TestFloat64Ptr(float64(8.9)),
+		"nullstringtype": testutil.TestStringPtr("bar@email.com"),
+		"nulltimetype":   testutil.TestTimePtr(time.Now()),
+		"nulluuidtype":   testutil.TestUUIDPtr(dosaRenamed.NewUUID()),
+	}
+
+	// uninitialized
+	c1 := dosaRenamed.NewClient(reg1, nullConnector)
+	assert.Error(t, c1.Read(ctx, dosaRenamed.All(), allTypes))
+
+	// happy path, mock connector
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().Read(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ *dosaRenamed.EntityInfo, columnValues map[string]dosaRenamed.FieldValue, columnsToRead []string) {
+			assert.Equal(t, columnValues["id"], allTypes.ID)
+		}).Return(results, nil).MinTimes(1)
+	c3 := dosaRenamed.NewClient(reg1, mockConn)
+	assert.NoError(t, c3.Initialize(ctx))
+	assert.NoError(t, c3.Read(ctx, dosaRenamed.All(), allTypes))
+	assert.Equal(t, allTypes.ID, results["id"])
+	assert.Equal(t, allTypes.BoolType, results["booltype"])
+	assert.Equal(t, allTypes.Int32Type, results["int32type"])
+	assert.Equal(t, allTypes.Int64Type, results["int64type"])
+	assert.Equal(t, allTypes.DoubleType, results["doubletype"])
+	assert.Equal(t, allTypes.StringType, results["stringtype"])
+	assert.Equal(t, allTypes.BlobType, results["blobtype"])
+	assert.Equal(t, allTypes.TimeType, results["timetype"])
+	assert.Equal(t, allTypes.UUIDType, results["uuidtype"])
+	testutil.AssertEqForPointer(t, *allTypes.NullBoolType, results["nullbooltype"])
+	testutil.AssertEqForPointer(t, *allTypes.NullInt32Type, results["nullint32type"])
+	testutil.AssertEqForPointer(t, *allTypes.NullInt64Type, results["nullint64type"])
+	testutil.AssertEqForPointer(t, *allTypes.NullDoubleType, results["nulldoubletype"])
+	testutil.AssertEqForPointer(t, *allTypes.NullStringType, results["nullstringtype"])
+	testutil.AssertEqForPointer(t, *allTypes.NullTimeType, results["nulltimetype"])
+	testutil.AssertEqForPointer(t, *allTypes.NullUUIDType, results["nulluuidtype"])
 }
 
 func TestClient_Read_Errors(t *testing.T) {
