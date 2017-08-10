@@ -184,29 +184,40 @@ func (e *RegisteredEntity) SetFieldValues(entity DomainObject, fieldValues map[s
 
 		switch val.Type() {
 		case uuidType:
-			v, _ := fieldValue.(*string)
-			val.Set(reflect.ValueOf(*v))
+			u, _ := fieldValue.(*string)
+			if u != nil {
+				val.Set(reflect.ValueOf(*u))
+			}
 		case boolType:
 			b, _ := fieldValue.(*bool)
-			val.Set(reflect.ValueOf(*b))
+			if b != nil {
+				val.Set(reflect.ValueOf(*b))
+			}
 		case int64Type:
 			i, _ := fieldValue.(*int64)
-			val.Set(reflect.ValueOf(*i))
+			if i != nil {
+				val.Set(reflect.ValueOf(*i))
+			}
 		case stringType:
 			s, _ := fieldValue.(*string)
-			val.Set(reflect.ValueOf(*s))
+			if s != nil {
+				val.Set(reflect.ValueOf(*s))
+			}
 		case int32Type:
 			i, _ := fieldValue.(*int32)
-			val.Set(reflect.ValueOf(*i))
+			if i != nil {
+				val.Set(reflect.ValueOf(*i))
+			}
 		case doubleType:
 			f, _ := fieldValue.(*float64)
-			val.Set(reflect.ValueOf(*f))
+			if f != nil {
+				val.Set(reflect.ValueOf(*f))
+			}
 		case timestampType:
 			t, _ := fieldValue.(*time.Time)
+			if t != nil {
 			val.Set(reflect.ValueOf(*t))
-		case uuidType:
-			u, _ := fieldValue.(*UUID)
-			val.Set(reflect.ValueOf(*u))
+		}
 		case nullUUIDType:
 			u, _ := fieldValue.(UUID)
 			val.Set(reflect.ValueOf(&u))
