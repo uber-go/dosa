@@ -94,26 +94,42 @@ func RawValueFromInterface(i interface{}) (*dosarpc.RawValue, error) {
 		}
 		return &dosarpc.RawValue{BinaryValue: bytes}, nil
 	case *dosa.UUID:
-		if v != nil {
-			bytes, err := v.Bytes()
-			if err != nil {
-				return nil, err
-			}
-			return &dosarpc.RawValue{BinaryValue: bytes}, nil
+		if v == nil {
+			return nil, nil
 		}
+		bytes, err := v.Bytes()
+		if err != nil {
+			return nil, err
+		}
+		return &dosarpc.RawValue{BinaryValue: bytes}, nil
 	case *string:
+		if v == nil {
+			return nil, nil
+		}
 		return &dosarpc.RawValue{StringValue: v}, nil
 	case *int32:
+		if v == nil {
+			return nil, nil
+		}
 		return &dosarpc.RawValue{Int32Value: v}, nil
 	case *int64:
+		if v == nil {
+			return nil, nil
+		}
 		return &dosarpc.RawValue{Int64Value: v}, nil
 	case *float64:
+		if v == nil {
+			return nil, nil
+		}
 		return &dosarpc.RawValue{DoubleValue: v}, nil
 	case *bool:
+		if v == nil {
+			return nil, nil
+		}
 		return &dosarpc.RawValue{BoolValue: v}, nil
 	case *time.Time:
 		if v == nil {
-			return &dosarpc.RawValue{Int64Value: (*int64)(nil)}, nil
+			return nil, nil
 		}
 		t := v.UnixNano()
 		return &dosarpc.RawValue{Int64Value: &t}, nil
@@ -307,6 +323,9 @@ func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) (dosarpc.Fiel
 		rv, err := RawValueFromInterface(value)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Error encoding field %q", name)
+		}
+		if rv == nil {
+			continue
 		}
 		rpcValue := &dosarpc.Value{ElemValue: rv}
 		fields[name] = rpcValue
