@@ -176,6 +176,11 @@ func (e *RegisteredEntity) SetFieldValues(entity DomainObject, fieldValues map[s
 			panic("Field " + fieldName + " is is not a valid field for " + e.table.StructName)
 		}
 
+		if fieldValue == nil {
+			val.Set(reflect.Zero(val.Type()))
+			continue
+		}
+
 		// if same type e.g. both pointer or both value
 		if val.Kind() == reflect.TypeOf(fieldValue).Kind() {
 			val.Set(reflect.ValueOf(fieldValue))
@@ -184,7 +189,7 @@ func (e *RegisteredEntity) SetFieldValues(entity DomainObject, fieldValues map[s
 
 		switch val.Type() {
 		case uuidType:
-			u, _ := fieldValue.(*string)
+			u, _ := fieldValue.(*UUID)
 			if u != nil {
 				val.Set(reflect.ValueOf(*u))
 			}
@@ -216,8 +221,8 @@ func (e *RegisteredEntity) SetFieldValues(entity DomainObject, fieldValues map[s
 		case timestampType:
 			t, _ := fieldValue.(*time.Time)
 			if t != nil {
-			val.Set(reflect.ValueOf(*t))
-		}
+				val.Set(reflect.ValueOf(*t))
+			}
 		case nullUUIDType:
 			u, _ := fieldValue.(UUID)
 			val.Set(reflect.ValueOf(&u))
