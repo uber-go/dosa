@@ -432,7 +432,7 @@ func TestClient_Range(t *testing.T) {
 	assert.True(t, dosaRenamed.ErrorIsNotFound(err))
 }
 
-func TestClient_RangeIter(t *testing.T) {
+func TestClient_WalkRange(t *testing.T) {
 	reg1, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1)
 	fieldsToRead := []string{"ID", "Email"}
 	resultRow0 := map[string]dosaRenamed.FieldValue{
@@ -449,7 +449,7 @@ func TestClient_RangeIter(t *testing.T) {
 	// uninitialized
 	c0 := dosaRenamed.NewClient(reg1, nullConnector)
 	rop := dosaRenamed.NewRangeOp(cte1).Fields(fieldsToRead).Eq("ID", "123").Offset("tokeytoketoke")
-	err := c0.RangeIter(ctx, rop, func(value dosaRenamed.DomainObject) error {
+	err := c0.WalkRange(ctx, rop, func(value dosaRenamed.DomainObject) error {
 		return nil
 	})
 	assert.True(t, dosaRenamed.ErrorIsNotInitialized(err))
@@ -468,7 +468,7 @@ func TestClient_RangeIter(t *testing.T) {
 	rop = dosaRenamed.NewRangeOp(cte1)
 
 	var fetched []*ClientTestEntity1
-	err = c1.RangeIter(ctx, rop, func(value dosaRenamed.DomainObject) error {
+	err = c1.WalkRange(ctx, rop, func(value dosaRenamed.DomainObject) error {
 		fetched = append(fetched, value.(*ClientTestEntity1))
 		return nil
 	})
@@ -490,7 +490,7 @@ func TestClient_RangeIter(t *testing.T) {
 	c2 := dosaRenamed.NewClient(reg1, mockConn2)
 	c2.Initialize(ctx)
 	rop = dosaRenamed.NewRangeOp(cte1)
-	err = c2.RangeIter(ctx, rop, func(value dosaRenamed.DomainObject) error {
+	err = c2.WalkRange(ctx, rop, func(value dosaRenamed.DomainObject) error {
 		return errors.New("woops!")
 	})
 	assert.EqualError(t, err, "woops!")
