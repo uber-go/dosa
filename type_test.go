@@ -114,6 +114,10 @@ func TestFromString(t *testing.T) {
 			expected: TNullTime,
 		},
 		{
+			input:    TNullUUID.String(),
+			expected: TNullUUID,
+		},
+		{
 			input:    "invalid",
 			expected: Invalid,
 		},
@@ -179,6 +183,10 @@ func TestIsNullableType(t *testing.T) {
 		},
 		{
 			input:    TNullTime,
+			expected: true,
+		},
+		{
+			input:    TNullUUID,
 			expected: true,
 		},
 		{
