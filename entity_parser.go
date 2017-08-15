@@ -373,7 +373,7 @@ func parseField(typ Type, isPointer bool, name string, tag string) (*ColumnDefin
 		return nil, fmt.Errorf("field %s with an invalid dosa field tag: %s", name, tag)
 	}
 
-	return &ColumnDefinition{Name: name, IsPoint: isPointer, Type: typ}, nil
+	return &ColumnDefinition{Name: name, IsPointer: isPointer, Type: typ}, nil
 }
 
 var (

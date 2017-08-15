@@ -144,9 +144,9 @@ func (pk PrimaryKey) String() string {
 
 // ColumnDefinition stores information about a column
 type ColumnDefinition struct {
-	Name    string // normalized column name
-	Type    Type
-	IsPoint bool // used by client only to indicate whether this field is pointer
+	Name      string // normalized column name
+	Type      Type
+	IsPointer bool // used by client only to indicate whether this field is pointer
 	// TODO: change as need to support tags like pii, searchable, etc
 	// currently it's in the form of a map from tag name to (optional) tag value
 	Tags map[string]string

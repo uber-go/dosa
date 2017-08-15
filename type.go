@@ -112,7 +112,7 @@ func FromString(s string) Type {
 }
 
 func isInvalidPrimaryKeyType(c *ColumnDefinition) bool {
-	if c.IsPoint {
+	if c.IsPointer {
 		return true
 	}
 

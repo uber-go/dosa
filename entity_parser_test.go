@@ -286,28 +286,28 @@ func TestNullableType(t *testing.T) {
 		switch name {
 		case "booltype":
 			assert.Equal(t, Bool, cd.Type)
-			assert.False(t, cd.IsPoint)
+			assert.False(t, cd.IsPointer)
 		case "nullbooltype":
 			assert.Equal(t, Bool, cd.Type)
-			assert.True(t, cd.IsPoint)
+			assert.True(t, cd.IsPointer)
 		case "nullint32type":
 			assert.Equal(t, Int32, cd.Type)
-			assert.True(t, cd.IsPoint)
+			assert.True(t, cd.IsPointer)
 		case "nullint64type":
 			assert.Equal(t, Int64, cd.Type)
-			assert.True(t, cd.IsPoint)
+			assert.True(t, cd.IsPointer)
 		case "nulldoubletype":
 			assert.Equal(t, Double, cd.Type)
-			assert.True(t, cd.IsPoint)
+			assert.True(t, cd.IsPointer)
 		case "nullstringtype":
 			assert.Equal(t, String, cd.Type)
-			assert.True(t, cd.IsPoint)
+			assert.True(t, cd.IsPointer)
 		case "nulltimetype":
 			assert.Equal(t, Timestamp, cd.Type)
-			assert.True(t, cd.IsPoint)
+			assert.True(t, cd.IsPointer)
 		case "nulluuidtype":
 			assert.Equal(t, TUUID, cd.Type)
-			assert.True(t, cd.IsPoint)
+			assert.True(t, cd.IsPointer)
 		default:
 			assert.Fail(t, "unexpected column name", name)
 		}

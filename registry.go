@@ -23,8 +23,6 @@ package dosa
 import (
 	"reflect"
 
-	"time"
-
 	"github.com/pkg/errors"
 )
 
@@ -176,74 +174,24 @@ func (e *RegisteredEntity) SetFieldValues(entity DomainObject, fieldValues map[s
 			panic("Field " + fieldName + " is is not a valid field for " + e.table.StructName)
 		}
 
-		if fieldValue == nil {
+		var fv reflect.Value
+		if fieldValue != nil {
+			fv = reflect.ValueOf(fieldValue)
+		}
+		if !fv.IsValid() || fv.Kind() == reflect.Ptr && fv.IsNil() {
 			val.Set(reflect.Zero(val.Type()))
 			continue
 		}
 
-		// if same type e.g. both pointer or both value
-		if val.Kind() == reflect.TypeOf(fieldValue).Kind() {
-			val.Set(reflect.ValueOf(fieldValue))
-			continue
-		}
-
 		switch val.Type() {
-		case uuidType:
-			u, _ := fieldValue.(*UUID)
-			if u != nil {
-				val.Set(reflect.ValueOf(*u))
+		case uuidType, boolType, int64Type, stringType, int32Type, doubleType, timestampType, blobType:
+			val.Set(reflect.Indirect(fv))
+		case nullUUIDType, nullStringType, nullInt32Type, nullInt64Type, nullDoubleType, nullBoolType, nullTimeType:
+			if fv.CanAddr() {
+				val.Set(fv.Addr())
+			} else {
+				val.Set(fv)
 			}
-		case boolType:
-			b, _ := fieldValue.(*bool)
-			if b != nil {
-				val.Set(reflect.ValueOf(*b))
-			}
-		case int64Type:
-			i, _ := fieldValue.(*int64)
-			if i != nil {
-				val.Set(reflect.ValueOf(*i))
-			}
-		case stringType:
-			s, _ := fieldValue.(*string)
-			if s != nil {
-				val.Set(reflect.ValueOf(*s))
-			}
-		case int32Type:
-			i, _ := fieldValue.(*int32)
-			if i != nil {
-				val.Set(reflect.ValueOf(*i))
-			}
-		case doubleType:
-			f, _ := fieldValue.(*float64)
-			if f != nil {
-				val.Set(reflect.ValueOf(*f))
-			}
-		case timestampType:
-			t, _ := fieldValue.(*time.Time)
-			if t != nil {
-				val.Set(reflect.ValueOf(*t))
-			}
-		case nullUUIDType:
-			u, _ := fieldValue.(UUID)
-			val.Set(reflect.ValueOf(&u))
-		case nullStringType:
-			s, _ := fieldValue.(string)
-			val.Set(reflect.ValueOf(&s))
-		case nullInt32Type:
-			i, _ := fieldValue.(int32)
-			val.Set(reflect.ValueOf(&i))
-		case nullInt64Type:
-			i, _ := fieldValue.(int64)
-			val.Set(reflect.ValueOf(&i))
-		case nullDoubleType:
-			f, _ := fieldValue.(float64)
-			val.Set(reflect.ValueOf(&f))
-		case nullBoolType:
-			b, _ := fieldValue.(bool)
-			val.Set(reflect.ValueOf(&b))
-		case nullTimeType:
-			t, _ := fieldValue.(time.Time)
-			val.Set(reflect.ValueOf(&t))
 		}
 
 	}
