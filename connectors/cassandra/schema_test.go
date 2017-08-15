@@ -127,6 +127,13 @@ func TestCreateTableString(t *testing.T) {
 				`"boolv" boolean, ` +
 				`"blobv" blob, ` +
 				`"tsv" timestamp, ` +
+				`"uuidvp" uuid, ` +
+				`"strvp" text, ` +
+				`"int64vp" bigint, ` +
+				`"int32vp" int, ` +
+				`"doublevp" double, ` +
+				`"boolvp" boolean, ` +
+				`"tsvp" timestamp, ` +
 				`PRIMARY KEY (("an_uuid_key"),"strkey","int64key")) ` +
 				`WITH CLUSTERING ORDER BY ("strkey" ASC,"int64key" DESC) ` +
 				`AND COMPACTION = {'class':'LeveledCompactionStrategy'}`},
