@@ -25,7 +25,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/config"
 )
 
 type registrar struct {
@@ -67,48 +66,4 @@ func (r *registrar) FindAll() ([]*dosa.RegisteredEntity, error) {
 		return nil, errors.New("registry.FindAll returned empty")
 	}
 	return res, nil
-}
-
-// NewRegistrar returns a new Registrar for the configuration provided.
-func NewRegistrar(cfg *config.Config, entities ...dosa.DomainObject) (dosa.Registrar, error) {
-	// when entities are provided explicitly, discovery isn't necessary. In
-	// fact, the whole "auto-discovery" feature should only be used as a
-	// convenience for the CLI -- it's fundamentally problematic for
-	// environments where the source is not distributed alongside the binary
-	// where there is nothing to be discovered.
-	if len(entities) > 0 {
-		return dosa.NewRegistrar(cfg.Scope, cfg.NamePrefix, entities...)
-	}
-
-	idx := make(map[dosa.FQN]*dosa.RegisteredEntity)
-	baseFQN, err := dosa.ToFQN(cfg.NamePrefix)
-	// invalid prefix/FQN
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to construct Registrar")
-	}
-	// "warnings" mean entity was found but contained invalid annotations
-	eds, warns, err := dosa.FindEntities(cfg.EntityPaths, cfg.Excludes)
-	// I/O and AST parsing errors
-	if err != nil {
-		return nil, err
-	}
-	if len(warns) > 0 {
-		return nil, dosa.NewEntityErrors(warns)
-	}
-
-	// index entity definitions (aka "tables")
-	for _, ed := range eds {
-		re := dosa.NewRegisteredEntity(cfg.Scope, cfg.NamePrefix, ed)
-
-		// index by prefix + normalized name (aka "FQN")
-		fqn, _ := baseFQN.Child(ed.StructName)
-		idx[fqn] = re
-	}
-
-	return &registrar{
-		scope:   cfg.Scope,
-		prefix:  cfg.NamePrefix,
-		baseFQN: baseFQN,
-		idx:     idx,
-	}, nil
 }
