@@ -39,6 +39,7 @@ import (
 
 const (
 	_defaultServiceName        = "dosa-gateway"
+	_version                   = "version"
 	errCodeNotFound      int32 = 404
 	errCodeAlreadyExists int32 = 409
 )
@@ -170,7 +171,8 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 		Ref:          entityInfoToSchemaRef(ei),
 		EntityValues: ev,
 	}
-	err = c.Client.CreateIfNotExists(ctx, &createRequest)
+
+	err = c.Client.CreateIfNotExists(ctx, &createRequest, VersionHeader())
 	if err != nil {
 		if be, ok := err.(*dosarpc.BadRequestError); ok {
 			if be.ErrorCode != nil && *be.ErrorCode == errCodeAlreadyExists {
@@ -191,7 +193,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		Ref:          entityInfoToSchemaRef(ei),
 		EntityValues: ev,
 	}
-	return c.Client.Upsert(ctx, &upsertRequest)
+	return c.Client.Upsert(ctx, &upsertRequest, VersionHeader())
 }
 
 // Read reads a single entity
@@ -226,7 +228,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 		FieldsToRead: rpcMinimumFields,
 	}
 
-	response, err := c.Client.Read(ctx, readRequest)
+	response, err := c.Client.Read(ctx, readRequest, VersionHeader())
 	if err != nil {
 		if be, ok := err.(*dosarpc.BadRequestError); ok {
 			if be.ErrorCode != nil && *be.ErrorCode == errCodeNotFound {
@@ -270,7 +272,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 		FieldsToRead: rpcMinimumFields,
 	}
 
-	response, err := c.Client.MultiRead(ctx, request)
+	response, err := c.Client.MultiRead(ctx, request, VersionHeader())
 	if err != nil {
 		return nil, errors.Wrap(err, "YARPC MultiRead failed")
 	}
@@ -323,7 +325,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		KeyValues: rpcFields,
 	}
 
-	err := c.Client.Remove(ctx, removeRequest)
+	err := c.Client.Remove(ctx, removeRequest, VersionHeader())
 	if err != nil {
 		return errors.Wrap(err, "YARPC Remove failed")
 	}
@@ -342,7 +344,7 @@ func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, column
 		Conditions: rpcConditions,
 	}
 
-	if err := c.Client.RemoveRange(ctx, request); err != nil {
+	if err := c.Client.RemoveRange(ctx, request, VersionHeader()); err != nil {
 		return errors.Wrap(err, "YARPC RemoveRange failed")
 	}
 	return nil
@@ -368,7 +370,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 		Conditions:   rpcConditions,
 		FieldsToRead: rpcMinimumFields,
 	}
-	response, err := c.Client.Range(ctx, &rangeRequest)
+	response, err := c.Client.Range(ctx, &rangeRequest, VersionHeader())
 	if err != nil {
 		return nil, "", errors.Wrap(err, "YARPC Range failed")
 	}
@@ -418,7 +420,7 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 		Limit:        &limit32,
 		FieldsToRead: rpcMinimumFields,
 	}
-	response, err := c.Client.Scan(ctx, &scanRequest)
+	response, err := c.Client.Scan(ctx, &scanRequest, VersionHeader())
 	if err != nil {
 		return nil, "", errors.Wrap(err, "YARPC Scan failed")
 	}
@@ -439,7 +441,7 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	}
 	csr := dosarpc.CheckSchemaRequest{EntityDefs: rpcEntityDefinition, Scope: &scope, NamePrefix: &namePrefix}
 
-	response, err := c.Client.CheckSchema(ctx, &csr)
+	response, err := c.Client.CheckSchema(ctx, &csr, VersionHeader())
 
 	if err != nil {
 		return dosa.InvalidVersion, errors.Wrap(err, "YARPC CheckSchema failed")
@@ -461,7 +463,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 		EntityDefs: rpcEds,
 	}
 
-	response, err := c.Client.UpsertSchema(ctx, request)
+	response, err := c.Client.UpsertSchema(ctx, request, VersionHeader())
 	if err != nil {
 		return nil, errors.Wrap(err, "YARPC UpsertSchema failed")
 	}
@@ -485,7 +487,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
 	request := dosarpc.CheckSchemaStatusRequest{Scope: &scope, NamePrefix: &namePrefix, Version: &version}
 
-	response, err := c.Client.CheckSchemaStatus(ctx, &request)
+	response, err := c.Client.CheckSchemaStatus(ctx, &request, VersionHeader())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "YARPC ChecksShemaStatus failed")
@@ -512,7 +514,7 @@ func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 		Name: &scope,
 	}
 
-	if err := c.Client.CreateScope(ctx, request); err != nil {
+	if err := c.Client.CreateScope(ctx, request, VersionHeader()); err != nil {
 		return errors.Wrap(err, "YARPC CreateScope failed")
 	}
 
@@ -525,7 +527,7 @@ func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
 		Name: &scope,
 	}
 
-	if err := c.Client.TruncateScope(ctx, request); err != nil {
+	if err := c.Client.TruncateScope(ctx, request, VersionHeader()); err != nil {
 		return errors.Wrap(err, "YARPC TruncateScope failed")
 	}
 
@@ -538,7 +540,7 @@ func (c *Connector) DropScope(ctx context.Context, scope string) error {
 		Name: &scope,
 	}
 
-	if err := c.Client.DropScope(ctx, request); err != nil {
+	if err := c.Client.DropScope(ctx, request, VersionHeader()); err != nil {
 		return errors.Wrap(err, "YARPC DropScope failed")
 	}
 

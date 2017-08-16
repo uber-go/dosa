@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
+	rpc "go.uber.org/yarpc"
 )
 
 // RawValueAsInterface converts a value from the wire to an object implementing the interface
@@ -331,4 +332,9 @@ func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) (dosarpc.Fiel
 		fields[name] = rpcValue
 	}
 	return fields, nil
+}
+
+// VersionHeader returns the rpc style version header
+func VersionHeader() rpc.CallOption {
+	return rpc.WithHeader(_version, dosa.VERSION)
 }

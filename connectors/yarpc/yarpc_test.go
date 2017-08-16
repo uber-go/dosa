@@ -36,6 +36,7 @@ import (
 	drpc "github.com/uber/dosa-idl/.gen/dosa"
 	"github.com/uber/dosa-idl/.gen/dosa/dosatest"
 	tchan "github.com/uber/tchannel-go"
+	yarpc2 "go.uber.org/yarpc"
 )
 
 var testEi = &dosa.EntityInfo{
@@ -181,7 +182,7 @@ func TestYaRPCClient_Read(t *testing.T) {
 	}
 
 	// we expect a single call to Read, and we return back two fields, f1 which is in the typemap and another field that is not
-	mockedClient.EXPECT().Read(ctx, readRequest).Return(&drpc.ReadResponse{drpc.FieldValueMap{
+	mockedClient.EXPECT().Read(ctx, readRequest, gomock.Any()).Return(&drpc.ReadResponse{drpc.FieldValueMap{
 		"c1":               {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
 		"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
 		"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
@@ -207,7 +208,7 @@ func TestYaRPCClient_Read(t *testing.T) {
 	assert.Empty(t, values["fieldNotInSchema"]) // the unknown field is not present
 
 	errCode := int32(404)
-	mockedClient.EXPECT().Read(ctx, readRequest).Return(nil, &drpc.BadRequestError{ErrorCode: &errCode})
+	mockedClient.EXPECT().Read(ctx, readRequest, gomock.Any()).Return(nil, &drpc.BadRequestError{ErrorCode: &errCode})
 	_, err = sut.Read(ctx, testEi, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))}, []string{"f1"})
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
@@ -324,7 +325,7 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 	}
 
 	for _, d := range data {
-		mockedClient.EXPECT().MultiRead(ctx, d.Request).Return(d.Response, d.ResponseErr)
+		mockedClient.EXPECT().MultiRead(ctx, d.Request, gomock.Any()).Return(d.Response, d.ResponseErr)
 		// perform the multi read
 		values, err := sut.MultiRead(ctx, testEi, []map[string]dosa.FieldValue{{"f1": dosa.FieldValue(int64(5))}, {"f2": dosa.FieldValue(int64(6))}}, []string{"f1"})
 		if d.ResponseErr == nil {
@@ -395,7 +396,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 			outFields[item.Name] = &drpc.Value{ElemValue: rv}
 		}
 
-		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields})
+		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields}, gomock.Any())
 
 		// create the YaRPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
@@ -406,7 +407,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 		assert.Nil(t, err)
 
 		errCode := int32(409)
-		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields}).Return(
+		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields}, gomock.Any()).Return(
 			&drpc.BadRequestError{ErrorCode: &errCode},
 		)
 
@@ -469,7 +470,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 		mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
 			Ref:          &testRPCSchemaRef,
 			EntityValues: outFields,
-		})
+		}, gomock.Any())
 
 		// create the YaRPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
@@ -513,7 +514,7 @@ func TestClient_CheckSchema(t *testing.T) {
 		EntityDefs: []*drpc.EntityDefinition{yarpc.EntityDefinitionToThrift(&ed.EntityDefinition)},
 	}
 	v := int32(1)
-	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.CheckSchemaRequest) {
+	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.CheckSchemaRequest, opts yarpc2.CallOption) {
 		assert.Equal(t, expectedRequest, request)
 	}).Return(&drpc.CheckSchemaResponse{Version: &v}, nil)
 
@@ -537,7 +538,7 @@ func TestClient_CheckSchemaStatus(t *testing.T) {
 		Version:    &version,
 	}
 
-	mockedClient.EXPECT().CheckSchemaStatus(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.CheckSchemaStatusRequest) {
+	mockedClient.EXPECT().CheckSchemaStatus(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.CheckSchemaStatusRequest, opts yarpc2.CallOption) {
 		assert.Equal(t, expectedRequest, request)
 	}).Return(&drpc.CheckSchemaStatusResponse{Version: &version}, nil)
 
@@ -563,14 +564,14 @@ func TestClient_UpsertSchema(t *testing.T) {
 		EntityDefs: []*drpc.EntityDefinition{yarpc.EntityDefinitionToThrift(&ed.EntityDefinition)},
 	}
 	v := int32(1)
-	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.UpsertSchemaRequest) {
+	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.UpsertSchemaRequest, option yarpc2.CallOption) {
 		assert.Equal(t, expectedRequest, request)
 	}).Return(&drpc.UpsertSchemaResponse{Version: &v}, nil)
 	result, err := sut.UpsertSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
 	assert.Equal(t, &dosa.SchemaStatus{Version: v}, result)
 
-	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any()).Return(nil, errors.New("test error"))
+	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any(), gomock.Any()).Return(nil, errors.New("test error"))
 	_, err = sut.UpsertSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
@@ -582,11 +583,11 @@ func TestClient_CreateScope(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 	sut := yarpc.Connector{Client: mockedClient}
 
-	mockedClient.EXPECT().CreateScope(ctx, gomock.Any()).Return(nil)
+	mockedClient.EXPECT().CreateScope(ctx, gomock.Any(), gomock.Any()).Return(nil)
 	err := sut.CreateScope(ctx, "scope")
 	assert.NoError(t, err)
 
-	mockedClient.EXPECT().CreateScope(ctx, gomock.Any()).Return(errors.New("test error"))
+	mockedClient.EXPECT().CreateScope(ctx, gomock.Any(), gomock.Any()).Return(errors.New("test error"))
 	err = sut.CreateScope(ctx, "scope")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
@@ -598,11 +599,11 @@ func TestClient_TruncateScope(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 	sut := yarpc.Connector{Client: mockedClient}
 
-	mockedClient.EXPECT().TruncateScope(ctx, gomock.Any()).Return(nil)
+	mockedClient.EXPECT().TruncateScope(ctx, gomock.Any(), gomock.Any()).Return(nil)
 	err := sut.TruncateScope(ctx, "scope")
 	assert.NoError(t, err)
 
-	mockedClient.EXPECT().TruncateScope(ctx, gomock.Any()).Return(errors.New("test error"))
+	mockedClient.EXPECT().TruncateScope(ctx, gomock.Any(), gomock.Any()).Return(errors.New("test error"))
 	err = sut.TruncateScope(ctx, "scope")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
@@ -614,11 +615,11 @@ func TestClient_DropScope(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 	sut := yarpc.Connector{Client: mockedClient}
 
-	mockedClient.EXPECT().DropScope(ctx, gomock.Any()).Return(nil)
+	mockedClient.EXPECT().DropScope(ctx, gomock.Any(), gomock.Any()).Return(nil)
 	err := sut.DropScope(ctx, "scope")
 	assert.NoError(t, err)
 
-	mockedClient.EXPECT().DropScope(ctx, gomock.Any()).Return(errors.New("test error"))
+	mockedClient.EXPECT().DropScope(ctx, gomock.Any(), gomock.Any()).Return(errors.New("test error"))
 	err = sut.DropScope(ctx, "scope")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
@@ -643,7 +644,7 @@ func TestConnector_Range(t *testing.T) {
 	sut := yarpc.Connector{Client: mockedClient}
 
 	// successful call, return results
-	mockedClient.EXPECT().Range(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.RangeRequest) {
+	mockedClient.EXPECT().Range(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.RangeRequest, opts yarpc2.CallOption) {
 		assert.Equal(t, map[string]struct{}{"c1": {}}, request.FieldsToRead)
 		assert.Equal(t, testLimit, *request.Limit)
 		assert.Equal(t, testRPCSchemaRef, *request.Ref)
@@ -686,7 +687,7 @@ func TestConnector_Range(t *testing.T) {
 	testutil.AssertEqForPointer(t, float64(2.2), values[0]["c2"])
 
 	// perform a not found request
-	mockedClient.EXPECT().Range(ctx, gomock.Any()).
+	mockedClient.EXPECT().Range(ctx, gomock.Any(), gomock.Any()).
 		Return(nil, &dosa.ErrNotFound{}).Times(1)
 	values, token, err = sut.Range(ctx, testEi, map[string][]*dosa.Condition{"c2": {&dosa.Condition{
 		Value: float64(3.3),
@@ -698,7 +699,7 @@ func TestConnector_Range(t *testing.T) {
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	// perform a generic error request
-	mockedClient.EXPECT().Range(ctx, gomock.Any()).
+	mockedClient.EXPECT().Range(ctx, gomock.Any(), gomock.Any()).
 		Return(nil, errors.New("test error")).Times(1)
 	values, token, err = sut.Range(ctx, testEi, map[string][]*dosa.Condition{"c2": {&dosa.Condition{
 		Value: float64(3.3),
@@ -730,7 +731,7 @@ func TestConnector_RemoveRange(t *testing.T) {
 	field := drpc.Field{&fieldName, &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(10)}}}
 	op := drpc.OperatorEq
 
-	mockedClient.EXPECT().RemoveRange(ctx, gomock.Any()).Do(func(_ context.Context, request *drpc.RemoveRangeRequest) {
+	mockedClient.EXPECT().RemoveRange(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.RemoveRangeRequest, option yarpc2.CallOption) {
 		assert.Equal(t, testRPCSchemaRef, *request.Ref)
 		assert.Equal(t, len(request.Conditions), 1)
 		condition := request.Conditions[0]
@@ -748,7 +749,7 @@ func TestConnector_RemoveRange(t *testing.T) {
 	assert.NoError(t, err)
 
 	// perform a generic error request
-	mockedClient.EXPECT().RemoveRange(ctx, gomock.Any()).Return(errors.New("test error")).Times(1)
+	mockedClient.EXPECT().RemoveRange(ctx, gomock.Any(), gomock.Any()).Return(errors.New("test error")).Times(1)
 	err = sut.RemoveRange(ctx, testEi, map[string][]*dosa.Condition{"c2": {&dosa.Condition{
 		Value: 3.3,
 		Op:    dosa.Eq,
@@ -783,8 +784,8 @@ func TestConnector_Scan(t *testing.T) {
 		FieldsToRead: map[string]struct{}{"c1": {}},
 	}
 	// successful call, return results
-	mockedClient.EXPECT().Scan(ctx, sr).
-		Do(func(_ context.Context, r *drpc.ScanRequest) {
+	mockedClient.EXPECT().Scan(ctx, sr, gomock.Any()).
+		Do(func(_ context.Context, r *drpc.ScanRequest, option yarpc2.CallOption) {
 			assert.Equal(t, sr, r)
 		}).
 		Return(&drpc.ScanResponse{
@@ -798,10 +799,10 @@ func TestConnector_Scan(t *testing.T) {
 			NextToken: &responseToken,
 		}, nil)
 	// failed call, return error
-	mockedClient.EXPECT().Scan(ctx, gomock.Any()).
+	mockedClient.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).
 		Return(nil, errors.New("test error")).Times(1)
 	// no results, make sure error is exact
-	mockedClient.EXPECT().Scan(ctx, gomock.Any()).
+	mockedClient.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).
 		Return(nil, &dosa.ErrNotFound{})
 
 	// Prepare the dosa client interface using the mocked RPC layer
@@ -843,7 +844,7 @@ func TestConnector_Remove(t *testing.T) {
 	}
 
 	// we expect a single call to Read, and we return back two fields, f1 which is in the typemap and another field that is not
-	mockedClient.EXPECT().Remove(ctx, removeRequest).Return(nil)
+	mockedClient.EXPECT().Remove(ctx, removeRequest, gomock.Any()).Return(nil)
 
 	// Prepare the dosa client interface using the mocked RPC layer
 	sut := yarpc.Connector{Client: mockedClient}
