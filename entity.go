@@ -144,8 +144,9 @@ func (pk PrimaryKey) String() string {
 
 // ColumnDefinition stores information about a column
 type ColumnDefinition struct {
-	Name string // normalized column name
-	Type Type
+	Name      string // normalized column name
+	Type      Type
+	IsPointer bool // used by client only to indicate whether this field is pointer
 	// TODO: change as need to support tags like pii, searchable, etc
 	// currently it's in the form of a map from tag name to (optional) tag value
 	Tags map[string]string
@@ -324,16 +325,16 @@ func (e *EntityDefinition) EnsureValid() error {
 }
 
 func (e *EntityDefinition) ensureNonNullablePrimaryKeys() error {
-	columnTypes := e.ColumnTypes()
+	columns := e.ColumnMap()
 
 	for k := range e.PartitionKeySet() {
-		if isInvalidPrimaryKeyType(columnTypes[k]) {
+		if isInvalidPrimaryKeyType(columns[k]) {
 			return errors.Errorf("primary key is of nullable type: %q", k)
 		}
 	}
 
 	for k := range e.Key.ClusteringKeySet() {
-		if isInvalidPrimaryKeyType(columnTypes[k]) {
+		if isInvalidPrimaryKeyType(columns[k]) {
 			return errors.Errorf("clustering key is of nullable type: %q", k)
 		}
 	}
@@ -346,6 +347,15 @@ func (e *EntityDefinition) ColumnTypes() map[string]Type {
 	m := make(map[string]Type)
 	for _, c := range e.Columns {
 		m[c.Name] = c.Type
+	}
+	return m
+}
+
+// ColumnMap returns a map of column name to column definition for all columns.
+func (e *EntityDefinition) ColumnMap() map[string]*ColumnDefinition {
+	m := make(map[string]*ColumnDefinition)
+	for _, c := range e.Columns {
+		m[c.Name] = c
 	}
 	return m
 }

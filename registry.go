@@ -173,7 +173,27 @@ func (e *RegisteredEntity) SetFieldValues(entity DomainObject, fieldValues map[s
 		if !val.IsValid() {
 			panic("Field " + fieldName + " is is not a valid field for " + e.table.StructName)
 		}
-		val.Set(reflect.ValueOf(fieldValue))
+
+		var fv reflect.Value
+		if fieldValue != nil {
+			fv = reflect.ValueOf(fieldValue)
+		}
+		if !fv.IsValid() || fv.Kind() == reflect.Ptr && fv.IsNil() {
+			val.Set(reflect.Zero(val.Type()))
+			continue
+		}
+
+		switch val.Type() {
+		case uuidType, boolType, int64Type, stringType, int32Type, doubleType, timestampType, blobType:
+			val.Set(reflect.Indirect(fv))
+		case nullUUIDType, nullStringType, nullInt32Type, nullInt64Type, nullDoubleType, nullBoolType, nullTimeType:
+			if fv.CanAddr() {
+				val.Set(fv.Addr())
+			} else {
+				val.Set(fv)
+			}
+		}
+
 	}
 }
 

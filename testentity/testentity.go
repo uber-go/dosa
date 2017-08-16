@@ -40,14 +40,12 @@ type TestEntity struct {
 	BoolV       bool
 	BlobV       []byte
 	TSV         time.Time
-}
 
-// TestNullableEntity uses nullable fields.
-type TestNullableEntity struct {
-	dosa.Entity     `dosa:"primaryKey=BoolType"`
-	BoolType        bool
-	NullStringType  dosa.NullString
-	NullInt64Type   dosa.NullInt64
-	NullFloat64Type dosa.NullFloat64
-	NullBoolType    dosa.NullBool
+	UUIDVP   *dosa.UUID
+	StrVP    *string
+	Int64VP  *int64
+	Int32VP  *int32
+	DoubleVP *float64
+	BoolVP   *bool
+	TSVP     *time.Time
 }

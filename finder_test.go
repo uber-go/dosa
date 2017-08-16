@@ -55,8 +55,8 @@ func TestNonExistentDirectory(t *testing.T) {
 func TestParser(t *testing.T) {
 	entities, errs, err := FindEntities([]string{"."}, []string{})
 
-	assert.Equal(t, 18, len(entities), fmt.Sprintf("%s", entities))
-	assert.Equal(t, 17, len(errs), fmt.Sprintf("%v", errs))
+	assert.Equal(t, 19, len(entities), fmt.Sprintf("%s", entities))
+	assert.Equal(t, 20, len(errs), fmt.Sprintf("%v", errs))
 	assert.Nil(t, err)
 
 	for _, entity := range entities {
@@ -90,6 +90,8 @@ func TestParser(t *testing.T) {
 			continue
 		case "registrytestvalid": // skip, same as above
 			continue
+		case "allfieldtypes":
+			continue
 		case "alltypesscantestentity": // skipping test entity defined in scan_test.go
 			continue
 		case "singleindexnoparen":
@@ -117,7 +119,7 @@ func TestExclusion(t *testing.T) {
 func TestFindEntitiesInOtherPkg(t *testing.T) {
 	entities, warnings, err := FindEntities([]string{"testentity"}, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, 4, len(entities))
+	assert.Equal(t, 2, len(entities))
 	assert.Empty(t, warnings)
 }
 
@@ -129,46 +131,43 @@ func BenchmarkFinder(b *testing.B) {
 
 func TestStringToDosaType(t *testing.T) {
 	data := []struct {
-		inType   string
-		pkg      string
-		expected Type
+		inType    string
+		pkg       string
+		expected  Type
+		isPointer bool
 	}{
 		// Tests without package name
-		{"string", "", String},
-		{"[]byte", "", Blob},
-		{"bool", "", Bool},
-		{"int32", "", Int32},
-		{"int64", "", Int64},
-		{"float64", "", Double},
-		{"time.Time", "", Timestamp},
-		{"UUID", "", TUUID},
-		{"NullString", "", TNullString},
-		{"NullInt64", "", TNullInt64},
-		{"NullFloat64", "", TNullFloat64},
-		{"NullBool", "", TNullBool},
-		{"NullTime", "", TNullTime},
+		{"string", "", String, false},
+		{"[]byte", "", Blob, false},
+		{"bool", "", Bool, false},
+		{"int32", "", Int32, false},
+		{"int64", "", Int64, false},
+		{"float64", "", Double, false},
+		{"time.Time", "", Timestamp, false},
+		{"UUID", "", TUUID, false},
+
+		{"*string", "", String, true},
+		{"*bool", "", Bool, true},
+		{"*int32", "", Int32, true},
+		{"*int64", "", Int64, true},
+		{"*float64", "", Double, true},
+		{"*time.Time", "", Timestamp, true},
+		{"*UUID", "", TUUID, true},
 
 		// Tests with package name that doesn't end with dot.
-		{"dosa.UUID", "dosa", TUUID},
-		{"dosa.NullString", "dosa", TNullString},
-		{"dosa.NullInt64", "dosa", TNullInt64},
-		{"dosa.NullFloat64", "dosa", TNullFloat64},
-		{"dosa.NullBool", "dosa", TNullBool},
-		{"dosa.NullTime", "dosa", TNullTime},
+		{"dosa.UUID", "dosa", TUUID, false},
+		{"*dosa.UUID", "dosa", TUUID, true},
 
 		// Tests with package name that ends with dot.
-		{"dosav2.UUID", "dosav2.", TUUID},
-		{"dosav2.NullString", "dosav2.", TNullString},
-		{"dosav2.NullInt64", "dosav2.", TNullInt64},
-		{"dosav2.NullFloat64", "dosav2.", TNullFloat64},
-		{"dosav2.NullBool", "dosav2.", TNullBool},
-		{"dosav2.NullTime", "dosav2.", TNullTime},
+		{"dosav2.UUID", "dosav2.", TUUID, false},
+		{"*dosav2.UUID", "dosav2.", TUUID, true},
 
-		{"unknown", "", Invalid},
+		{"unknown", "", Invalid, false},
 	}
 
 	for _, tc := range data {
-		actual := stringToDosaType(tc.inType, tc.pkg)
+		actual, isPointer := stringToDosaType(tc.inType, tc.pkg)
+		assert.Equal(t, isPointer, tc.isPointer)
 		assert.Equal(t, tc.expected, actual,
 			fmt.Sprintf("stringToDosaType(%q, %q) != %d -- actual: %d", tc.inType, tc.pkg, tc.expected, actual))
 	}

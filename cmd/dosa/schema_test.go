@@ -259,7 +259,7 @@ func TestSchema_Check_Happy(t *testing.T) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)
 				assert.True(t, dl.After(time.Now()))
-				assert.Equal(t, 4, len(ed))
+				assert.Equal(t, 2, len(ed))
 				nameMap := getTestEntityNameMap()
 				for _, e := range ed {
 					assert.True(t, nameMap[e.Name])
@@ -308,7 +308,7 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)
 				assert.True(t, dl.After(time.Now()))
-				assert.Equal(t, 4, len(ed))
+				assert.Equal(t, 2, len(ed))
 
 				nameMap := getTestEntityNameMap()
 				for _, e := range ed {
@@ -358,6 +358,4 @@ func TestSchema_Dump_Avro(t *testing.T) {
 	main()
 	output := c.stop(false)
 	assert.Contains(t, output, "executing schema dump")
-	assert.Contains(t, output, "testnullablenamedimportentity")
-	assert.Contains(t, output, "name\":\"nullfloat64type")
 }

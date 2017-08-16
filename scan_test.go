@@ -31,19 +31,22 @@ import (
 )
 
 type AllTypesScanTestEntity struct {
-	dosa.Entity     `dosa:"primaryKey=BoolType"`
-	BoolType        bool
-	Int32Type       int32
-	Int64Type       int64
-	DoubleType      float64
-	StringType      string
-	BlobType        []byte
-	TimeType        time.Time
-	UUIDType        dosa.UUID
-	NullStringType  dosa.NullString
-	NullInt64Type   dosa.NullInt64
-	NullFloat64Type dosa.NullFloat64
-	NullBoolType    dosa.NullBool
+	dosa.Entity    `dosa:"primaryKey=BoolType"`
+	BoolType       bool
+	Int32Type      int32
+	Int64Type      int64
+	DoubleType     float64
+	StringType     string
+	BlobType       []byte
+	TimeType       time.Time
+	UUIDType       dosa.UUID
+	NullBoolType   *bool
+	NullInt32Type  *int32
+	NullInt64Type  *int64
+	NullDoubleType *float64
+	NullStringType *string
+	NullTimeType   *time.Time
+	NullUUIDType   *dosa.UUID
 }
 
 func TestNewScanOp(t *testing.T) {

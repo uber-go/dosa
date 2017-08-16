@@ -43,13 +43,3 @@ type TestNamedImportEntity struct {
 	BlobV         []byte
 	TSV           time.Time
 }
-
-// TestNullableNamedImportEntity uses nullable fields.
-type TestNullableNamedImportEntity struct {
-	dosav2.Entity   `dosa:"primaryKey=BoolType"`
-	BoolType        bool
-	NullStringType  dosav2.NullString
-	NullInt64Type   dosav2.NullInt64
-	NullFloat64Type dosav2.NullFloat64
-	NullBoolType    dosav2.NullBool
-}

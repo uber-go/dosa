@@ -212,6 +212,9 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 		if err != nil {
 			return nil, errors.Wrapf(err, "Key field %q", key)
 		}
+		if rv == nil {
+			continue
+		}
 		rpcValue := &dosarpc.Value{ElemValue: rv}
 		rpcFields[key] = rpcValue
 	}
@@ -251,6 +254,9 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 			rv, err := RawValueFromInterface(value)
 			if err != nil {
 				return nil, err
+			}
+			if rv == nil {
+				continue
 			}
 			rpcValue := &dosarpc.Value{ElemValue: rv}
 			rpcFields[i][key] = rpcValue
@@ -303,6 +309,9 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		rv, err := RawValueFromInterface(value)
 		if err != nil {
 			return errors.Wrapf(err, "Key field %q", key)
+		}
+		if rv == nil {
+			continue
 		}
 		rpcValue := &dosarpc.Value{ElemValue: rv}
 		rpcFields[key] = rpcValue
@@ -380,6 +389,9 @@ func createRPCConditions(columnConditions map[string][]*dosa.Condition) ([]*dosa
 			rv, err := RawValueFromInterface(condition.Value)
 			if err != nil {
 				return nil, errors.Wrap(err, "Bad range value")
+			}
+			if rv == nil {
+				continue
 			}
 			rpcConditions = append(rpcConditions, &dosarpc.Condition{
 				Op:    encodeOperator(condition.Op),

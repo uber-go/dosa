@@ -354,14 +354,14 @@ func parseEntityTag(structName, dosaAnnotation string) (string, *PrimaryKey, err
 
 // parseFieldTag function parses DOSA tag on the fields in the DOSA struct except the "Entity" field
 func parseFieldTag(structField reflect.StructField, dosaAnnotation string) (*ColumnDefinition, error) {
-	typ, err := typify(structField.Type)
+	typ, isPointer, err := typify(structField.Type)
 	if err != nil {
 		return nil, err
 	}
-	return parseField(typ, structField.Name, dosaAnnotation)
+	return parseField(typ, isPointer, structField.Name, dosaAnnotation)
 }
 
-func parseField(typ Type, name string, tag string) (*ColumnDefinition, error) {
+func parseField(typ Type, isPointer bool, name string, tag string) (*ColumnDefinition, error) {
 	// parse name tag
 	fullNameTag, name, err := parseNameTag(tag, name)
 	if err != nil {
@@ -373,56 +373,62 @@ func parseField(typ Type, name string, tag string) (*ColumnDefinition, error) {
 		return nil, fmt.Errorf("field %s with an invalid dosa field tag: %s", name, tag)
 	}
 
-	return &ColumnDefinition{Name: name, Type: typ}, nil
+	return &ColumnDefinition{Name: name, IsPointer: isPointer, Type: typ}, nil
 }
 
 var (
-	uuidType        = reflect.TypeOf(UUID(""))
-	blobType        = reflect.TypeOf([]byte{})
-	timestampType   = reflect.TypeOf(time.Time{})
-	int32Type       = reflect.TypeOf(int32(0))
-	int64Type       = reflect.TypeOf(int64(0))
-	doubleType      = reflect.TypeOf(float64(0.0))
-	stringType      = reflect.TypeOf("")
-	boolType        = reflect.TypeOf(true)
-	nullBoolType    = reflect.TypeOf(NullBool{})
-	nullInt64Type   = reflect.TypeOf(NullInt64{})
-	nullFloat64Type = reflect.TypeOf(NullFloat64{})
-	nullStringType  = reflect.TypeOf(NullString{})
-	nullTimeType    = reflect.TypeOf(NullTime{})
+	uuidType       = reflect.TypeOf(UUID(""))
+	blobType       = reflect.TypeOf([]byte{})
+	timestampType  = reflect.TypeOf(time.Time{})
+	int32Type      = reflect.TypeOf(int32(0))
+	int64Type      = reflect.TypeOf(int64(0))
+	doubleType     = reflect.TypeOf(float64(0.0))
+	stringType     = reflect.TypeOf("")
+	boolType       = reflect.TypeOf(true)
+	nullBoolType   = reflect.TypeOf((*bool)(nil))
+	nullInt32Type  = reflect.TypeOf((*int32)(nil))
+	nullInt64Type  = reflect.TypeOf((*int64)(nil))
+	nullDoubleType = reflect.TypeOf((*float64)(nil))
+	nullStringType = reflect.TypeOf((*string)(nil))
+	nullUUIDType   = reflect.TypeOf((*UUID)(nil))
+	nullTimeType   = reflect.TypeOf((*time.Time)(nil))
 )
 
-func typify(f reflect.Type) (Type, error) {
+func typify(f reflect.Type) (Type, bool, error) {
 	switch f {
 	case uuidType:
-		return TUUID, nil
+		return TUUID, false, nil
 	case blobType:
-		return Blob, nil
+		return Blob, false, nil
 	case timestampType:
-		return Timestamp, nil
+		return Timestamp, false, nil
 	case int32Type:
-		return Int32, nil
+		return Int32, false, nil
 	case int64Type:
-		return Int64, nil
+		return Int64, false, nil
 	case doubleType:
-		return Double, nil
+		return Double, false, nil
 	case stringType:
-		return String, nil
+		return String, false, nil
 	case boolType:
-		return Bool, nil
-	case nullStringType:
-		return TNullString, nil
-	case nullInt64Type:
-		return TNullInt64, nil
-	case nullFloat64Type:
-		return TNullFloat64, nil
-	case nullBoolType:
-		return TNullBool, nil
+		return Bool, false, nil
+	case nullUUIDType:
+		return TUUID, true, nil
 	case nullTimeType:
-		return TNullTime, nil
+		return Timestamp, true, nil
+	case nullInt32Type:
+		return Int32, true, nil
+	case nullInt64Type:
+		return Int64, true, nil
+	case nullDoubleType:
+		return Double, true, nil
+	case nullStringType:
+		return String, true, nil
+	case nullBoolType:
+		return Bool, true, nil
 	}
 
-	return Invalid, fmt.Errorf("Invalid type %v", f)
+	return Invalid, true, fmt.Errorf("Invalid type %v", f)
 }
 
 func (d Table) String() string {

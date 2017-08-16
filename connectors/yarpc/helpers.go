@@ -32,23 +32,30 @@ import (
 // based on the dosa type. For example, a TUUID type will get a dosa.UUID object
 func RawValueAsInterface(val dosarpc.RawValue, typ dosa.Type) interface{} {
 	switch typ {
-	case dosa.TUUID:
-		uuid, _ := dosa.BytesToUUID(val.BinaryValue) // TODO: should we handle this error?
-		return uuid
-	case dosa.String, dosa.TNullString:
-		return *val.StringValue
-	case dosa.Int32:
-		return *val.Int32Value
-	case dosa.Int64, dosa.TNullInt64:
-		return *val.Int64Value
-	case dosa.Double, dosa.TNullFloat64:
-		return *val.DoubleValue
 	case dosa.Blob:
 		return val.BinaryValue
-	case dosa.Timestamp, dosa.TNullTime:
-		return time.Unix(0, *val.Int64Value)
-	case dosa.Bool, dosa.TNullBool:
-		return *val.BoolValue
+	case dosa.TUUID:
+		if len(val.BinaryValue) == 0 {
+			return (*dosa.UUID)(nil)
+		}
+		uuid, _ := dosa.BytesToUUID(val.BinaryValue) // TODO: should we handle this error?
+		return &uuid
+	case dosa.String:
+		return val.StringValue
+	case dosa.Int32:
+		return val.Int32Value
+	case dosa.Int64:
+		return val.Int64Value
+	case dosa.Double:
+		return val.DoubleValue
+	case dosa.Timestamp:
+		if val.Int64Value == nil {
+			return (*time.Time)(nil)
+		}
+		t := time.Unix(0, *val.Int64Value)
+		return &t
+	case dosa.Bool:
+		return val.BoolValue
 	}
 	panic("bad type")
 }
@@ -86,18 +93,46 @@ func RawValueFromInterface(i interface{}) (*dosarpc.RawValue, error) {
 			return nil, err
 		}
 		return &dosarpc.RawValue{BinaryValue: bytes}, nil
-	// TODO: (UmerAzad) Deal with nil values once NullTime and NullUUID are added. It'll be covered as part of JIRA-927.
-	case dosa.NullString:
-		return &dosarpc.RawValue{StringValue: &v.String}, nil
-	case dosa.NullInt64:
-		return &dosarpc.RawValue{Int64Value: &v.Int64}, nil
-	case dosa.NullFloat64:
-		return &dosarpc.RawValue{DoubleValue: &v.Float64}, nil
-	case dosa.NullBool:
-		return &dosarpc.RawValue{BoolValue: &v.Bool}, nil
-	case dosa.NullTime:
-		time := v.Time.UnixNano()
-		return &dosarpc.RawValue{Int64Value: &time}, nil
+	case *dosa.UUID:
+		if v == nil {
+			return nil, nil
+		}
+		bytes, err := v.Bytes()
+		if err != nil {
+			return nil, err
+		}
+		return &dosarpc.RawValue{BinaryValue: bytes}, nil
+	case *string:
+		if v == nil {
+			return nil, nil
+		}
+		return &dosarpc.RawValue{StringValue: v}, nil
+	case *int32:
+		if v == nil {
+			return nil, nil
+		}
+		return &dosarpc.RawValue{Int32Value: v}, nil
+	case *int64:
+		if v == nil {
+			return nil, nil
+		}
+		return &dosarpc.RawValue{Int64Value: v}, nil
+	case *float64:
+		if v == nil {
+			return nil, nil
+		}
+		return &dosarpc.RawValue{DoubleValue: v}, nil
+	case *bool:
+		if v == nil {
+			return nil, nil
+		}
+		return &dosarpc.RawValue{BoolValue: v}, nil
+	case *time.Time:
+		if v == nil {
+			return nil, nil
+		}
+		t := v.UnixNano()
+		return &dosarpc.RawValue{Int64Value: &t}, nil
 	}
 	panic("bad type")
 }
@@ -121,16 +156,6 @@ func RPCTypeFromClientType(t dosa.Type) dosarpc.ElemType {
 		return dosarpc.ElemTypeTimestamp
 	case dosa.TUUID:
 		return dosarpc.ElemTypeUUID
-	case dosa.TNullBool:
-		return dosarpc.ElemTypeNullbool
-	case dosa.TNullInt64:
-		return dosarpc.ElemTypeNullint64
-	case dosa.TNullFloat64:
-		return dosarpc.ElemTypeNullfloat64
-	case dosa.TNullString:
-		return dosarpc.ElemTypeNullstring
-	case dosa.TNullTime:
-		return dosarpc.ElemTypeNulltime
 	}
 	panic("bad type")
 }
@@ -154,16 +179,6 @@ func RPCTypeToClientType(t dosarpc.ElemType) dosa.Type {
 		return dosa.Timestamp
 	case dosarpc.ElemTypeUUID:
 		return dosa.TUUID
-	case dosarpc.ElemTypeNullstring:
-		return dosa.TNullString
-	case dosarpc.ElemTypeNullint64:
-		return dosa.TNullInt64
-	case dosarpc.ElemTypeNullfloat64:
-		return dosa.TNullFloat64
-	case dosarpc.ElemTypeNullbool:
-		return dosa.TNullBool
-	case dosarpc.ElemTypeNulltime:
-		return dosa.TNullTime
 	}
 	panic("bad type")
 }
@@ -246,6 +261,7 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 		Indexes: indexes,
 	}
 }
+
 func encodeOperator(o dosa.Operator) *dosarpc.Operator {
 	var op dosarpc.Operator
 	switch o {
@@ -307,6 +323,9 @@ func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) (dosarpc.Fiel
 		rv, err := RawValueFromInterface(value)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Error encoding field %q", name)
+		}
+		if rv == nil {
+			continue
 		}
 		rpcValue := &dosarpc.Value{ElemValue: rv}
 		fields[name] = rpcValue

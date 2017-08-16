@@ -198,20 +198,22 @@ func TestMissingAnnotation(t *testing.T) {
 }
 
 type AllTypes struct {
-	Entity          `dosa:"primaryKey=BoolType"`
-	BoolType        bool
-	Int32Type       int32
-	Int64Type       int64
-	DoubleType      float64
-	StringType      string
-	BlobType        []byte
-	TimeType        time.Time
-	UUIDType        UUID
-	NullStringType  NullString
-	NullInt64Type   NullInt64
-	NullFloat64Type NullFloat64
-	NullBoolType    NullBool
-	NullTimeType    NullTime
+	Entity         `dosa:"primaryKey=BoolType"`
+	BoolType       bool
+	Int32Type      int32
+	Int64Type      int64
+	DoubleType     float64
+	StringType     string
+	BlobType       []byte
+	TimeType       time.Time
+	UUIDType       UUID
+	NullBoolType   *bool
+	NullInt32Type  *int32
+	NullInt64Type  *int64
+	NullDoubleType *float64
+	NullStringType *string
+	NullTimeType   *time.Time
+	NullUUIDType   *UUID
 }
 
 func TestAllTypes(t *testing.T) {
@@ -219,7 +221,7 @@ func TestAllTypes(t *testing.T) {
 	assert.NotNil(t, dosaTable)
 	assert.NoError(t, err)
 	cds := dosaTable.Columns
-	assert.Len(t, cds, 13)
+	assert.Len(t, cds, 15)
 	for _, cd := range cds {
 		name, err := NormalizeName(cd.Name)
 		assert.NoError(t, err)
@@ -241,15 +243,19 @@ func TestAllTypes(t *testing.T) {
 		case "uuidtype":
 			assert.Equal(t, TUUID, cd.Type)
 		case "nullbooltype":
-			assert.Equal(t, TNullBool, cd.Type)
+			assert.Equal(t, Bool, cd.Type)
+		case "nullint32type":
+			assert.Equal(t, Int32, cd.Type)
 		case "nullint64type":
-			assert.Equal(t, TNullInt64, cd.Type)
-		case "nullfloat64type":
-			assert.Equal(t, TNullFloat64, cd.Type)
+			assert.Equal(t, Int64, cd.Type)
+		case "nulldoubletype":
+			assert.Equal(t, Double, cd.Type)
 		case "nullstringtype":
-			assert.Equal(t, TNullString, cd.Type)
+			assert.Equal(t, String, cd.Type)
 		case "nulltimetype":
-			assert.Equal(t, TNullTime, cd.Type)
+			assert.Equal(t, Timestamp, cd.Type)
+		case "nulluuidtype":
+			assert.Equal(t, TUUID, cd.Type)
 		default:
 			assert.Fail(t, "unexpected column name", name)
 		}
@@ -257,13 +263,15 @@ func TestAllTypes(t *testing.T) {
 }
 
 type NullableType struct {
-	Entity          `dosa:"primaryKey=BoolType"`
-	BoolType        bool
-	NullStringType  NullString
-	NullInt64Type   NullInt64
-	NullFloat64Type NullFloat64
-	NullBoolType    NullBool
-	NullTimeType    NullTime
+	Entity         `dosa:"primaryKey=BoolType"`
+	BoolType       bool
+	NullBoolType   *bool
+	NullInt32Type  *int32
+	NullInt64Type  *int64
+	NullDoubleType *float64
+	NullStringType *string
+	NullTimeType   *time.Time
+	NullUUIDType   *UUID
 }
 
 func TestNullableType(t *testing.T) {
@@ -271,23 +279,35 @@ func TestNullableType(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, dosaTable)
 	cds := dosaTable.Columns
-	assert.Len(t, cds, 6)
+	assert.Len(t, cds, 8)
 	for _, cd := range cds {
 		name, err := NormalizeName(cd.Name)
 		assert.NoError(t, err)
 		switch name {
 		case "booltype":
 			assert.Equal(t, Bool, cd.Type)
+			assert.False(t, cd.IsPointer)
 		case "nullbooltype":
-			assert.Equal(t, TNullBool, cd.Type)
+			assert.Equal(t, Bool, cd.Type)
+			assert.True(t, cd.IsPointer)
+		case "nullint32type":
+			assert.Equal(t, Int32, cd.Type)
+			assert.True(t, cd.IsPointer)
 		case "nullint64type":
-			assert.Equal(t, TNullInt64, cd.Type)
-		case "nullfloat64type":
-			assert.Equal(t, TNullFloat64, cd.Type)
+			assert.Equal(t, Int64, cd.Type)
+			assert.True(t, cd.IsPointer)
+		case "nulldoubletype":
+			assert.Equal(t, Double, cd.Type)
+			assert.True(t, cd.IsPointer)
 		case "nullstringtype":
-			assert.Equal(t, TNullString, cd.Type)
+			assert.Equal(t, String, cd.Type)
+			assert.True(t, cd.IsPointer)
 		case "nulltimetype":
-			assert.Equal(t, TNullTime, cd.Type)
+			assert.Equal(t, Timestamp, cd.Type)
+			assert.True(t, cd.IsPointer)
+		case "nulluuidtype":
+			assert.Equal(t, TUUID, cd.Type)
+			assert.True(t, cd.IsPointer)
 		default:
 			assert.Fail(t, "unexpected column name", name)
 		}
@@ -308,52 +328,76 @@ func TestUnsupportedType(t *testing.T) {
 	assert.Contains(t, err.Error(), "UnsupType")
 }
 
-type NullStringPrimaryKeyType struct {
-	Entity         `dosa:"primaryKey=NullStringType"`
-	NullStringType NullString
-}
-
-func TestNullStringPrimaryKeyType(t *testing.T) {
+func TestNullablePrimaryKeyType(t *testing.T) {
 	dosaTable, err := TableFromInstance(&NullStringPrimaryKeyType{})
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "primary key is of nullable type")
+
+	dosaTable, err = TableFromInstance(&NullBoolPrimaryKeyType{})
+	assert.Nil(t, dosaTable)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "primary key is of nullable type")
+
+	dosaTable, err = TableFromInstance(&NullDoublePrimaryKeyType{})
+	assert.Nil(t, dosaTable)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "primary key is of nullable type")
+
+	dosaTable, err = TableFromInstance(&NullInt32PrimaryKeyType{})
+	assert.Nil(t, dosaTable)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "primary key is of nullable type")
+
+	dosaTable, err = TableFromInstance(&NullInt64PrimaryKeyType{})
+	assert.Nil(t, dosaTable)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "primary key is of nullable type")
+
+	dosaTable, err = TableFromInstance(&NullTimePrimaryKeyType{})
+	assert.Nil(t, dosaTable)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "primary key is of nullable type")
+
+	dosaTable, err = TableFromInstance(&NullUUIDPrimaryKeyType{})
+	assert.Nil(t, dosaTable)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "primary key is of nullable type")
+}
+
+type NullStringPrimaryKeyType struct {
+	Entity         `dosa:"primaryKey=NullStringType"`
+	NullStringType *string
+}
+
+type NullUUIDPrimaryKeyType struct {
+	Entity       `dosa:"primaryKey=NullUUIDType"`
+	NullUUIDType *UUID
+}
+
+type NullTimePrimaryKeyType struct {
+	Entity       `dosa:"primaryKey=NullTimeType"`
+	NullTimeType *time.Time
 }
 
 type NullInt64PrimaryKeyType struct {
 	Entity        `dosa:"primaryKey=NullInt64Type"`
-	NullInt64Type NullInt64
+	NullInt64Type *int64
 }
 
-func TestNullInt64PrimaryKeyType(t *testing.T) {
-	dosaTable, err := TableFromInstance(&NullInt64PrimaryKeyType{})
-	assert.Nil(t, dosaTable)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "primary key is of nullable type")
+type NullInt32PrimaryKeyType struct {
+	Entity        `dosa:"primaryKey=NullInt32Type"`
+	NullInt32Type *int32
 }
 
-type NullFloat64PrimaryKeyType struct {
-	Entity          `dosa:"primaryKey=NullFloat64Type"`
-	NullFloat64Type NullFloat64
-}
-
-func TestNullFloat64PrimaryKeyType(t *testing.T) {
-	dosaTable, err := TableFromInstance(&NullFloat64PrimaryKeyType{})
-	assert.Nil(t, dosaTable)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "primary key is of nullable type")
+type NullDoublePrimaryKeyType struct {
+	Entity         `dosa:"primaryKey=NullDoubleType"`
+	NullDoubleType *float64
 }
 
 type NullBoolPrimaryKeyType struct {
 	Entity       `dosa:"primaryKey=NullBoolType"`
-	NullBoolType NullBool
-}
-
-func TestNullBoolPrimaryKeyType(t *testing.T) {
-	dosaTable, err := TableFromInstance(&NullBoolPrimaryKeyType{})
-	assert.Nil(t, dosaTable)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "primary key is of nullable type")
+	NullBoolType *bool
 }
 
 type KeyFieldNameTypo struct {

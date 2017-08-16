@@ -57,21 +57,6 @@ const (
 
 	// Bool is a bool type
 	Bool
-
-	// TNullString represents an optional string value
-	TNullString
-
-	// TNullInt64 represents an optional int64 value
-	TNullInt64
-
-	// TNullFloat64 represents an optional float64 value
-	TNullFloat64
-
-	// TNullBool represents an optional bool value
-	TNullBool
-
-	// TNullTime represents an optional time.Time value.
-	TNullTime
 )
 
 // UUID stores a string format of uuid.
@@ -121,24 +106,18 @@ func FromString(s string) Type {
 		return Timestamp
 	case Bool.String():
 		return Bool
-	case TNullString.String():
-		return TNullString
-	case TNullInt64.String():
-		return TNullInt64
-	case TNullFloat64.String():
-		return TNullFloat64
-	case TNullBool.String():
-		return TNullBool
-	case TNullTime.String():
-		return TNullTime
 	default:
 		return Invalid
 	}
 }
 
-func isInvalidPrimaryKeyType(t Type) bool {
-	switch t {
-	case Invalid, TNullString, TNullFloat64, TNullInt64, TNullBool, TNullTime:
+func isInvalidPrimaryKeyType(c *ColumnDefinition) bool {
+	if c.IsPointer {
+		return true
+	}
+
+	switch c.Type {
+	case Invalid:
 		return true
 	default:
 		return false
