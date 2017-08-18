@@ -93,7 +93,7 @@ type Config struct {
 type Connector struct {
 	base.Connector
 	Client     dosaclient.Interface
-	config     *Config
+	Config     *Config
 	dispatcher *rpc.Dispatcher
 }
 
@@ -107,7 +107,7 @@ func NewConnectorWithTransport(cc transport.ClientConfig) *Connector {
 	}
 	return &Connector{
 		Client: client,
-		config: config,
+		Config: config,
 	}
 }
 
@@ -144,7 +144,7 @@ func NewConnectorWithChannel(ch tchannel.Channel) (*Connector, error) {
 	}
 	return &Connector{
 		Client:     client,
-		config:     config,
+		Config:     config,
 		dispatcher: dispatcher,
 	}, nil
 }
@@ -204,7 +204,7 @@ func NewConnector(cfg *Config) (*Connector, error) {
 	client := dosaclient.New(dispatcher.ClientConfig(cfg.ServiceName))
 	return &Connector{
 		Client:     client,
-		config:     cfg,
+		Config:     cfg,
 		dispatcher: dispatcher,
 	}, nil
 }
@@ -491,7 +491,7 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	response, err := c.Client.CheckSchema(ctx, &csr)
 
 	if err != nil {
-		return dosa.InvalidVersion, wrapError(err, "YARPC CheckSchema failed", scope, c.config.ServiceName)
+		return dosa.InvalidVersion, wrapError(err, "YARPC CheckSchema failed", scope, c.Config.ServiceName)
 	}
 
 	return *response.Version, nil
@@ -512,7 +512,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 
 	response, err := c.Client.UpsertSchema(ctx, request)
 	if err != nil {
-		return nil, wrapError(err, "YARPC UpsertSchema failed", scope, c.config.ServiceName)
+		return nil, wrapError(err, "YARPC UpsertSchema failed", scope, c.Config.ServiceName)
 	}
 
 	status := ""
@@ -536,7 +536,7 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 	response, err := c.Client.CheckSchemaStatus(ctx, &request)
 
 	if err != nil {
-		return nil, wrapError(err, "YARPC ChecksShemaStatus failed", scope, c.config.ServiceName)
+		return nil, wrapError(err, "YARPC ChecksShemaStatus failed", scope, c.Config.ServiceName)
 	}
 
 	status := ""
@@ -561,7 +561,7 @@ func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 	}
 
 	if err := c.Client.CreateScope(ctx, request); err != nil {
-		return wrapError(err, "YARPC CreateScope failed", scope, c.config.ServiceName)
+		return wrapError(err, "YARPC CreateScope failed", scope, c.Config.ServiceName)
 	}
 
 	return nil
@@ -574,7 +574,7 @@ func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
 	}
 
 	if err := c.Client.TruncateScope(ctx, request); err != nil {
-		return wrapError(err, "YARPC TruncateScope failed", scope, c.config.ServiceName)
+		return wrapError(err, "YARPC TruncateScope failed", scope, c.Config.ServiceName)
 	}
 
 	return nil
@@ -587,7 +587,7 @@ func (c *Connector) DropScope(ctx context.Context, scope string) error {
 	}
 
 	if err := c.Client.DropScope(ctx, request); err != nil {
-		return wrapError(err, "YARPC DropScope failed", scope, c.config.ServiceName)
+		return wrapError(err, "YARPC DropScope failed", scope, c.Config.ServiceName)
 	}
 
 	return nil
