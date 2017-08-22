@@ -23,6 +23,7 @@ package yarpc
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"os"
 
@@ -38,11 +39,45 @@ import (
 )
 
 const (
-	_defaultServiceName        = "dosa-gateway"
-	_version                   = "version"
-	errCodeNotFound      int32 = 404
-	errCodeAlreadyExists int32 = 409
+	_defaultServiceName         = "dosa-gateway"
+	errCodeNotFound      int32  = 404
+	errCodeAlreadyExists int32  = 409
+	errInvalidHandler    string = "no handler for service"
+	errConnectionRefused string = "getsockopt: connection refused"
 )
+
+// ErrInvalidHandler is used to help deliver a better error message when
+// users have misconfigured the yarpc connector
+type ErrInvalidHandler struct {
+	service string
+	scope   string
+}
+
+// Error implements the error interface
+func (e *ErrInvalidHandler) Error() string {
+	return fmt.Sprintf("the gateway %q refused to handle scope %q; probably because of a mismatch between gateway and scope in your configuration or initialization", e.service, e.scope)
+}
+
+// ErrorIsInvalidHandler check if the error is "ErrInvalidHandler"
+func ErrorIsInvalidHandler(err error) bool {
+	return strings.Contains(err.Error(), errInvalidHandler)
+}
+
+// ErrConnectionRefused is used to help deliver a better error message when
+// users have misconfigured the yarpc connector
+type ErrConnectionRefused struct {
+	cause error
+}
+
+// Error implements the error interface
+func (e *ErrConnectionRefused) Error() string {
+	return fmt.Sprintf("the gateway is not reachable, make sure the hostname and port are correct for your environment: %s", e.cause)
+}
+
+// ErrorIsConnectionRefused check if the error is "ErrConnectionRefused"
+func ErrorIsConnectionRefused(err error) bool {
+	return strings.Contains(err.Error(), errConnectionRefused)
+}
 
 // Config contains the YARPC client parameters
 type Config struct {
@@ -58,14 +93,21 @@ type Config struct {
 type Connector struct {
 	base.Connector
 	Client     dosaclient.Interface
+	Config     *Config
 	dispatcher *rpc.Dispatcher
 }
 
 // NewConnectorWithTransport creates a new instance with user provided transport
 func NewConnectorWithTransport(cc transport.ClientConfig) *Connector {
 	client := dosaclient.New(cc)
+	config := &Config{
+		CallerName:   cc.Caller(),
+		ServiceName:  cc.Service(),
+		ClientConfig: &cc,
+	}
 	return &Connector{
 		Client: client,
+		Config: config,
 	}
 }
 
@@ -96,8 +138,13 @@ func NewConnectorWithChannel(ch tchannel.Channel) (*Connector, error) {
 	}
 
 	client := dosaclient.New(dispatcher.ClientConfig(_defaultServiceName))
+	config := &Config{
+		CallerName:  ycfg.Name,
+		ServiceName: _defaultServiceName,
+	}
 	return &Connector{
 		Client:     client,
+		Config:     config,
 		dispatcher: dispatcher,
 	}, nil
 }
@@ -157,6 +204,7 @@ func NewConnector(cfg *Config) (*Connector, error) {
 	client := dosaclient.New(dispatcher.ClientConfig(cfg.ServiceName))
 	return &Connector{
 		Client:     client,
+		Config:     cfg,
 		dispatcher: dispatcher,
 	}, nil
 }
@@ -444,7 +492,7 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	response, err := c.Client.CheckSchema(ctx, &csr, VersionHeader())
 
 	if err != nil {
-		return dosa.InvalidVersion, errors.Wrap(err, "YARPC CheckSchema failed")
+		return dosa.InvalidVersion, wrapError(err, "YARPC CheckSchema failed", scope, c.Config.ServiceName)
 	}
 
 	return *response.Version, nil
@@ -465,7 +513,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 
 	response, err := c.Client.UpsertSchema(ctx, request, VersionHeader())
 	if err != nil {
-		return nil, errors.Wrap(err, "YARPC UpsertSchema failed")
+		return nil, wrapError(err, "YARPC UpsertSchema failed", scope, c.Config.ServiceName)
 	}
 
 	status := ""
@@ -485,12 +533,11 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 
 // CheckSchemaStatus checks the status of specific version of schema
 func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
-	request := dosarpc.CheckSchemaStatusRequest{Scope: &scope, NamePrefix: &namePrefix, Version: &version}
-
+	request := dosarpc.CheckSchemaStatusRequest{Scope: &scope, NamePrefix: &namePrefix, Version: &version}\
 	response, err := c.Client.CheckSchemaStatus(ctx, &request, VersionHeader())
 
 	if err != nil {
-		return nil, errors.Wrap(err, "YARPC ChecksShemaStatus failed")
+		return nil, wrapError(err, "YARPC ChecksShemaStatus failed", scope, c.Config.ServiceName)
 	}
 
 	status := ""
@@ -559,6 +606,16 @@ func (c *Connector) Shutdown() error {
 		return nil
 	}
 	return c.dispatcher.Stop()
+}
+
+func wrapError(err error, message, scope, service string) error {
+	if ErrorIsInvalidHandler(err) {
+		err = &ErrInvalidHandler{scope: scope, service: service}
+	}
+	if ErrorIsConnectionRefused(err) {
+		err = &ErrConnectionRefused{err}
+	}
+	return errors.Wrap(err, message)
 }
 
 func getWithDefault(args map[string]interface{}, elem string, def string) string {
