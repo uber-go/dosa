@@ -79,6 +79,12 @@ var testCfg = &yarpc.Config{
 
 var ctx = context.Background()
 
+func testAssert(t *testing.T) testutil.TestAssertFn {
+	return func(a, b interface{}) {
+		assert.Equal(t, a, b)
+	}
+}
+
 func TestYaRPCClient_NewConnectorWithTransport(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	cc := transporttest.NewMockClientConfig(ctrl)
@@ -204,14 +210,14 @@ func TestYaRPCClient_Read(t *testing.T) {
 
 	// perform the read
 	values, err := sut.Read(ctx, testEi, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))}, []string{"f1"})
-	assert.Nil(t, err)                                     // not an error
-	assert.NotNil(t, values)                               // found some values
-	testutil.AssertEqForPointer(t, int64(1), values["c1"]) // the mapped field is found, and is the right type
-	testutil.AssertEqForPointer(t, float64(2.2), values["c2"])
-	testutil.AssertEqForPointer(t, "f3value", values["c3"])
+	assert.Nil(t, err)                                                 // not an error
+	assert.NotNil(t, values)                                           // found some values
+	testutil.AssertEqForPointer(testAssert(t), int64(1), values["c1"]) // the mapped field is found, and is the right type
+	testutil.AssertEqForPointer(testAssert(t), float64(2.2), values["c2"])
+	testutil.AssertEqForPointer(testAssert(t), "f3value", values["c3"])
 	assert.Equal(t, []byte{'b', 'i', 'n', 'a', 'r', 'y'}, values["c4"])
-	testutil.AssertEqForPointer(t, false, values["c5"])
-	testutil.AssertEqForPointer(t, int32(1), values["c6"])
+	testutil.AssertEqForPointer(testAssert(t), false, values["c5"])
+	testutil.AssertEqForPointer(testAssert(t), int32(1), values["c6"])
 	assert.Empty(t, values["fieldNotInSchema"]) // the unknown field is not present
 
 	errCode := int32(404)
@@ -343,13 +349,13 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 					assert.Contains(t, v.Error.Error(), *d.Response.Results[i].Error.Msg)
 					continue
 				}
-				testutil.AssertEqForPointer(t, *d.Response.Results[i].EntityValues["c1"].ElemValue.Int64Value, v.Values["c1"])
+				testutil.AssertEqForPointer(testAssert(t), *d.Response.Results[i].EntityValues["c1"].ElemValue.Int64Value, v.Values["c1"])
 				assert.Empty(t, v.Values["fieldNotInSchema"])
-				testutil.AssertEqForPointer(t, *d.Response.Results[i].EntityValues["c2"].ElemValue.DoubleValue, v.Values["c2"])
-				testutil.AssertEqForPointer(t, *d.Response.Results[i].EntityValues["c3"].ElemValue.StringValue, v.Values["c3"])
+				testutil.AssertEqForPointer(testAssert(t), *d.Response.Results[i].EntityValues["c2"].ElemValue.DoubleValue, v.Values["c2"])
+				testutil.AssertEqForPointer(testAssert(t), *d.Response.Results[i].EntityValues["c3"].ElemValue.StringValue, v.Values["c3"])
 				assert.Equal(t, d.Response.Results[i].EntityValues["c4"].ElemValue.BinaryValue, v.Values["c4"])
-				testutil.AssertEqForPointer(t, *d.Response.Results[i].EntityValues["c5"].ElemValue.BoolValue, v.Values["c5"])
-				testutil.AssertEqForPointer(t, *d.Response.Results[i].EntityValues["c6"].ElemValue.Int32Value, v.Values["c6"])
+				testutil.AssertEqForPointer(testAssert(t), *d.Response.Results[i].EntityValues["c5"].ElemValue.BoolValue, v.Values["c5"])
+				testutil.AssertEqForPointer(testAssert(t), *d.Response.Results[i].EntityValues["c6"].ElemValue.Int32Value, v.Values["c6"])
 			}
 			continue
 		}
@@ -689,8 +695,8 @@ func TestConnector_Range(t *testing.T) {
 	assert.Equal(t, responseToken, token)
 	assert.NotNil(t, values)
 	assert.Equal(t, 1, len(values))
-	testutil.AssertEqForPointer(t, int64(1), values[0]["c1"])
-	testutil.AssertEqForPointer(t, float64(2.2), values[0]["c2"])
+	testutil.AssertEqForPointer(testAssert(t), int64(1), values[0]["c1"])
+	testutil.AssertEqForPointer(testAssert(t), float64(2.2), values[0]["c2"])
 
 	// perform a not found request
 	mockedClient.EXPECT().Range(ctx, gomock.Any()).
@@ -820,8 +826,8 @@ func TestConnector_Scan(t *testing.T) {
 	assert.Equal(t, responseToken, token)
 	assert.NotNil(t, values)
 	assert.Equal(t, 1, len(values))
-	testutil.AssertEqForPointer(t, int64(1), values[0]["c1"])
-	testutil.AssertEqForPointer(t, float64(2.2), values[0]["c2"])
+	testutil.AssertEqForPointer(testAssert(t), int64(1), values[0]["c1"])
+	testutil.AssertEqForPointer(testAssert(t), float64(2.2), values[0]["c2"])
 
 	// perform a not found request
 	values, token, err = sut.Scan(ctx, testEi, nil, "", 64)
