@@ -533,7 +533,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 
 // CheckSchemaStatus checks the status of specific version of schema
 func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
-	request := dosarpc.CheckSchemaStatusRequest{Scope: &scope, NamePrefix: &namePrefix, Version: &version}\
+	request := dosarpc.CheckSchemaStatusRequest{Scope: &scope, NamePrefix: &namePrefix, Version: &version}
 	response, err := c.Client.CheckSchemaStatus(ctx, &request, VersionHeader())
 
 	if err != nil {
