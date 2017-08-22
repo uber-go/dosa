@@ -148,6 +148,12 @@ func ExampleGetConnector() {
 	// Output: id:1 Name:"rkuris" Email:"rkuris@uber.com"
 }
 
+func testAssert(t *testing.T) testutil.TestAssertFn {
+	return func(a, b interface{}) {
+		assert.Equal(t, a, b)
+	}
+}
+
 func TestNewClient(t *testing.T) {
 	// initialize registrar
 	reg, err := dosaRenamed.NewRegistrar("test", "myteam.myservice", cte1)
@@ -257,9 +263,9 @@ func TestClient_Read_pointer_result(t *testing.T) {
 	c3 := dosaRenamed.NewClient(reg2, mockConn)
 	assert.NoError(t, c3.Initialize(ctx))
 	assert.NoError(t, c3.Read(ctx, fieldsToRead, cte1))
-	testutil.AssertEqForPointer(t, cte1.ID, results["id"])
+	testutil.AssertEqForPointer(testAssert(t), cte1.ID, results["id"])
 	assert.NotEqual(t, cte1.Name, results["name"])
-	testutil.AssertEqForPointer(t, cte1.Email, results["email"])
+	testutil.AssertEqForPointer(testAssert(t), cte1.Email, results["email"])
 }
 
 type AllFieldTypes struct {
@@ -330,13 +336,13 @@ func TestClient_Read_pointer(t *testing.T) {
 	assert.Equal(t, allTypes.BlobType, results["blobtype"])
 	assert.Equal(t, allTypes.TimeType, results["timetype"])
 	assert.Equal(t, allTypes.UUIDType, results["uuidtype"])
-	testutil.AssertEqForPointer(t, *allTypes.NullBoolType, results["nullbooltype"])
-	testutil.AssertEqForPointer(t, *allTypes.NullInt32Type, results["nullint32type"])
-	testutil.AssertEqForPointer(t, *allTypes.NullInt64Type, results["nullint64type"])
-	testutil.AssertEqForPointer(t, *allTypes.NullDoubleType, results["nulldoubletype"])
-	testutil.AssertEqForPointer(t, *allTypes.NullStringType, results["nullstringtype"])
-	testutil.AssertEqForPointer(t, *allTypes.NullTimeType, results["nulltimetype"])
-	testutil.AssertEqForPointer(t, *allTypes.NullUUIDType, results["nulluuidtype"])
+	testutil.AssertEqForPointer(testAssert(t), *allTypes.NullBoolType, results["nullbooltype"])
+	testutil.AssertEqForPointer(testAssert(t), *allTypes.NullInt32Type, results["nullint32type"])
+	testutil.AssertEqForPointer(testAssert(t), *allTypes.NullInt64Type, results["nullint64type"])
+	testutil.AssertEqForPointer(testAssert(t), *allTypes.NullDoubleType, results["nulldoubletype"])
+	testutil.AssertEqForPointer(testAssert(t), *allTypes.NullStringType, results["nullstringtype"])
+	testutil.AssertEqForPointer(testAssert(t), *allTypes.NullTimeType, results["nulltimetype"])
+	testutil.AssertEqForPointer(testAssert(t), *allTypes.NullUUIDType, results["nulluuidtype"])
 }
 
 func TestClient_Read_Errors(t *testing.T) {

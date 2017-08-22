@@ -21,12 +21,8 @@
 package testutil
 
 import (
-	"fmt"
-	"reflect"
-	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 )
 
@@ -65,26 +61,29 @@ func TestUUIDPtr(b dosa.UUID) *dosa.UUID {
 	return &b
 }
 
+// TestAssertFn is the interface of the test closure func
+type TestAssertFn func(a, b interface{})
+
 // AssertEqForPointer compares equal between interface of pointer
-func AssertEqForPointer(t *testing.T, expected interface{}, p interface{}) {
+func AssertEqForPointer(fn TestAssertFn, expected interface{}, p interface{}) {
 	switch v := p.(type) {
 	case *int32:
-		assert.Equal(t, *v, expected)
+		fn(*v, expected)
 	case *int64:
-		assert.Equal(t, *v, expected)
+		fn(*v, expected)
 	case *float64:
-		assert.Equal(t, *v, expected)
+		fn(*v, expected)
 	case *string:
-		assert.Equal(t, *v, expected)
+		fn(*v, expected)
 	case *dosa.UUID:
-		assert.Equal(t, *v, expected)
+		fn(*v, expected)
 	case *time.Time:
-		assert.Equal(t, *v, expected)
+		fn(*v, expected)
 	case *bool:
-		assert.Equal(t, *v, expected)
+		fn(*v, expected)
 	case *[]byte:
-		assert.Equal(t, *v, expected)
+		fn(*v, expected)
 	default:
-		assert.Fail(t, fmt.Sprintf("invalid type %v", reflect.TypeOf(v)))
+		panic("invalid type")
 	}
 }
