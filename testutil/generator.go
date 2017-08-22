@@ -83,5 +83,7 @@ func AssertEqForPointer(fn TestAssertFn, expected interface{}, p interface{}) {
 		fn(*v, expected)
 	case *[]byte:
 		fn(*v, expected)
+	default:
+		panic("invalid type")
 	}
 }

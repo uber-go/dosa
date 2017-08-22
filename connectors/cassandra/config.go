@@ -47,8 +47,6 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	if internal.ProtoVersion != nil {
 		c.ProtoVersion = *internal.ProtoVersion
-	} else {
-		c.ProtoVersion = 4
 	}
 
 	if internal.Timeout != nil {
