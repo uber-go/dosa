@@ -39,6 +39,7 @@ import (
 )
 
 const (
+	_version                    = "version"
 	_defaultServiceName         = "dosa-gateway"
 	errCodeNotFound      int32  = 404
 	errCodeAlreadyExists int32  = 409
