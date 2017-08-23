@@ -22,6 +22,7 @@ package yarpc_test
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -875,6 +876,89 @@ func TestConnector_Remove(t *testing.T) {
 
 	// make sure we actually called Read on the interface
 	ctrl.Finish()
+}
+
+func TestConnector_Registration(t *testing.T) {
+	// upper -> lower
+
+	// invalid host
+
+	// invalid port
+
+	// default transport
+
+	// default caller name
+
+	// default service name
+
+	rawCapitalized := dosa.CreationArgs{"HOST": "foo", "PoRt": "bar"}
+	expectedCapitalized := &yarpc.Config{
+		Transport:   "tchannel",
+		Host:        "foo",
+		Port:        "bar",
+		CallerName:  os.Getenv("USER"),
+		ServiceName: "test",
+	}
+
+	rawDefaults := dosa.CreationArgs{"host": "127.0.0.1", "port": "1234"}
+	expectedDefaults := &yarpc.Config{
+		Transport:   "tchannel",
+		Host:        "127.0.0.1",
+		Port:        "1234",
+		CallerName:  os.Getenv("USER"),
+		ServiceName: "test",
+	}
+
+	rawOverrides := dosa.CreationArgs{
+		"transport":   "http",
+		"host":        "10.10.10.10",
+		"port":        "5678",
+		"callername":  "nottesting",
+		"servicename": "nottest",
+	}
+	expectedOverrides := &yarpc.Config{
+		Transport:   "http",
+		Host:        "10.10.10.10",
+		Port:        "5678",
+		CallerName:  "nottesting",
+		ServiceName: "nottest",
+	}
+
+	cases := []struct {
+		Name        string
+		Args        dosa.CreationArgs
+		ExpectedCfg *yarpc.Config
+		IsError     bool
+	}{
+		{"upper -> lower", rawCapitalized, expectedCapitalized, false},
+		{"missing host", dosa.CreationArgs{"port": "1234"}, nil, true},
+		{"missing port", dosa.CreationArgs{"host": "127.0.0.1"}, nil, true},
+		{"defaults", rawDefaults, expectedDefaults, false},
+		{"overrides", rawOverrides, expectedOverrides, false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			conn, err := dosa.GetConnector("yarpc", tc.Args)
+			if tc.IsError {
+				assert.Nil(t, conn)
+				assert.Error(t, err)
+				return
+			}
+			assert.NotNil(t, conn)
+			assert.NoError(t, err)
+			yconn, _ := conn.(*yarpc.Connector)
+			assert.NotNil(t, yconn)
+			cfg := yconn.Config
+			assert.NotNil(t, cfg)
+
+			assert.Equal(t, tc.ExpectedCfg.Transport, cfg.Transport, "transport was not correct")
+			assert.Equal(t, tc.ExpectedCfg.Host, cfg.Host, "host was not correct")
+			assert.Equal(t, tc.ExpectedCfg.Port, cfg.Port, "port was not correct")
+			assert.Equal(t, tc.ExpectedCfg.CallerName, cfg.CallerName, "caller name was not correct")
+			assert.Equal(t, tc.ExpectedCfg.ServiceName, cfg.ServiceName, "service name was not correct")
+		})
+	}
 }
 
 // TestPanic is an unimplemented method test for coverage, remove these as they are implemented
