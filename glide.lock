@@ -1,5 +1,5 @@
-hash: 02f3d4673cc82887370acf28f9bfd06665401eb79f43a932ff4f8c3a4d169237
-updated: 2017-07-03T07:02:52.92311482-07:00
+hash: 42d2ecd755a34ff1aacaabf2a3ebf3079edf116443d6914532d9cb04b98b56c6
+updated: 2017-08-22T18:32:13.253958244-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -20,7 +20,7 @@ imports:
   subpackages:
   - proto
 - name: github.com/golang/mock
-  version: 93f6609a15b7de76bd49259f1f9a6b58df358936
+  version: 1df903b45f27b0b3685fa78609b653a54c7eead8
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
@@ -32,7 +32,7 @@ imports:
 - name: github.com/hailocab/go-hostpool
   version: e80d13ce29ede4452c43dea11e79b9bc8a15b478
 - name: github.com/jessevdk/go-flags
-  version: 48cf8722c3375517aba351d1f7577c40663a4407
+  version: 96dc06278ce32a0e9d957d590bb987c81ee66407
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
@@ -72,7 +72,7 @@ imports:
   subpackages:
   - internal/mapstructure
 - name: github.com/uber-go/tally
-  version: 88e9c75b0cfc84139ad1bae3b7f123786cfd0770
+  version: 2605c407d7d219644d03a3680ad7df4779017782
 - name: github.com/uber/dosa-idl
   version: 601b423bd673c3c9242ce996cdaa31595fdeeafb
   subpackages:
@@ -80,7 +80,7 @@ imports:
   - .gen/dosa/dosaclient
   - .gen/dosa/dosatest
 - name: github.com/uber/tchannel-go
-  version: b99c1d7cecb0fdc882bed0098e7cae6ec7459059
+  version: a7ad9ecb640b5f10a0395b38d6319175172b3ab2
   subpackages:
   - internal/argreader
   - relay
@@ -93,7 +93,7 @@ imports:
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - name: go.uber.org/thriftrw
-  version: dde90c2a40f45fb2b6361d13c1b4bf09465401c0
+  version: 4975e075853c64488972fde71ff06b6bdbe02701
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -104,8 +104,9 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 25be6398200bcad9f7194ae09ba79d9f20289412
+  version: df6f636a8ec8a0f7e90ab431ede56b9371159a9e
   subpackages:
+  - api/backoff
   - api/encoding
   - api/middleware
   - api/peer
@@ -114,10 +115,11 @@ imports:
   - encoding/thrift
   - encoding/thrift/internal
   - internal
-  - internal/buffer
+  - internal/backoff
+  - internal/bufferpool
   - internal/clientconfig
-  - internal/encoding
-  - internal/errors
+  - internal/config
+  - internal/errorsync
   - internal/humanize
   - internal/inboundmiddleware
   - internal/interpolate
@@ -127,26 +129,28 @@ imports:
   - internal/observability
   - internal/outboundmiddleware
   - internal/pally
-  - internal/procedure
   - internal/request
-  - internal/sync
   - peer
   - peer/hostport
+  - pkg/encoding
+  - pkg/errors
+  - pkg/lifecycle
+  - pkg/procedure
   - transport/http
   - transport/tchannel
   - transport/tchannel/internal
-  - x/config
+  - yarpcconfig
+  - yarpcerrors
 - name: go.uber.org/zap
-  version: 9cabc84638b70e564c3dab2766efcb1ded2aac9f
+  version: 9d9d6135afe89b6fc4a05e9a8552526caba38048
   subpackages:
   - buffer
   - internal/bufferpool
   - internal/color
   - internal/exit
-  - internal/multierror
   - zapcore
 - name: golang.org/x/net
-  version: 1f9224279e98554b6a6432d4dd998a739f8b2b7c
+  version: 1c05540f6879653db88113bc4a2b70aec4bd491f
   repo: https://github.com/golang/net
   subpackages:
   - bpf
@@ -167,7 +171,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 782f4967f2dc4564575ca782fe2d04090b5faca8
+  version: adab96458c51a58dc1783b3335dcce5461522e75
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
@@ -195,7 +199,7 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/russross/blackfriday
-  version: 70c446a327c4e69c0f661dc092d9729c3af7472c
+  version: cadec560ec52d93835bf2f15bd794700d3a2473b
 - name: github.com/sectioneight/md-to-godoc
   version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
 - name: github.com/shurcooL/sanitized_anchor_name

@@ -2,6 +2,7 @@ package: github.com/uber-go/dosa
 import:
 - package: github.com/elodina/go-avro
 - package: github.com/golang/mock
+  version: master
   subpackages:
   - gomock
 - package: github.com/jessevdk/go-flags
