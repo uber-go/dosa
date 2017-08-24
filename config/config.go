@@ -23,7 +23,14 @@ package config
 import (
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
+
+	// import to invoke all connector init methods
+	_ "github.com/uber-go/dosa/connectors/cassandra"
+	_ "github.com/uber-go/dosa/connectors/devnull"
+	_ "github.com/uber-go/dosa/connectors/memory"
+	_ "github.com/uber-go/dosa/connectors/random"
 	"github.com/uber-go/dosa/connectors/yarpc"
 )
 
@@ -58,22 +65,42 @@ type Config struct {
 	Scope      string            `yaml:"scope"`
 	NamePrefix string            `yaml:"namePrefix"`
 	Connector  dosa.CreationArgs `yaml:"connector"`
-	Yarpc      yarpc.Config      `yaml:"yarpc"`
+	Yarpc      *yarpc.Config     `yaml:"yarpc"`
 	Timeout    *TimeoutConfig    `yaml:"timeout"`
 }
 
 // NewClient creates a DOSA client based on the configuration
-// TODO: this should be deprecated so that we can decouple from YARPC, should
-// use dosaclient.New instead
 func (c Config) NewClient(entities ...dosa.DomainObject) (dosa.Client, error) {
 	reg, err := dosa.NewRegistrar(c.Scope, c.NamePrefix, entities...)
 	if err != nil {
 		return nil, err
 	}
 
-	conn, err := yarpc.NewConnector(&c.Yarpc)
+	// for backwards compatibility
+	if c.Yarpc != nil {
+		c.Connector = dosa.CreationArgs{
+			"name":        "yarpc",
+			"host":        c.Yarpc.Host,
+			"port":        c.Yarpc.Port,
+			"callername":  c.Yarpc.CallerName,
+			"servicename": c.Yarpc.ServiceName,
+		}
+	}
+
+	if c.Connector == nil {
+		return nil, errors.Errorf("Connector configuration is nil")
+	}
+
+	args := dosa.CreationArgs(c.Connector)
+	connName, ok := args["name"].(string)
+	if !ok {
+		return nil, errors.Errorf("Connector config must contain a string 'name' value (%v)", args)
+	}
+
+	// create connector with args
+	conn, err := dosa.GetConnector(connName, args)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "GetConnector failed for connector with name: %v", connName)
 	}
 
 	return dosa.NewClient(reg, conn), nil

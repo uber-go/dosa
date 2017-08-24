@@ -48,11 +48,11 @@ func TestConfig_NewClient(t *testing.T) {
 		isErr bool
 	}{
 		{
-			// success
+			// success: yarpc
 			cfg: config.Config{
 				Scope:      "test",
 				NamePrefix: "namePrefix",
-				Yarpc: yarpc.Config{
+				Yarpc: &yarpc.Config{
 					Transport:   "http",
 					Host:        "localhost",
 					Port:        "8080",
@@ -63,11 +63,52 @@ func TestConfig_NewClient(t *testing.T) {
 			isErr: false,
 		},
 		{
+			// success: memory
+			cfg: config.Config{
+				Scope:      "test",
+				NamePrefix: "namePrefix",
+				Connector: dosa.CreationArgs{
+					"name": "memory",
+				},
+			},
+			isErr: false,
+		},
+		{
+			// no connector
+			cfg: config.Config{
+				Scope:      "test",
+				NamePrefix: "prefix",
+			},
+			isErr: true,
+		},
+		{
+			// unknown connector
+			cfg: config.Config{
+				Scope:      "test",
+				NamePrefix: "prefix",
+				Connector: dosa.CreationArgs{
+					"name": "foo",
+				},
+			},
+			isErr: true,
+		},
+		{
+			// invalid connector args
+			cfg: config.Config{
+				Scope:      "test",
+				NamePrefix: "prefix",
+				Connector: dosa.CreationArgs{
+					"foo": "bar",
+				},
+			},
+			isErr: true,
+		},
+		{
 			// registrar fail
 			cfg: config.Config{
 				Scope:      "test",
 				NamePrefix: "name*(Prefix",
-				Yarpc: yarpc.Config{
+				Yarpc: &yarpc.Config{
 					Transport:   "http",
 					Host:        "localhost",
 					Port:        "8080",
@@ -82,7 +123,7 @@ func TestConfig_NewClient(t *testing.T) {
 			cfg: config.Config{
 				Scope:      "test",
 				NamePrefix: "name*(Prefix",
-				Yarpc: yarpc.Config{
+				Yarpc: &yarpc.Config{
 					Transport: "http",
 					Host:      "localhost",
 					Port:      "8080",
@@ -100,4 +141,18 @@ func TestConfig_NewClient(t *testing.T) {
 			assert.NoError(t, err)
 		}
 	}
+}
+
+func TestConfig_NewDefaultConfig(t *testing.T) {
+	c := config.NewDefaultConfig()
+	assert.NotNil(t, c.Connector)
+	assert.NotNil(t, c.Timeout)
+	assert.NotNil(t, c.Timeout.CreateIfNotExists)
+	assert.NotNil(t, c.Timeout.Initialize)
+	assert.NotNil(t, c.Timeout.Range)
+	assert.NotNil(t, c.Timeout.Read)
+	assert.NotNil(t, c.Timeout.Remove)
+	assert.NotNil(t, c.Timeout.ScanEverything)
+	assert.NotNil(t, c.Timeout.Search)
+	assert.NotNil(t, c.Timeout.Upsert)
 }
