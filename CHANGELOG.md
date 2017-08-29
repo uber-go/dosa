@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.4.0-dev (unreleased)
+
+Coming soon...
+
 ## v2.3.0 (2017-08-28)
 
 - **[Breaking]** Remove `dosaclient` package in favor of `config.NewClient` (#213 & #218)
