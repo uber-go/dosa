@@ -21,6 +21,7 @@ import:
   - api/transport
   - transport/http
   - transport/tchannel
+- package: github.com/gobwas/glob
 testImport:
 - package: github.com/yookoala/realpath
 - package: github.com/stretchr/testify

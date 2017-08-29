@@ -5,12 +5,26 @@ imports:
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
   subpackages:
   - quantile
+- name: github.com/davecgh/go-spew
+  version: adab96458c51a58dc1783b3335dcce5461522e75
+  subpackages:
+  - spew
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
+- name: github.com/gobwas/glob
+  version: 51eb1ee00b6d931c66d229ceeb7c31b985563420
+  subpackages:
+  - compiler
+  - match
+  - syntax
+  - syntax/ast
+  - syntax/lexer
+  - util/runes
+  - util/strings
 - name: github.com/gocql/gocql
-  version: c9b77994a03e50771f1c56f7a2ed6381cb9be797
+  version: b9337fa4c59ce1db20300290bd7a9a7063fb6784
   subpackages:
   - internal/lru
   - internal/murmur
@@ -24,7 +38,7 @@ imports:
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: 6a1fa9404c0aebf36c879bc50152edcc953910d2
+  version: ab9f9a6dab164b7d1246e0e688b0ab7b94d8553e
   subpackages:
   - proto
 - name: github.com/golang/snappy
@@ -54,7 +68,7 @@ imports:
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: 0866df4b85a18d652b6965be022d007cdf076822
+  version: 61f87aac8082fa8c3c5655c7608d7478d46ac2ad
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
@@ -74,7 +88,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 2605c407d7d219644d03a3680ad7df4779017782
 - name: github.com/uber/dosa-idl
-  version: 601b423bd673c3c9242ce996cdaa31595fdeeafb
+  version: e450bdd6bb6afd291443d5469e1591a603480d07
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -162,7 +176,7 @@ imports:
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/yaml.v2
-  version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
+  version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -187,9 +201,9 @@ testImports:
 - name: github.com/matm/gocov-html
   version: f6dd0fd0ebc7c8cff8b24c0a585caeef250627a3
 - name: github.com/mattn/goveralls
-  version: a2cbbd7cdce4f5e051016fedf639c64bb05ef031
+  version: 0ddc65b7624a5c15f551cb79d31e7b13d7e7b1bb
 - name: github.com/mvdan/interfacer
-  version: 22c51662ff476dfd97944f74db1b263ed920ee83
+  version: 27edfa2f8a83d5a784bef111f0c60afeb82db134
   subpackages:
   - cmd/interfacer
 - name: github.com/mvdan/lint
@@ -209,8 +223,8 @@ testImports:
   subpackages:
   - assert
 - name: github.com/yookoala/realpath
-  version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
+  version: 80fa1befd17fc3b89a788874137207ddad1115c1
 - name: golang.org/x/tools
-  version: 1b3bb8de7d39fe135abc674c1e6d642cce854d4a
+  version: 1807494da808122833b9bd8e3e5fa179ef237d41
   subpackages:
   - cover
