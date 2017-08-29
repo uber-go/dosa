@@ -222,6 +222,74 @@ func (rc *RoutingConnector) Scan(ctx context.Context, ei *dosa.EntityInfo, minim
 	return connector.Scan(ctx, ei, minimumFields, token, limit)
 }
 
+
+// CheckSchema calls selected connector
+func (rc *RoutingConnector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
+	connector, err := rc.getConnector(scope, namePrefix, "CheckSchema")
+	if err != nil {
+		return dosa.InvalidVersion, base.ErrNoMoreConnector{}
+	}
+	return connector.CheckSchema(ctx, scope, namePrefix, ed)
+}
+
+// UpsertSchema calls selected connector
+func (rc *RoutingConnector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
+	connector, err := rc.getConnector(scope, namePrefix, "UpsertSchema")
+	if err != nil {
+		return nil, base.ErrNoMoreConnector{}
+	}
+	return connector.UpsertSchema(ctx, scope, namePrefix, ed)
+}
+
+// CheckSchemaStatus calls selected connector
+func (rc *RoutingConnector) CheckSchemaStatus(ctx context.Context, scope string, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
+	connector, err := rc.getConnector(scope, namePrefix, "CheckSchemaStatus")
+	if err != nil {
+		return nil, base.ErrNoMoreConnector{}
+	}
+	return connector.CheckSchemaStatus(ctx, scope, namePrefix, version)
+}
+
+// CreateScope calls selected connector
+func (rc *RoutingConnector) CreateScope(ctx context.Context, scope string) error {
+	// will fall to default connector
+	connector, err := rc.getConnector(scope, "", "CreateScope")
+	if err != nil {
+		return base.ErrNoMoreConnector{}
+	}
+	return connector.CreateScope(ctx, scope)
+}
+
+// TruncateScope calls selected connector
+func (rc *RoutingConnector) TruncateScope(ctx context.Context, scope string) error {
+	// will fall to default connector
+	connector, err := rc.getConnector(scope, "", "TruncateScope")
+	if err != nil {
+		return base.ErrNoMoreConnector{}
+	}
+	return connector.TruncateScope(ctx, scope)
+}
+
+// DropScope calls selected connector
+func (rc *RoutingConnector) DropScope(ctx context.Context, scope string) error {
+	// will fall to default connector
+	connector, err := rc.getConnector(scope, "", "DropScope")
+	if err != nil {
+		return base.ErrNoMoreConnector{}
+	}
+	return connector.DropScope(ctx, scope)
+}
+
+// ScopeExists calls selected connector
+func (rc *RoutingConnector) ScopeExists(ctx context.Context, scope string) (bool, error) {
+	// will fall to default connector
+	connector, err := rc.getConnector(scope, "", "ScopeExists")
+	if err != nil {
+		return false, base.ErrNoMoreConnector{}
+	}
+	return connector.ScopeExists(ctx, scope)
+}
+
 // Shutdown shut down all connectors that routing connector talks to
 func (rc *RoutingConnector) Shutdown() error {
 	hasError := false
