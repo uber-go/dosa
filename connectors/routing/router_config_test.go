@@ -18,16 +18,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package routingconnector
+package routing
 
-// Config is a struct contains fields from yaml
-// scope should be an exact string in any case,
-// namePrefix could be in 3 different format:
-// 1. exact string like "service" that matches namePrefix that is exactly "service"
-// 2. partial glob match like "service.*" that matches all namePrefix that has a prefix of "service."
-// 3. full glob match like "*" that matches all namePrefix
-type Config struct {
-	// the outer key for ConnectorMap is scope, inner key is namePrefix,
-	// and value is the connectorName
-	Routers []map[string]map[string]string `yaml:"routers"`
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestNewRouterConfig(t *testing.T) {
+	rConfig, err := NewRouterConfig("production", "test")
+	assert.Nil(t, err)
+	assert.Equal(t, rConfig.NamePrefix, "test")
+}
+
+func TestNewRouterConfigWithStarPrefix(t *testing.T) {
+	rConfig, err := NewRouterConfig("production", "*.v1")
+	assert.Nil(t, rConfig)
+	assert.Contains(t, err.Error(), "is not supported")
+}
+
+func TestTestNewRouterConfigError(t *testing.T) {
+	rConfig, err := NewRouterConfig("production", "")
+	assert.Nil(t, rConfig)
+	assert.Contains(t, err.Error(), "could not be empty")
+
+	rConfig, err = NewRouterConfig("", "test")
+	assert.Nil(t, rConfig)
+	assert.Contains(t, err.Error(), "scope could not be empty")
 }

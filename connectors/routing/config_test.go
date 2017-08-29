@@ -18,39 +18,42 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package dosa is the DOSA - Declarative Object Storage Abstraction.
-//
-// Abstract
-//
-// :warning: DOSA is BETA software. It is not recommended for production use.
-// We will announce when it's ready.
-//
-//
-// DOSA (https://github.com/uber-go/dosa/wiki) is a storage framework that
-// provides a
-// declarative object storage abstraction for applications in Golang
-// and (eventually) Java. DOSA is designed to relieve common headaches developers
-// face while building stateful, database-dependent services.
-//
-//
-// If you'd like to start by writing a small DOSA-enabled program, check out
-// the getting started guide (https://github.com/uber-go/dosa/wiki/Getting-Started-Guide).
-//
-// Overview
-//
-// DOSA is a storage library that supports:
-//
-// • methods to store and retrieve go structs
-//
-// • struct annotations to describe queries against data
-//
-// • tools to create and/or migrate database schemas
-//
-// • implementations that serialize requests to remote stateless servers
-//
-// Annotations
-//
-// This project is released under the MIT License (LICENSE.txt).
-//
-//
-package dosa
+package routing
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
+)
+
+// TestBasicConfig test the basic yaml file conversion
+func TestBasicConfig(t *testing.T) {
+	yamlFile := `
+routers:
+# routers structure looks like:
+# - [scope]
+#    [namePrefix_1]: connectorName
+#    [namePrefix_2]: connectorName
+- production:
+    default: cassandra
+    serviceA: cassandra
+- development:
+    default: cassandra
+    serviceB: cassandra
+- eats:
+    '*': cassandra
+    bazaar.*: cassandra
+    default: cassandra
+    eats-store: cassandra
+- default:
+    default: cassandra
+`
+	testCfg := &Config{}
+	err := yaml.Unmarshal([]byte(yamlFile), testCfg)
+	assert.NoError(t, err)
+	assert.Len(t, cfg.Routers, 4)
+
+	err = yaml.Unmarshal([]byte(`bad yaml file`), testCfg)
+	assert.Error(t, err)
+}

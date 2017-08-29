@@ -18,42 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package routingconnector
+package routing
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
-)
-
-// TestBasicConfig test the basic yaml file conversion
-func TestBasicConfig(t *testing.T) {
-	yamlFile := `
-routers:
-# routers structure looks like:
-# - [scope]
-#    [namePrefix_1]: connectorName
-#    [namePrefix_2]: connectorName
-- production:
-    default: cassandra
-    serviceA: cassandra
-- development:
-    default: cassandra
-    serviceB: cassandra
-- eats:
-    '*': cassandra
-    bazaar.*: cassandra
-    default: cassandra
-    eats-store: cassandra
-- default:
-    default: cassandra
-`
-	testCfg := &Config{}
-	err := yaml.Unmarshal([]byte(yamlFile), testCfg)
-	assert.NoError(t, err)
-	assert.Len(t, cfg.Routers, 4)
-
-	err = yaml.Unmarshal([]byte(`bad yaml file`), testCfg)
-	assert.Error(t, err)
+// Config is a struct contains fields from yaml
+// scope should be an exact string in any case,
+// namePrefix could be in 3 different format:
+// 1. exact string like "service" that matches namePrefix that is exactly "service"
+// 2. partial glob match like "service.*" that matches all namePrefix that has a prefix of "service."
+// 3. full glob match like "*" that matches all namePrefix
+type Config struct {
+	// the outer key for ConnectorMap is scope, inner key is namePrefix,
+	// and value is the connectorName
+	Routers []map[string]map[string]string `yaml:"routers"`
 }

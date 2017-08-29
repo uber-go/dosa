@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package routingconnector
+package routing
 
 import (
 	"github.com/pkg/errors"
@@ -28,10 +28,10 @@ import (
 // ConnectorConfig wraps the connector and configuration for routing together
 type ConnectorConfig struct {
 	Connector dosa.Connector
-	Config    *RoutingConfig
+	Config    *RouterConfig
 }
 
-// NewConnectorConfigs initializes a list of ConfiguredConnector
+// NewConnectorConfigs initializes a list of ConnectorConfigs
 func NewConnectorConfigs(cfg Config, connectorMap map[string]dosa.Connector) ([]*ConnectorConfig, error) {
 	cConnectors := make([]*ConnectorConfig, 0)
 
@@ -52,7 +52,7 @@ func NewConnectorConfigs(cfg Config, connectorMap map[string]dosa.Connector) ([]
 				cConnector, err := NewConnectorConfig(connectorName, scope, namePrefix, connectorMap)
 				if err != nil {
 					return nil, errors.Wrapf(
-						err, "could not initialize ConfiguredConnector whose scope is %v", scope)
+						err, "could not initialize ConnectorConfig whose scope is %v, name prefix is %v", scope, namePrefix)
 				}
 				cConnectors = append(cConnectors, cConnector)
 			}
@@ -62,7 +62,7 @@ func NewConnectorConfigs(cfg Config, connectorMap map[string]dosa.Connector) ([]
 	return cConnectors, nil
 }
 
-// NewConnectorConfig initializes ConfiguredConnector
+// NewConnectorConfig initializes ConnectorConfig
 func NewConnectorConfig(connName string, scope string, namePrefix string, connectorMap map[string]dosa.Connector) (*ConnectorConfig, error) {
 	if connName == "" {
 		return nil, errors.New("connector name should not be empty. " +
@@ -73,7 +73,7 @@ func NewConnectorConfig(connName string, scope string, namePrefix string, connec
 		return nil, errors.Wrap(err, "failed to fetch connector")
 	}
 
-	rConfig, err := NewRoutingConfig(scope, namePrefix)
+	rConfig, err := NewRouterConfig(scope, namePrefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize scopedConfig")
 	}
