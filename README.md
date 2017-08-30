@@ -10,7 +10,7 @@
 We will announce when it's ready.
 
 [DOSA](https://github.com/uber-go/dosa/wiki) is a storage framework that
-provides a _delcarative object storage abstraction_ for applications in Golang
+provides a _declarative object storage abstraction_ for applications in Golang
 and (eventually) Java. DOSA is designed to relieve common headaches developers
 face while building stateful, database-dependent services.
 
