@@ -80,12 +80,12 @@ func (rc *Connector) _getConnector(scope, namePrefix string) (dosa.Connector, er
 	}
 
 	if err != nil {
-		return nil, errors.Wrap(err, "can't find connector")
+		return nil, err
 	}
 
 	c, ok := rc.connectors[router.Connector]
 	if !ok {
-		return nil, errors.Wrapf(err, "can't find %s connector", router.Connector)
+		return nil, errors.Wrapf(err, "can't find %q connector", router.Connector)
 	}
 
 	return c, nil
