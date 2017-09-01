@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package routingconnector
+package routing
 
 import (
 	"strings"
@@ -32,11 +32,12 @@ import (
 type RoutingConfig struct {
 	Scope      string
 	NamePrefix string
+	Connector string
 	GlobMatch  glob.Glob
 }
 
 // NewRoutingConfig initializes RoutingConfig
-func NewRoutingConfig(scope string, namePrefix string) (*RoutingConfig, error) {
+func NewRoutingConfig(scope, namePrefix, connector string) (*RoutingConfig, error) {
 	if namePrefix == "" {
 		return nil, errors.New("namePrefix could not be empty, should be defined in yaml file")
 	}
@@ -53,7 +54,7 @@ func NewRoutingConfig(scope string, namePrefix string) (*RoutingConfig, error) {
 
 	globMatch := glob.MustCompile(namePrefix)
 
-	return &RoutingConfig{NamePrefix: namePrefix, Scope: scope, GlobMatch: globMatch}, nil
+	return &RoutingConfig{NamePrefix: namePrefix, Scope: scope, Connector: connector, GlobMatch: globMatch}, nil
 }
 
 // RouteTo implements the method to choose the matched connector

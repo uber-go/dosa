@@ -18,12 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package routingconnector
+package routing
 
 import (
 	"context"
-
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
@@ -44,7 +42,8 @@ type RoutingConnector struct {
 	// for the value of Config name prefix, strict string without "*" always comes first,
 	// and then string with "*" suffix (glob match) and pure "*".
 	// There shouldn't be any scope with a prefix "*" like "*.service.v1"
-	CConfigs []*ConnectorConfig
+	config Config
+	connectors map[string]dosa.Connector
 	// PluginFunc is a plugin that passes in
 	// the scope, namePrefix and operation name, returns wanted scope and namePrefix
 	PluginFunc PluginFunc
@@ -52,38 +51,12 @@ type RoutingConnector struct {
 
 // NewRoutingConnector initializes the RoutingConnector
 // connectorMap has a key of connectorName, and the value is a dosa.connector instance
-func NewRoutingConnector(cfg Config, connectorMap map[string]dosa.Connector, plugin PluginFunc) (*RoutingConnector, error) {
-	cConnectors, err := NewConnectorConfigs(cfg, connectorMap)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not initialize ConfiguredConnectors")
-	}
-	connSlice := sortConnectorSlice(cConnectors)
-
+func NewRoutingConnector(cfg Config, connectorMap map[string]dosa.Connector, plugin PluginFunc) *RoutingConnector {
 	return &RoutingConnector{
-		CConfigs:   connSlice,
+		connectors: connectorMap,
+		config: cfg,
 		PluginFunc: plugin,
-	}, nil
-}
-
-// sort the connector slice by namePrefix
-func sortConnectorSlice(cConnectors []*ConnectorConfig) []*ConnectorConfig {
-	strictStr := make([]*ConnectorConfig, 0)
-	strWithStar := make([]*ConnectorConfig, 0)
-	star := make([]*ConnectorConfig, 0)
-
-	for _, cConnector := range cConnectors {
-		namePrefix := cConnector.Config.NamePrefix
-		if namePrefix == "*" {
-			star = append(star, cConnector)
-		} else if strings.Contains(namePrefix, "*") {
-			strWithStar = append(strWithStar, cConnector)
-		} else {
-			strictStr = append(strictStr, cConnector)
-		}
 	}
-	connSlice := make([]*ConnectorConfig, 0)
-	connSlice = append(append(strictStr, strWithStar...), star...)
-	return connSlice
 }
 
 // get connector by scope, namePrefix and operation name provided
@@ -104,22 +77,23 @@ func (rc *RoutingConnector) getConnector(scope string, namePrefix string, opName
 // if no specific scope is found,
 // RoutingConnector routes to the default scope that defined in routing config yaml file
 func (rc *RoutingConnector) _getConnector(scope, namePrefix string) (dosa.Connector, error) {
-	for _, cConfig := range rc.CConfigs {
-		if cConfig.Config.RouteTo(scope, namePrefix) {
-			return cConfig.Connector, nil
-		}
+	router, err := rc.config.FindRouter(scope, namePrefix)
+	if err != nil {
+		router, err = rc.config.FindDefaultRouter()
 	}
-	return rc._getDefaultConnector()
+
+	if err != nil {
+		return nil, errors.Wrap(err, "can't find connector")
+	}
+
+	c, ok := rc.connectors[router.Connector]
+	if !ok {
+		return nil, errors.Wrapf(err, "can't find %s connector", router.Connector)
+	}
+
+	return c, nil
 }
 
-func (rc *RoutingConnector) _getDefaultConnector() (dosa.Connector, error) {
-	for _, cConfig := range rc.CConfigs {
-		if cConfig.Config.Scope == DefaultScope {
-			return cConfig.Connector, nil
-		}
-	}
-	return nil, errors.New("there should be a default scope defined in routing config yaml file")
-}
 
 // CreateIfNotExists selects corresponding connector
 func (rc *RoutingConnector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
@@ -294,8 +268,8 @@ func (rc *RoutingConnector) ScopeExists(ctx context.Context, scope string) (bool
 func (rc *RoutingConnector) Shutdown() error {
 	hasError := false
 	rConnErr := errors.New("failed to shutdown")
-	for _, cConnector := range rc.CConfigs {
-		err := cConnector.Connector.Shutdown()
+	for _, c := range rc.connectors {
+		err := c.Shutdown()
 		if err != nil {
 			// save errors here, continue to shut down other connectors
 			hasError = true
