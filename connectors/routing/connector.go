@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
+	"fmt"
 )
 
 // PluginFunc is a plugin function that takes scope, namePrefix and operation name,
@@ -57,16 +58,14 @@ func NewConnector(cfg Config, connectorMap map[string]dosa.Connector, plugin Plu
 }
 
 // get connector by scope, namePrefix and operation name provided
-func (rc *Connector) getConnector(scope string, namePrefix string, opName string) (dosa.Connector, error) {
-	if rc.PluginFunc == nil {
-		return rc._getConnector(scope, namePrefix)
-	}
-
-	// plugin operation
-	// plugin should always be first considered if it exists
-	scope, namePrefix, err := rc.PluginFunc(scope, namePrefix, opName)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to execute getConnector due to Plugin function error")
+func (rc *Connector) getConnector(scope string, namePrefix string, opName string) (_ dosa.Connector, err error) {
+	if rc.PluginFunc != nil {
+		// plugin operation
+		// plugin should always be first considered if it exists
+		scope, namePrefix, err = rc.PluginFunc(scope, namePrefix, opName)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to execute getConnector due to Plugin function error")
+		}
 	}
 	return rc._getConnector(scope, namePrefix)
 }
@@ -74,18 +73,11 @@ func (rc *Connector) getConnector(scope string, namePrefix string, opName string
 // if no specific scope is found,
 // Connector routes to the default scope that defined in routing config yaml file
 func (rc *Connector) _getConnector(scope, namePrefix string) (dosa.Connector, error) {
-	router, err := rc.config.FindRouter(scope, namePrefix)
-	if err != nil {
-		router, err = rc.config.FindDefaultRouter()
-	}
-
-	if err != nil {
-		return nil, err
-	}
+	router := rc.config.FindRouter(scope, namePrefix)
 
 	c, ok := rc.connectors[router.Connector]
 	if !ok {
-		return nil, errors.Wrapf(err, "can't find %q connector", router.Connector)
+		return nil, fmt.Errorf("can't find %q connector", router.Connector)
 	}
 
 	return c, nil

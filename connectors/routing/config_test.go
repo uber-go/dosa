@@ -99,19 +99,18 @@ routers:
 	err := yaml.Unmarshal([]byte(yamlFile), testCfg)
 	assert.NoError(t, err)
 
-	cfg, err := testCfg.FindDefaultRouter()
-	assert.NoError(t, err)
+	cfg := testCfg.findDefaultRouter()
 	assert.Equal(t, cfg.Scope, "default")
 
-	cfg, err = testCfg.FindRouter("production", "serviceA")
-	assert.NoError(t, err)
+	cfg = testCfg.FindRouter("production", "serviceA")
 	assert.Equal(t, cfg, buildRouter("production", "serviceA", "cassandra"))
 
-	cfg, err = testCfg.FindRouter("eats", "bazaar.k")
-	assert.NoError(t, err)
+	cfg = testCfg.FindRouter("eats", "bazaar.k")
 	assert.Equal(t, cfg, buildRouter("eats", "bazaar.*", "eats"))
 
-	cfg, err = testCfg.FindRouter("eats", "d.k")
-	assert.NoError(t, err)
+	cfg = testCfg.FindRouter("eats", "d.k")
 	assert.Equal(t, cfg, buildRouter("eats", "*", "eats"))
+
+	cfg = testCfg.FindRouter("a", "d.k")
+	assert.Equal(t, cfg, buildRouter("default", "default", "dosa"))
 }

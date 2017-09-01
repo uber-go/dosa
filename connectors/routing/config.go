@@ -75,7 +75,7 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := unmarshal(&scopes); err != nil {
 		return err
 	}
-
+	defaultRouterExist := false
 	for _, scopeMap := range scopes {
 		for scope, namePrefixes := range scopeMap {
 			namePrefixesMap, ok := namePrefixes.(map[interface{}]interface{})
@@ -94,9 +94,17 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 					return errors.Wrap(err, "failed to parse routing config")
 				}
 				routers = append(routers, router)
+				if scope == DefaultScope {
+					defaultRouterExist = true
+				}
 			}
 		}
 	}
+
+	if !defaultRouterExist {
+		return errors.New("there should be a default scope defined in routing config yaml file")
+	}
+
 	sort.Sort(routers)
 	*r = routers
 	return nil
@@ -113,22 +121,22 @@ type Config struct {
 }
 
 // FindRouter finds the router information based on scope and namePrefix.
-func (c *Config) FindRouter(scope, namePrefix string) (*Rule, error) {
+func (c *Config) FindRouter(scope, namePrefix string) (*Rule) {
 	for _, router := range c.Routers {
 		if router.RouteTo(scope, namePrefix) {
-			return router, nil
+			return router
 		}
 	}
 
-	return nil, fmt.Errorf("can't find any router info for scope %s, namePrefix %s", scope, namePrefix)
+	return c.findDefaultRouter()
 }
 
-// FindDefaultRouter finds the default router information.
-func (c *Config) FindDefaultRouter() (*Rule, error) {
+// findDefaultRouter finds the default router information.
+func (c *Config) findDefaultRouter() (*Rule) {
 	for _, router := range c.Routers {
 		if router.Scope == DefaultScope {
-			return router, nil
+			return router
 		}
 	}
-	return nil, errors.New("there should be a default scope defined in routing config yaml file")
+	return nil
 }
