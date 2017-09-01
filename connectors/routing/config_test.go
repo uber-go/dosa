@@ -69,11 +69,10 @@ routers:
 	assert.Error(t, err)
 }
 
-func buildRouter(scope, namePrefix, connector string) *RoutingConfig {
-	rc, _ := NewRoutingConfig(scope, namePrefix, connector)
+func buildRouter(scope, namePrefix, connector string) *Rule {
+	rc, _ := NewRule(scope, namePrefix, connector)
 	return rc
 }
-
 
 func TestRouter(t *testing.T) {
 	yamlFile := `

@@ -28,13 +28,14 @@ import (
 
 	"sort"
 
+	"reflect"
+
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/devnull"
 	"github.com/uber-go/dosa/connectors/memory"
 	"github.com/uber-go/dosa/connectors/random"
-	"reflect"
 )
 
 const idcount = 10
@@ -173,7 +174,7 @@ func TestGetConnector(t *testing.T) {
 	connectorMap := getConnectorMap()
 	// no plugin
 	// glob match
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 	ei := &dosa.EntityInfo{
 		Ref: &dosa.SchemaRef{Scope: "eats", NamePrefix: "bazaar.v1"},
 	}
@@ -221,7 +222,7 @@ func TestGetConnector(t *testing.T) {
 
 func TestRoutingConnector_CreateIfNotExists(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	assert.NoError(t, rc.CreateIfNotExists(ctx, testInfo, map[string]dosa.FieldValue{
 		"p1": dosa.FieldValue("data")}))
@@ -233,7 +234,7 @@ func TestRoutingConnector_CreateIfNotExists(t *testing.T) {
 
 func TestRoutingConnector_CreateIfNotExistsDefaultScope(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	// not exist scope, use default
 	err := rc.CreateIfNotExists(ctx, testNoMatchInfo, map[string]dosa.FieldValue{
@@ -252,7 +253,7 @@ func TestRoutingConnector_CreateIfNotExistsDefaultScope(t *testing.T) {
 
 func TestRoutingConnector_CreateIfNotExists2(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	testUUIDs := make([]dosa.UUID, 10)
 	for x := 0; x < 10; x++ {
@@ -302,7 +303,7 @@ func TestRoutingConnector_CreateIfNotExists2(t *testing.T) {
 
 func TestRoutingConnector_Read(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	// read with no data
 	val, err := rc.Read(ctx, testInfo, map[string]dosa.FieldValue{
@@ -392,7 +393,7 @@ func TestRoutingConnector_Read(t *testing.T) {
 
 func TestMultiRead(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	// normal multi-read
 	rc.CreateIfNotExists(ctx, testInfoRandom, map[string]dosa.FieldValue{
@@ -423,7 +424,7 @@ func TestMultiRead(t *testing.T) {
 
 func TestRoutingConnector_Upsert(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	// no key value specified
 	err := rc.Upsert(ctx, testInfo, map[string]dosa.FieldValue{})
@@ -490,7 +491,7 @@ func TestRoutingConnector_Upsert(t *testing.T) {
 
 func TestRoutingConnector_MultiUpsert(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	// normal multi-upsert
 	testMultiValues := []map[string]dosa.FieldValue{
@@ -516,7 +517,7 @@ func TestRoutingConnector_MultiUpsert(t *testing.T) {
 
 func TestRoutingConnector_Remove(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	// remove with no data
 	err := rc.Remove(ctx, testInfo, map[string]dosa.FieldValue{
@@ -578,7 +579,7 @@ func TestRoutingConnector_Remove(t *testing.T) {
 
 func TestRoutingConnector_RemoveRange(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	// test removing a range with no data in the range
 	err := rc.RemoveRange(ctx, clusteredEi, map[string][]*dosa.Condition{
@@ -669,7 +670,7 @@ func TestRoutingConnector_RemoveRange(t *testing.T) {
 
 func TestRoutingConnector_MultiRemove(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	// normal multi-upsert
 	testMultiValues := []map[string]dosa.FieldValue{
@@ -702,7 +703,7 @@ func (u ByUUID) Less(i, j int) bool { return string(u[i]) > string(u[j]) }
 
 func TestRoutingConnector_Range(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	// no data at all (corner case)
 	data, token, err := rc.Range(ctx, clusteredEi, map[string][]*dosa.Condition{
@@ -830,7 +831,7 @@ func TestRoutingConnector_Range(t *testing.T) {
 
 func TestRoutingConnector_Search(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	vals, _, err := rc.Search(ctx, testInfoRandom, testPairs, []string{"c5"}, "", 32)
 	assert.NotNil(t, vals)
@@ -847,7 +848,7 @@ func TestRoutingConnector_Search(t *testing.T) {
 
 func TestRoutingConnector_Scan(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	testUUIDs := make([]dosa.UUID, idcount)
 	for x := 0; x < idcount; x++ {
@@ -896,7 +897,7 @@ func TestRoutingConnector_Scan(t *testing.T) {
 
 func TestRoutingConnector_Shutdown(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	err := rc.Shutdown()
 	assert.NoError(t, err)
@@ -904,7 +905,7 @@ func TestRoutingConnector_Shutdown(t *testing.T) {
 
 func TestRoutingConnector_TimeUUIDs(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	// insert a bunch of values with V1 timestamps as clustering keys
 	for x := 0; x < idcount; x++ {
@@ -949,7 +950,7 @@ func TestRoutingConnector_TimeUUIDs(t *testing.T) {
 
 func TestRoutingConnector_ScanWithToken(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	createTestData(t, rc, func(id int) string {
 		return "data" + string(id%3)
@@ -985,7 +986,7 @@ func TestRoutingConnector_ScanWithToken(t *testing.T) {
 
 func TestRoutingConnector_ScanWithTokenFromWrongTable(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	createTestData(t, rc, func(id int) string {
 		return "data" + string(id%3)
@@ -1009,7 +1010,7 @@ func TestRoutingConnector_ScanWithTokenFromWrongTable(t *testing.T) {
 
 func TestRoutingConnector_ScanWithTokenNoClustering(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	for x := 0; x < idcount; x++ {
 		rc.Upsert(ctx, testInfo, map[string]dosa.FieldValue{
@@ -1046,7 +1047,7 @@ func TestRoutingConnector_ScanWithTokenNoClustering(t *testing.T) {
 
 func TestRangePager(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	// create test data in one partition "data"
 	createTestData(t, rc, func(_ int) string { return "data" }, idcount)
@@ -1087,7 +1088,7 @@ func TestRangePager(t *testing.T) {
 
 func TestInvalidToken(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	// we don't use the token if there's no data that matches, so lets
 	// create one row
@@ -1113,7 +1114,7 @@ func TestInvalidToken(t *testing.T) {
 
 func TestRoutingConnector_RangeWithBadCriteria(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewRoutingConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap, nil)
 
 	// we don't look at the criteria unless there is at least one row
 	createTestData(t, rc, func(id int) string {
@@ -1130,7 +1131,7 @@ func TestRoutingConnector_RangeWithBadCriteria(t *testing.T) {
 // createTestData populates some test data. The keyGenFunc can either return a constant,
 // which gives you a single partition of data, or some function of the current offset, which
 // will scatter the data across different partition keys
-func createTestData(t *testing.T, rc *RoutingConnector, keyGenFunc func(int) string, idcount int) {
+func createTestData(t *testing.T, rc *Connector, keyGenFunc func(int) string, idcount int) {
 	// insert a bunch of values with V1 timestamps as clustering keys
 	for x := 0; x < idcount; x++ {
 		err := rc.Upsert(ctx, clusteredEi, map[string]dosa.FieldValue{
