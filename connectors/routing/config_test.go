@@ -41,11 +41,11 @@ routers:
 - development:
     default: cassandra
     serviceB: cassandra
-- eats:
-    '*': eats
-    bazaar.*: eats
-    default: eats
-    eats-store: eats
+- ebook:
+    '*': ebook
+    apple.*: ebook
+    default: ebook
+    ebook-store: ebook
 - default:
     default: dosa
 `
@@ -56,10 +56,10 @@ routers:
 	rs := Routers{
 		buildRouter("production", "serviceA", "cassandra"),
 		buildRouter("production", "default", "cassandra"),
-		buildRouter("eats", "eats-store", "eats"),
-		buildRouter("eats", "default", "eats"),
-		buildRouter("eats", "bazaar.*", "eats"),
-		buildRouter("eats", "*", "eats"),
+		buildRouter("ebook", "ebook-store", "ebook"),
+		buildRouter("ebook", "default", "ebook"),
+		buildRouter("ebook", "apple.*", "ebook"),
+		buildRouter("ebook", "*", "ebook"),
 		buildRouter("development", "serviceB", "cassandra"),
 		buildRouter("development", "default", "cassandra"),
 		buildRouter("default", "default", "dosa"),
@@ -87,11 +87,11 @@ routers:
 - development:
     default: cassandra
     serviceB: cassandra
-- eats:
-    '*': eats
-    bazaar.*: eats
-    default: eats
-    eats-store: eats
+- ebook:
+    '*': ebook
+    apple.*: ebook
+    default: ebook
+    ebook-store: ebook
 - default:
     default: dosa
 `
@@ -105,11 +105,11 @@ routers:
 	cfg = testCfg.FindRouter("production", "serviceA")
 	assert.Equal(t, cfg, buildRouter("production", "serviceA", "cassandra"))
 
-	cfg = testCfg.FindRouter("eats", "bazaar.k")
-	assert.Equal(t, cfg, buildRouter("eats", "bazaar.*", "eats"))
+	cfg = testCfg.FindRouter("ebook", "apple.k")
+	assert.Equal(t, cfg, buildRouter("ebook", "apple.*", "ebook"))
 
-	cfg = testCfg.FindRouter("eats", "d.k")
-	assert.Equal(t, cfg, buildRouter("eats", "*", "eats"))
+	cfg = testCfg.FindRouter("ebook", "d.k")
+	assert.Equal(t, cfg, buildRouter("ebook", "*", "ebook"))
 
 	cfg = testCfg.FindRouter("a", "d.k")
 	assert.Equal(t, cfg, buildRouter("default", "default", "dosa"))

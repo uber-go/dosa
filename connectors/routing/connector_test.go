@@ -45,10 +45,10 @@ var (
 		Routers: Routers{
 			buildRouter("production", "map", "memory"),
 			buildRouter("production", "default", "random"),
-			buildRouter("eats", "eats-store", "memory"),
-			buildRouter("eats", "default", "random"),
-			buildRouter("eats", "bazaar.*", "memory"),
-			buildRouter("eats", "*", "devnull"),
+			buildRouter("ebook", "ebook-store", "memory"),
+			buildRouter("ebook", "default", "random"),
+			buildRouter("ebook", "apple.*", "memory"),
+			buildRouter("ebook", "*", "devnull"),
 			buildRouter("development", "map", "memory"),
 			buildRouter("development", "default", "random"),
 			buildRouter("default", "default", "memory"),
@@ -106,8 +106,8 @@ var (
 	}
 	clusteredEi = &dosa.EntityInfo{
 		Ref: &dosa.SchemaRef{
-			Scope:      "eats",
-			NamePrefix: "bazaar.v1",
+			Scope:      "ebook",
+			NamePrefix: "apple.v1",
 			EntityName: "testEntityName",
 		},
 		Def: &dosa.EntityDefinition{
@@ -176,14 +176,14 @@ func TestGetConnector(t *testing.T) {
 	// glob match
 	rc := NewConnector(cfg, connectorMap, nil)
 	ei := &dosa.EntityInfo{
-		Ref: &dosa.SchemaRef{Scope: "eats", NamePrefix: "bazaar.v1"},
+		Ref: &dosa.SchemaRef{Scope: "ebook", NamePrefix: "apple.v1"},
 	}
 	conn, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Read")
 	assert.Nil(t, err)
 	assert.NotNil(t, conn)
 
 	// exact match
-	ei.Ref.NamePrefix = "eats-store"
+	ei.Ref.NamePrefix = "ebook-store"
 	conn, err = rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Read")
 	assert.Nil(t, err)
 	assert.NotNil(t, conn)
@@ -195,7 +195,7 @@ func TestGetConnector(t *testing.T) {
 
 	// match default
 	ei = &dosa.EntityInfo{
-		Ref: &dosa.SchemaRef{Scope: "notexist", NamePrefix: "bazaar.v1"},
+		Ref: &dosa.SchemaRef{Scope: "notexist", NamePrefix: "apple.v1"},
 	}
 	conn, err = rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Read")
 	assert.Nil(t, err)
@@ -204,7 +204,7 @@ func TestGetConnector(t *testing.T) {
 
 	// with plugin
 	rc.PluginFunc = func(scope, namePrefix, opName string) (string, string, error) {
-		return "eats", "eats-store", nil
+		return "ebook", "ebook-store", nil
 	}
 
 	conn, err = rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Read")
@@ -220,7 +220,7 @@ func TestGetConnector(t *testing.T) {
 	assert.Nil(t, conn)
 }
 
-func TestRoutingConnector_CreateIfNotExists(t *testing.T) {
+func TestConnector_CreateIfNotExists(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -232,7 +232,7 @@ func TestRoutingConnector_CreateIfNotExists(t *testing.T) {
 	assert.True(t, dosa.ErrorIsAlreadyExists(err))
 }
 
-func TestRoutingConnector_CreateIfNotExistsDefaultScope(t *testing.T) {
+func TestConnector_CreateIfNotExistsDefaultScope(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -251,7 +251,7 @@ func TestRoutingConnector_CreateIfNotExistsDefaultScope(t *testing.T) {
 	assert.Contains(t, err.Error(), "dummy errors")
 }
 
-func TestRoutingConnector_CreateIfNotExists2(t *testing.T) {
+func TestConnector_CreateIfNotExists2(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -301,7 +301,7 @@ func TestRoutingConnector_CreateIfNotExists2(t *testing.T) {
 	assert.Len(t, data, 20)
 }
 
-func TestRoutingConnector_Read(t *testing.T) {
+func TestConnector_Read(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -422,7 +422,7 @@ func TestMultiRead(t *testing.T) {
 	assert.Contains(t, err.Error(), "dummy errors")
 }
 
-func TestRoutingConnector_Upsert(t *testing.T) {
+func TestConnector_Upsert(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -489,7 +489,7 @@ func TestRoutingConnector_Upsert(t *testing.T) {
 	assert.Contains(t, err.Error(), "dummy errors")
 }
 
-func TestRoutingConnector_MultiUpsert(t *testing.T) {
+func TestConnector_MultiUpsert(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -515,7 +515,7 @@ func TestRoutingConnector_MultiUpsert(t *testing.T) {
 	assert.Contains(t, err.Error(), "dummy errors")
 }
 
-func TestRoutingConnector_Remove(t *testing.T) {
+func TestConnector_Remove(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -577,7 +577,7 @@ func TestRoutingConnector_Remove(t *testing.T) {
 	assert.Contains(t, err.Error(), "dummy errors")
 }
 
-func TestRoutingConnector_RemoveRange(t *testing.T) {
+func TestConnector_RemoveRange(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -668,7 +668,7 @@ func TestRoutingConnector_RemoveRange(t *testing.T) {
 	assert.Contains(t, err.Error(), "dummy errors")
 }
 
-func TestRoutingConnector_MultiRemove(t *testing.T) {
+func TestConnector_MultiRemove(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -701,7 +701,7 @@ func (u ByUUID) Len() int           { return len(u) }
 func (u ByUUID) Swap(i, j int)      { u[i], u[j] = u[j], u[i] }
 func (u ByUUID) Less(i, j int) bool { return string(u[i]) > string(u[j]) }
 
-func TestRoutingConnector_Range(t *testing.T) {
+func TestConnector_Range(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -829,7 +829,7 @@ func TestRoutingConnector_Range(t *testing.T) {
 	assert.Contains(t, err.Error(), "dummy errors")
 }
 
-func TestRoutingConnector_Search(t *testing.T) {
+func TestConnector_Search(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -846,7 +846,7 @@ func TestRoutingConnector_Search(t *testing.T) {
 	assert.Contains(t, err.Error(), "dummy errors")
 }
 
-func TestRoutingConnector_Scan(t *testing.T) {
+func TestConnector_Scan(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -895,7 +895,7 @@ func TestRoutingConnector_Scan(t *testing.T) {
 	assert.Contains(t, err.Error(), "dummy errors")
 }
 
-func TestRoutingConnector_Shutdown(t *testing.T) {
+func TestConnector_Shutdown(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -903,7 +903,7 @@ func TestRoutingConnector_Shutdown(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestRoutingConnector_TimeUUIDs(t *testing.T) {
+func TestConnector_TimeUUIDs(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -948,7 +948,7 @@ func TestRoutingConnector_TimeUUIDs(t *testing.T) {
 	}
 }
 
-func TestRoutingConnector_ScanWithToken(t *testing.T) {
+func TestConnector_ScanWithToken(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -984,7 +984,7 @@ func TestRoutingConnector_ScanWithToken(t *testing.T) {
 	}
 }
 
-func TestRoutingConnector_ScanWithTokenFromWrongTable(t *testing.T) {
+func TestConnector_ScanWithTokenFromWrongTable(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -1008,7 +1008,7 @@ func TestRoutingConnector_ScanWithTokenFromWrongTable(t *testing.T) {
 	assert.Contains(t, err.Error(), "Missing value")
 }
 
-func TestRoutingConnector_ScanWithTokenNoClustering(t *testing.T) {
+func TestConnector_ScanWithTokenNoClustering(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
@@ -1112,7 +1112,7 @@ func TestInvalidToken(t *testing.T) {
 	})
 }
 
-func TestRoutingConnector_RangeWithBadCriteria(t *testing.T) {
+func TestConnector_RangeWithBadCriteria(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
