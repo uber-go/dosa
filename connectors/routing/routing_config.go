@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package routingconnector
+package routing
 
 import (
 	"strings"
@@ -27,16 +27,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-// RoutingConfig implements routing method
-// to decide which connector the RoutingConnector talks to
-type RoutingConfig struct {
+// Rule stores routing rule
+// to decide which connector the Connector talks to
+type Rule struct {
 	Scope      string
 	NamePrefix string
+	Connector  string
 	GlobMatch  glob.Glob
 }
 
-// NewRoutingConfig initializes RoutingConfig
-func NewRoutingConfig(scope string, namePrefix string) (*RoutingConfig, error) {
+// NewRule initializes Rule
+func NewRule(scope, namePrefix, connector string) (*Rule, error) {
 	if namePrefix == "" {
 		return nil, errors.New("namePrefix could not be empty, should be defined in yaml file")
 	}
@@ -53,22 +54,22 @@ func NewRoutingConfig(scope string, namePrefix string) (*RoutingConfig, error) {
 
 	globMatch := glob.MustCompile(namePrefix)
 
-	return &RoutingConfig{NamePrefix: namePrefix, Scope: scope, GlobMatch: globMatch}, nil
+	return &Rule{NamePrefix: namePrefix, Scope: scope, Connector: connector, GlobMatch: globMatch}, nil
 }
 
 // RouteTo implements the method to choose the matched connector
-func (rc *RoutingConfig) RouteTo(scope string, namePrefix string) bool {
+func (r *Rule) RouteTo(scope string, namePrefix string) bool {
 	// scope should be an exact match
-	if rc.Scope != scope {
+	if r.Scope != scope {
 		return false
 	}
 
 	// namePrefix could be glob match, but first check if there's an exact match
-	if rc.NamePrefix == namePrefix {
+	if r.NamePrefix == namePrefix {
 		return true
 	}
 
-	if rc.GlobMatch.Match(namePrefix) {
+	if r.GlobMatch.Match(namePrefix) {
 		return true
 	}
 

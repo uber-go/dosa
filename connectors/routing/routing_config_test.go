@@ -18,42 +18,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package routingconnector
+package routing
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
 )
 
-// TestBasicConfig test the basic yaml file conversion
-func TestBasicConfig(t *testing.T) {
-	yamlFile := `
-routers:
-# routers structure looks like:
-# - [scope]
-#    [namePrefix_1]: connectorName
-#    [namePrefix_2]: connectorName
-- production:
-    default: cassandra
-    serviceA: cassandra
-- development:
-    default: cassandra
-    serviceB: cassandra
-- eats:
-    '*': cassandra
-    bazaar.*: cassandra
-    default: cassandra
-    eats-store: cassandra
-- default:
-    default: cassandra
-`
-	testCfg := &Config{}
-	err := yaml.Unmarshal([]byte(yamlFile), testCfg)
-	assert.NoError(t, err)
-	assert.Len(t, cfg.Routers, 4)
+func TestNewRoutingConfig(t *testing.T) {
+	rConfig, err := NewRule("production", "test", "memory")
+	assert.Nil(t, err)
+	assert.Equal(t, rConfig.NamePrefix, "test")
+}
 
-	err = yaml.Unmarshal([]byte(`bad yaml file`), testCfg)
-	assert.Error(t, err)
+func TestNewRoutingConfigWithStarPrefix(t *testing.T) {
+	rConfig, err := NewRule("production", "*.v1", "memory")
+	assert.Nil(t, rConfig)
+	assert.Contains(t, err.Error(), "is not supported")
+}
+
+func TestTestNewRoutingConfigError(t *testing.T) {
+	rConfig, err := NewRule("production", "", "memory")
+	assert.Nil(t, rConfig)
+	assert.Contains(t, err.Error(), "could not be empty")
+
+	rConfig, err = NewRule("", "test", "memory")
+	assert.Nil(t, rConfig)
+	assert.Contains(t, err.Error(), "scope could not be empty")
 }
