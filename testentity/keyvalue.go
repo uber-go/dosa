@@ -18,17 +18,35 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testutil
+package testentity
 
-import "strconv"
-import "net"
+import "github.com/uber-go/dosa"
 
-// IsRunningOnPort checks to see if anything is already running on a particular port
-func IsRunningOnPort(port int) bool {
-	socket, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(port))
-	if err != nil {
-		return true
-	}
-	_ = socket.Close()
-	return false
+// KeyValue represents a key-value schema
+type KeyValue struct {
+	dosa.Entity `dosa:"name=awesome_test_entity, primaryKey=(K)"`
+	K           []byte
+	V           []byte
+}
+
+// ValueKey represents a key-value schema listing value first
+type ValueKey struct {
+	dosa.Entity `dosa:"name=awesome_test_entity, primaryKey=(K)"`
+	V           []byte
+	K           []byte
+}
+
+// KeyValues represents a key to multiple value schema
+type KeyValues struct {
+	dosa.Entity `dosa:"name=awesome_test_entity, primaryKey=(K)"`
+	K           []byte
+	V1          []byte
+	V2          []byte
+}
+
+// KeyValueNonByte represents a key-value schema with non byte value
+type KeyValueNonByte struct {
+	dosa.Entity `dosa:"name=awesome_test_entity, primaryKey=(K)"`
+	K           []byte
+	V           string
 }
