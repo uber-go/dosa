@@ -719,9 +719,6 @@ func TestClient_Unimplemented(t *testing.T) {
 	assert.Panics(t, func() {
 		c.MultiRemove(ctx, &ClientTestEntity1{})
 	})
-	assert.Panics(t, func() {
-		c.Search(ctx, &dosaRenamed.SearchOp{})
-	})
 }
 */
 

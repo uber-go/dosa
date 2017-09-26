@@ -121,12 +121,6 @@ func TestRandom_Range(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestRandom_Search(t *testing.T) {
-	vals, _, err := sut.Search(ctx, testInfo, testPairs, minimumFields, "", 32)
-	assert.NotNil(t, vals)
-	assert.NoError(t, err)
-}
-
 func TestRandom_Scan(t *testing.T) {
 	vals, _, err := sut.Scan(ctx, testInfo, minimumFields, "", 32)
 	assert.NotNil(t, vals)

@@ -829,23 +829,6 @@ func TestConnector_Range(t *testing.T) {
 	assert.Contains(t, err.Error(), "dummy errors")
 }
 
-func TestConnector_Search(t *testing.T) {
-	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
-
-	vals, _, err := rc.Search(ctx, testInfoRandom, testPairs, []string{"c5"}, "", 32)
-	assert.NotNil(t, vals)
-	assert.NoError(t, err)
-
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
-	}
-	rc.PluginFunc = plugin
-	// not exist scope, use default
-	vals, _, err = rc.Search(ctx, testInfoRandom, testPairs, []string{"c5"}, "", 32)
-	assert.Contains(t, err.Error(), "dummy errors")
-}
-
 func TestConnector_Scan(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)

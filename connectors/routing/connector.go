@@ -166,15 +166,6 @@ func (rc *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondi
 	return connector.Range(ctx, ei, columnConditions, minimumFields, token, limit)
 }
 
-// Search selects corresponding connector
-func (rc *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Search")
-	if err != nil {
-		return nil, "", err
-	}
-	return connector.Search(ctx, ei, fieldPairs, minimumFields, token, limit)
-}
-
 // Scan selects corresponding connector
 func (rc *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Scan")

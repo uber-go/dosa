@@ -156,12 +156,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 	return vals, randomString(32), nil
 }
 
-// Search also returns a random set of data, just like Range
-func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	return c.Range(ctx, ei, map[string][]*dosa.Condition{}, minimumFields, token, limit)
-}
-
-// Scan also returns a random set of data, like Range and Search
+// Scan also returns a random set of data, like Range
 func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	return c.Range(ctx, ei, map[string][]*dosa.Condition{}, minimumFields, token, limit)
 }

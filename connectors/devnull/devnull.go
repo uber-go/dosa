@@ -87,11 +87,6 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 	return nil, "", &dosa.ErrNotFound{}
 }
 
-// Search is not yet implemented
-func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	return nil, "", &dosa.ErrNotFound{}
-}
-
 // Scan is not yet implemented
 func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	return nil, "", &dosa.ErrNotFound{}

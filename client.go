@@ -168,10 +168,6 @@ type Client interface {
 	// For each value fetched, the provided onNext function is called with the value as it's argument.
 	WalkRange(ctx context.Context, r *RangeOp, onNext func(value DomainObject) error) error
 
-	// Search fetches entities by fields that have been marked "searchable"
-	// TODO: Coming in v2.1
-	// Search(ctx context.Context, searchOp *SearchOp) ([]DomainObject, string, error)
-
 	// ScanEverything fetches all entities of a type
 	// Before calling ScanEverything, create a scanOp to specify the
 	// table to scan. The return values are an array of objects, that
@@ -477,11 +473,6 @@ func objectsFromValueArray(object DomainObject, values []map[string]FieldValue, 
 		slice = reflect.Append(slice, reflect.ValueOf(newObject.(DomainObject))) // append to slice
 	}
 	return slice.Interface().([]DomainObject)
-}
-
-// Search uses the connector to fetch DOSA entities by fields that have been marked "searchable".
-func (c *client) Search(context.Context, *SearchOp) ([]DomainObject, string, error) {
-	panic("not implemented")
 }
 
 // ScanEverything uses the connector to fetch all DOSA entities of the given type.

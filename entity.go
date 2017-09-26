@@ -147,7 +147,7 @@ type ColumnDefinition struct {
 	Name      string // normalized column name
 	Type      Type
 	IsPointer bool // used by client only to indicate whether this field is pointer
-	// TODO: change as need to support tags like pii, searchable, etc
+	// TODO: change as need to support tags like pii, etc
 	// currently it's in the form of a map from tag name to (optional) tag value
 	Tags map[string]string
 }
