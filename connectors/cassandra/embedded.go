@@ -22,8 +22,7 @@
 package cassandra
 
 import (
-	"net"
-	"strconv"
+	"github.com/uber-go/dosa/testutil"
 )
 
 // CassandraPort is the default port for talking to Cassandra
@@ -31,10 +30,5 @@ const CassandraPort = 9042
 
 // IsRunning provides a quick check to see if Cassandra is already running
 func IsRunning() bool {
-	socket, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(CassandraPort))
-	if err != nil {
-		return true
-	}
-	_ = socket.Close()
-	return false
+	return testutil.IsRunningOnPort(CassandraPort)
 }
