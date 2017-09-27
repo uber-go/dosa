@@ -231,6 +231,7 @@ func TestSchema_NoEntitiesFound(t *testing.T) {
 		}
 		os.Args = append(os.Args, []string{
 			"-e", "testentity.go",
+			"-e", "keyvalue.go",
 			"-e", "named_import_testentity.go",
 			"../../testentity",
 		}...)
@@ -259,7 +260,7 @@ func TestSchema_Check_Happy(t *testing.T) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)
 				assert.True(t, dl.After(time.Now()))
-				assert.Equal(t, 2, len(ed))
+				assert.Equal(t, 6, len(ed))
 				nameMap := getTestEntityNameMap()
 				for _, e := range ed {
 					assert.True(t, nameMap[e.Name])
@@ -308,7 +309,7 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)
 				assert.True(t, dl.After(time.Now()))
-				assert.Equal(t, 2, len(ed))
+				assert.Equal(t, 6, len(ed))
 
 				nameMap := getTestEntityNameMap()
 				for _, e := range ed {

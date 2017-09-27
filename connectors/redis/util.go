@@ -18,17 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testutil
+package redis
 
-import "strconv"
-import "net"
+import (
+	"github.com/uber-go/dosa/testutil"
+)
 
-// IsRunningOnPort checks to see if anything is already running on a particular port
-func IsRunningOnPort(port int) bool {
-	socket, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(port))
-	if err != nil {
-		return true
-	}
-	_ = socket.Close()
-	return false
+// RedisPort is the default port for talking to Redis
+const RedisPort = 6379
+
+// IsRunning provides a quick check to see if Redis is already running
+func IsRunning() bool {
+	return testutil.IsRunningOnPort(RedisPort)
 }

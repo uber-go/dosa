@@ -119,7 +119,7 @@ func TestExclusion(t *testing.T) {
 func TestFindEntitiesInOtherPkg(t *testing.T) {
 	entities, warnings, err := FindEntities([]string{"testentity"}, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(entities))
+	assert.Equal(t, 6, len(entities))
 	assert.Empty(t, warnings)
 }
 

@@ -22,11 +22,11 @@ package routing
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
-	"fmt"
 )
 
 // PluginFunc is a plugin function that takes scope, namePrefix and operation name,
