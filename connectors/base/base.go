@@ -119,14 +119,6 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 	return c.Next.Range(ctx, ei, columnConditions, minimumFields, token, limit)
 }
 
-// Search calls Next
-func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	if c.Next == nil {
-		return nil, "", ErrNoMoreConnector{}
-	}
-	return c.Next.Search(ctx, ei, fieldPairs, minimumFields, token, limit)
-}
-
 // Scan calls Next
 func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	if c.Next == nil {

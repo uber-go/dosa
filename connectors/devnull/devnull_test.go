@@ -100,13 +100,6 @@ func TestDevNull_Range(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestDevNull_Search(t *testing.T) {
-	minimumFields := make([]string, 1)
-	vals, _, err := sut.Search(ctx, testInfo, testPairs, minimumFields, "", 0)
-	assert.Nil(t, vals)
-	assert.Error(t, err)
-}
-
 func TestDevNull_Scan(t *testing.T) {
 	minimumFields := make([]string, 1)
 	vals, _, err := sut.Scan(ctx, testInfo, minimumFields, "", 0)

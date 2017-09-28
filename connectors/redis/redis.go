@@ -135,11 +135,6 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 	return nil, "", new(ErrNotImplemented)
 }
 
-// Search not implemented.
-func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, minimumFields []string, token string, limit int) (multiValues []map[string]dosa.FieldValue, nextToken string, err error) {
-	return nil, "", new(ErrNotImplemented)
-}
-
 // Scan not implemented.
 func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) (multiValues []map[string]dosa.FieldValue, nextToken string, err error) {
 	return nil, "", new(ErrNotImplemented)

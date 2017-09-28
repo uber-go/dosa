@@ -153,6 +153,5 @@ func TestConfig_NewDefaultConfig(t *testing.T) {
 	assert.NotNil(t, c.Timeout.Read)
 	assert.NotNil(t, c.Timeout.Remove)
 	assert.NotNil(t, c.Timeout.ScanEverything)
-	assert.NotNil(t, c.Timeout.Search)
 	assert.NotNil(t, c.Timeout.Upsert)
 }

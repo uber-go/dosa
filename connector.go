@@ -93,11 +93,11 @@ type SchemaStatus struct {
 
 // Connector is the interface that must be implemented for a backend service
 // It can also be implemented using an RPC such as thrift (dosa-idl)
-// When fields are returned from read/range/search/scan methods, it's legal for the connector
+// When fields are returned from read/range/scan methods, it's legal for the connector
 // to return more fields than originally requested. The caller of the connector should never mutate
 // the returned columns either, in case they are from a cache
 type Connector interface {
-	// DML operations (CRUD + search)
+	// DML operations (CRUD + range + scan)
 	// CreateIfNotExists creates a row, but only if it does not exist.
 	CreateIfNotExists(ctx context.Context, ei *EntityInfo, values map[string]FieldValue) error
 	// Read fetches a row by primary key
@@ -119,9 +119,6 @@ type Connector interface {
 	// Range does a range scan using a set of conditions.
 	// If minimumFields is empty or nil, all fields (including key fields) would be fetched.
 	Range(ctx context.Context, ei *EntityInfo, columnConditions map[string][]*Condition, minimumFields []string, token string, limit int) ([]map[string]FieldValue, string, error)
-	// Search does a search against a field marked 'searchable'
-	// If minimumFields is empty or nil, all fields (including key fields) would be fetched.
-	Search(ctx context.Context, ei *EntityInfo, fieldPairs FieldNameValuePair, minimumFields []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)
 	// Scan reads the whole table, for doing a sequential search or dump/load use cases
 	// If minimumFields is empty or nil, all fields (including key fields) would be fetched.
 	Scan(ctx context.Context, ei *EntityInfo, minimumFields []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)

@@ -131,16 +131,6 @@ func TestBase_Range(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestBase_Search(t *testing.T) {
-	minimumFields := make([]string, 1)
-	_, _, err := bc.Search(ctx, testInfo, testPairs, minimumFields, "", 0)
-	assert.Error(t, err)
-
-	vals, _, err := bcWNext.Search(ctx, testInfo, testPairs, minimumFields, "", 0)
-	assert.Nil(t, vals)
-	assert.Error(t, err)
-}
-
 func TestBase_Scan(t *testing.T) {
 	minimumFields := make([]string, 1)
 	_, _, err := bc.Scan(ctx, testInfo, minimumFields, "", 0)

@@ -61,9 +61,6 @@ func TestUnimplementedFunctions(t *testing.T) {
 	_, _, err = rc.Range(context.TODO(), &dosa.EntityInfo{}, nil, dosa.All(), "", 1)
 	assert.EqualError(t, err, new(redis.ErrNotImplemented).Error())
 
-	_, _, err = rc.Search(context.TODO(), &dosa.EntityInfo{}, dosa.FieldNameValuePair{}, dosa.All(), "", 1)
-	assert.EqualError(t, err, new(redis.ErrNotImplemented).Error())
-
 	_, _, err = rc.Scan(context.TODO(), &dosa.EntityInfo{}, dosa.All(), "", 1)
 	assert.EqualError(t, err, new(redis.ErrNotImplemented).Error())
 }
@@ -208,7 +205,7 @@ func TestEntityTypeNotBytes(t *testing.T) {
 	assert.EqualError(t, err, "This entity schema and value not supported by redis. Types should be []byte.")
 }
 
-func TestShutdownConnector(t* testing.T) {
+func TestShutdownConnector(t *testing.T) {
 	var rc = redis.NewConnector(testRedisConfig)
 	err := rc.Shutdown()
 	assert.NoError(t, err)

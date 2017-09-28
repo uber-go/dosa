@@ -454,11 +454,6 @@ func createRPCConditions(columnConditions map[string][]*dosa.Condition) ([]*dosa
 	return rpcConditions, nil
 }
 
-// Search is not yet implemented
-func (c *Connector) Search(ctx context.Context, ei *dosa.EntityInfo, fieldPairs dosa.FieldNameValuePair, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	panic("not implemented")
-}
-
 // Scan marshals a scan request into YaRPC
 func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	limit32 := int32(limit)

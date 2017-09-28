@@ -44,7 +44,6 @@ const (
 	_defReadTimeout              = time.Duration(2 * time.Second)
 	_defRemoveTimeout            = time.Duration(2 * time.Second)
 	_defScanEverythingTimeout    = time.Duration(10 * time.Second)
-	_defSearchTimeout            = time.Duration(10 * time.Second)
 	_defUpsertTimeout            = time.Duration(2 * time.Second)
 )
 
@@ -56,7 +55,6 @@ type TimeoutConfig struct {
 	Read              time.Duration `yaml:"read"`
 	Remove            time.Duration `yaml:"remove"`
 	ScanEverything    time.Duration `yaml:"scanEverything"`
-	Search            time.Duration `yaml:"search"`
 	Upsert            time.Duration `yaml:"upsert"`
 }
 
@@ -117,7 +115,6 @@ func NewDefaultConfig() Config {
 			Read:              _defReadTimeout,
 			Remove:            _defRemoveTimeout,
 			ScanEverything:    _defScanEverythingTimeout,
-			Search:            _defSearchTimeout,
 			Upsert:            _defUpsertTimeout,
 		},
 	}

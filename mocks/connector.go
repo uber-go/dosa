@@ -218,19 +218,6 @@ func (_mr *_MockConnectorRecorder) ScopeExists(arg0, arg1 interface{}) *gomock.C
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ScopeExists", arg0, arg1)
 }
 
-// Search is a mock implementation of MockConnector.Search
-func (_m *MockConnector) Search(_param0 context.Context, _param1 *dosa.EntityInfo, _param2 dosa.FieldNameValuePair, _param3 []string, _param4 string, _param5 int) ([]map[string]dosa.FieldValue, string, error) {
-	ret := _m.ctrl.Call(_m, "Search", _param0, _param1, _param2, _param3, _param4, _param5)
-	ret0, _ := ret[0].([]map[string]dosa.FieldValue)
-	ret1, _ := ret[1].(string)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-func (_mr *_MockConnectorRecorder) Search(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Search", arg0, arg1, arg2, arg3, arg4, arg5)
-}
-
 // Shutdown is a mock implementation of MockConnector.Shutdown
 func (_m *MockConnector) Shutdown() error {
 	ret := _m.ctrl.Call(_m, "Shutdown")
