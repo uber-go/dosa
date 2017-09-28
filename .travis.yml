@@ -32,3 +32,6 @@ script:
 
 after_success:
   - make coveralls
+
+services:
+  - redis-server
