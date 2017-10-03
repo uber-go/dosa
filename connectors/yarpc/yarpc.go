@@ -281,10 +281,10 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	if err != nil {
 		if be, ok := err.(*dosarpc.BadRequestError); ok {
 			if be.ErrorCode != nil && *be.ErrorCode == errCodeNotFound {
-				return nil, errors.Wrap(&dosa.ErrNotFound{}, "failed to read in yarpc connector")
+				return nil, errors.Wrap(&dosa.ErrNotFound{}, "Read failed: not found")
 			}
 		}
-		return nil, errors.Wrap(err, "failed to read in yarpc connector")
+		return nil, errors.Wrap(err, "Read failed")
 	}
 
 	// no error, so for each column, transform it into the map of (col->value) items
@@ -323,7 +323,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 
 	response, err := c.Client.MultiRead(ctx, request, VersionHeader())
 	if err != nil {
-		return nil, errors.Wrap(err, "YARPC MultiRead failed")
+		return nil, errors.Wrap(err, "MultiRead failed")
 	}
 
 	rpcResults := response.Results
@@ -352,7 +352,7 @@ func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiV
 	panic("not implemented")
 }
 
-// Remove marshals a request to the YaRPC remove call
+// Remove marshals a request to the YARPC remove call
 func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue) error {
 	// convert the key values from interface{} to RPC's Value
 	rpcFields := make(dosarpc.FieldValueMap)
@@ -376,7 +376,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 
 	err := c.Client.Remove(ctx, removeRequest, VersionHeader())
 	if err != nil {
-		return errors.Wrap(err, "YARPC Remove failed")
+		return errors.Wrap(err, "Remove failed")
 	}
 	return nil
 }
@@ -385,7 +385,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) error {
 	rpcConditions, err := createRPCConditions(columnConditions)
 	if err != nil {
-		return errors.Wrap(err, "RemoveRange failed")
+		return errors.Wrap(err, "RemoveRange failed: invalid column conditions")
 	}
 
 	request := &dosarpc.RemoveRangeRequest{
@@ -394,7 +394,7 @@ func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, column
 	}
 
 	if err := c.Client.RemoveRange(ctx, request, VersionHeader()); err != nil {
-		return errors.Wrap(err, "YARPC RemoveRange failed")
+		return errors.Wrap(err, "RemoveRange failed")
 	}
 	return nil
 }
@@ -410,7 +410,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 	rpcMinimumFields := makeRPCminimumFields(minimumFields)
 	rpcConditions, err := createRPCConditions(columnConditions)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "Range failed")
+		return nil, "", errors.Wrap(err, "Range failed: invalid column conditions")
 	}
 	rangeRequest := dosarpc.RangeRequest{
 		Ref:          entityInfoToSchemaRef(ei),
@@ -421,7 +421,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 	}
 	response, err := c.Client.Range(ctx, &rangeRequest, VersionHeader())
 	if err != nil {
-		return nil, "", errors.Wrap(err, "YARPC Range failed")
+		return nil, "", errors.Wrap(err, "Range failed")
 	}
 	results := []map[string]dosa.FieldValue{}
 	for _, entity := range response.Entities {
@@ -454,7 +454,7 @@ func createRPCConditions(columnConditions map[string][]*dosa.Condition) ([]*dosa
 	return rpcConditions, nil
 }
 
-// Scan marshals a scan request into YaRPC
+// Scan marshals a scan request into YARPC
 func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	limit32 := int32(limit)
 	rpcMinimumFields := makeRPCminimumFields(minimumFields)
@@ -466,7 +466,7 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 	}
 	response, err := c.Client.Scan(ctx, &scanRequest, VersionHeader())
 	if err != nil {
-		return nil, "", errors.Wrap(err, "YARPC Scan failed")
+		return nil, "", errors.Wrap(err, "Scan failed")
 	}
 	results := []map[string]dosa.FieldValue{}
 	for _, entity := range response.Entities {
@@ -488,7 +488,7 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	response, err := c.Client.CheckSchema(ctx, &csr, VersionHeader())
 
 	if err != nil {
-		return dosa.InvalidVersion, wrapError(err, "YARPC CheckSchema failed", scope, c.Config.ServiceName)
+		return dosa.InvalidVersion, wrapError(err, "CheckSchema failed", scope, c.Config.ServiceName)
 	}
 
 	return *response.Version, nil
@@ -509,7 +509,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 
 	response, err := c.Client.UpsertSchema(ctx, request, VersionHeader())
 	if err != nil {
-		return nil, wrapError(err, "YARPC UpsertSchema failed", scope, c.Config.ServiceName)
+		return nil, wrapError(err, "UpsertSchema failed", scope, c.Config.ServiceName)
 	}
 
 	status := ""
@@ -518,7 +518,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 	}
 
 	if response.Version == nil {
-		return nil, errors.New("YARPC UpsertSchema failed: server returns version nil")
+		return nil, errors.New("UpsertSchema failed: server returns version nil")
 	}
 
 	return &dosa.SchemaStatus{
@@ -533,7 +533,7 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 	response, err := c.Client.CheckSchemaStatus(ctx, &request, VersionHeader())
 
 	if err != nil {
-		return nil, wrapError(err, "YARPC ChecksShemaStatus failed", scope, c.Config.ServiceName)
+		return nil, wrapError(err, "ChecksShemaStatus failed", scope, c.Config.ServiceName)
 	}
 
 	status := ""
@@ -542,7 +542,7 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 	}
 
 	if response.Version == nil {
-		return nil, errors.New("YARPC ChecksShemaStatus failed: server returns version nil")
+		return nil, errors.New("ChecksShemaStatus failed: server returns version nil")
 	}
 
 	return &dosa.SchemaStatus{
@@ -558,7 +558,7 @@ func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 	}
 
 	if err := c.Client.CreateScope(ctx, request, VersionHeader()); err != nil {
-		return errors.Wrap(err, "YARPC CreateScope failed")
+		return errors.Wrap(err, "CreateScope failed")
 	}
 
 	return nil
@@ -571,7 +571,7 @@ func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
 	}
 
 	if err := c.Client.TruncateScope(ctx, request, VersionHeader()); err != nil {
-		return errors.Wrap(err, "YARPC TruncateScope failed")
+		return errors.Wrap(err, "TruncateScope failed")
 	}
 
 	return nil
@@ -584,7 +584,7 @@ func (c *Connector) DropScope(ctx context.Context, scope string) error {
 	}
 
 	if err := c.Client.DropScope(ctx, request, VersionHeader()); err != nil {
-		return errors.Wrap(err, "YARPC DropScope failed")
+		return errors.Wrap(err, "DropScope failed")
 	}
 
 	return nil
@@ -627,12 +627,12 @@ func init() {
 	dosa.RegisterConnector("yarpc", func(args dosa.CreationArgs) (dosa.Connector, error) {
 		host, ok := args["host"]
 		if !ok {
-			return nil, errors.New("Missing host for yarpc connector")
+			return nil, errors.New("Missing connector host value")
 		}
 
 		port, ok := args["port"]
 		if !ok {
-			return nil, errors.New("Missing port for yarpc connector")
+			return nil, errors.New("Missing connector port value")
 		}
 
 		trans := getWithDefault(args, "transport", "tchannel")
