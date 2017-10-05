@@ -18,10 +18,6 @@ type Connector struct {
 	base.Connector
 }
 
-// MultiRead TODO
-func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, minimumFields []string) ([]*dosa.FieldValuesOrError, error) {
-	return nil, nil
-}
 
 // Upsert calls Next
 func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
@@ -43,10 +39,6 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 	return c.Connector.Upsert(ctx, eiCopy, newValues)
 }
 
-// MultiUpsert TODO
-func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue) ([]error, error) {
-	return nil, nil
-}
 
 // Remove removes a key
 func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
