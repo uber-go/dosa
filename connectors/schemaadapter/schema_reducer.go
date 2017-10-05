@@ -104,7 +104,7 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 		Rows      []map[string]dosa.FieldValue
 	}
 	unpack := scanResults{}
-	err = json.Unmarshal(response, &unpack)
+	err = json.Unmarshal(response["value"].([]byte), &unpack)
 	return unpack.Rows, unpack.TokenNext, err
 }
 
