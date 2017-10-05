@@ -36,8 +36,8 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 	key, _ := json.Marshal(keysMap)
 	value, _ := json.Marshal(values)
 	eiCopy := adaptToKeyValue(ei)
-	newValues := map[string]dosa.FieldValue {
-		"key": key,
+	newValues := map[string]dosa.FieldValue{
+		"key":   key,
 		"value": value,
 	}
 	return c.Connector.Upsert(ctx, eiCopy, newValues)
@@ -63,10 +63,10 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	// TODO serializing dosa.Condition array? conditions could be any order
 
-	keysMap := map[string]interface{} {
+	keysMap := map[string]interface{}{
 		"conditions": columnConditions,
-		"token": token,
-		"limit": limit,
+		"token":      token,
+		"limit":      limit,
 	}
 	key, _ := json.Marshal(keysMap)
 
@@ -75,14 +75,14 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 		"key": key,
 	}
 
-	response, err :=  c.Connector.Read(ctx, eiCopy, newValues, minimumFields)
+	response, err := c.Connector.Read(ctx, eiCopy, newValues, minimumFields)
 	if err != nil {
 		return nil, "", err
 	}
 
 	type rangeResults struct {
 		TokenNext string
-		Rows []map[string]dosa.FieldValue
+		Rows      []map[string]dosa.FieldValue
 	}
 
 	unpack := rangeResults{}
@@ -92,7 +92,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 
 // Scan changes the schema and passes the read onto the redis connector
 func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	keysMap := map[string]interface{} {
+	keysMap := map[string]interface{}{
 		"token": token,
 		"limit": limit,
 	}
@@ -102,14 +102,14 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 		"key": key,
 	}
 
-	response, err :=  c.Connector.Read(ctx, eiCopy, newValues, minimumFields)
+	response, err := c.Connector.Read(ctx, eiCopy, newValues, minimumFields)
 	if err != nil {
 		return nil, "", err
 	}
 
 	type scanResults struct {
 		TokenNext string
-		Rows []map[string]dosa.FieldValue
+		Rows      []map[string]dosa.FieldValue
 	}
 	unpack := scanResults{}
 	err = json.Unmarshal(response, &unpack)
