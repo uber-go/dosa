@@ -9,13 +9,12 @@ import (
 )
 
 // NewConnector initializes a Schema Reducer Connector
-func NewConnector(baseConnector dosa.Connector) dosa.Connector {
+func NewConnector(baseConnector base.Connector) dosa.Connector {
 	return &Connector{baseConnector}
 }
 
 // Connector for schema transformer
 type Connector struct {
-	// TODO why base connector? Why not just a dosa connector?
 	base.Connector
 }
 
@@ -81,21 +80,17 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 		return nil, "", err
 	}
 
-	// TODO move this to global
 	type rangeResults struct {
-		token string
-		rows []map[string]dosa.FieldValue
+		TokenNext string
+		Rows []map[string]dosa.FieldValue
 	}
 
 	unpack := rangeResults{}
-	err = json.Unmarshal(response, &unpack)
-	return unpack.rows, unpack.token, err
-
-	// TODO who is supposed to be calling the redis connector Upsert with the range response adapted?
-	// Does the Fallback cache logic connector transform the response into a keyvalue entity?
+	err = json.Unmarshal(response["value"].([]byte), &unpack)
+	return unpack.Rows, unpack.TokenNext, err
 }
 
-// Scan calls Next
+// Scan changes the schema and passes the read onto the redis connector
 func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	keysMap := map[string]interface{} {
 		"token": token,
@@ -112,13 +107,13 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 		return nil, "", err
 	}
 
-	type rangeResults struct {
-		token string
-		rows []map[string]dosa.FieldValue
+	type scanResults struct {
+		TokenNext string
+		Rows []map[string]dosa.FieldValue
 	}
-	unpack := rangeResults{}
+	unpack := scanResults{}
 	err = json.Unmarshal(response, &unpack)
-	return unpack.rows, unpack.token, err
+	return unpack.Rows, unpack.TokenNext, err
 }
 
 // Read changes the schema and passes the read onto the redis connector
