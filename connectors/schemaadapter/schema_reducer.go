@@ -5,19 +5,17 @@ import (
 	"encoding/json"
 
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/connectors/base"
 )
 
 // NewConnector initializes a Schema Reducer Connector
-func NewConnector(baseConnector base.Connector) dosa.Connector {
+func NewConnector(baseConnector dosa.Connector) dosa.Connector {
 	return &Connector{baseConnector}
 }
 
 // Connector for schema transformer
 type Connector struct {
-	base.Connector
+	dosa.Connector
 }
-
 
 // Upsert calls Next
 func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
@@ -39,9 +37,9 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 	return c.Connector.Upsert(ctx, eiCopy, newValues)
 }
 
-
 // Remove removes a key
 func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
+	// TODO do we assume all the values passed in are strictly keys?
 	key, _ := json.Marshal(values)
 	eiCopy := adaptToKeyValue(ei)
 
@@ -113,14 +111,9 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[st
 	// Encode read arguments
 	// Using json Marshal highly depends on the keys being sorted in the output.
 	// Should this behavior change in future versions of golang, cannot use Marshal
-	// TODO should we check values map really only has partition keys in it?
-	key, err := json.Marshal(values)
-	if err != nil {
-		return nil, err
-	}
-
+	// TODO should we check values map only has partition keys in it?
+	key, _ := json.Marshal(values)
 	eiCopy := adaptToKeyValue(ei)
-
 	newValues := map[string]dosa.FieldValue{
 		"key": key,
 	}
@@ -134,10 +127,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[st
 	// unpack the value
 	result := map[string]dosa.FieldValue{}
 	err = json.Unmarshal(response["value"].([]byte), &result)
-	if err != nil {
-		return nil, err
-	}
-	return result
+	return result, err
 }
 
 func adaptToKeyValue(ei *dosa.EntityInfo) *dosa.EntityInfo {
