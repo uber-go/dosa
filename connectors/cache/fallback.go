@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"errors"
+	"sort"
 
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
@@ -57,7 +58,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		}
 		return c.fallback.Upsert(ctx, adaptedEi, newValues)
 	}
-	c.cacheWrite(w)
+	_ = c.cacheWrite(w)
 
 	return c.origin.Upsert(ctx, ei, values)
 }
@@ -77,7 +78,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 				value: cacheValue}
 			return c.fallback.Upsert(ctx, adaptedEi, newValues)
 		}
-		c.cacheWrite(w)
+		_ = c.cacheWrite(w)
 
 		return source, sourceErr
 	}
@@ -121,7 +122,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 			}
 			return c.fallback.Upsert(ctx, adaptedEi, newValues)
 		}
-		c.cacheWrite(w)
+		_ = c.cacheWrite(w)
 
 		return sourceRows, sourceToken, sourceErr
 	}
@@ -150,7 +151,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		adaptedEi := adaptToKeyValue(ei)
 		return c.fallback.Remove(ctx, adaptedEi, map[string]dosa.FieldValue{key: cacheKey})
 	}
-	c.cacheWrite(w)
+	_ = c.cacheWrite(w)
 
 	return c.origin.Remove(ctx, ei, keys)
 }
@@ -179,7 +180,7 @@ func (c *Connector) cacheWrite(w func() error) error {
 	if c.synchronous {
 		return w()
 	}
-	go w()
+	go func() { _ = w() }()
 	return nil
 }
 
@@ -201,15 +202,21 @@ func adaptToKeyValue(ei *dosa.EntityInfo) *dosa.EntityInfo {
 
 // used for single entry reads/writes
 func createCacheKey(ei *dosa.EntityInfo, values map[string]dosa.FieldValue, e Encoder) []byte {
-	// Get all the partition and clustering keys and their values
-	keysMap := map[string]dosa.FieldValue{}
+	keys := []string{}
 	for pk := range ei.Def.KeySet() {
-		if value, ok := values[pk]; ok {
-			keysMap[pk] = value
+		if _, ok := values[pk]; ok {
+			keys = append(keys, pk)
 		}
 	}
+	// sort the keys so that we encode in a specific order
+	sort.Strings(keys)
 
-	cacheKey, err := e.Encode(keysMap)
+	orderedKeys := []map[string]dosa.FieldValue{}
+	for _, k := range keys {
+		orderedKeys = append(orderedKeys, map[string]dosa.FieldValue{k: values[k]})
+	}
+
+	cacheKey, err := e.Encode(orderedKeys)
 	if err != nil {
 		return []byte{}
 	}

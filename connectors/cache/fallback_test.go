@@ -299,7 +299,6 @@ func TestUpsertRead(t *testing.T) {
 	// origin read fails
 	mockDownstreamConnector.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(nil, assert.AnError)
 
-	// This will not always work. Gob encoding does not guarantee ordering of the map
 	connector := NewConnector(mockDownstreamConnector, redisC, NewGobEncoder())
 	connector.setSynchronousMode(true)
 
@@ -310,4 +309,17 @@ func TestUpsertRead(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, resp)
 	assert.EqualValues(t, values, resp)
+}
+
+func TestCreateCacheKey(t *testing.T) {
+	values := map[string]dosa.FieldValue{
+		"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
+		"strv":        "test value string",
+		"boolv":       false,
+		"int64key":    2932,
+		"blobv":       []byte("test value byte array"),
+		"strkey":      "test key string",
+	}
+	key := createCacheKey(testEi, values, NewJSONEncoder())
+	assert.Equal(t, []byte(`[{"an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9"},{"int64key":2932},{"strkey":"test key string"}]`), key)
 }
