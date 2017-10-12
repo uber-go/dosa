@@ -14,14 +14,14 @@ const (
 )
 
 type rangeResults struct {
-	TokenNext string
 	Rows      []map[string]dosa.FieldValue
+	TokenNext string
 }
 
 type rangeQuery struct {
+	Conditions map[string][]*dosa.Condition `json:",omitempty"`
 	Token      string
 	Limit      int
-	Conditions map[string][]*dosa.Condition `json:",omitempty"`
 }
 
 // NewConnector creates a fallback cache connector
@@ -201,9 +201,9 @@ func adaptToKeyValue(ei *dosa.EntityInfo) *dosa.EntityInfo {
 
 // used for single entry reads/writes
 func createCacheKey(ei *dosa.EntityInfo, values map[string]dosa.FieldValue, e Encoder) []byte {
-	// Get all the partition keys and their values if
+	// Get all the partition and clustering keys and their values
 	keysMap := map[string]dosa.FieldValue{}
-	for pk := range ei.Def.PartitionKeySet() {
+	for pk := range ei.Def.KeySet() {
 		if value, ok := values[pk]; ok {
 			keysMap[pk] = value
 		}

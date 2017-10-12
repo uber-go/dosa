@@ -20,7 +20,7 @@ var (
 			Host: "localhost",
 			Port: redis.RedisPort,
 		},
-		TTL: 5 * time.Second,
+		TTL: 15 * time.Second,
 	}
 	redisC    = redis.NewConnector(testRedisConfig)
 	schemaRef = dosa.SchemaRef{Scope: "testing", NamePrefix: "example"}
@@ -56,14 +56,22 @@ func TestUpsert(t *testing.T) {
 	defer fallbackCtrl.Finish()
 	mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
-	keys := map[string]dosa.FieldValue{}
-
-	mockOrigin.EXPECT().Upsert(context.TODO(), testEi, keys).Return(nil)
-	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, gomock.Any()).Return(nil)
+	values := map[string]dosa.FieldValue{
+		"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
+		"strkey":      "test key string",
+		"StrV":        "test value string",
+		"BoolV":       false,
+	}
+	transformedValues := map[string]dosa.FieldValue{
+		key:   []byte(`{"an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9","strkey":"test key string"}`),
+		value: []byte(`{"BoolV":false,"StrV":"test value string","an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9","strkey":"test key string"}`),
+	}
+	mockOrigin.EXPECT().Upsert(context.TODO(), testEi, values).Return(nil)
+	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedValues).Return(nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
 	connector.setSynchronousMode(true)
-	err := connector.Upsert(context.TODO(), testEi, keys)
+	err := connector.Upsert(context.TODO(), testEi, values)
 	assert.NoError(t, err)
 }
 
@@ -79,8 +87,12 @@ func TestReadSuccess(t *testing.T) {
 
 	values := map[string]dosa.FieldValue{}
 	originResponse := map[string]dosa.FieldValue{"a": "b"}
+	transformedResponse := map[string]dosa.FieldValue{
+		key:   []byte("{}"),
+		value: []byte(`{"a":"b"}`),
+	}
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(originResponse, nil)
-	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, gomock.Any()).Return(nil)
+	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedResponse).Return(nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
 	connector.setSynchronousMode(true)
@@ -99,11 +111,15 @@ func TestReadFail(t *testing.T) {
 	defer fallbackCtrl.Finish()
 	mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
-	readValues := map[string]dosa.FieldValue{}
 	fallbackResponse := map[string]dosa.FieldValue{"value": []byte("{\"b\": 7}")}
 	originErr := errors.New("origin error")
+	readValues := map[string]dosa.FieldValue{}
+	transformedReadValues := map[string]dosa.FieldValue{
+		key: []byte("{}"),
+	}
+
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(nil, originErr)
-	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, gomock.Any(), dosa.All()).Return(fallbackResponse, nil)
+	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(fallbackResponse, nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
 	connector.setSynchronousMode(true)
@@ -123,11 +139,14 @@ func TestReadFallbackFail(t *testing.T) {
 	mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
 	readValues := map[string]dosa.FieldValue{}
+	transformedReadValues := map[string]dosa.FieldValue{
+		key: []byte("{}"),
+	}
 	originResponse := map[string]dosa.FieldValue{"a": "b"}
 	originErr := errors.New("origin error")
 	fallbackErr := errors.New("fallback error")
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(originResponse, originErr)
-	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, gomock.Any(), dosa.All()).Return(nil, fallbackErr)
+	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(nil, fallbackErr)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
 	connector.setSynchronousMode(true)
@@ -148,12 +167,17 @@ func TestRangeSuccess(t *testing.T) {
 
 	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
 	rangeTok := "nextToken"
-	mockOrigin.EXPECT().Range(context.TODO(), testEi, map[string][]*dosa.Condition{}, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
-	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, gomock.Any()).Return(nil)
+	transformedResponse := map[string]dosa.FieldValue{
+		key:   []byte(`{"Conditions":{"column":[{"Op":5,"Value":"columnVal"}]},"Token":"token","Limit":2}`),
+		value: []byte(`{"Rows":[{"a":"b"}],"TokenNext":"nextToken"}`),
+	}
+	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
+	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
+	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedResponse).Return(nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
 	connector.setSynchronousMode(true)
-	resp, tok, err := connector.Range(context.TODO(), testEi, map[string][]*dosa.Condition{}, []string{}, "token", 2)
+	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
 	assert.NoError(t, err)
 	assert.EqualValues(t, rangeResponse, resp)
 	assert.EqualValues(t, rangeTok, tok)
@@ -169,13 +193,17 @@ func TestRangeError(t *testing.T) {
 	defer fallbackCtrl.Finish()
 	mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
+	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
+	transformedKey := map[string]dosa.FieldValue{
+		key: []byte(`{"Conditions":{"column":[{"Op":5,"Value":"columnVal"}]},"Token":"token","Limit":2}`),
+	}
 	fallbackResponse := map[string]dosa.FieldValue{"value": []byte("{\"rows\": [{\"b\": 7}], \"tokenNext\": \"nextToken\"}")}
-	mockOrigin.EXPECT().Range(context.TODO(), testEi, map[string][]*dosa.Condition{}, dosa.All(), "token", 2).Return(nil, "", assert.AnError)
-	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, gomock.Any(), dosa.All()).Return(fallbackResponse, nil)
+	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(nil, "", assert.AnError)
+	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKey, dosa.All()).Return(fallbackResponse, nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
 	connector.setSynchronousMode(true)
-	resp, tok, err := connector.Range(context.TODO(), testEi, map[string][]*dosa.Condition{}, []string{}, "token", 2)
+	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
 	assert.NoError(t, err)
 	assert.EqualValues(t, []map[string]dosa.FieldValue{{"b": float64(7)}}, resp)
 	assert.EqualValues(t, "nextToken", tok)
@@ -194,12 +222,15 @@ func TestRangeFallbackError(t *testing.T) {
 	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
 	rangeTok := "nextToken"
 	rangeErr := errors.New("origin error")
-	mockOrigin.EXPECT().Range(context.TODO(), testEi, map[string][]*dosa.Condition{}, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, rangeErr)
-	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, gomock.Any(), dosa.All()).Return(nil, assert.AnError)
+	transformedKeys := map[string]dosa.FieldValue{
+		key: []byte(`{"Token":"token","Limit":2}`),
+	}
+	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, rangeErr)
+	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKeys, dosa.All()).Return(nil, assert.AnError)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
 	connector.setSynchronousMode(true)
-	resp, tok, err := connector.Range(context.TODO(), testEi, map[string][]*dosa.Condition{}, []string{}, "token", 2)
+	resp, tok, err := connector.Range(context.TODO(), testEi, nil, []string{}, "token", 2)
 	assert.EqualError(t, err, rangeErr.Error())
 	assert.EqualValues(t, rangeResponse, resp)
 	assert.EqualValues(t, rangeTok, tok)
@@ -218,9 +249,9 @@ func TestRemove(t *testing.T) {
 	mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
 	keys := map[string]dosa.FieldValue{}
-
+	transformedKeys := map[string]dosa.FieldValue{key: []byte("{}")}
 	mockOrigin.EXPECT().Remove(context.TODO(), testEi, keys).Return(nil)
-	mockFallback.EXPECT().Remove(context.TODO(), adaptedEi, gomock.Any()).Return(nil)
+	mockFallback.EXPECT().Remove(context.TODO(), adaptedEi, transformedKeys).Return(nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
 	connector.setSynchronousMode(true)
@@ -256,18 +287,19 @@ func TestUpsertRead(t *testing.T) {
 	mockDownstreamConnector := mocks.NewMockConnector(ctrl)
 
 	values := map[string]dosa.FieldValue{
-		"UUIDKey":  "d1449c93-25b8-4032-920b-60471d91acc9",
-		"StrKey":   "test key string",
-		"Int64Key": 2932,
-		"StrV":     "test value string",
-		"BoolV":    false,
-		"BlobV":    []byte("test value byte array"),
+		"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
+		"strkey":      "test key string",
+		"int64key":    2932,
+		"strv":        "test value string",
+		"boolv":       false,
+		"blobv":       []byte("test value byte array"),
 	}
 	// Origin upsert succeeds
 	mockDownstreamConnector.EXPECT().Upsert(context.TODO(), testEi, values).Return(nil)
 	// origin read fails
 	mockDownstreamConnector.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(nil, assert.AnError)
 
+	// This will not always work. Gob encoding does not guarantee ordering of the map
 	connector := NewConnector(mockDownstreamConnector, redisC, NewGobEncoder())
 	connector.setSynchronousMode(true)
 
