@@ -157,8 +157,6 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 }
 
 func (c *Connector) getValueFromFallback(ctx context.Context, ei *dosa.EntityInfo, keyValue []byte) ([]byte, error) {
-	// if source of truth fails, try the fallback. If the fallback fails,
-	// return the original error
 	response, err := c.fallback.Read(ctx, ei, map[string]dosa.FieldValue{key: keyValue}, dosa.All())
 	if err != nil {
 		return nil, err
