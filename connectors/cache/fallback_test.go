@@ -63,7 +63,7 @@ func TestUpsert(t *testing.T) {
 		"BoolV":       false,
 	}
 	transformedValues := map[string]dosa.FieldValue{
-		key:   []byte(`{"an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9","strkey":"test key string"}`),
+		key:   []byte(`[{"an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9"},{"strkey":"test key string"}]`),
 		value: []byte(`{"BoolV":false,"StrV":"test value string","an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9","strkey":"test key string"}`),
 	}
 	mockOrigin.EXPECT().Upsert(context.TODO(), testEi, values).Return(nil)
@@ -88,7 +88,7 @@ func TestReadSuccess(t *testing.T) {
 	values := map[string]dosa.FieldValue{}
 	originResponse := map[string]dosa.FieldValue{"a": "b"}
 	transformedResponse := map[string]dosa.FieldValue{
-		key:   []byte("{}"),
+		key:   []byte("[]"),
 		value: []byte(`{"a":"b"}`),
 	}
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(originResponse, nil)
@@ -115,7 +115,7 @@ func TestReadFail(t *testing.T) {
 	originErr := errors.New("origin error")
 	readValues := map[string]dosa.FieldValue{}
 	transformedReadValues := map[string]dosa.FieldValue{
-		key: []byte("{}"),
+		key: []byte("[]"),
 	}
 
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(nil, originErr)
@@ -140,7 +140,7 @@ func TestReadFallbackFail(t *testing.T) {
 
 	readValues := map[string]dosa.FieldValue{}
 	transformedReadValues := map[string]dosa.FieldValue{
-		key: []byte("{}"),
+		key: []byte("[]"),
 	}
 	originResponse := map[string]dosa.FieldValue{"a": "b"}
 	originErr := errors.New("origin error")
@@ -236,7 +236,84 @@ func TestRangeFallbackError(t *testing.T) {
 	assert.EqualValues(t, rangeTok, tok)
 }
 
-// Test scan has same behavior as range
+// Test scan, origin succeeds, should upsert to fallback
+func TestScanSuccess(t *testing.T) {
+	originCtrl := gomock.NewController(t)
+	defer originCtrl.Finish()
+	mockOrigin := mocks.NewMockConnector(originCtrl)
+
+	fallbackCtrl := gomock.NewController(t)
+	defer fallbackCtrl.Finish()
+	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
+	rangeTok := "nextToken"
+	transformedResponse := map[string]dosa.FieldValue{
+		key:   []byte(`{"Token":"token","Limit":2}`),
+		value: []byte(`{"Rows":[{"a":"b"}],"TokenNext":"nextToken"}`),
+	}
+	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
+	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedResponse).Return(nil)
+
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector.setSynchronousMode(true)
+	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
+	assert.NoError(t, err)
+	assert.EqualValues(t, rangeResponse, resp)
+	assert.EqualValues(t, rangeTok, tok)
+}
+
+// Test scan, origin has error, fallback to cache succeeds.
+func TestScanError(t *testing.T) {
+	originCtrl := gomock.NewController(t)
+	defer originCtrl.Finish()
+	mockOrigin := mocks.NewMockConnector(originCtrl)
+
+	fallbackCtrl := gomock.NewController(t)
+	defer fallbackCtrl.Finish()
+	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+	transformedKey := map[string]dosa.FieldValue{
+		key: []byte(`{"Token":"token","Limit":2}`),
+	}
+	fallbackResponse := map[string]dosa.FieldValue{"value": []byte("{\"rows\": [{\"b\": 7}], \"tokenNext\": \"nextToken\"}")}
+	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(nil, "", assert.AnError)
+	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKey, dosa.All()).Return(fallbackResponse, nil)
+
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector.setSynchronousMode(true)
+	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
+	assert.NoError(t, err)
+	assert.EqualValues(t, []map[string]dosa.FieldValue{{"b": float64(7)}}, resp)
+	assert.EqualValues(t, "nextToken", tok)
+}
+
+// Test scan, origin has error, fallback to cache fails. Return original results
+func TestScanFallbackError(t *testing.T) {
+	originCtrl := gomock.NewController(t)
+	defer originCtrl.Finish()
+	mockOrigin := mocks.NewMockConnector(originCtrl)
+
+	fallbackCtrl := gomock.NewController(t)
+	defer fallbackCtrl.Finish()
+	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
+	rangeTok := "nextToken"
+	rangeErr := errors.New("origin error")
+	transformedKeys := map[string]dosa.FieldValue{
+		key: []byte(`{"Token":"token","Limit":2}`),
+	}
+	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, rangeErr)
+	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKeys, dosa.All()).Return(nil, assert.AnError)
+
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector.setSynchronousMode(true)
+	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
+	assert.EqualError(t, err, rangeErr.Error())
+	assert.EqualValues(t, rangeResponse, resp)
+	assert.EqualValues(t, rangeTok, tok)
+}
 
 // Test remove from origin also removes from cache. Does not matter if origin has an error or not
 func TestRemove(t *testing.T) {
@@ -249,7 +326,7 @@ func TestRemove(t *testing.T) {
 	mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
 	keys := map[string]dosa.FieldValue{}
-	transformedKeys := map[string]dosa.FieldValue{key: []byte("{}")}
+	transformedKeys := map[string]dosa.FieldValue{key: []byte("[]")}
 	mockOrigin.EXPECT().Remove(context.TODO(), testEi, keys).Return(nil)
 	mockFallback.EXPECT().Remove(context.TODO(), adaptedEi, transformedKeys).Return(nil)
 
