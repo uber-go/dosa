@@ -26,13 +26,15 @@ type rangeQuery struct {
 }
 
 // NewConnector creates a fallback cache connector
-func NewConnector(origin dosa.Connector, fallback dosa.Connector, encoder Encoder) *Connector {
+func NewConnector(origin dosa.Connector, fallback dosa.Connector, encoder Encoder, entities []dosa.Entity) *Connector {
 	bc := base.Connector{Next: origin}
+	set := createCachedEntitiesSet(entities)
 	return &Connector{
 		Connector: bc,
 		origin:    origin,
 		fallback:  fallback,
 		encoder:   encoder,
+		cacheableEntities: set,
 	}
 }
 
@@ -42,6 +44,7 @@ type Connector struct {
 	origin   dosa.Connector
 	fallback dosa.Connector
 	encoder  Encoder
+	cacheableEntities map[string]bool
 	// Used primarily for testing so that nothing is called in a goroutine
 	synchronous bool
 }
@@ -58,7 +61,9 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		}
 		return c.fallback.Upsert(ctx, adaptedEi, newValues)
 	}
-	_ = c.cacheWrite(w)
+	if c.isCacheable(ei) {
+		_ = c.cacheWrite(w)
+	}
 
 	return c.origin.Upsert(ctx, ei, values)
 }
@@ -66,6 +71,10 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, minimumFields []string) (values map[string]dosa.FieldValue, err error) {
 	// Read from source of truth first
 	source, sourceErr := c.origin.Read(ctx, ei, keys, dosa.All())
+	// If we are not caching for this entity, just return
+	if ! c.isCacheable(ei) {
+		return source, sourceErr
+	}
 
 	cacheKey := createCacheKey(ei, keys, c.encoder)
 	adaptedEi := adaptToKeyValue(ei)
@@ -99,7 +108,9 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 // Range returns range from origin, reverts to fallback if origin fails
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	sourceRows, sourceToken, sourceErr := c.origin.Range(ctx, ei, columnConditions, dosa.All(), token, limit)
-
+	if ! c.isCacheable(ei) {
+		return sourceRows, sourceToken, sourceErr
+	}
 	// TODO serializing dosa.Condition array? conditions could be any order
 	keysMap := rangeQuery{
 		Conditions: columnConditions,
@@ -151,7 +162,10 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		adaptedEi := adaptToKeyValue(ei)
 		return c.fallback.Remove(ctx, adaptedEi, map[string]dosa.FieldValue{key: cacheKey})
 	}
-	_ = c.cacheWrite(w)
+
+	if c.isCacheable(ei) {
+		_ = c.cacheWrite(w)
+	}
 
 	return c.origin.Remove(ctx, ei, keys)
 }
@@ -180,6 +194,24 @@ func (c *Connector) cacheWrite(w func() error) error {
 	}
 	go func() { _ = w() }()
 	return nil
+}
+
+func (c *Connector) isCacheable(ei *dosa.EntityInfo) bool {
+	return c.cacheableEntities[ei.Def.Name]
+}
+
+// returns a set of entity names that should go through the fallback cache
+// All other entities will just return results from origin
+func createCachedEntitiesSet(entities []dosa.Entity) map[string]bool {
+	set := map[string]bool{}
+	for _, e := range entities {
+		t, err := dosa.TableFromInstance(e)
+		if err != nil {
+			continue
+		}
+		set[t.EntityDefinition.Name] = true
+	}
+	return set
 }
 
 func adaptToKeyValue(ei *dosa.EntityInfo) *dosa.EntityInfo {
