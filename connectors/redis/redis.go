@@ -154,7 +154,11 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 
 	keyName, valueName := nameOfKeyValue(ei)
 
-	cacheKey := buildKey(ei.Ref.Scope, ei.Ref.NamePrefix, ei.Def.Name, keys[keyName])
+	cacheKey, err := buildKey(ei.Ref.Scope, ei.Ref.NamePrefix, ei.Def.Name, keys[keyName])
+	if err != nil {
+		return nil, err
+	}
+
 	cacheValue, err := c.client.Get(cacheKey)
 	if err != nil {
 		return nil, err
@@ -188,7 +192,10 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		return NewErrInvalidEntity("No value specified.")
 	}
 
-	cacheKey := buildKey(ei.Ref.Scope, ei.Ref.NamePrefix, ei.Def.Name, values[keyName])
+	cacheKey, err := buildKey(ei.Ref.Scope, ei.Ref.NamePrefix, ei.Def.Name, values[keyName])
+	if err != nil {
+		return err
+	}
 
 	return c.client.SetEx(cacheKey, cacheValueBytes, c.ttl)
 }
@@ -200,7 +207,10 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		return err
 	}
 	keyName, _ := nameOfKeyValue(ei)
-	cacheKey := buildKey(ei.Ref.Scope, ei.Ref.NamePrefix, ei.Def.Name, keys[keyName])
+	cacheKey, err := buildKey(ei.Ref.Scope, ei.Ref.NamePrefix, ei.Def.Name, keys[keyName])
+	if err != nil {
+		return err
+	}
 
 	return c.client.Del(cacheKey)
 }
@@ -228,8 +238,11 @@ func validateSchema(ei *dosa.EntityInfo) error {
 	return nil
 }
 
-func buildKey(scope, namePrefix, name string, keyValue interface{}) string {
+func buildKey(scope, namePrefix, name string, keyValue interface{}) (string, error) {
 	keyNamespace := strings.Join([]string{scope, namePrefix, name}, keySeparator)
 	keyString := keyValue.([]byte)
-	return strings.Join([]string{keyNamespace, string(keyString)}, keySeparator)
+	if len(keyString) == 0 {
+		return "", NewErrInvalidEntity("No key specified.")
+	}
+	return strings.Join([]string{keyNamespace, string(keyString)}, keySeparator), nil
 }
