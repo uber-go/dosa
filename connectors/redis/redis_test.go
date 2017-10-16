@@ -116,6 +116,15 @@ func TestWriteValidEntity(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestWriteNoKey(t *testing.T) {
+	table, _ := dosa.TableFromInstance(&testentity.KeyValue{})
+	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
+	testEi := &dosa.EntityInfo{Ref: &sr, Def: &table.EntityDefinition}
+	err := rc.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{}, "v": []byte("test")})
+	assert.Error(t, err)
+	assert.EqualError(t, err, "This entity schema and value not supported by redis. No key specified.")
+}
+
 func TestWriteNilByteValue(t *testing.T) {
 	if !redis.IsRunning() {
 		t.Skip("Redis is not running")
@@ -172,6 +181,14 @@ func TestReadInvalidEntityKey(t *testing.T) {
 	assert.EqualError(t, err, "This entity schema and value not supported by redis. Should only have a single key.")
 }
 
+func TestReadNoKey(t *testing.T) {
+	table, _ := dosa.TableFromInstance(&testentity.KeyValue{})
+	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
+	testEi := &dosa.EntityInfo{Ref: &sr, Def: &table.EntityDefinition}
+	_, err := rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{}}, dosa.All())
+	assert.EqualError(t, err, "This entity schema and value not supported by redis. No key specified.")
+}
+
 func TestReadInvalidEntityValue(t *testing.T) {
 	table, _ := dosa.TableFromInstance(&testentity.KeyValues{})
 	testEi := &dosa.EntityInfo{Ref: nil, Def: &table.EntityDefinition}
@@ -189,6 +206,15 @@ func TestRemove(t *testing.T) {
 	testEi := &dosa.EntityInfo{Ref: &sr, Def: &table.EntityDefinition}
 	err := rc.Remove(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{1, 1}})
 	assert.NoError(t, err)
+}
+
+
+func TestRemoveNoKey(t *testing.T) {
+	table, _ := dosa.TableFromInstance(&testentity.KeyValue{})
+	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
+	testEi := &dosa.EntityInfo{Ref: &sr, Def: &table.EntityDefinition}
+	err := rc.Remove(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte(nil)})
+	assert.EqualError(t, err, "This entity schema and value not supported by redis. No key specified.")
 }
 
 func TestRemoveInvalidEntity(t *testing.T) {
