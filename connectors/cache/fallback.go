@@ -49,6 +49,7 @@ type Connector struct {
 	synchronous bool
 }
 
+// SetCachedEntities sets the entities that will write and read from the fallback
 func (c *Connector) SetCachedEntities(entities ...dosa.DomainObject) {
 	set := createCachedEntitiesSet(entities)
 	c.cacheableEntities = set
