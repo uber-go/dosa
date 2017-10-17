@@ -26,14 +26,14 @@ type rangeQuery struct {
 }
 
 // NewConnector creates a fallback cache connector
-func NewConnector(origin dosa.Connector, fallback dosa.Connector, encoder Encoder, entities []dosa.Entity) *Connector {
+func NewConnector(origin dosa.Connector, fallback dosa.Connector, encoder Encoder, entities ...dosa.DomainObject) *Connector {
 	bc := base.Connector{Next: origin}
 	set := createCachedEntitiesSet(entities)
 	return &Connector{
-		Connector: bc,
-		origin:    origin,
-		fallback:  fallback,
-		encoder:   encoder,
+		Connector:         bc,
+		origin:            origin,
+		fallback:          fallback,
+		encoder:           encoder,
 		cacheableEntities: set,
 	}
 }
@@ -41,19 +41,27 @@ func NewConnector(origin dosa.Connector, fallback dosa.Connector, encoder Encode
 // Connector is a fallback cache connector
 type Connector struct {
 	base.Connector
-	origin   dosa.Connector
-	fallback dosa.Connector
-	encoder  Encoder
+	origin            dosa.Connector
+	fallback          dosa.Connector
+	encoder           Encoder
 	cacheableEntities map[string]bool
 	// Used primarily for testing so that nothing is called in a goroutine
 	synchronous bool
+}
+
+func (c *Connector) SetCachedEntities(entities ...dosa.DomainObject) {
+	set := createCachedEntitiesSet(entities)
+	c.cacheableEntities = set
 }
 
 // Upsert dual writes to the fallback cache and the origin
 func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	w := func() error {
 		cacheKey := createCacheKey(ei, values, c.encoder)
-		cacheValue, _ := c.encoder.Encode(values)
+		cacheValue, err := c.encoder.Encode(values)
+		if err != nil {
+			return err
+		}
 		adaptedEi := adaptToKeyValue(ei)
 		newValues := map[string]dosa.FieldValue{
 			key:   cacheKey,
@@ -72,7 +80,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	// Read from source of truth first
 	source, sourceErr := c.origin.Read(ctx, ei, keys, dosa.All())
 	// If we are not caching for this entity, just return
-	if ! c.isCacheable(ei) {
+	if !c.isCacheable(ei) {
 		return source, sourceErr
 	}
 
@@ -81,7 +89,10 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	// if source of truth is good, return result and write result to cache
 	if sourceErr == nil {
 		w := func() error {
-			cacheValue, _ := c.encoder.Encode(source)
+			cacheValue, err := c.encoder.Encode(source)
+			if err != nil {
+				return err
+			}
 			newValues := map[string]dosa.FieldValue{
 				key:   cacheKey,
 				value: cacheValue}
@@ -108,7 +119,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 // Range returns range from origin, reverts to fallback if origin fails
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	sourceRows, sourceToken, sourceErr := c.origin.Range(ctx, ei, columnConditions, dosa.All(), token, limit)
-	if ! c.isCacheable(ei) {
+	if !c.isCacheable(ei) {
 		return sourceRows, sourceToken, sourceErr
 	}
 	// TODO serializing dosa.Condition array? conditions could be any order
@@ -126,7 +137,10 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 				TokenNext: sourceToken,
 				Rows:      sourceRows,
 			}
-			cacheValue, _ := c.encoder.Encode(rangeResults)
+			cacheValue, err := c.encoder.Encode(rangeResults)
+			if err != nil {
+				return err
+			}
 			newValues := map[string]dosa.FieldValue{
 				key:   cacheKey,
 				value: cacheValue,
@@ -202,9 +216,12 @@ func (c *Connector) isCacheable(ei *dosa.EntityInfo) bool {
 
 // returns a set of entity names that should go through the fallback cache
 // All other entities will just return results from origin
-func createCachedEntitiesSet(entities []dosa.Entity) map[string]bool {
+func createCachedEntitiesSet(entities []dosa.DomainObject) map[string]bool {
 	set := map[string]bool{}
 	for _, e := range entities {
+		if e == nil {
+			continue
+		}
 		t, err := dosa.TableFromInstance(e)
 		if err != nil {
 			continue

@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/connectors/memory"
 	"github.com/uber-go/dosa/connectors/redis"
 	"github.com/uber-go/dosa/mocks"
 	"github.com/uber-go/dosa/testentity"
@@ -38,7 +39,20 @@ var (
 		},
 		Ref: &schemaRef,
 	}
+	cacheableEntities = []dosa.DomainObject{
+		&testentity.TestEntity{},
+	}
 )
+
+type BadEncoder struct{}
+
+func (b *BadEncoder) Encode(interface{}) ([]byte, error) {
+	return nil, errors.New("Encoding failed")
+}
+
+func (b *BadEncoder) Decode([]byte, interface{}) error {
+	return errors.New("Decoding failed")
+}
 
 func createTestEi(sr dosa.SchemaRef) *dosa.EntityInfo {
 	table, _ := dosa.TableFromInstance(&testentity.TestEntity{})
@@ -69,7 +83,43 @@ func TestUpsert(t *testing.T) {
 	mockOrigin.EXPECT().Upsert(context.TODO(), testEi, values).Return(nil)
 	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedValues).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
+	connector.setSynchronousMode(true)
+	err := connector.Upsert(context.TODO(), testEi, values)
+	assert.NoError(t, err)
+}
+
+func TestAsyncUpsert(t *testing.T) {
+	values := map[string]dosa.FieldValue{
+		"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
+		"strkey":      "test key string",
+		"StrV":        "test value string",
+		"BoolV":       false,
+	}
+	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), NewJSONEncoder(), cacheableEntities...)
+	err := connector.Upsert(context.TODO(), testEi, values)
+	assert.NoError(t, err)
+}
+
+// Encoding error when creating cache key means we should not upsert into fallback
+func TestUpsertEncodeError(t *testing.T) {
+	originCtrl := gomock.NewController(t)
+	defer originCtrl.Finish()
+	mockOrigin := mocks.NewMockConnector(originCtrl)
+
+	fallbackCtrl := gomock.NewController(t)
+	defer fallbackCtrl.Finish()
+	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+	values := map[string]dosa.FieldValue{
+		"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
+		"strkey":      "test key string",
+		"StrV":        "test value string",
+		"BoolV":       false,
+	}
+	mockOrigin.EXPECT().Upsert(context.TODO(), testEi, values).Return(nil)
+
+	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	err := connector.Upsert(context.TODO(), testEi, values)
 	assert.NoError(t, err)
@@ -94,8 +144,28 @@ func TestReadSuccess(t *testing.T) {
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(originResponse, nil)
 	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedResponse).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
 	connector.setSynchronousMode(true)
+	resp, err := connector.Read(context.TODO(), testEi, values, []string{})
+	assert.NoError(t, err)
+	assert.EqualValues(t, originResponse, resp)
+}
+
+// fallback should never be called when this is an uncached entity
+func TestReadUncachedEntity(t *testing.T) {
+	originCtrl := gomock.NewController(t)
+	defer originCtrl.Finish()
+	mockOrigin := mocks.NewMockConnector(originCtrl)
+
+	fallbackCtrl := gomock.NewController(t)
+	defer fallbackCtrl.Finish()
+	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+	values := map[string]dosa.FieldValue{}
+	originResponse := map[string]dosa.FieldValue{"a": "b"}
+	mockOrigin.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(originResponse, nil)
+
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil)
 	resp, err := connector.Read(context.TODO(), testEi, values, []string{})
 	assert.NoError(t, err)
 	assert.EqualValues(t, originResponse, resp)
@@ -121,11 +191,58 @@ func TestReadFail(t *testing.T) {
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(nil, originErr)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(fallbackResponse, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, err := connector.Read(context.TODO(), testEi, readValues, []string{})
 	assert.NoError(t, err)
 	assert.EqualValues(t, map[string]dosa.FieldValue{"b": float64(7)}, resp)
+}
+
+// Encoding error means do not upsert into fallback
+func TestReadEncodeError(t *testing.T) {
+	originCtrl := gomock.NewController(t)
+	defer originCtrl.Finish()
+	mockOrigin := mocks.NewMockConnector(originCtrl)
+
+	fallbackCtrl := gomock.NewController(t)
+	defer fallbackCtrl.Finish()
+	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+	values := map[string]dosa.FieldValue{}
+	originResponse := map[string]dosa.FieldValue{"a": "b"}
+	mockOrigin.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(originResponse, nil)
+
+	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, cacheableEntities...)
+	connector.setSynchronousMode(true)
+	resp, err := connector.Read(context.TODO(), testEi, values, []string{})
+	assert.NoError(t, err)
+	assert.EqualValues(t, originResponse, resp)
+}
+
+func TestReadDecodeError(t *testing.T) {
+	originCtrl := gomock.NewController(t)
+	defer originCtrl.Finish()
+	mockOrigin := mocks.NewMockConnector(originCtrl)
+
+	fallbackCtrl := gomock.NewController(t)
+	defer fallbackCtrl.Finish()
+	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+	fallbackResponse := map[string]dosa.FieldValue{"value": []byte("{\"b\": 7}")}
+	originResponse := map[string]dosa.FieldValue{"a": "b"}
+	originErr := errors.New("origin error")
+	readValues := map[string]dosa.FieldValue{}
+	transformedReadValues := map[string]dosa.FieldValue{
+		key: []byte{},
+	}
+
+	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(originResponse, originErr)
+	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(fallbackResponse, nil)
+
+	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, cacheableEntities...)
+	resp, err := connector.Read(context.TODO(), testEi, readValues, []string{})
+	assert.Equal(t, originErr, err)
+	assert.Equal(t, originResponse, resp)
 }
 
 // Test read, origin has error, fallback to cache fails. Return original results
@@ -148,8 +265,33 @@ func TestReadFallbackFail(t *testing.T) {
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(originResponse, originErr)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(nil, fallbackErr)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
 	connector.setSynchronousMode(true)
+	resp, err := connector.Read(context.TODO(), testEi, readValues, []string{})
+	assert.EqualError(t, err, originErr.Error())
+	assert.Equal(t, originResponse, resp)
+}
+
+func TestReadFallbackBadValue(t *testing.T) {
+	originCtrl := gomock.NewController(t)
+	defer originCtrl.Finish()
+	mockOrigin := mocks.NewMockConnector(originCtrl)
+
+	fallbackCtrl := gomock.NewController(t)
+	defer fallbackCtrl.Finish()
+	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+	readValues := map[string]dosa.FieldValue{}
+	transformedReadValues := map[string]dosa.FieldValue{
+		key: []byte("[]"),
+	}
+	originResponse := map[string]dosa.FieldValue{"a": "b"}
+	originErr := errors.New("origin error")
+	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(originResponse, originErr)
+	// fallback returns a response with no value field
+	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(nil, nil)
+
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
 	resp, err := connector.Read(context.TODO(), testEi, readValues, []string{})
 	assert.EqualError(t, err, originErr.Error())
 	assert.Equal(t, originResponse, resp)
@@ -175,8 +317,30 @@ func TestRangeSuccess(t *testing.T) {
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
 	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedResponse).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
 	connector.setSynchronousMode(true)
+	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
+	assert.NoError(t, err)
+	assert.EqualValues(t, rangeResponse, resp)
+	assert.EqualValues(t, rangeTok, tok)
+}
+
+func TestRangeUncachedEntity(t *testing.T) {
+	originCtrl := gomock.NewController(t)
+	defer originCtrl.Finish()
+	mockOrigin := mocks.NewMockConnector(originCtrl)
+
+	fallbackCtrl := gomock.NewController(t)
+	defer fallbackCtrl.Finish()
+	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
+	rangeTok := "nextToken"
+	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
+	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
+
+	// caching no entities, should return result from origin, fallback never called
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil)
 	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
 	assert.NoError(t, err)
 	assert.EqualValues(t, rangeResponse, resp)
@@ -201,12 +365,63 @@ func TestRangeError(t *testing.T) {
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(nil, "", assert.AnError)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKey, dosa.All()).Return(fallbackResponse, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
 	assert.NoError(t, err)
 	assert.EqualValues(t, []map[string]dosa.FieldValue{{"b": float64(7)}}, resp)
 	assert.EqualValues(t, "nextToken", tok)
+}
+
+func TestRangeEncodeError(t *testing.T) {
+	originCtrl := gomock.NewController(t)
+	defer originCtrl.Finish()
+	mockOrigin := mocks.NewMockConnector(originCtrl)
+
+	fallbackCtrl := gomock.NewController(t)
+	defer fallbackCtrl.Finish()
+	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
+	rangeTok := "nextToken"
+	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
+	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
+
+	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, cacheableEntities...)
+	connector.setSynchronousMode(true)
+	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
+	assert.NoError(t, err)
+	assert.EqualValues(t, rangeResponse, resp)
+	assert.EqualValues(t, rangeTok, tok)
+}
+
+// Bad decoding of fallback response should return the original response
+func TestRangeDecodeError(t *testing.T) {
+	originCtrl := gomock.NewController(t)
+	defer originCtrl.Finish()
+	mockOrigin := mocks.NewMockConnector(originCtrl)
+
+	fallbackCtrl := gomock.NewController(t)
+	defer fallbackCtrl.Finish()
+	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
+	transformedKey := map[string]dosa.FieldValue{
+		key: []byte(nil),
+	}
+	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
+	rangeTok := "nextToken"
+	rangeErr := errors.New("origin error")
+
+	fallbackResponse := map[string]dosa.FieldValue{"value": []byte("{\"rows\": [{\"b\": 7}], \"tokenNext\": \"nextToken\"}")}
+	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, rangeErr)
+	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKey, dosa.All()).Return(fallbackResponse, nil)
+
+	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, cacheableEntities...)
+	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
+	assert.Equal(t, rangeErr, err)
+	assert.Equal(t, rangeResponse, resp)
+	assert.Equal(t, rangeTok, tok)
 }
 
 // Test range, origin has error, fallback to cache fails. Return original results
@@ -228,7 +443,7 @@ func TestRangeFallbackError(t *testing.T) {
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, rangeErr)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKeys, dosa.All()).Return(nil, assert.AnError)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, tok, err := connector.Range(context.TODO(), testEi, nil, []string{}, "token", 2)
 	assert.EqualError(t, err, rangeErr.Error())
@@ -255,7 +470,7 @@ func TestScanSuccess(t *testing.T) {
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
 	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedResponse).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
 	assert.NoError(t, err)
@@ -280,7 +495,7 @@ func TestScanError(t *testing.T) {
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(nil, "", assert.AnError)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKey, dosa.All()).Return(fallbackResponse, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
 	assert.NoError(t, err)
@@ -307,7 +522,7 @@ func TestScanFallbackError(t *testing.T) {
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, rangeErr)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKeys, dosa.All()).Return(nil, assert.AnError)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
 	assert.EqualError(t, err, rangeErr.Error())
@@ -330,7 +545,7 @@ func TestRemove(t *testing.T) {
 	mockOrigin.EXPECT().Remove(context.TODO(), testEi, keys).Return(nil)
 	mockFallback.EXPECT().Remove(context.TODO(), adaptedEi, transformedKeys).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder())
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
 	connector.setSynchronousMode(true)
 	err := connector.Remove(context.TODO(), testEi, keys)
 	assert.NoError(t, err)
@@ -345,7 +560,7 @@ func TestCreateIfNotExists(t *testing.T) {
 	values := map[string]dosa.FieldValue{}
 	mockOrigin.EXPECT().CreateIfNotExists(context.TODO(), testEi, values).Return(nil)
 
-	connector := NewConnector(mockOrigin, nil, NewJSONEncoder())
+	connector := NewConnector(mockOrigin, nil, NewJSONEncoder(), cacheableEntities...)
 	connector.setSynchronousMode(true)
 	err := connector.CreateIfNotExists(context.TODO(), testEi, values)
 	assert.NoError(t, err)
@@ -376,7 +591,7 @@ func TestUpsertRead(t *testing.T) {
 	// origin read fails
 	mockDownstreamConnector.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(nil, assert.AnError)
 
-	connector := NewConnector(mockDownstreamConnector, redisC, NewGobEncoder())
+	connector := NewConnector(mockDownstreamConnector, redisC, NewGobEncoder(), cacheableEntities...)
 	connector.setSynchronousMode(true)
 
 	err := connector.Upsert(context.TODO(), testEi, values)
@@ -399,4 +614,27 @@ func TestCreateCacheKey(t *testing.T) {
 	}
 	key := createCacheKey(testEi, values, NewJSONEncoder())
 	assert.Equal(t, []byte(`[{"an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9"},{"int64key":2932},{"strkey":"test key string"}]`), key)
+}
+
+func TestCacheableEntities(t *testing.T) {
+	// Test cacheable entities, ignore entities in the list that are invalid
+	set := createCachedEntitiesSet([]dosa.DomainObject{&testentity.TestEntity{}, &dosa.Entity{}})
+	assert.Len(t, set, 1)
+}
+
+func TestSettingCachedEntities(t *testing.T) {
+	e1 := struct {
+		dosa.Entity `dosa:"name=e1, primaryKey=(Hello)"`
+		Hello       string
+	}{}
+	e2 := struct {
+		dosa.Entity `dosa:"name=e2, primaryKey=(World)"`
+		World       string
+	}{}
+	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), NewJSONEncoder(), &e1, &e2)
+	assert.Len(t, connector.cacheableEntities, 2)
+	assert.Contains(t, connector.cacheableEntities, "e1")
+	assert.Contains(t, connector.cacheableEntities, "e2")
+	connector.SetCachedEntities(nil)
+	assert.Empty(t, connector.cacheableEntities)
 }
