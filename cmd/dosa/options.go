@@ -32,9 +32,9 @@ import (
 )
 
 const (
-	_defServiceName  = "dosa-dev-gateway"
-	_prodServiceName = "dosa-gateway"
-	_prodScope       = "production"
+	_defHost        = "127.0.0.1"
+	_defPort        = "5437"
+	_defServiceName = "dosa-gateway"
 )
 
 var validNameRegex = regexp.MustCompile("^[a-z]+([a-z0-9]|[^-]-)*[^-]$")

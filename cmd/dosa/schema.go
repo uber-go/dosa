@@ -79,12 +79,9 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 		fmt.Printf("global options are %+v\n", options)
 	}
 
-	// if not given, set the service name dynamically based on scope
+	// TODO(eculver): use options/configurator pattern to apply defaults
 	if options.ServiceName == "" {
 		options.ServiceName = _defServiceName
-		if c.Scope == _prodScope {
-			options.ServiceName = _prodServiceName
-		}
 	}
 
 	client, err := getAdminClient(options)
@@ -161,12 +158,9 @@ func (c *SchemaStatus) Execute(args []string) error {
 		fmt.Printf("global options are %+v\n", options)
 	}
 
-	// if not given, set the service name dynamically based on scope
+	// TODO(eculver): use options/configurator pattern to apply defaults
 	if options.ServiceName == "" {
 		options.ServiceName = _defServiceName
-		if c.Scope == _prodScope {
-			options.ServiceName = _prodServiceName
-		}
 	}
 
 	client, err := getAdminClient(options)
