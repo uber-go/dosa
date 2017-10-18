@@ -60,7 +60,7 @@ func createTestEi(sr dosa.SchemaRef) *dosa.EntityInfo {
 	return testEi
 }
 
-// Test origin upsert, also upserts to cache
+// Test origin upsert also upserts to cache
 func TestUpsert(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -89,6 +89,7 @@ func TestUpsert(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// Run the upsert to fallback in the goroutine. Should not affect the main path.
 func TestAsyncUpsert(t *testing.T) {
 	values := map[string]dosa.FieldValue{
 		"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
@@ -125,7 +126,7 @@ func TestUpsertEncodeError(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// Test read, origin succeeds, should write response to cache
+// Test read from origin succeeds, should write response to cache
 func TestReadSuccess(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -151,7 +152,7 @@ func TestReadSuccess(t *testing.T) {
 	assert.EqualValues(t, originResponse, resp)
 }
 
-// fallback should never be called when this is an uncached entity
+// Fallback should never be called when we set the list of cached entities to empty
 func TestReadUncachedEntity(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -171,7 +172,7 @@ func TestReadUncachedEntity(t *testing.T) {
 	assert.EqualValues(t, originResponse, resp)
 }
 
-// Test read, origin has error, fallback to cache
+// Test that when read origin has error, we return from the fallback
 func TestReadFail(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -219,6 +220,7 @@ func TestReadEncodeError(t *testing.T) {
 	assert.EqualValues(t, originResponse, resp)
 }
 
+// Decode error means that we cannot read from the fallback, return the original response
 func TestReadDecodeError(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -245,7 +247,7 @@ func TestReadDecodeError(t *testing.T) {
 	assert.Equal(t, originResponse, resp)
 }
 
-// Test read, origin has error, fallback to cache fails. Return original results
+// Test read origin has error and fallback also fails. Should return the origin error.
 func TestReadFallbackFail(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -272,6 +274,7 @@ func TestReadFallbackFail(t *testing.T) {
 	assert.Equal(t, originResponse, resp)
 }
 
+// When fallback response is empty/corrupted, return the response from origin
 func TestReadFallbackBadValue(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -297,7 +300,7 @@ func TestReadFallbackBadValue(t *testing.T) {
 	assert.Equal(t, originResponse, resp)
 }
 
-// Test range, origin succeeds, should write response to cache
+// Test range from origin succeeds, should write response to cache
 func TestRangeSuccess(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -325,6 +328,7 @@ func TestRangeSuccess(t *testing.T) {
 	assert.EqualValues(t, rangeTok, tok)
 }
 
+// Whe caching no entities, should return result from origin, and fallback is never called
 func TestRangeUncachedEntity(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -339,7 +343,6 @@ func TestRangeUncachedEntity(t *testing.T) {
 	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
 
-	// caching no entities, should return result from origin, fallback never called
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil)
 	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
 	assert.NoError(t, err)
@@ -347,7 +350,7 @@ func TestRangeUncachedEntity(t *testing.T) {
 	assert.EqualValues(t, rangeTok, tok)
 }
 
-// Test range, origin has error, fallback to cache succeeds.
+// Test range from origin has error and fallback succeeds.
 func TestRangeError(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -373,6 +376,7 @@ func TestRangeError(t *testing.T) {
 	assert.EqualValues(t, "nextToken", tok)
 }
 
+// Encoding error means we should not write response to fallback
 func TestRangeEncodeError(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -395,7 +399,7 @@ func TestRangeEncodeError(t *testing.T) {
 	assert.EqualValues(t, rangeTok, tok)
 }
 
-// Bad decoding of fallback response should return the original response
+// Bad decoding of fallback response should result in returning the original response
 func TestRangeDecodeError(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -424,7 +428,7 @@ func TestRangeDecodeError(t *testing.T) {
 	assert.Equal(t, rangeTok, tok)
 }
 
-// Test range, origin has error, fallback to cache fails. Return original results
+// Test range from origin has error and fallback to cache fails. Should return origin results
 func TestRangeFallbackError(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -451,7 +455,7 @@ func TestRangeFallbackError(t *testing.T) {
 	assert.EqualValues(t, rangeTok, tok)
 }
 
-// Test scan, origin succeeds, should upsert to fallback
+// Test scan from origin succeeds, should upsert response to fallback
 func TestScanSuccess(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -478,7 +482,7 @@ func TestScanSuccess(t *testing.T) {
 	assert.EqualValues(t, rangeTok, tok)
 }
 
-// Test scan, origin has error, fallback to cache succeeds.
+// Test scan from origin has error and fallback succeeds.
 func TestScanError(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -503,7 +507,7 @@ func TestScanError(t *testing.T) {
 	assert.EqualValues(t, "nextToken", tok)
 }
 
-// Test scan, origin has error, fallback to cache fails. Return original results
+// Test scan from origin has error and fallback fails. Return origin results
 func TestScanFallbackError(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -530,7 +534,7 @@ func TestScanFallbackError(t *testing.T) {
 	assert.EqualValues(t, rangeTok, tok)
 }
 
-// Test remove from origin also removes from cache. Does not matter if origin has an error or not
+// Test remove from origin also removes from fallback. Does not matter if origin has an error or not
 func TestRemove(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -551,7 +555,8 @@ func TestRemove(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// Test a connector method reverts to using origin if it's not defined in connector
+// Test that if a Connector interface method is not defined in fallback.Connector, revert to
+// using the origin's implementation of the method
 func TestCreateIfNotExists(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
@@ -566,9 +571,9 @@ func TestCreateIfNotExists(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// Test read write against redis
-// First upsert successfully to origin and redis
-// On read, origin errors. Should return result from redis
+// Test read write against actual redis fallback.
+// First upsert successfully to origin and redis.
+// On origin read errors, should return result from redis
 func TestUpsertRead(t *testing.T) {
 	if !redis.IsRunning() {
 		t.Skip("Redis is not running")
@@ -603,6 +608,7 @@ func TestUpsertRead(t *testing.T) {
 	assert.EqualValues(t, values, resp)
 }
 
+// Test the internal method for serializing a cache key
 func TestCreateCacheKey(t *testing.T) {
 	values := map[string]dosa.FieldValue{
 		"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
@@ -616,12 +622,13 @@ func TestCreateCacheKey(t *testing.T) {
 	assert.Equal(t, []byte(`[{"an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9"},{"int64key":2932},{"strkey":"test key string"}]`), key)
 }
 
+// Test that creating cacheable entities set ignores entities in the list that are invalid
 func TestCacheableEntities(t *testing.T) {
-	// Test cacheable entities, ignore entities in the list that are invalid
 	set := createCachedEntitiesSet([]dosa.DomainObject{&testentity.TestEntity{}, &dosa.Entity{}})
 	assert.Len(t, set, 1)
 }
 
+// Test creating cacheable entities set
 func TestSettingCachedEntities(t *testing.T) {
 	e1 := struct {
 		dosa.Entity `dosa:"name=e1, primaryKey=(Hello)"`

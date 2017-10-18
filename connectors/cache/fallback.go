@@ -7,6 +7,7 @@ import (
 
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
+	"sync"
 )
 
 const (
@@ -45,14 +46,16 @@ type Connector struct {
 	fallback          dosa.Connector
 	encoder           Encoder
 	cacheableEntities map[string]bool
+	mux sync.Mutex
 	// Used primarily for testing so that nothing is called in a goroutine
 	synchronous bool
 }
 
 // SetCachedEntities sets the entities that will write and read from the fallback
 func (c *Connector) SetCachedEntities(entities ...dosa.DomainObject) {
-	set := createCachedEntitiesSet(entities)
-	c.cacheableEntities = set
+	c.mux.Lock()
+	defer c.mux.Unlock()
+	c.cacheableEntities = createCachedEntitiesSet(entities)
 }
 
 // Upsert dual writes to the fallback cache and the origin
