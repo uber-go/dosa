@@ -8,12 +8,26 @@ import (
 
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
+	"github.com/uber-go/tally"
 )
 
 const (
 	key   = "key"
 	value = "value"
 )
+
+// Scope is a namespace wrapper around a stats reporter, ensuring that
+// all emitted values have a given prefix or set of tags.
+type Scope interface {
+	// Counter returns the Counter object corresponding to the name.
+	Counter(name string) tally.Counter
+
+	// Tagged returns a new child scope with the given tags and current tags.
+	Tagged(tags map[string]string) Scope
+
+	// SubScope returns a new child scope appending a further name prefix.
+	SubScope(name string) Scope
+}
 
 type rangeResults struct {
 	Rows      []map[string]dosa.FieldValue
@@ -27,7 +41,7 @@ type rangeQuery struct {
 }
 
 // NewConnector creates a fallback cache connector
-func NewConnector(origin dosa.Connector, fallback dosa.Connector, encoder Encoder, entities ...dosa.DomainObject) *Connector {
+func NewConnector(origin dosa.Connector, fallback dosa.Connector, encoder Encoder, scope Scope, entities ...dosa.DomainObject) *Connector {
 	bc := base.Connector{Next: origin}
 	set := createCachedEntitiesSet(entities)
 	return &Connector{
@@ -36,6 +50,7 @@ func NewConnector(origin dosa.Connector, fallback dosa.Connector, encoder Encode
 		fallback:          fallback,
 		encoder:           encoder,
 		cacheableEntities: set,
+		stats:             scope,
 	}
 }
 
@@ -47,6 +62,7 @@ type Connector struct {
 	encoder           Encoder
 	cacheableEntities map[string]bool
 	mux               sync.Mutex
+	stats             Scope
 	// Used primarily for testing so that nothing is called in a goroutine
 	synchronous bool
 }
@@ -109,6 +125,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	// if source of truth fails, try the fallback. If the fallback fails,
 	// return the original error
 	value, err := c.getValueFromFallback(ctx, adaptedEi, cacheKey)
+	c.logFallback("READ", err)
 	if err != nil {
 		return source, sourceErr
 	}
@@ -156,6 +173,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 		return sourceRows, sourceToken, sourceErr
 	}
 	value, err := c.getValueFromFallback(ctx, adaptedEi, cacheKey)
+	c.logFallback("RANGE", err)
 	if err != nil {
 		return sourceRows, sourceToken, sourceErr
 	}
@@ -200,6 +218,19 @@ func (c *Connector) getValueFromFallback(ctx context.Context, ei *dosa.EntityInf
 		return nil, errors.New("No value in cache for key")
 	}
 	return cacheValue, nil
+}
+
+func (c *Connector) logFallback(method string, err error) {
+	if c.stats != nil {
+		s := c.stats.SubScope("fallback").Tagged(map[string]string{"method": method})
+		if err != nil {
+			s = s.SubScope("failure")
+		} else {
+			s = s.SubScope("success")
+		}
+
+		s.Counter("use_fallback").Inc(1)
+	}
 }
 
 func (c *Connector) setSynchronousMode(sync bool) {

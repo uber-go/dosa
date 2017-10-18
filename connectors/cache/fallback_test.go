@@ -83,7 +83,7 @@ func TestUpsert(t *testing.T) {
 	mockOrigin.EXPECT().Upsert(context.TODO(), testEi, values).Return(nil)
 	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedValues).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	err := connector.Upsert(context.TODO(), testEi, values)
 	assert.NoError(t, err)
@@ -97,7 +97,7 @@ func TestAsyncUpsert(t *testing.T) {
 		"StrV":        "test value string",
 		"BoolV":       false,
 	}
-	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), NewJSONEncoder(), nil, cacheableEntities...)
 	err := connector.Upsert(context.TODO(), testEi, values)
 	assert.NoError(t, err)
 }
@@ -120,7 +120,7 @@ func TestUpsertEncodeError(t *testing.T) {
 	}
 	mockOrigin.EXPECT().Upsert(context.TODO(), testEi, values).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	err := connector.Upsert(context.TODO(), testEi, values)
 	assert.NoError(t, err)
@@ -145,7 +145,7 @@ func TestReadSuccess(t *testing.T) {
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(originResponse, nil)
 	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedResponse).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, err := connector.Read(context.TODO(), testEi, values, []string{})
 	assert.NoError(t, err)
@@ -192,7 +192,7 @@ func TestReadFail(t *testing.T) {
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(nil, originErr)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(fallbackResponse, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, err := connector.Read(context.TODO(), testEi, readValues, []string{})
 	assert.NoError(t, err)
@@ -213,7 +213,7 @@ func TestReadEncodeError(t *testing.T) {
 	originResponse := map[string]dosa.FieldValue{"a": "b"}
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(originResponse, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, err := connector.Read(context.TODO(), testEi, values, []string{})
 	assert.NoError(t, err)
@@ -241,7 +241,7 @@ func TestReadDecodeError(t *testing.T) {
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(originResponse, originErr)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(fallbackResponse, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, nil, cacheableEntities...)
 	resp, err := connector.Read(context.TODO(), testEi, readValues, []string{})
 	assert.Equal(t, originErr, err)
 	assert.Equal(t, originResponse, resp)
@@ -267,7 +267,7 @@ func TestReadFallbackFail(t *testing.T) {
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(originResponse, originErr)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(nil, fallbackErr)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, err := connector.Read(context.TODO(), testEi, readValues, []string{})
 	assert.EqualError(t, err, originErr.Error())
@@ -294,7 +294,7 @@ func TestReadFallbackBadValue(t *testing.T) {
 	// fallback returns a response with no value field
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(nil, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	resp, err := connector.Read(context.TODO(), testEi, readValues, []string{})
 	assert.EqualError(t, err, originErr.Error())
 	assert.Equal(t, originResponse, resp)
@@ -320,7 +320,7 @@ func TestRangeSuccess(t *testing.T) {
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
 	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedResponse).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
 	assert.NoError(t, err)
@@ -368,7 +368,7 @@ func TestRangeError(t *testing.T) {
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(nil, "", assert.AnError)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKey, dosa.All()).Return(fallbackResponse, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
 	assert.NoError(t, err)
@@ -391,7 +391,7 @@ func TestRangeEncodeError(t *testing.T) {
 	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
 	assert.NoError(t, err)
@@ -421,7 +421,7 @@ func TestRangeDecodeError(t *testing.T) {
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, rangeErr)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKey, dosa.All()).Return(fallbackResponse, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, nil, cacheableEntities...)
 	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
 	assert.Equal(t, rangeErr, err)
 	assert.Equal(t, rangeResponse, resp)
@@ -447,7 +447,7 @@ func TestRangeFallbackError(t *testing.T) {
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, rangeErr)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKeys, dosa.All()).Return(nil, assert.AnError)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, tok, err := connector.Range(context.TODO(), testEi, nil, []string{}, "token", 2)
 	assert.EqualError(t, err, rangeErr.Error())
@@ -474,7 +474,7 @@ func TestScanSuccess(t *testing.T) {
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
 	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedResponse).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
 	assert.NoError(t, err)
@@ -499,7 +499,7 @@ func TestScanError(t *testing.T) {
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(nil, "", assert.AnError)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKey, dosa.All()).Return(fallbackResponse, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
 	assert.NoError(t, err)
@@ -526,7 +526,7 @@ func TestScanFallbackError(t *testing.T) {
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, rangeErr)
 	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKeys, dosa.All()).Return(nil, assert.AnError)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
 	assert.EqualError(t, err, rangeErr.Error())
@@ -549,7 +549,7 @@ func TestRemove(t *testing.T) {
 	mockOrigin.EXPECT().Remove(context.TODO(), testEi, keys).Return(nil)
 	mockFallback.EXPECT().Remove(context.TODO(), adaptedEi, transformedKeys).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	err := connector.Remove(context.TODO(), testEi, keys)
 	assert.NoError(t, err)
@@ -565,7 +565,7 @@ func TestCreateIfNotExists(t *testing.T) {
 	values := map[string]dosa.FieldValue{}
 	mockOrigin.EXPECT().CreateIfNotExists(context.TODO(), testEi, values).Return(nil)
 
-	connector := NewConnector(mockOrigin, nil, NewJSONEncoder(), cacheableEntities...)
+	connector := NewConnector(mockOrigin, nil, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	err := connector.CreateIfNotExists(context.TODO(), testEi, values)
 	assert.NoError(t, err)
@@ -596,7 +596,7 @@ func TestUpsertRead(t *testing.T) {
 	// origin read fails
 	mockDownstreamConnector.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(nil, assert.AnError)
 
-	connector := NewConnector(mockDownstreamConnector, redisC, NewGobEncoder(), cacheableEntities...)
+	connector := NewConnector(mockDownstreamConnector, redisC, NewGobEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 
 	err := connector.Upsert(context.TODO(), testEi, values)
@@ -638,7 +638,7 @@ func TestSettingCachedEntities(t *testing.T) {
 		dosa.Entity `dosa:"name=e2, primaryKey=(World)"`
 		World       string
 	}{}
-	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), NewJSONEncoder(), &e1, &e2)
+	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), NewJSONEncoder(), nil, &e1, &e2)
 	assert.Len(t, connector.cacheableEntities, 2)
 	assert.Contains(t, connector.cacheableEntities, "e1")
 	assert.Contains(t, connector.cacheableEntities, "e2")
