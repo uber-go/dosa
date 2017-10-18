@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"sync"
 
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
-	"sync"
 )
 
 const (
@@ -46,7 +46,7 @@ type Connector struct {
 	fallback          dosa.Connector
 	encoder           Encoder
 	cacheableEntities map[string]bool
-	mux sync.Mutex
+	mux               sync.Mutex
 	// Used primarily for testing so that nothing is called in a goroutine
 	synchronous bool
 }
