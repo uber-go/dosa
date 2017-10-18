@@ -28,6 +28,7 @@ import (
 
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
+	"github.com/uber-go/tally"
 )
 
 const keySeparator = ","
@@ -38,6 +39,19 @@ type SimpleRedis interface {
 	SetEx(key string, value []byte, ttl time.Duration) error
 	Del(key string) error
 	Shutdown() error
+}
+
+// Scope is a namespace wrapper around a stats reporter, ensuring that
+// all emitted values have a given prefix or set of tags.
+type Scope interface {
+	// Counter returns the Counter object corresponding to the name.
+	Counter(name string) tally.Counter
+
+	// Tagged returns a new child scope with the given tags and current tags.
+	Tagged(tags map[string]string) Scope
+
+	// SubScope returns a new child scope appending a further name prefix.
+	SubScope(name string) Scope
 }
 
 // ErrNotImplemented is returned for interface methods that do not have an implementation
@@ -91,10 +105,11 @@ type ServerConfig struct {
 }
 
 // NewConnector initializes a Redis Connector
-func NewConnector(config Config) dosa.Connector {
+func NewConnector(config Config, scope Scope) dosa.Connector {
 	return &Connector{
 		client: NewRedigoClient(config.ServerSettings),
 		ttl:    config.TTL,
+		stats:  scope,
 	}
 }
 
@@ -103,6 +118,7 @@ type Connector struct {
 	base.Connector
 	client SimpleRedis
 	ttl    time.Duration
+	stats  Scope
 }
 
 // CreateIfNotExists not implemented
@@ -142,7 +158,9 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 
 // Shutdown not implemented
 func (c *Connector) Shutdown() error {
-	return c.client.Shutdown()
+	err := c.client.Shutdown()
+	c.logError("Shutdown", err)
+	return err
 }
 
 // Read reads an object based on primary key
@@ -160,6 +178,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	}
 
 	cacheValue, err := c.client.Get(cacheKey)
+	c.logHitRate("Read", err)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +216,9 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		return err
 	}
 
-	return c.client.SetEx(cacheKey, cacheValueBytes, c.ttl)
+	err = c.client.SetEx(cacheKey, cacheValueBytes, c.ttl)
+	c.logError("Upsert", err)
+	return err
 }
 
 // Remove deletes a key
@@ -212,7 +233,31 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		return err
 	}
 
-	return c.client.Del(cacheKey)
+	err = c.client.Del(cacheKey)
+	c.logError("Remove", err)
+	return err
+}
+
+func (c *Connector) logHitRate(method string, err error) {
+	if err != nil {
+		if _, ok := err.(*dosa.ErrNotFound); ok {
+			c.incStat("miss", method)
+			return
+		}
+		c.logError(method, err)
+		return
+	}
+	c.incStat("hit", method)
+}
+
+func (c *Connector) logError(method string, err error) {
+	if err != nil {
+		c.incStat("error", method)
+	}
+}
+
+func (c *Connector) incStat(subscope, method string) {
+	c.stats.SubScope("cache").SubScope(subscope).Tagged(map[string]string{"method": method}).Counter("redis").Inc(1)
 }
 
 // return order is key, value
