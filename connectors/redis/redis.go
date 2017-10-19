@@ -257,6 +257,9 @@ func (c *Connector) logError(method string, err error) {
 }
 
 func (c *Connector) incStat(subscope, method string) {
+	if c.stats == nil {
+		return
+	}
 	c.stats.SubScope("cache").SubScope(subscope).Tagged(map[string]string{"method": method}).Counter("redis").Inc(1)
 }
 
