@@ -251,6 +251,7 @@ func TestReadHitStat(t *testing.T) {
 	rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{1, 2, 3}}, dosa.All())
 }
 
+// Test that a not found error is a cache miss
 func TestReadMissStat(t *testing.T) {
 	if !redis.IsRunning() {
 		t.Skip("Redis is not running")
@@ -274,6 +275,7 @@ func TestReadMissStat(t *testing.T) {
 	rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{4, 5, 6}}, dosa.All())
 }
 
+// Test that we log non not found errors as cache errors
 func TestReadErrorStat(t *testing.T) {
 	if !redis.IsRunning() {
 		t.Skip("Redis is not running")
@@ -297,6 +299,7 @@ func TestReadErrorStat(t *testing.T) {
 	rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{4, 5, 6}}, dosa.All())
 }
 
+// Log errors from upsert call with tag "Upsert"
 func TestUpsertErrorStat(t *testing.T) {
 	if !redis.IsRunning() {
 		t.Skip("Redis is not running")
@@ -320,6 +323,7 @@ func TestUpsertErrorStat(t *testing.T) {
 	rc.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{1}, "v": []byte{4, 5, 6}})
 }
 
+// Log errors from remove call with tag "Remove"
 func TestRemoveErrorStat(t *testing.T) {
 	if !redis.IsRunning() {
 		t.Skip("Redis is not running")
