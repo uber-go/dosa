@@ -89,6 +89,6 @@ func (c *simpleRedis) Shutdown() error {
 // to close connections taken from the pool
 func (c *simpleRedis) do(commandName string, args ...interface{}) (interface{}, error) {
 	conn := c.pool.Get()
-	defer func(){ _ = conn.Close()}()
+	defer func() { _ = conn.Close() }()
 	return conn.Do(commandName, args...)
 }
