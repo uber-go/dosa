@@ -28,7 +28,7 @@ import (
 
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
-	"github.com/uber-go/tally"
+	"github.com/uber-go/dosa/metrics"
 )
 
 const keySeparator = ","
@@ -39,19 +39,6 @@ type SimpleRedis interface {
 	SetEx(key string, value []byte, ttl time.Duration) error
 	Del(key string) error
 	Shutdown() error
-}
-
-// Scope is a namespace wrapper around a stats reporter, ensuring that
-// all emitted values have a given prefix or set of tags.
-type Scope interface {
-	// Counter returns the Counter object corresponding to the name.
-	Counter(name string) tally.Counter
-
-	// Tagged returns a new child scope with the given tags and current tags.
-	Tagged(tags map[string]string) Scope
-
-	// SubScope returns a new child scope appending a further name prefix.
-	SubScope(name string) Scope
 }
 
 // ErrNotImplemented is returned for interface methods that do not have an implementation
@@ -105,7 +92,7 @@ type ServerConfig struct {
 }
 
 // NewConnector initializes a Redis Connector
-func NewConnector(config Config, scope Scope) dosa.Connector {
+func NewConnector(config Config, scope metrics.Scope) dosa.Connector {
 	return &Connector{
 		client: NewRedigoClient(config.ServerSettings),
 		ttl:    config.TTL,
@@ -118,7 +105,7 @@ type Connector struct {
 	base.Connector
 	client SimpleRedis
 	ttl    time.Duration
-	stats  Scope
+	stats  metrics.Scope
 }
 
 // CreateIfNotExists not implemented
