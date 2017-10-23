@@ -81,7 +81,7 @@ func TestUpsert(t *testing.T) {
 		value: []byte(`{"BoolV":false,"StrV":"test value string","an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9","strkey":"test key string"}`),
 	}
 	mockOrigin.EXPECT().Upsert(context.TODO(), testEi, values).Return(nil)
-	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedValues).Return(nil)
+	mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, transformedValues).Return(nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
@@ -143,7 +143,7 @@ func TestReadSuccess(t *testing.T) {
 		value: []byte(`{"a":"b"}`),
 	}
 	mockOrigin.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(originResponse, nil)
-	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedResponse).Return(nil)
+	mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, transformedResponse).Return(nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
@@ -318,7 +318,7 @@ func TestRangeSuccess(t *testing.T) {
 	}
 	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
-	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedResponse).Return(nil)
+	mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, transformedResponse).Return(nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
@@ -472,7 +472,7 @@ func TestScanSuccess(t *testing.T) {
 		value: []byte(`{"Rows":[{"a":"b"}],"TokenNext":"nextToken"}`),
 	}
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
-	mockFallback.EXPECT().Upsert(context.TODO(), adaptedEi, transformedResponse).Return(nil)
+	mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, transformedResponse).Return(nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
@@ -547,7 +547,7 @@ func TestRemove(t *testing.T) {
 	keys := map[string]dosa.FieldValue{}
 	transformedKeys := map[string]dosa.FieldValue{key: []byte("[]")}
 	mockOrigin.EXPECT().Remove(context.TODO(), testEi, keys).Return(nil)
-	mockFallback.EXPECT().Remove(context.TODO(), adaptedEi, transformedKeys).Return(nil)
+	mockFallback.EXPECT().Remove(gomock.Not(context.TODO()), adaptedEi, transformedKeys).Return(nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
@@ -77,6 +78,9 @@ func (c *Connector) SetCachedEntities(entities ...dosa.DomainObject) {
 // Upsert dual writes to the fallback cache and the origin
 func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	w := func() error {
+		newCtx, cancel := createContextForFallback(ctx)
+		defer cancel()
+
 		cacheKey := createCacheKey(ei, values, c.encoder)
 		cacheValue, err := c.encoder.Encode(values)
 		if err != nil {
@@ -87,7 +91,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 			key:   cacheKey,
 			value: cacheValue,
 		}
-		return c.fallback.Upsert(ctx, adaptedEi, newValues)
+		return c.fallback.Upsert(newCtx, adaptedEi, newValues)
 	}
 	if c.isCacheable(ei) {
 		_ = c.cacheWrite(w)
@@ -109,6 +113,9 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	// if source of truth is good, return result and write result to cache
 	if sourceErr == nil {
 		w := func() error {
+			newCtx, cancel := createContextForFallback(ctx)
+			defer cancel()
+
 			cacheValue, err := c.encoder.Encode(source)
 			if err != nil {
 				return err
@@ -116,7 +123,8 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 			newValues := map[string]dosa.FieldValue{
 				key:   cacheKey,
 				value: cacheValue}
-			return c.fallback.Upsert(ctx, adaptedEi, newValues)
+
+			return c.fallback.Upsert(newCtx, adaptedEi, newValues)
 		}
 		_ = c.cacheWrite(w)
 
@@ -154,6 +162,9 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 
 	if sourceErr == nil {
 		w := func() error {
+			newCtx, cancel := createContextForFallback(ctx)
+			defer cancel()
+
 			rangeResults := rangeResults{
 				TokenNext: sourceToken,
 				Rows:      sourceRows,
@@ -166,7 +177,8 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 				key:   cacheKey,
 				value: cacheValue,
 			}
-			return c.fallback.Upsert(ctx, adaptedEi, newValues)
+
+			return c.fallback.Upsert(newCtx, adaptedEi, newValues)
 		}
 		_ = c.cacheWrite(w)
 
@@ -194,9 +206,11 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 // Remove deletes an entry
 func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue) error {
 	w := func() error {
+		newCtx, cancel := createContextForFallback(ctx)
+		defer cancel()
 		cacheKey := createCacheKey(ei, keys, c.encoder)
 		adaptedEi := adaptToKeyValue(ei)
-		return c.fallback.Remove(ctx, adaptedEi, map[string]dosa.FieldValue{key: cacheKey})
+		return c.fallback.Remove(newCtx, adaptedEi, map[string]dosa.FieldValue{key: cacheKey})
 	}
 
 	if c.isCacheable(ei) {
@@ -266,6 +280,7 @@ func createCachedEntitiesSet(entities []dosa.DomainObject) map[string]bool {
 	return set
 }
 
+// new entity info is being derived from the original to support the structure of a caching connector
 func adaptToKeyValue(ei *dosa.EntityInfo) *dosa.EntityInfo {
 	adaptedEi := &dosa.EntityInfo{}
 	adaptedEi.Ref = ei.Ref
@@ -303,4 +318,8 @@ func createCacheKey(ei *dosa.EntityInfo, values map[string]dosa.FieldValue, e En
 		return []byte{}
 	}
 	return cacheKey
+}
+
+func createContextForFallback(ctx context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(ctx, 5*time.Minute)
 }
