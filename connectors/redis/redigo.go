@@ -26,11 +26,12 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/metrics"
 )
 
 // NewRedigoClient returns a redigo implementation of SimpleRedis
-func NewRedigoClient(config ServerConfig) SimpleRedis {
-	c := &simpleRedis{config: config}
+func NewRedigoClient(config ServerConfig, scope metrics.Scope) SimpleRedis {
+	c := &simpleRedis{config: config, stats: scope}
 	c.pool = &redis.Pool{
 		MaxActive:   config.MaxActive,
 		MaxIdle:     config.MaxIdle,
@@ -55,6 +56,7 @@ func NewRedigoClient(config ServerConfig) SimpleRedis {
 type simpleRedis struct {
 	config ServerConfig
 	pool   *redis.Pool
+	stats metrics.Scope
 }
 
 func (c *simpleRedis) getURL() string {
