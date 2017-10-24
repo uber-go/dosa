@@ -90,6 +90,11 @@ func (c *simpleRedis) Shutdown() error {
 // Do is a proxy method that calls Redigo's `Do` method and returns its output. It remembers
 // to close connections taken from the pool
 func (c *simpleRedis) do(commandName string, args ...interface{}) (interface{}, error) {
+	if c.stats != nil {
+		t := c.stats.SubScope("redis").SubScope("latency").Timer(commandName)
+		t.Start()
+		defer t.Stop()
+	}
 	conn := c.pool.Get()
 	defer func(){ _ = conn.Close()}()
 	return conn.Do(commandName, args...)

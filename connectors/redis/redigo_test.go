@@ -30,7 +30,7 @@ import (
 
 func TestRedisNotRunning(t *testing.T) {
 	if !redis.IsRunning() {
-		c := redis.NewRedigoClient(redis.ServerConfig{})
+		c := redis.NewRedigoClient(redis.ServerConfig{}, nil)
 		err := c.Del("somekey")
 		assert.Error(t, err)
 	}
@@ -42,7 +42,7 @@ func TestRedisSyntax(t *testing.T) {
 	}
 
 	// Test the redigo implementation does not error
-	c := redis.NewRedigoClient(testRedisConfig.ServerSettings)
+	c := redis.NewRedigoClient(testRedisConfig.ServerSettings, nil)
 
 	err := c.SetEx("testkey", []byte("testvalue"), 100*time.Second)
 	assert.NoError(t, err)
@@ -63,7 +63,7 @@ func TestShutdown(t *testing.T) {
 		t.SkipNow()
 	}
 
-	c := redis.NewRedigoClient(testRedisConfig.ServerSettings)
+	c := redis.NewRedigoClient(testRedisConfig.ServerSettings, nil)
 	err := c.Shutdown()
 	assert.NoError(t, err)
 }
@@ -73,7 +73,7 @@ func TestWrongPort(t *testing.T) {
 		Host: "localhost",
 		Port: 1111,
 	}
-	c := redis.NewRedigoClient(config)
+	c := redis.NewRedigoClient(config, nil)
 	_, err := c.Get("testkey")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "1111")

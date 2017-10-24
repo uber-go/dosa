@@ -40,7 +40,7 @@ var testRedisConfig = redis.Config{
 	TTL: 5 * time.Second,
 }
 
-var rc = redis.NewConnector(testRedisConfig)
+var rc = redis.NewConnector(testRedisConfig, nil)
 
 func TestUnimplementedFunctions(t *testing.T) {
 	err := rc.CreateIfNotExists(context.TODO(), &dosa.EntityInfo{}, nil)
@@ -232,7 +232,7 @@ func TestEntityTypeNotBytes(t *testing.T) {
 }
 
 func TestShutdownConnector(t *testing.T) {
-	var rc = redis.NewConnector(testRedisConfig)
+	var rc = redis.NewConnector(testRedisConfig, nil)
 	err := rc.Shutdown()
 	assert.NoError(t, err)
 	err = rc.Shutdown()
