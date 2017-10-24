@@ -24,8 +24,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa/connectors/redis"
+	"github.com/uber-go/dosa/mocks"
 )
 
 func TestRedisNotRunning(t *testing.T) {
@@ -77,4 +79,35 @@ func TestWrongPort(t *testing.T) {
 	_, err := c.Get("testkey")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "1111")
+}
+
+// Test that we track latencies for all the redis commands
+func TestTimerCalled(t *testing.T) {
+	if !redis.IsRunning() {
+		t.SkipNow()
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	stats := mocks.NewMockScope(ctrl)
+
+	ctrl2 := gomock.NewController(t)
+	defer ctrl2.Finish()
+	timer := mocks.NewMockTimer(ctrl2)
+
+	c := redis.NewRedigoClient(testRedisConfig.ServerSettings, stats)
+
+	redisCommands := map[string]func(){
+		"GET": func() { c.Get("a") },
+		"SET": func() { c.SetEx("a", []byte{1}, 9*time.Second) },
+		"DEL": func() { c.Del("a") },
+	}
+	for command, f := range redisCommands {
+		stats.EXPECT().SubScope("redis").Return(stats)
+		stats.EXPECT().SubScope("latency").Return(stats)
+		stats.EXPECT().Timer(command).Return(timer)
+		timer.EXPECT().Start().Return(time.Now())
+		timer.EXPECT().Stop()
+		f()
+	}
 }
