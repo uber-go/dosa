@@ -229,11 +229,11 @@ func TestLogStats(t *testing.T) {
 	}
 
 	type testCase struct {
-		method string
-		scenario string
+		method      string
+		scenario    string
 		writeValues map[string]dosa.FieldValue
-		redisFunc func(dosa.Connector)
-		config redis.Config
+		redisFunc   func(dosa.Connector)
+		config      redis.Config
 	}
 
 	testMethod := func(tc testCase) {
@@ -257,42 +257,45 @@ func TestLogStats(t *testing.T) {
 	testCases := []testCase{
 		// Test that a successful read from redis logs as cache hit
 		{
-			scenario: "hit",
+			scenario:    "hit",
 			writeValues: values,
-			config: testRedisConfig,
-			method: "Read",
-			redisFunc: func(rc dosa.Connector){rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{1, 2, 3}}, dosa.All())},
+			config:      testRedisConfig,
+			method:      "Read",
+			redisFunc: func(rc dosa.Connector) {
+				rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{1, 2, 3}}, dosa.All())
+			},
 		},
 		// Test that a not found error is a cache miss
 		{
-			scenario: "miss",
+			scenario:    "miss",
 			writeValues: nil,
-			config: testRedisConfig,
-			method: "Read",
-			redisFunc: func(rc dosa.Connector){rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{4, 5, 6}}, dosa.All())},
-
+			config:      testRedisConfig,
+			method:      "Read",
+			redisFunc: func(rc dosa.Connector) {
+				rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{4, 5, 6}}, dosa.All())
+			},
 		},
 		// Make sure we log errors for methods
 		{
-			scenario: "error",
+			scenario:    "error",
 			writeValues: nil,
-			config: redis.Config{},
-			method: "Read",
-			redisFunc: func(rc dosa.Connector){rc.Read(context.TODO(), testEi, values, dosa.All())},
+			config:      redis.Config{},
+			method:      "Read",
+			redisFunc:   func(rc dosa.Connector) { rc.Read(context.TODO(), testEi, values, dosa.All()) },
 		},
 		{
-			scenario: "error",
+			scenario:    "error",
 			writeValues: nil,
-			config: redis.Config{},
-			method: "Remove",
-			redisFunc: func(rc dosa.Connector){rc.Remove(context.TODO(), testEi, values)},
+			config:      redis.Config{},
+			method:      "Remove",
+			redisFunc:   func(rc dosa.Connector) { rc.Remove(context.TODO(), testEi, values) },
 		},
 		{
-			scenario: "error",
+			scenario:    "error",
 			writeValues: nil,
-			config: redis.Config{},
-			method: "Upsert",
-			redisFunc: func(rc dosa.Connector){rc.Upsert(context.TODO(), testEi, values)},
+			config:      redis.Config{},
+			method:      "Upsert",
+			redisFunc:   func(rc dosa.Connector) { rc.Upsert(context.TODO(), testEi, values) },
 		},
 	}
 	for _, t := range testCases {

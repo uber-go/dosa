@@ -6,7 +6,6 @@ package mocks
 
 import (
 	reflect "reflect"
-	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 	"github.com/uber-go/dosa/metrics"
@@ -71,18 +70,6 @@ func (mr *MockScopeMockRecorder) SubScope(name interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubScope", reflect.TypeOf((*MockScope)(nil).SubScope), name)
 }
 
-// Timer mocks base method
-func (m *MockScope) Timer(name string) metrics.Timer {
-	ret := m.ctrl.Call(m, "Timer", name)
-	ret0, _ := ret[0].(metrics.Timer)
-	return ret0
-}
-
-// Timer indicates an expected call of Timer
-func (mr *MockScopeMockRecorder) Timer(name interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Timer", reflect.TypeOf((*MockScope)(nil).Timer), name)
-}
-
 // MockCounter is a mock of Counter interface
 type MockCounter struct {
 	ctrl     *gomock.Controller
@@ -125,38 +112,4 @@ type MockTimer struct {
 // MockTimerMockRecorder is the mock recorder for MockTimer
 type MockTimerMockRecorder struct {
 	mock *MockTimer
-}
-
-// NewMockTimer creates a new mock instance
-func NewMockTimer(ctrl *gomock.Controller) *MockTimer {
-	mock := &MockTimer{ctrl: ctrl}
-	mock.recorder = &MockTimerMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockTimer) EXPECT() *MockTimerMockRecorder {
-	return m.recorder
-}
-
-// Start mocks base method
-func (m *MockTimer) Start() time.Time {
-	ret := m.ctrl.Call(m, "Start")
-	ret0, _ := ret[0].(time.Time)
-	return ret0
-}
-
-// Start indicates an expected call of Start
-func (mr *MockTimerMockRecorder) Start() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockTimer)(nil).Start))
-}
-
-// Stop mocks base method
-func (m *MockTimer) Stop() {
-	m.ctrl.Call(m, "Stop")
-}
-
-// Stop indicates an expected call of Stop
-func (mr *MockTimerMockRecorder) Stop() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockTimer)(nil).Stop))
 }

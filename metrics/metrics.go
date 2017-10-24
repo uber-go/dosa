@@ -1,9 +1,5 @@
 package metrics
 
-import (
-	"time"
-)
-
 // Scope is a namespace wrapper around a stats reporter, ensuring that
 // all emitted values have a given prefix or set of tags.
 type Scope interface {
