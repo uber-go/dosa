@@ -23,7 +23,7 @@ var (
 		},
 		TTL: 15 * time.Second,
 	}
-	redisC    = redis.NewConnector(testRedisConfig)
+	redisC    = redis.NewConnector(testRedisConfig, nil)
 	schemaRef = dosa.SchemaRef{Scope: "testing", NamePrefix: "example"}
 	testEi    = createTestEi(schemaRef)
 	adaptedEi = &dosa.EntityInfo{
@@ -79,8 +79,7 @@ func TestUpsert(t *testing.T) {
 	transformedValues := map[string]dosa.FieldValue{
 		key:   []byte(`[{"an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9"},{"strkey":"test key string"}]`),
 		value: []byte(`{"BoolV":false,"StrV":"test value string","an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9","strkey":"test key string"}`),
-	}
-	mockOrigin.EXPECT().Upsert(context.TODO(), testEi, values).Return(nil)
+	} 
 	mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, transformedValues).Return(nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
@@ -272,6 +271,55 @@ func TestReadFallbackFail(t *testing.T) {
 	resp, err := connector.Read(context.TODO(), testEi, readValues, []string{})
 	assert.EqualError(t, err, originErr.Error())
 	assert.Equal(t, originResponse, resp)
+}
+
+// Test logging stats when using fallback path
+func TestFallbackStats(t *testing.T) {
+	originCtrl := gomock.NewController(t)
+	defer originCtrl.Finish()
+	mockOrigin := mocks.NewMockConnector(originCtrl)
+
+	fallbackCtrl := gomock.NewController(t)
+	defer fallbackCtrl.Finish()
+	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+	statsCtrl := gomock.NewController(t)
+	defer statsCtrl.Finish()
+	mockStats := mocks.NewMockScope(statsCtrl)
+
+	counterCtrl := gomock.NewController(t)
+	defer counterCtrl.Finish()
+	mockCounter := mocks.NewMockCounter(counterCtrl)
+
+	type testCase struct {
+		counter      string
+		fallbackResp map[string]dosa.FieldValue
+		fallbackErr  error
+	}
+	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), mockStats, cacheableEntities...)
+
+	testCases := []testCase{
+		{
+			counter:      "failure",
+			fallbackResp: nil,
+			fallbackErr:  assert.AnError,
+		},
+		{
+			counter:      "success",
+			fallbackResp: map[string]dosa.FieldValue{"value": []byte("{\"b\": 7}")},
+			fallbackErr:  nil,
+		},
+	}
+	for _, t := range testCases {
+		mockOrigin.EXPECT().Read(context.TODO(), testEi, nil, dosa.All()).Return(nil, assert.AnError)
+		mockFallback.EXPECT().Read(context.TODO(), adaptedEi, gomock.Any(), dosa.All()).Return(t.fallbackResp, t.fallbackErr)
+		mockStats.EXPECT().SubScope("fallback").Return(mockStats)
+		mockStats.EXPECT().Tagged(map[string]string{"method": "READ"}).Return(mockStats)
+		mockStats.EXPECT().Counter(t.counter).Return(mockCounter)
+		mockCounter.EXPECT().Inc(int64(1))
+
+		connector.Read(context.TODO(), testEi, nil, []string{})
+	}
 }
 
 // When fallback response is empty/corrupted, return the response from origin

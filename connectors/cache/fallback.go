@@ -9,26 +9,13 @@ import (
 
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
-	"github.com/uber-go/tally"
+	"github.com/uber-go/dosa/metrics"
 )
 
 const (
 	key   = "key"
 	value = "value"
 )
-
-// Scope is a namespace wrapper around a stats reporter, ensuring that
-// all emitted values have a given prefix or set of tags.
-type Scope interface {
-	// Counter returns the Counter object corresponding to the name.
-	Counter(name string) tally.Counter
-
-	// Tagged returns a new child scope with the given tags and current tags.
-	Tagged(tags map[string]string) Scope
-
-	// SubScope returns a new child scope appending a further name prefix.
-	SubScope(name string) Scope
-}
 
 type rangeResults struct {
 	Rows      []map[string]dosa.FieldValue
@@ -42,7 +29,7 @@ type rangeQuery struct {
 }
 
 // NewConnector creates a fallback cache connector
-func NewConnector(origin dosa.Connector, fallback dosa.Connector, encoder Encoder, scope Scope, entities ...dosa.DomainObject) *Connector {
+func NewConnector(origin dosa.Connector, fallback dosa.Connector, encoder Encoder, scope metrics.Scope, entities ...dosa.DomainObject) *Connector {
 	bc := base.Connector{Next: origin}
 	set := createCachedEntitiesSet(entities)
 	return &Connector{
@@ -63,7 +50,7 @@ type Connector struct {
 	encoder           Encoder
 	cacheableEntities map[string]bool
 	mux               sync.Mutex
-	stats             Scope
+	stats             metrics.Scope
 	// Used primarily for testing so that nothing is called in a goroutine
 	synchronous bool
 }
@@ -238,12 +225,10 @@ func (c *Connector) logFallback(method string, err error) {
 	if c.stats != nil {
 		s := c.stats.SubScope("fallback").Tagged(map[string]string{"method": method})
 		if err != nil {
-			s = s.SubScope("failure")
+			s.Counter("failure").Inc(1)
 		} else {
-			s = s.SubScope("success")
+			s.Counter("success").Inc(1)
 		}
-
-		s.Counter("use_fallback").Inc(1)
 	}
 }
 
