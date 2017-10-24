@@ -6,7 +6,10 @@ package mocks
 
 import (
 	reflect "reflect"
+<<<<<<< HEAD
 	time "time"
+=======
+>>>>>>> origin/master
 
 	gomock "github.com/golang/mock/gomock"
 	"github.com/uber-go/dosa/metrics"

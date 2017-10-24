@@ -25,9 +25,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/redis"
+	"github.com/uber-go/dosa/mocks"
 	"github.com/uber-go/dosa/testentity"
 	"golang.org/x/net/context"
 )
@@ -37,10 +39,15 @@ var testRedisConfig = redis.Config{
 		Host: "localhost",
 		Port: redis.RedisPort,
 	},
-	TTL: 5 * time.Second,
+	TTL: 1 * time.Minute,
 }
 
-var rc = redis.NewConnector(testRedisConfig, nil)
+var (
+	rc       = redis.NewConnector(testRedisConfig, nil)
+	table, _ = dosa.TableFromInstance(&testentity.KeyValue{})
+	sr       = dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
+	testEi   = &dosa.EntityInfo{Ref: &sr, Def: &table.EntityDefinition}
+)
 
 func TestUnimplementedFunctions(t *testing.T) {
 	err := rc.CreateIfNotExists(context.TODO(), &dosa.EntityInfo{}, nil)
@@ -70,9 +77,6 @@ func TestWriteReadKeyValue(t *testing.T) {
 		t.Skip("Redis is not running")
 	}
 
-	table, _ := dosa.TableFromInstance(&testentity.KeyValue{})
-	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
-	testEi := &dosa.EntityInfo{Ref: &sr, Def: &table.EntityDefinition}
 	values := map[string]dosa.FieldValue{
 		"k": []byte{1, 2, 3},
 		"v": []byte{4, 5, 6},
@@ -109,17 +113,13 @@ func TestWriteValidEntity(t *testing.T) {
 	if !redis.IsRunning() {
 		t.Skip("Redis is not running")
 	}
-	table, _ := dosa.TableFromInstance(&testentity.KeyValue{})
-	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
-	testEi := &dosa.EntityInfo{Ref: &sr, Def: &table.EntityDefinition}
+
 	err := rc.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte("testValue"), "v": []byte("test")})
 	assert.NoError(t, err)
 }
 
 func TestWriteNoKey(t *testing.T) {
-	table, _ := dosa.TableFromInstance(&testentity.KeyValue{})
-	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
-	testEi := &dosa.EntityInfo{Ref: &sr, Def: &table.EntityDefinition}
+
 	err := rc.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{}, "v": []byte("test")})
 	assert.Error(t, err)
 	assert.EqualError(t, err, "This entity schema and value not supported by redis. No key specified.")
@@ -129,8 +129,7 @@ func TestWriteNilByteValue(t *testing.T) {
 	if !redis.IsRunning() {
 		t.Skip("Redis is not running")
 	}
-	table, _ := dosa.TableFromInstance(&testentity.KeyValue{})
-	testEi := &dosa.EntityInfo{Ref: nil, Def: &table.EntityDefinition}
+
 	err := rc.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte("testValue"), "v": []byte(nil)})
 	assert.EqualError(t, err, "This entity schema and value not supported by redis. No value specified.")
 }
@@ -139,8 +138,6 @@ func TestWriteNilValue(t *testing.T) {
 	if !redis.IsRunning() {
 		t.Skip("Redis is not running")
 	}
-	table, _ := dosa.TableFromInstance(&testentity.KeyValue{})
-	testEi := &dosa.EntityInfo{Ref: nil, Def: &table.EntityDefinition}
 	err := rc.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte("testValue"), "v": nil})
 	assert.EqualError(t, err, "This entity schema and value not supported by redis. No value specified.")
 }
@@ -164,9 +161,6 @@ func TestReadNotFound(t *testing.T) {
 		t.Skip("Redis is not running")
 	}
 
-	table, _ := dosa.TableFromInstance(&testentity.KeyValue{})
-	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
-	testEi := &dosa.EntityInfo{Ref: &sr, Def: &table.EntityDefinition}
 	// Expect a key not found error when reading something that does not exist in redis
 	randBytes := make([]byte, 10)
 	rand.Read(randBytes)
@@ -182,9 +176,6 @@ func TestReadInvalidEntityKey(t *testing.T) {
 }
 
 func TestReadNoKey(t *testing.T) {
-	table, _ := dosa.TableFromInstance(&testentity.KeyValue{})
-	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
-	testEi := &dosa.EntityInfo{Ref: &sr, Def: &table.EntityDefinition}
 	_, err := rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{}}, dosa.All())
 	assert.EqualError(t, err, "This entity schema and value not supported by redis. No key specified.")
 }
@@ -200,19 +191,11 @@ func TestRemove(t *testing.T) {
 	if !redis.IsRunning() {
 		t.Skip("Redis is not running")
 	}
-
-	table, _ := dosa.TableFromInstance(&testentity.KeyValue{})
-	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
-	testEi := &dosa.EntityInfo{Ref: &sr, Def: &table.EntityDefinition}
 	err := rc.Remove(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{1, 1}})
 	assert.NoError(t, err)
 }
 
-
 func TestRemoveNoKey(t *testing.T) {
-	table, _ := dosa.TableFromInstance(&testentity.KeyValue{})
-	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
-	testEi := &dosa.EntityInfo{Ref: &sr, Def: &table.EntityDefinition}
 	err := rc.Remove(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte(nil)})
 	assert.EqualError(t, err, "This entity schema and value not supported by redis. No key specified.")
 }
@@ -237,4 +220,92 @@ func TestShutdownConnector(t *testing.T) {
 	assert.NoError(t, err)
 	err = rc.Shutdown()
 	assert.NoError(t, err)
+}
+
+// Test recording cache hit/miss and error stats
+func TestLogStats(t *testing.T) {
+	if !redis.IsRunning() {
+		t.Skip("Redis is not running")
+	}
+
+	type testCase struct {
+		method      string
+		scenario    string
+		writeValues map[string]dosa.FieldValue
+		redisFunc   func(dosa.Connector)
+		config      redis.Config
+	}
+
+	testMethod := func(tc testCase) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		stats := mocks.NewMockScope(ctrl)
+
+		ctrl2 := gomock.NewController(t)
+		defer ctrl2.Finish()
+		counter := mocks.NewMockCounter(ctrl2)
+
+		setupStatsExpectations(stats, counter, tc.method, tc.scenario)
+
+		rc := redis.NewConnector(tc.config, stats)
+		rc.Upsert(context.TODO(), testEi, tc.writeValues)
+		tc.redisFunc(rc)
+	}
+
+	values := map[string]dosa.FieldValue{"k": []byte{1, 2, 3}, "v": []byte{4, 5, 6}}
+
+	testCases := []testCase{
+		// Test that a successful read from redis logs as cache hit
+		{
+			scenario:    "hit",
+			writeValues: values,
+			config:      testRedisConfig,
+			method:      "Read",
+			redisFunc: func(rc dosa.Connector) {
+				rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{1, 2, 3}}, dosa.All())
+			},
+		},
+		// Test that a not found error is a cache miss
+		{
+			scenario:    "miss",
+			writeValues: nil,
+			config:      testRedisConfig,
+			method:      "Read",
+			redisFunc: func(rc dosa.Connector) {
+				rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{4, 5, 6}}, dosa.All())
+			},
+		},
+		// Make sure we log errors for methods
+		{
+			scenario:    "error",
+			writeValues: nil,
+			config:      redis.Config{},
+			method:      "Read",
+			redisFunc:   func(rc dosa.Connector) { rc.Read(context.TODO(), testEi, values, dosa.All()) },
+		},
+		{
+			scenario:    "error",
+			writeValues: nil,
+			config:      redis.Config{},
+			method:      "Remove",
+			redisFunc:   func(rc dosa.Connector) { rc.Remove(context.TODO(), testEi, values) },
+		},
+		{
+			scenario:    "error",
+			writeValues: nil,
+			config:      redis.Config{},
+			method:      "Upsert",
+			redisFunc:   func(rc dosa.Connector) { rc.Upsert(context.TODO(), testEi, values) },
+		},
+	}
+	for _, t := range testCases {
+		testMethod(t)
+	}
+}
+
+func setupStatsExpectations(stats *mocks.MockScope, counter *mocks.MockCounter, method, action string) {
+	stats.EXPECT().SubScope("cache").Return(stats)
+	stats.EXPECT().Tagged(map[string]string{"method": method}).Return(stats)
+	stats.EXPECT().Counter(action).Return(counter)
+	counter.EXPECT().Inc(int64(1))
 }

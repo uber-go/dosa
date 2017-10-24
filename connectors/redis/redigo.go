@@ -96,6 +96,6 @@ func (c *simpleRedis) do(commandName string, args ...interface{}) (interface{}, 
 		defer t.Stop()
 	}
 	conn := c.pool.Get()
-	defer func(){ _ = conn.Close()}()
+	defer func() { _ = conn.Close() }()
 	return conn.Do(commandName, args...)
 }
