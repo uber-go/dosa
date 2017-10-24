@@ -15,21 +15,10 @@ type Scope interface {
 
 	// SubScope returns a new child scope appending a further name prefix.
 	SubScope(name string) Scope
-
-	// Timer returns the Timer object corresponding to the name.
-	Timer(name string) Timer
 }
 
 // Counter is the interface for emitting counter type metrics.
 type Counter interface {
 	// Inc increments the counter by a delta.
 	Inc(delta int64)
-}
-
-// Timer is the interface for emitting timer metrics.
-type Timer interface {
-	// Start gives you back a specific point in time to report via Stop.
-	Start() time.Time
-	// Stop reports time elapsed since the timer start to the recorder.
-	Stop()
 }

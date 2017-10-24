@@ -222,127 +222,87 @@ func TestShutdownConnector(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// Test that a successful read from redis logs as cache hit
-func TestReadHitStat(t *testing.T) {
+// Test recording cache hit/miss and error stats
+func TestLogStats(t *testing.T) {
 	if !redis.IsRunning() {
 		t.Skip("Redis is not running")
 	}
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	stats := mocks.NewMockScope(ctrl)
-
-	ctrl2 := gomock.NewController(t)
-	defer ctrl2.Finish()
-	counter := mocks.NewMockCounter(ctrl2)
-
-	stats.EXPECT().SubScope("cache").Return(stats)
-	stats.EXPECT().SubScope("hit").Return(stats)
-	stats.EXPECT().Tagged(map[string]string{"method": "Read"}).Return(stats)
-	stats.EXPECT().Counter("redis").Return(counter)
-	counter.EXPECT().Inc(int64(1))
-
-	rc := redis.NewConnector(testRedisConfig, stats)
-	values := map[string]dosa.FieldValue{
-		"k": []byte{1, 2, 3},
-		"v": []byte{4, 5, 6},
+	type testCase struct {
+		method string
+		scenario string
+		writeValues map[string]dosa.FieldValue
+		redisFunc func(dosa.Connector)
+		config redis.Config
 	}
-	rc.Upsert(context.TODO(), testEi, values)
-	rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{1, 2, 3}}, dosa.All())
+
+	testMethod := func(tc testCase) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		stats := mocks.NewMockScope(ctrl)
+
+		ctrl2 := gomock.NewController(t)
+		defer ctrl2.Finish()
+		counter := mocks.NewMockCounter(ctrl2)
+
+		setupStatsExpectations(stats, counter, tc.method, tc.scenario)
+
+		rc := redis.NewConnector(tc.config, stats)
+		rc.Upsert(context.TODO(), testEi, tc.writeValues)
+		tc.redisFunc(rc)
+	}
+
+	values := map[string]dosa.FieldValue{"k": []byte{1, 2, 3}, "v": []byte{4, 5, 6}}
+
+	testCases := []testCase{
+		// Test that a successful read from redis logs as cache hit
+		{
+			scenario: "hit",
+			writeValues: values,
+			config: testRedisConfig,
+			method: "Read",
+			redisFunc: func(rc dosa.Connector){rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{1, 2, 3}}, dosa.All())},
+		},
+		// Test that a not found error is a cache miss
+		{
+			scenario: "miss",
+			writeValues: nil,
+			config: testRedisConfig,
+			method: "Read",
+			redisFunc: func(rc dosa.Connector){rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{4, 5, 6}}, dosa.All())},
+
+		},
+		// Make sure we log errors for methods
+		{
+			scenario: "error",
+			writeValues: nil,
+			config: redis.Config{},
+			method: "Read",
+			redisFunc: func(rc dosa.Connector){rc.Read(context.TODO(), testEi, values, dosa.All())},
+		},
+		{
+			scenario: "error",
+			writeValues: nil,
+			config: redis.Config{},
+			method: "Remove",
+			redisFunc: func(rc dosa.Connector){rc.Remove(context.TODO(), testEi, values)},
+		},
+		{
+			scenario: "error",
+			writeValues: nil,
+			config: redis.Config{},
+			method: "Upsert",
+			redisFunc: func(rc dosa.Connector){rc.Upsert(context.TODO(), testEi, values)},
+		},
+	}
+	for _, t := range testCases {
+		testMethod(t)
+	}
 }
 
-// Test that a not found error is a cache miss
-func TestReadMissStat(t *testing.T) {
-	if !redis.IsRunning() {
-		t.Skip("Redis is not running")
-	}
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	stats := mocks.NewMockScope(ctrl)
-
-	ctrl2 := gomock.NewController(t)
-	defer ctrl2.Finish()
-	counter := mocks.NewMockCounter(ctrl2)
-
+func setupStatsExpectations(stats *mocks.MockScope, counter *mocks.MockCounter, method, action string) {
 	stats.EXPECT().SubScope("cache").Return(stats)
-	stats.EXPECT().SubScope("miss").Return(stats)
-	stats.EXPECT().Tagged(map[string]string{"method": "Read"}).Return(stats)
-	stats.EXPECT().Counter("redis").Return(counter)
+	stats.EXPECT().Tagged(map[string]string{"method": method}).Return(stats)
+	stats.EXPECT().Counter(action).Return(counter)
 	counter.EXPECT().Inc(int64(1))
-
-	rc := redis.NewConnector(testRedisConfig, stats)
-	rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{4, 5, 6}}, dosa.All())
-}
-
-// Test that we log non not found errors as cache errors
-func TestReadErrorStat(t *testing.T) {
-	if !redis.IsRunning() {
-		t.Skip("Redis is not running")
-	}
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	stats := mocks.NewMockScope(ctrl)
-
-	ctrl2 := gomock.NewController(t)
-	defer ctrl2.Finish()
-	counter := mocks.NewMockCounter(ctrl2)
-
-	stats.EXPECT().SubScope("cache").Return(stats)
-	stats.EXPECT().SubScope("error").Return(stats)
-	stats.EXPECT().Tagged(map[string]string{"method": "Read"}).Return(stats)
-	stats.EXPECT().Counter("redis").Return(counter)
-	counter.EXPECT().Inc(int64(1))
-
-	rc := redis.NewConnector(redis.Config{}, stats)
-	rc.Read(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{4, 5, 6}}, dosa.All())
-}
-
-// Log errors from upsert call with tag "Upsert"
-func TestUpsertErrorStat(t *testing.T) {
-	if !redis.IsRunning() {
-		t.Skip("Redis is not running")
-	}
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	stats := mocks.NewMockScope(ctrl)
-
-	ctrl2 := gomock.NewController(t)
-	defer ctrl2.Finish()
-	counter := mocks.NewMockCounter(ctrl2)
-
-	stats.EXPECT().SubScope("cache").Return(stats)
-	stats.EXPECT().SubScope("error").Return(stats)
-	stats.EXPECT().Tagged(map[string]string{"method": "Upsert"}).Return(stats)
-	stats.EXPECT().Counter("redis").Return(counter)
-	counter.EXPECT().Inc(int64(1))
-
-	rc := redis.NewConnector(redis.Config{}, stats)
-	rc.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{1}, "v": []byte{4, 5, 6}})
-}
-
-// Log errors from remove call with tag "Remove"
-func TestRemoveErrorStat(t *testing.T) {
-	if !redis.IsRunning() {
-		t.Skip("Redis is not running")
-	}
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	stats := mocks.NewMockScope(ctrl)
-
-	ctrl2 := gomock.NewController(t)
-	defer ctrl2.Finish()
-	counter := mocks.NewMockCounter(ctrl2)
-
-	stats.EXPECT().SubScope("cache").Return(stats)
-	stats.EXPECT().SubScope("error").Return(stats)
-	stats.EXPECT().Tagged(map[string]string{"method": "Remove"}).Return(stats)
-	stats.EXPECT().Counter("redis").Return(counter)
-	counter.EXPECT().Inc(int64(1))
-
-	rc := redis.NewConnector(redis.Config{}, stats)
-	rc.Remove(context.TODO(), testEi, map[string]dosa.FieldValue{"k": []byte{1}, "v": []byte{4, 5, 6}})
 }

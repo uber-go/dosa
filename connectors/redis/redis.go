@@ -227,7 +227,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 
 func (c *Connector) logHitRate(method string, err error) {
 	if err != nil {
-		if _, ok := err.(*dosa.ErrNotFound); ok {
+		if dosa.ErrorIsNotFound(err) {
 			c.incStat("miss", method)
 			return
 		}
@@ -243,11 +243,11 @@ func (c *Connector) logError(method string, err error) {
 	}
 }
 
-func (c *Connector) incStat(subscope, method string) {
+func (c *Connector) incStat(action, method string) {
 	if c.stats == nil {
 		return
 	}
-	c.stats.SubScope("cache").SubScope(subscope).Tagged(map[string]string{"method": method}).Counter("redis").Inc(1)
+	c.stats.SubScope("cache").Tagged(map[string]string{"method": method}).Counter(action).Inc(1)
 }
 
 // return order is key, value
