@@ -245,7 +245,11 @@ func TestLogStats(t *testing.T) {
 		defer ctrl2.Finish()
 		counter := mocks.NewMockCounter(ctrl2)
 
-		setupStatsExpectations(stats, counter, tc.method, tc.scenario)
+		ctrl3 := gomock.NewController(t)
+		defer ctrl3.Finish()
+		timer := mocks.NewMockTimer(ctrl3)
+
+		setupStatsExpectations(stats, counter, timer, tc.method, tc.scenario)
 
 		rc := redis.NewConnector(tc.config, stats)
 		rc.Upsert(context.TODO(), testEi, tc.writeValues)
@@ -303,9 +307,14 @@ func TestLogStats(t *testing.T) {
 	}
 }
 
-func setupStatsExpectations(stats *mocks.MockScope, counter *mocks.MockCounter, method, action string) {
+func setupStatsExpectations(stats *mocks.MockScope, counter *mocks.MockCounter, timer *mocks.MockTimer, method, action string) {
 	stats.EXPECT().SubScope("cache").Return(stats)
 	stats.EXPECT().Tagged(map[string]string{"method": method}).Return(stats)
 	stats.EXPECT().Counter(action).Return(counter)
 	counter.EXPECT().Inc(int64(1))
+
+	stats.EXPECT().SubScope(gomock.Any()).Return(stats).AnyTimes()
+	stats.EXPECT().Timer(gomock.Any()).Return(timer).AnyTimes()
+	timer.EXPECT().Start().AnyTimes()
+	timer.EXPECT().Stop().AnyTimes()
 }
