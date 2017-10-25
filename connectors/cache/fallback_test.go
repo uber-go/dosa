@@ -58,9 +58,9 @@ func TestUpsertCases(t *testing.T) {
 	}
 
 	type testCase struct {
-		encoder Encoder
-		origin *upsertArgs
-		fallback *upsertArgs
+		encoder     Encoder
+		origin      *upsertArgs
+		fallback    *upsertArgs
 		description string
 	}
 
@@ -87,7 +87,7 @@ func TestUpsertCases(t *testing.T) {
 	testCases := []testCase{
 		{
 			description: "Successful origin upsert also upserts to fallback",
-			encoder: NewJSONEncoder(),
+			encoder:     NewJSONEncoder(),
 			origin: &upsertArgs{
 				values: map[string]dosa.FieldValue{
 					"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
@@ -104,7 +104,7 @@ func TestUpsertCases(t *testing.T) {
 		},
 		{
 			description: "Encoding error while creating cache key means no upsert to fallback",
-			encoder: &BadEncoder{},
+			encoder:     &BadEncoder{},
 			origin: &upsertArgs{
 				values: map[string]dosa.FieldValue{
 					"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
