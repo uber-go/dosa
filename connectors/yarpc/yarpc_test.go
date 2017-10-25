@@ -812,12 +812,12 @@ func TestConnector_Scan(t *testing.T) {
 			},
 			NextToken: &responseToken,
 		}, nil)
-	// failed call, return error
-	mockedClient.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).
-		Return(nil, errors.New("test error")).Times(1)
 	// no results, make sure error is exact
 	mockedClient.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).
-		Return(nil, &dosa.ErrNotFound{})
+		Return(nil, &dosa.ErrNotFound{}).Times(1)
+	// failed call, return error
+	mockedClient.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).
+		Return(nil, errors.New("test error"))
 
 	// Prepare the dosa client interface using the mocked RPC layer
 	sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
