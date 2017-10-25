@@ -290,9 +290,13 @@ func createCacheKey(ei *dosa.EntityInfo, values map[string]dosa.FieldValue, e En
 			keys = append(keys, pk)
 		}
 	}
-	// sort the keys so that we encode in a specific order
-	sort.Strings(keys)
 
+	if len(keys) == 0 {
+		return []byte{}
+	}
+
+	// sort the keys so that we encode in a deterministic order
+	sort.Strings(keys)
 	orderedKeys := []map[string]dosa.FieldValue{}
 	for _, k := range keys {
 		orderedKeys = append(orderedKeys, map[string]dosa.FieldValue{k: values[k]})

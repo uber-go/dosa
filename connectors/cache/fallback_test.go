@@ -52,18 +52,37 @@ func createTestEi(sr dosa.SchemaRef) *dosa.EntityInfo {
 	return testEi
 }
 
+type testCase struct {
+	encoder          Encoder
+	cachedEntities   []dosa.DomainObject
+	originRead       *expectArgs
+	originUpsert     *expectArgs
+	originRange      *rangeArgs
+	fallbackRead     *expectArgs
+	fallbackUpsert   *expectArgs
+	expectedResp     map[string]dosa.FieldValue   // For read and upsert
+	expectedManyResp []map[string]dosa.FieldValue // For range
+	expectedTok      string
+	expectedErr      error
+	description      string
+}
+
+type expectArgs struct {
+	values map[string]dosa.FieldValue
+	resp   map[string]dosa.FieldValue
+	err    error
+}
+
+type rangeArgs struct {
+	columnConditions map[string][]*dosa.Condition
+	token            string
+	limit            int
+	resp             []map[string]dosa.FieldValue
+	nextToken        string
+	err              error
+}
+
 func TestUpsertCases(t *testing.T) {
-	type upsertArgs struct {
-		values map[string]dosa.FieldValue
-	}
-
-	type testCase struct {
-		encoder     Encoder
-		origin      *upsertArgs
-		fallback    *upsertArgs
-		description string
-	}
-
 	runTestCase := func(tc testCase) {
 		originCtrl := gomock.NewController(t)
 		defer originCtrl.Finish()
@@ -73,14 +92,14 @@ func TestUpsertCases(t *testing.T) {
 		defer fallbackCtrl.Finish()
 		mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
-		mockOrigin.EXPECT().Upsert(context.TODO(), testEi, tc.origin.values).Return(nil)
-		if tc.fallback != nil {
-			mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, tc.fallback.values).Return(nil)
+		mockOrigin.EXPECT().Upsert(context.TODO(), testEi, tc.originUpsert.values).Return(nil)
+		if tc.fallbackUpsert != nil {
+			mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, tc.fallbackUpsert.values).Return(nil)
 		}
 
 		connector := NewConnector(mockOrigin, mockFallback, tc.encoder, nil, cacheableEntities...)
 		connector.setSynchronousMode(true)
-		err := connector.Upsert(context.TODO(), testEi, tc.origin.values)
+		err := connector.Upsert(context.TODO(), testEi, tc.originUpsert.values)
 		assert.NoError(t, err, tc.description)
 	}
 
@@ -88,14 +107,14 @@ func TestUpsertCases(t *testing.T) {
 		{
 			description: "Successful origin upsert also upserts to fallback",
 			encoder:     NewJSONEncoder(),
-			origin: &upsertArgs{
+			originUpsert: &expectArgs{
 				values: map[string]dosa.FieldValue{
 					"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
 					"strkey":      "test key string",
 					"StrV":        "test value string",
 					"BoolV":       false,
 				}},
-			fallback: &upsertArgs{
+			fallbackUpsert: &expectArgs{
 				values: map[string]dosa.FieldValue{
 					key:   []byte(`[{"an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9"},{"strkey":"test key string"}]`),
 					value: []byte(`{"BoolV":false,"StrV":"test value string","an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9","strkey":"test key string"}`),
@@ -105,7 +124,7 @@ func TestUpsertCases(t *testing.T) {
 		{
 			description: "Encoding error while creating cache key means no upsert to fallback",
 			encoder:     &BadEncoder{},
-			origin: &upsertArgs{
+			originUpsert: &expectArgs{
 				values: map[string]dosa.FieldValue{
 					"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
 					"strkey":      "test key string",
@@ -132,152 +151,176 @@ func TestAsyncUpsert(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// Test read from origin succeeds, should write response to cache
-func TestReadSuccess(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
+func TestReadCases(t *testing.T) {
+	runTestCase := func(tc testCase) {
+		originCtrl := gomock.NewController(t)
+		defer originCtrl.Finish()
+		mockOrigin := mocks.NewMockConnector(originCtrl)
 
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+		fallbackCtrl := gomock.NewController(t)
+		defer fallbackCtrl.Finish()
+		mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
-	values := map[string]dosa.FieldValue{}
-	originResponse := map[string]dosa.FieldValue{"a": "b"}
-	transformedResponse := map[string]dosa.FieldValue{
-		key:   []byte("[]"),
-		value: []byte(`{"a":"b"}`),
-	}
-	mockOrigin.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(originResponse, nil)
-	mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, transformedResponse).Return(nil)
+		mockOrigin.EXPECT().Read(context.TODO(), testEi, tc.originRead.values, dosa.All()).Return(tc.originRead.resp, tc.originRead.err)
+		if tc.fallbackRead != nil {
+			mockFallback.EXPECT().Read(context.TODO(), adaptedEi, tc.fallbackRead.values, dosa.All()).Return(tc.fallbackRead.resp, tc.fallbackRead.err)
+		}
+		if tc.fallbackUpsert != nil {
+			mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, tc.fallbackUpsert.values).Return(tc.fallbackUpsert.err)
+		}
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
-	connector.setSynchronousMode(true)
-	resp, err := connector.Read(context.TODO(), testEi, values, []string{})
-	assert.NoError(t, err)
-	assert.EqualValues(t, originResponse, resp)
-}
-
-// Fallback should never be called when we set the list of cached entities to empty
-func TestReadUncachedEntity(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
-	values := map[string]dosa.FieldValue{}
-	originResponse := map[string]dosa.FieldValue{"a": "b"}
-	mockOrigin.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(originResponse, nil)
-
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil)
-	resp, err := connector.Read(context.TODO(), testEi, values, []string{})
-	assert.NoError(t, err)
-	assert.EqualValues(t, originResponse, resp)
-}
-
-// Test that when read origin has error, we return from the fallback
-func TestReadFail(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
-	fallbackResponse := map[string]dosa.FieldValue{"value": []byte("{\"b\": 7}")}
-	originErr := errors.New("origin error")
-	readValues := map[string]dosa.FieldValue{}
-	transformedReadValues := map[string]dosa.FieldValue{
-		key: []byte("[]"),
+		connector := NewConnector(mockOrigin, mockFallback, tc.encoder, nil, tc.cachedEntities...)
+		connector.setSynchronousMode(true)
+		resp, err := connector.Read(context.TODO(), testEi, tc.originRead.values, []string{})
+		assert.Equal(t, tc.expectedErr, err, tc.description)
+		assert.Equal(t, tc.expectedResp, resp, tc.description)
 	}
 
-	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(nil, originErr)
-	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(fallbackResponse, nil)
-
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
-	connector.setSynchronousMode(true)
-	resp, err := connector.Read(context.TODO(), testEi, readValues, []string{})
-	assert.NoError(t, err)
-	assert.EqualValues(t, map[string]dosa.FieldValue{"b": float64(7)}, resp)
-}
-
-// Encoding error means do not upsert into fallback
-func TestReadEncodeError(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
-	values := map[string]dosa.FieldValue{}
-	originResponse := map[string]dosa.FieldValue{"a": "b"}
-	mockOrigin.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(originResponse, nil)
-
-	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, nil, cacheableEntities...)
-	connector.setSynchronousMode(true)
-	resp, err := connector.Read(context.TODO(), testEi, values, []string{})
-	assert.NoError(t, err)
-	assert.EqualValues(t, originResponse, resp)
-}
-
-// Decode error means that we cannot read from the fallback, return the original response
-func TestReadDecodeError(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
-	fallbackResponse := map[string]dosa.FieldValue{"value": []byte("{\"b\": 7}")}
-	originResponse := map[string]dosa.FieldValue{"a": "b"}
-	originErr := errors.New("origin error")
-	readValues := map[string]dosa.FieldValue{}
-	transformedReadValues := map[string]dosa.FieldValue{
-		key: []byte{},
+	testCases := []testCase{
+		createReadSuccessTestCase(),
+		createReadUncachedEntityTestCase(),
+		createReadFailTestCase(),
+		createReadEncodeErrorTestCase(),
+		createReadDecodeErrorTestCase(),
+		createReadFallbackFailTestCase(),
+		createReadFallbackBadValueTestCase(),
 	}
-
-	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(originResponse, originErr)
-	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(fallbackResponse, nil)
-
-	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, nil, cacheableEntities...)
-	resp, err := connector.Read(context.TODO(), testEi, readValues, []string{})
-	assert.Equal(t, originErr, err)
-	assert.Equal(t, originResponse, resp)
+	for _, tc := range testCases {
+		runTestCase(tc)
+	}
 }
 
-// Test read origin has error and fallback also fails. Should return the origin error.
-func TestReadFallbackFail(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
+func createReadSuccessTestCase() testCase {
+	originResponse := map[string]dosa.FieldValue{"a": "b"}
 
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
-	readValues := map[string]dosa.FieldValue{}
-	transformedReadValues := map[string]dosa.FieldValue{
-		key: []byte("[]"),
+	return testCase{
+		encoder:        NewJSONEncoder(),
+		cachedEntities: cacheableEntities,
+		originRead: &expectArgs{
+			resp:   originResponse,
+		},
+		fallbackUpsert: &expectArgs{
+			values: map[string]dosa.FieldValue{
+				key:   []byte{},
+				value: []byte(`{"a":"b"}`),
+			},
+		},
+		expectedResp: originResponse,
+		expectedErr:  nil,
+		description:  "Test read from origin succeeds, should write response to fallback",
 	}
+}
+
+func createReadUncachedEntityTestCase() testCase {
+	originResponse := map[string]dosa.FieldValue{"a": "b"}
+
+	return testCase{
+		encoder:        NewJSONEncoder(),
+		cachedEntities: nil,
+		originRead: &expectArgs{
+			resp:   originResponse,
+		},
+		expectedResp: originResponse,
+		expectedErr:  nil,
+		description:  "Fallback should never be called when we set the list of cached entities to empty",
+	}
+}
+
+func createReadFailTestCase() testCase {
+	return testCase{
+		encoder:        NewJSONEncoder(),
+		cachedEntities: cacheableEntities,
+		originRead: &expectArgs{
+			err:    assert.AnError,
+		},
+		fallbackRead: &expectArgs{
+			values: map[string]dosa.FieldValue{key: []byte{}},
+			resp:   map[string]dosa.FieldValue{"value": []byte("{\"b\": 7}")},
+		},
+		expectedResp: map[string]dosa.FieldValue{"b": float64(7)},
+		expectedErr:  nil,
+		description:  "Test that when read origin has error, we return from the fallback",
+	}
+}
+
+func createReadEncodeErrorTestCase() testCase {
+	originResponse := map[string]dosa.FieldValue{"a": "b"}
+
+	return testCase{
+		encoder:        &BadEncoder{},
+		cachedEntities: cacheableEntities,
+		originRead: &expectArgs{
+			resp:   originResponse,
+		},
+		expectedResp: originResponse,
+		expectedErr:  nil,
+		description:  "If an encoding error occurs while creating encoded values for the fallback, do not upsert into fallback",
+	}
+}
+
+func createReadDecodeErrorTestCase() testCase {
 	originResponse := map[string]dosa.FieldValue{"a": "b"}
 	originErr := errors.New("origin error")
-	fallbackErr := errors.New("fallback error")
-	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(originResponse, originErr)
-	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(nil, fallbackErr)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
-	connector.setSynchronousMode(true)
-	resp, err := connector.Read(context.TODO(), testEi, readValues, []string{})
-	assert.EqualError(t, err, originErr.Error())
-	assert.Equal(t, originResponse, resp)
+	return testCase{
+		encoder:        &BadEncoder{},
+		cachedEntities: cacheableEntities,
+		originRead: &expectArgs{
+			resp:   originResponse,
+			err:    originErr,
+		},
+		fallbackRead: &expectArgs{
+			values: map[string]dosa.FieldValue{key: []byte{}},
+			resp:   map[string]dosa.FieldValue{"value": []byte("{\"b\": 7}")},
+		},
+		expectedResp: originResponse,
+		expectedErr:  originErr,
+		description:  "If an error occurs while trying to decode the response from the fallback, return the original response",
+	}
+}
+
+func createReadFallbackFailTestCase() testCase {
+	originResponse := map[string]dosa.FieldValue{"a": "b"}
+	originErr := errors.New("origin error")
+
+	return testCase{
+		encoder:        NewJSONEncoder(),
+		cachedEntities: cacheableEntities,
+		originRead: &expectArgs{
+			resp:   originResponse,
+			err:    originErr,
+		},
+		fallbackRead: &expectArgs{
+			values: map[string]dosa.FieldValue{key: []byte{}},
+			err:    errors.New("fallback error"),
+		},
+		expectedResp: originResponse,
+		expectedErr:  originErr,
+		description:  "Test read origin has error and fallback also fails. Should return the origin error",
+	}
+}
+
+func createReadFallbackBadValueTestCase() testCase {
+	originResponse := map[string]dosa.FieldValue{"a": "b"}
+	originErr := errors.New("origin error")
+
+	return testCase{
+		encoder:        NewJSONEncoder(),
+		cachedEntities: cacheableEntities,
+		originRead: &expectArgs{
+			resp:   originResponse,
+			err:    originErr,
+		},
+		fallbackRead: &expectArgs{
+			values: map[string]dosa.FieldValue{key: []byte{}},
+			// fallback returns a response with no value field
+			resp: nil,
+		},
+		expectedResp: originResponse,
+		expectedErr:  originErr,
+		description:  "When fallback response is empty/corrupted, return the response from origin",
+	}
+
 }
 
 // Test logging stats when using fallback path
@@ -308,13 +351,11 @@ func TestFallbackStats(t *testing.T) {
 	testCases := []testCase{
 		{
 			counter:      "failure",
-			fallbackResp: nil,
 			fallbackErr:  assert.AnError,
 		},
 		{
 			counter:      "success",
 			fallbackResp: map[string]dosa.FieldValue{"value": []byte("{\"b\": 7}")},
-			fallbackErr:  nil,
 		},
 	}
 	for _, t := range testCases {
@@ -329,262 +370,242 @@ func TestFallbackStats(t *testing.T) {
 	}
 }
 
-// When fallback response is empty/corrupted, return the response from origin
-func TestReadFallbackBadValue(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
+func TestRangeCases(t *testing.T) {
+	runTestCase := func(tc testCase) {
+		originCtrl := gomock.NewController(t)
+		defer originCtrl.Finish()
+		mockOrigin := mocks.NewMockConnector(originCtrl)
 
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
+		fallbackCtrl := gomock.NewController(t)
+		defer fallbackCtrl.Finish()
+		mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
-	readValues := map[string]dosa.FieldValue{}
-	transformedReadValues := map[string]dosa.FieldValue{
-		key: []byte("[]"),
+		mockOrigin.EXPECT().Range(context.TODO(), testEi, tc.originRange.columnConditions, dosa.All(), tc.originRange.token, tc.originRange.limit).
+			Return(tc.originRange.resp, tc.originRange.nextToken, tc.originRange.err)
+		if tc.fallbackRead != nil {
+			mockFallback.EXPECT().Read(context.TODO(), adaptedEi, tc.fallbackRead.values, dosa.All()).Return(tc.fallbackRead.resp, tc.fallbackRead.err)
+		}
+		if tc.fallbackUpsert != nil {
+			mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, tc.fallbackUpsert.values).Return(tc.fallbackUpsert.err)
+		}
+
+		connector := NewConnector(mockOrigin, mockFallback, tc.encoder, nil, tc.cachedEntities...)
+		connector.setSynchronousMode(true)
+		resp, tok, err := connector.Range(context.TODO(), testEi, tc.originRange.columnConditions, []string{}, tc.originRange.token, tc.originRange.limit)
+		assert.Equal(t, tc.expectedErr, err, tc.description)
+		assert.EqualValues(t, tc.expectedManyResp, resp, tc.description)
+		assert.Equal(t, tc.expectedTok, tok, tc.description)
 	}
-	originResponse := map[string]dosa.FieldValue{"a": "b"}
-	originErr := errors.New("origin error")
-	mockOrigin.EXPECT().Read(context.TODO(), testEi, readValues, dosa.All()).Return(originResponse, originErr)
-	// fallback returns a response with no value field
-	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedReadValues, dosa.All()).Return(nil, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
-	resp, err := connector.Read(context.TODO(), testEi, readValues, []string{})
-	assert.EqualError(t, err, originErr.Error())
-	assert.Equal(t, originResponse, resp)
+	testCases := []testCase{
+		createRangeSuccessTestCase(),
+		createRangeUncachedEntityTestCase(),
+		createRangeFailTestCase(),
+		createRangeEncodeErrorTestCase(),
+		createRangeDecodeErrorTestCase(),
+		createRangeFallbackFailTestCase(),
+		createRangeFallbackBadValueTestCase(),
+	}
+	for _, tc := range testCases {
+		runTestCase(tc)
+	}
 }
 
-// Test range from origin succeeds, should write response to cache
-func TestRangeSuccess(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
+func createRangeSuccessTestCase() testCase {
 	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
 	rangeTok := "nextToken"
-	transformedResponse := map[string]dosa.FieldValue{
-		key:   []byte(`{"Conditions":{"column":[{"Op":5,"Value":"columnVal"}]},"Token":"token","Limit":2}`),
-		value: []byte(`{"Rows":[{"a":"b"}],"TokenNext":"nextToken"}`),
+	return testCase{
+		encoder:        NewJSONEncoder(),
+		cachedEntities: cacheableEntities,
+		originRange: &rangeArgs{
+			columnConditions: map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}},
+			token:            "token",
+			limit:            2,
+			resp:             rangeResponse,
+			nextToken:        rangeTok,
+		},
+		fallbackUpsert: &expectArgs{
+			values: map[string]dosa.FieldValue{
+				key:   []byte(`{"Conditions":{"column":[{"Op":5,"Value":"columnVal"}]},"Token":"token","Limit":2}`),
+				value: []byte(`{"Rows":[{"a":"b"}],"TokenNext":"nextToken"}`),
+			},
+			err: nil,
+		},
+		expectedErr:      nil,
+		expectedManyResp: rangeResponse,
+		expectedTok:      rangeTok,
+		description:      "Test range from origin succeeds, should write response to cache",
 	}
-	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
-	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
-	mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, transformedResponse).Return(nil)
-
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
-	connector.setSynchronousMode(true)
-	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
-	assert.NoError(t, err)
-	assert.EqualValues(t, rangeResponse, resp)
-	assert.EqualValues(t, rangeTok, tok)
 }
 
-// Whe caching no entities, should return result from origin, and fallback is never called
-func TestRangeUncachedEntity(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
+func createRangeUncachedEntityTestCase() testCase {
 	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
 	rangeTok := "nextToken"
 	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
-	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil)
-	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
-	assert.NoError(t, err)
-	assert.EqualValues(t, rangeResponse, resp)
-	assert.EqualValues(t, rangeTok, tok)
+	return testCase{
+		encoder:        NewJSONEncoder(),
+		cachedEntities: nil,
+		originRange: &rangeArgs{
+			columnConditions: conditions,
+			token:            "token",
+			limit:            2,
+			resp:             rangeResponse,
+			nextToken:        rangeTok,
+		},
+		expectedErr:      nil,
+		expectedManyResp: rangeResponse,
+		expectedTok:      rangeTok,
+		description:      "When caching no entities, should return result from origin, and fallback is never called",
+	}
 }
 
-// Test range from origin has error and fallback succeeds.
-func TestRangeError(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
+func createRangeFailTestCase() testCase {
 	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
-	transformedKey := map[string]dosa.FieldValue{
-		key: []byte(`{"Conditions":{"column":[{"Op":5,"Value":"columnVal"}]},"Token":"token","Limit":2}`),
-	}
 	fallbackResponse := map[string]dosa.FieldValue{"value": []byte("{\"rows\": [{\"b\": 7}], \"tokenNext\": \"nextToken\"}")}
-	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(nil, "", assert.AnError)
-	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKey, dosa.All()).Return(fallbackResponse, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
-	connector.setSynchronousMode(true)
-	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
-	assert.NoError(t, err)
-	assert.EqualValues(t, []map[string]dosa.FieldValue{{"b": float64(7)}}, resp)
-	assert.EqualValues(t, "nextToken", tok)
+	return testCase{
+		encoder:        NewJSONEncoder(),
+		cachedEntities: cacheableEntities,
+		originRange: &rangeArgs{
+			columnConditions: conditions,
+			token:            "token",
+			limit:            2,
+			err:              assert.AnError,
+		},
+		fallbackRead: &expectArgs{
+			values: map[string]dosa.FieldValue{
+				key: []byte(`{"Conditions":{"column":[{"Op":5,"Value":"columnVal"}]},"Token":"token","Limit":2}`),
+			},
+			resp: fallbackResponse,
+		},
+		expectedErr:      nil,
+		expectedManyResp: []map[string]dosa.FieldValue{{"b": float64(7)}},
+		expectedTok:      "nextToken",
+		description:      "Test range from origin has error and fallback succeeds",
+	}
 }
 
-// Encoding error means we should not write response to fallback
-func TestRangeEncodeError(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
+func createRangeEncodeErrorTestCase() testCase {
 	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
 	rangeTok := "nextToken"
 	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
-	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, nil, cacheableEntities...)
-	connector.setSynchronousMode(true)
-	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
-	assert.NoError(t, err)
-	assert.EqualValues(t, rangeResponse, resp)
-	assert.EqualValues(t, rangeTok, tok)
+	return testCase{
+		encoder:        &BadEncoder{},
+		cachedEntities: cacheableEntities,
+		originRange: &rangeArgs{
+			columnConditions: conditions,
+			token:            "token",
+			limit:            2,
+			resp:             rangeResponse,
+			nextToken:        rangeTok,
+		},
+		expectedErr:      nil,
+		expectedManyResp: rangeResponse,
+		expectedTok:      rangeTok,
+		description:      "If an encoding error occurs while creating encoded values for the fallback, do not upsert into fallback",
+	}
 }
 
-// Bad decoding of fallback response should result in returning the original response
-func TestRangeDecodeError(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
+func createRangeDecodeErrorTestCase() testCase {
 	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
-	transformedKey := map[string]dosa.FieldValue{
-		key: []byte(nil),
+	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
+	rangeTok := "nextToken"
+	rangeErr := errors.New("origin error")
+	fallbackResponse := map[string]dosa.FieldValue{"value": []byte("{\"rows\": [{\"b\": 7}], \"tokenNext\": \"nextToken\"}")}
+
+	return testCase{
+		encoder:        &BadEncoder{},
+		cachedEntities: cacheableEntities,
+		originRange: &rangeArgs{
+			columnConditions: conditions,
+			token:            "token",
+			limit:            2,
+			resp:             rangeResponse,
+			nextToken:        rangeTok,
+			err:              rangeErr,
+		},
+		fallbackRead: &expectArgs{
+			values: map[string]dosa.FieldValue{key: []byte(nil)},
+			resp:   fallbackResponse,
+		},
+		expectedErr:      rangeErr,
+		expectedManyResp: rangeResponse,
+		expectedTok:      rangeTok,
+		description:      "Bad decoding of fallback response should result in returning the original response",
 	}
+}
+
+func createRangeFallbackFailTestCase() testCase {
 	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
 	rangeTok := "nextToken"
 	rangeErr := errors.New("origin error")
 
-	fallbackResponse := map[string]dosa.FieldValue{"value": []byte("{\"rows\": [{\"b\": 7}], \"tokenNext\": \"nextToken\"}")}
-	mockOrigin.EXPECT().Range(context.TODO(), testEi, conditions, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, rangeErr)
-	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKey, dosa.All()).Return(fallbackResponse, nil)
-
-	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, nil, cacheableEntities...)
-	resp, tok, err := connector.Range(context.TODO(), testEi, conditions, []string{}, "token", 2)
-	assert.Equal(t, rangeErr, err)
-	assert.Equal(t, rangeResponse, resp)
-	assert.Equal(t, rangeTok, tok)
+	return testCase{
+		encoder:        NewJSONEncoder(),
+		cachedEntities: cacheableEntities,
+		originRange: &rangeArgs{
+			token:     "token",
+			limit:     2,
+			resp:      rangeResponse,
+			nextToken: rangeTok,
+			err:       rangeErr,
+		},
+		fallbackRead: &expectArgs{
+			values: map[string]dosa.FieldValue{
+				key: []byte(`{"Token":"token","Limit":2}`),
+			},
+			err: assert.AnError,
+		},
+		expectedErr:      rangeErr,
+		expectedManyResp: rangeResponse,
+		expectedTok:      rangeTok,
+		description:      "Test range from origin has error and fallback to cache fails. Should return origin results",
+	}
 }
 
-// Test range from origin has error and fallback to cache fails. Should return origin results
-func TestRangeFallbackError(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
+func createRangeFallbackBadValueTestCase() testCase {
 	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
 	rangeTok := "nextToken"
 	rangeErr := errors.New("origin error")
-	transformedKeys := map[string]dosa.FieldValue{
-		key: []byte(`{"Token":"token","Limit":2}`),
-	}
-	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, rangeErr)
-	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKeys, dosa.All()).Return(nil, assert.AnError)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
-	connector.setSynchronousMode(true)
-	resp, tok, err := connector.Range(context.TODO(), testEi, nil, []string{}, "token", 2)
-	assert.EqualError(t, err, rangeErr.Error())
-	assert.EqualValues(t, rangeResponse, resp)
-	assert.EqualValues(t, rangeTok, tok)
+	return testCase{
+		encoder:        NewJSONEncoder(),
+		cachedEntities: cacheableEntities,
+		originRange: &rangeArgs{
+			token:     "token",
+			limit:     2,
+			resp:      rangeResponse,
+			nextToken: rangeTok,
+			err:       rangeErr,
+		},
+		fallbackRead: &expectArgs{
+			values: map[string]dosa.FieldValue{
+				key: []byte(`{"Token":"token","Limit":2}`),
+			},
+			resp: nil,
+		},
+		expectedErr:      rangeErr,
+		expectedManyResp: rangeResponse,
+		expectedTok:      rangeTok,
+		description:      "Bad value from fallback should return origin results",
+	}
 }
 
-// Test scan from origin succeeds, should upsert response to fallback
-func TestScanSuccess(t *testing.T) {
+// Test scan calls Range
+func TestScan(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
 	mockOrigin := mocks.NewMockConnector(originCtrl)
 
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
 	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
 	rangeTok := "nextToken"
-	transformedResponse := map[string]dosa.FieldValue{
-		key:   []byte(`{"Token":"token","Limit":2}`),
-		value: []byte(`{"Rows":[{"a":"b"}],"TokenNext":"nextToken"}`),
-	}
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
-	mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, transformedResponse).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
-	connector.setSynchronousMode(true)
+	connector := NewConnector(mockOrigin, memory.NewConnector(), NewJSONEncoder(), nil)
 	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
 	assert.NoError(t, err)
-	assert.EqualValues(t, rangeResponse, resp)
-	assert.EqualValues(t, rangeTok, tok)
-}
-
-// Test scan from origin has error and fallback succeeds.
-func TestScanError(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
-	transformedKey := map[string]dosa.FieldValue{
-		key: []byte(`{"Token":"token","Limit":2}`),
-	}
-	fallbackResponse := map[string]dosa.FieldValue{"value": []byte("{\"rows\": [{\"b\": 7}], \"tokenNext\": \"nextToken\"}")}
-	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(nil, "", assert.AnError)
-	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKey, dosa.All()).Return(fallbackResponse, nil)
-
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
-	connector.setSynchronousMode(true)
-	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
-	assert.NoError(t, err)
-	assert.EqualValues(t, []map[string]dosa.FieldValue{{"b": float64(7)}}, resp)
-	assert.EqualValues(t, "nextToken", tok)
-}
-
-// Test scan from origin has error and fallback fails. Return origin results
-func TestScanFallbackError(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
-	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
-	rangeTok := "nextToken"
-	rangeErr := errors.New("origin error")
-	transformedKeys := map[string]dosa.FieldValue{
-		key: []byte(`{"Token":"token","Limit":2}`),
-	}
-	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, rangeErr)
-	mockFallback.EXPECT().Read(context.TODO(), adaptedEi, transformedKeys, dosa.All()).Return(nil, assert.AnError)
-
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
-	connector.setSynchronousMode(true)
-	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
-	assert.EqualError(t, err, rangeErr.Error())
 	assert.EqualValues(t, rangeResponse, resp)
 	assert.EqualValues(t, rangeTok, tok)
 }
@@ -600,7 +621,7 @@ func TestRemove(t *testing.T) {
 	mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
 	keys := map[string]dosa.FieldValue{}
-	transformedKeys := map[string]dosa.FieldValue{key: []byte("[]")}
+	transformedKeys := map[string]dosa.FieldValue{key: []byte{}}
 	mockOrigin.EXPECT().Remove(context.TODO(), testEi, keys).Return(nil)
 	mockFallback.EXPECT().Remove(gomock.Not(context.TODO()), adaptedEi, transformedKeys).Return(nil)
 
