@@ -26,6 +26,8 @@ import:
   version: ~1.1.0
   subpackages:
   - redis
+- package: github.com/gocql/gocql
+  version: 04cbe7af6ed6de7b3d98480fca10df7ea9814bb6
 testImport:
 - package: github.com/yookoala/realpath
 - package: github.com/stretchr/testify

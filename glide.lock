@@ -1,5 +1,5 @@
-hash: d9952d1531242491dcb5ad4bd9da290d9f9a33a96e295c59056d67dbc6f454c8
-updated: 2017-09-25T20:29:54.97367811-07:00
+hash: 7d83571ccb96d2095f6bd9b9d71328a4eb1063cedcd272776d61febfad449a3b
+updated: 2017-10-25T15:07:46.984986548+01:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -25,7 +25,7 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gocql/gocql
-  version: b9337fa4c59ce1db20300290bd7a9a7063fb6784
+  version: 04cbe7af6ed6de7b3d98480fca10df7ea9814bb6
   subpackages:
   - internal/lru
   - internal/murmur
@@ -35,7 +35,7 @@ imports:
   subpackages:
   - proto
 - name: github.com/golang/mock
-  version: 18f6dd13ccdd227b8ebc546ca95cd62a02f3970c
+  version: 61503c535dc549c7ffc1ff07902345658a0f20a2
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
@@ -87,7 +87,7 @@ imports:
   subpackages:
   - internal/mapstructure
 - name: github.com/uber-go/tally
-  version: be9e53c77349ae2dd4b8c03a6dc20ed9a88b9927
+  version: 95078a8f10668bd1fa73ae46761cdc58d25436b8
 - name: github.com/uber/dosa-idl
   version: e450bdd6bb6afd291443d5469e1591a603480d07
   subpackages:
@@ -108,7 +108,7 @@ imports:
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - name: go.uber.org/thriftrw
-  version: b032111262f3c4a5c8027c349ca4645aced173bb
+  version: bce7fd589d505915f56a7901d8c143e1625e085c
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -119,7 +119,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 8cc4ab3e96e4e0fa70246fce71d40b563ae52d45
+  version: 47683a4e11ef7c95bcb87ce17e46cefa1e6938df
   subpackages:
   - api/backoff
   - api/encoding
@@ -166,8 +166,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: b129b8e0fbeb39c8358e51a07ab6c50ad415e72e
-  repo: https://github.com/golang/net
+  version: 4b14673ba32bee7f5ac0f990a48f033919fd418b
   subpackages:
   - bpf
   - context
@@ -187,7 +186,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: a476722483882dd40b8111f0eb64e1d7f43f56e4
+  version: ecdeabc65495df2dec95d7c4a4c3e021903035e5
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
