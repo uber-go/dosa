@@ -16,14 +16,6 @@ import (
 )
 
 var (
-	testRedisConfig = redis.Config{
-		ServerSettings: redis.ServerConfig{
-			Host: "localhost",
-			Port: redis.RedisPort,
-		},
-		TTL: 15 * time.Second,
-	}
-	redisC    = redis.NewConnector(testRedisConfig, nil)
 	schemaRef = dosa.SchemaRef{Scope: "testing", NamePrefix: "example"}
 	testEi    = createTestEi(schemaRef)
 	adaptedEi = &dosa.EntityInfo{
@@ -60,32 +52,71 @@ func createTestEi(sr dosa.SchemaRef) *dosa.EntityInfo {
 	return testEi
 }
 
-// Test origin upsert also upserts to cache
-func TestUpsert(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
-	values := map[string]dosa.FieldValue{
-		"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
-		"strkey":      "test key string",
-		"StrV":        "test value string",
-		"BoolV":       false,
+func TestUpsertCases(t *testing.T) {
+	type upsertArgs struct {
+		values map[string]dosa.FieldValue
 	}
-	transformedValues := map[string]dosa.FieldValue{
-		key:   []byte(`[{"an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9"},{"strkey":"test key string"}]`),
-		value: []byte(`{"BoolV":false,"StrV":"test value string","an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9","strkey":"test key string"}`),
-	} 
-	mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, transformedValues).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
-	connector.setSynchronousMode(true)
-	err := connector.Upsert(context.TODO(), testEi, values)
-	assert.NoError(t, err)
+	type testCase struct {
+		encoder Encoder
+		origin *upsertArgs
+		fallback *upsertArgs
+		description string
+	}
+
+	runTestCase := func(tc testCase) {
+		originCtrl := gomock.NewController(t)
+		defer originCtrl.Finish()
+		mockOrigin := mocks.NewMockConnector(originCtrl)
+
+		fallbackCtrl := gomock.NewController(t)
+		defer fallbackCtrl.Finish()
+		mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+		mockOrigin.EXPECT().Upsert(context.TODO(), testEi, tc.origin.values).Return(nil)
+		if tc.fallback != nil {
+			mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, tc.fallback.values).Return(nil)
+		}
+
+		connector := NewConnector(mockOrigin, mockFallback, tc.encoder, nil, cacheableEntities...)
+		connector.setSynchronousMode(true)
+		err := connector.Upsert(context.TODO(), testEi, tc.origin.values)
+		assert.NoError(t, err, tc.description)
+	}
+
+	testCases := []testCase{
+		{
+			description: "Successful origin upsert also upserts to fallback",
+			encoder: NewJSONEncoder(),
+			origin: &upsertArgs{
+				values: map[string]dosa.FieldValue{
+					"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
+					"strkey":      "test key string",
+					"StrV":        "test value string",
+					"BoolV":       false,
+				}},
+			fallback: &upsertArgs{
+				values: map[string]dosa.FieldValue{
+					key:   []byte(`[{"an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9"},{"strkey":"test key string"}]`),
+					value: []byte(`{"BoolV":false,"StrV":"test value string","an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9","strkey":"test key string"}`),
+				},
+			},
+		},
+		{
+			description: "Encoding error while creating cache key means no upsert to fallback",
+			encoder: &BadEncoder{},
+			origin: &upsertArgs{
+				values: map[string]dosa.FieldValue{
+					"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
+					"strkey":      "test key string",
+					"StrV":        "test value string",
+					"BoolV":       false,
+				}},
+		},
+	}
+	for _, t := range testCases {
+		runTestCase(t)
+	}
 }
 
 // Run the upsert to fallback in the goroutine. Should not affect the main path.
@@ -97,30 +128,6 @@ func TestAsyncUpsert(t *testing.T) {
 		"BoolV":       false,
 	}
 	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), NewJSONEncoder(), nil, cacheableEntities...)
-	err := connector.Upsert(context.TODO(), testEi, values)
-	assert.NoError(t, err)
-}
-
-// Encoding error when creating cache key means we should not upsert into fallback
-func TestUpsertEncodeError(t *testing.T) {
-	originCtrl := gomock.NewController(t)
-	defer originCtrl.Finish()
-	mockOrigin := mocks.NewMockConnector(originCtrl)
-
-	fallbackCtrl := gomock.NewController(t)
-	defer fallbackCtrl.Finish()
-	mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
-	values := map[string]dosa.FieldValue{
-		"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
-		"strkey":      "test key string",
-		"StrV":        "test value string",
-		"BoolV":       false,
-	}
-	mockOrigin.EXPECT().Upsert(context.TODO(), testEi, values).Return(nil)
-
-	connector := NewConnector(mockOrigin, mockFallback, &BadEncoder{}, nil, cacheableEntities...)
-	connector.setSynchronousMode(true)
 	err := connector.Upsert(context.TODO(), testEi, values)
 	assert.NoError(t, err)
 }
@@ -630,6 +637,15 @@ func TestUpsertRead(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDownstreamConnector := mocks.NewMockConnector(ctrl)
+
+	testRedisConfig := redis.Config{
+		ServerSettings: redis.ServerConfig{
+			Host: "localhost",
+			Port: redis.RedisPort,
+		},
+		TTL: 15 * time.Second,
+	}
+	redisC := redis.NewConnector(testRedisConfig, nil)
 
 	values := map[string]dosa.FieldValue{
 		"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
