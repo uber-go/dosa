@@ -100,7 +100,7 @@ type Config struct {
 }
 
 // FindRouter finds the router information based on scope and namePrefix.
-func (c *Config) FindRouter(scope, namePrefix string) *Rule {
+func (c *Config) FindRouter(scope, namePrefix string) (*Rule) {
 	for _, router := range c.Routers {
 		if router.RouteTo(scope, namePrefix) {
 			return router
@@ -111,7 +111,7 @@ func (c *Config) FindRouter(scope, namePrefix string) *Rule {
 }
 
 // findDefaultRouter finds the default router information.
-func (c *Config) findDefaultRouter() *Rule {
+func (c *Config) findDefaultRouter() (*Rule) {
 	for _, router := range c.Routers {
 		if router.Scope == DefaultScope {
 			return router
