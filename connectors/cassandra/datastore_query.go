@@ -31,7 +31,7 @@ import (
 )
 
 func prepareConditions(columnConditions map[string][]*dosa.Condition) ([]*dosa.ColumnCondition, []interface{}, error) {
-	var cc []*dosa.ColumnCondition = dosa.NormalizeConditions(columnConditions)
+	cc := dosa.NormalizeConditions(columnConditions)
 	values := make([]interface{}, len(cc))
 	for i, c := range cc {
 		values[i] = c.Condition.Value
