@@ -94,7 +94,7 @@ type ServerConfig struct {
 // NewConnector initializes a Redis Connector
 func NewConnector(config Config, scope metrics.Scope) dosa.Connector {
 	return &Connector{
-		client: NewRedigoClient(config.ServerSettings),
+		client: NewRedigoClient(config.ServerSettings, scope),
 		ttl:    config.TTL,
 		stats:  scope,
 	}

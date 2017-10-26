@@ -21,16 +21,19 @@
 package redis_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa/connectors/redis"
+	"github.com/uber-go/dosa/mocks"
 )
 
 func TestRedisNotRunning(t *testing.T) {
 	if !redis.IsRunning() {
-		c := redis.NewRedigoClient(redis.ServerConfig{})
+		c := redis.NewRedigoClient(redis.ServerConfig{}, nil)
 		err := c.Del("somekey")
 		assert.Error(t, err)
 	}
@@ -42,7 +45,7 @@ func TestRedisSyntax(t *testing.T) {
 	}
 
 	// Test the redigo implementation does not error
-	c := redis.NewRedigoClient(testRedisConfig.ServerSettings)
+	c := redis.NewRedigoClient(testRedisConfig.ServerSettings, nil)
 
 	err := c.SetEx("testkey", []byte("testvalue"), 100*time.Second)
 	assert.NoError(t, err)
@@ -63,7 +66,7 @@ func TestShutdown(t *testing.T) {
 		t.SkipNow()
 	}
 
-	c := redis.NewRedigoClient(testRedisConfig.ServerSettings)
+	c := redis.NewRedigoClient(testRedisConfig.ServerSettings, nil)
 	err := c.Shutdown()
 	assert.NoError(t, err)
 }
@@ -73,8 +76,39 @@ func TestWrongPort(t *testing.T) {
 		Host: "localhost",
 		Port: 1111,
 	}
-	c := redis.NewRedigoClient(config)
+	c := redis.NewRedigoClient(config, nil)
 	_, err := c.Get("testkey")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "1111")
+}
+
+// Test that we track latencies for all the redis commands
+func TestTimerCalled(t *testing.T) {
+	if !redis.IsRunning() {
+		t.SkipNow()
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	stats := mocks.NewMockScope(ctrl)
+
+	ctrl2 := gomock.NewController(t)
+	defer ctrl2.Finish()
+	timer := mocks.NewMockTimer(ctrl2)
+
+	c := redis.NewRedigoClient(testRedisConfig.ServerSettings, stats)
+
+	redisCommands := map[string]func(t *testing.T){
+		"GET": func(t *testing.T) { c.Get("a") },
+		"SET": func(t *testing.T) { c.SetEx("a", []byte{1}, 9*time.Second) },
+		"DEL": func(t *testing.T) { c.Del("a") },
+	}
+	for command, f := range redisCommands {
+		stats.EXPECT().SubScope("redis").Return(stats)
+		stats.EXPECT().SubScope("latency").Return(stats)
+		stats.EXPECT().Timer(command).Return(timer)
+		timer.EXPECT().Start().Return(time.Now())
+		timer.EXPECT().Stop()
+		t.Run(fmt.Sprintf("%v test", command), f)
+	}
 }
