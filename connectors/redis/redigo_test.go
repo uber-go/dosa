@@ -21,6 +21,7 @@
 package redis_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -97,10 +98,10 @@ func TestTimerCalled(t *testing.T) {
 
 	c := redis.NewRedigoClient(testRedisConfig.ServerSettings, stats)
 
-	redisCommands := map[string]func(){
-		"GET": func() { c.Get("a") },
-		"SET": func() { c.SetEx("a", []byte{1}, 9*time.Second) },
-		"DEL": func() { c.Del("a") },
+	redisCommands := map[string]func(t *testing.T){
+		"GET": func(t *testing.T) { c.Get("a") },
+		"SET": func(t *testing.T) { c.SetEx("a", []byte{1}, 9*time.Second) },
+		"DEL": func(t *testing.T) { c.Del("a") },
 	}
 	for command, f := range redisCommands {
 		stats.EXPECT().SubScope("redis").Return(stats)
@@ -108,6 +109,6 @@ func TestTimerCalled(t *testing.T) {
 		stats.EXPECT().Timer(command).Return(timer)
 		timer.EXPECT().Start().Return(time.Now())
 		timer.EXPECT().Stop()
-		f()
+		t.Run(fmt.Sprintf("%v test", command), f)
 	}
 }
