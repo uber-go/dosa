@@ -101,10 +101,10 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 
 	sort.Strings(fields)
 
-	conds := make([]*ColumnCondition, len(keys))
+	conds := make([]*dosa.ColumnCondition, len(keys))
 	pos := 0
 	for name, value := range keys {
-		conds[pos] = &ColumnCondition{
+		conds[pos] = &dosa.ColumnCondition{
 			Name: name,
 			Condition: &dosa.Condition{
 				Op:    dosa.Eq,
@@ -113,7 +113,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 		}
 		pos++
 	}
-	sort.Sort(sortedColumnCondition(conds))
+	sort.Sort(dosa.SortedColumnCondition(conds))
 
 	_, sortedValues, err := sortFieldValue(keys)
 	if err != nil {
@@ -173,10 +173,10 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 
 // Remove object based on primary key
 func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue) error {
-	conds := make([]*ColumnCondition, len(keys))
+	conds := make([]*dosa.ColumnCondition, len(keys))
 	pos := 0
 	for name, value := range keys {
-		conds[pos] = &ColumnCondition{
+		conds[pos] = &dosa.ColumnCondition{
 			Name: name,
 			Condition: &dosa.Condition{
 				Op:    dosa.Eq,
@@ -185,7 +185,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		}
 		pos++
 	}
-	sort.Sort(sortedColumnCondition(conds))
+	sort.Sort(dosa.SortedColumnCondition(conds))
 
 	_, sortedValues, err := sortFieldValue(keys)
 	if err != nil {
@@ -204,7 +204,7 @@ func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, column
 	return c.remove(ctx, ei, conds, values)
 }
 
-func (c *Connector) remove(ctx context.Context, ei *dosa.EntityInfo, conds []*ColumnCondition, values []interface{}) error {
+func (c *Connector) remove(ctx context.Context, ei *dosa.EntityInfo, conds []*dosa.ColumnCondition, values []interface{}) error {
 	keyspace := c.KsMapper.Keyspace(ei.Ref.Scope, ei.Ref.NamePrefix)
 	table := ei.Def.Name
 

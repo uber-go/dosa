@@ -129,7 +129,7 @@ func limitFunc(num int) string {
 	return ""
 }
 
-func conditionsFunc(conds []*ColumnCondition, sep string) string {
+func conditionsFunc(conds []*dosa.ColumnCondition, sep string) string {
 	cstrs := make([]string, len(conds))
 	for i, cond := range conds {
 		sign := "="
@@ -150,7 +150,7 @@ func conditionsFunc(conds []*ColumnCondition, sep string) string {
 	return strings.Join(cstrs, sep)
 }
 
-func whereFunc(conds []*ColumnCondition) string {
+func whereFunc(conds []*dosa.ColumnCondition) string {
 	if len(conds) > 0 {
 		return " WHERE "
 	}

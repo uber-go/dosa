@@ -21,10 +21,10 @@
 package dosa
 
 import (
-	"time"
-
 	"bytes"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -33,6 +33,46 @@ import (
 type Condition struct {
 	Op    Operator
 	Value FieldValue
+}
+
+// ColumnCondition represents the condition of each column
+type ColumnCondition struct {
+	Name      string
+	Condition *Condition
+}
+
+// SortedColumnCondition implements sorting of an array of columnConditions
+type SortedColumnCondition []*ColumnCondition
+
+func (list SortedColumnCondition) Len() int { return len(list) }
+
+func (list SortedColumnCondition) Swap(i, j int) { list[i], list[j] = list[j], list[i] }
+
+func (list SortedColumnCondition) Less(i, j int) bool {
+	si := list[i]
+	sj := list[j]
+
+	if si.Name != sj.Name {
+		return si.Name < sj.Name
+	}
+
+	return si.Condition.Op < sj.Condition.Op
+}
+
+// NormalizeConditions takes a set of conditions for columns and returns a sorted, denormalized view of the conditions
+func NormalizeConditions(columnConditions map[string][]*Condition) []*ColumnCondition {
+	var cc []*ColumnCondition
+
+	for column, conds := range columnConditions {
+		for _, cond := range conds {
+			cc = append(cc, &ColumnCondition{
+				Name:      column,
+				Condition: cond})
+		}
+	}
+
+	sort.Sort(SortedColumnCondition(cc))
+	return cc
 }
 
 // EnsureValidRangeConditions checks if the conditions for a range query is valid.

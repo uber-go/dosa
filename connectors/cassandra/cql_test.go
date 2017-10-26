@@ -74,7 +74,7 @@ func TestInsertStmt(t *testing.T) {
 }
 
 func TestSelectStmt(t *testing.T) {
-	conds := []*cassandra.ColumnCondition{
+	conds := []*dosa.ColumnCondition{
 		{
 			Name:      "a",
 			Condition: &dosa.Condition{Op: dosa.Eq, Value: 4},
@@ -114,7 +114,7 @@ func TestSelectStmt(t *testing.T) {
 		columns  []string
 		stmt     string
 		limit    int
-		conds    []*cassandra.ColumnCondition
+		conds    []*dosa.ColumnCondition
 	}{
 		{
 			keyspace: "ks",
@@ -160,7 +160,7 @@ func TestSelectStmt(t *testing.T) {
 }
 
 func TestDeleteStmt(t *testing.T) {
-	conds := []*cassandra.ColumnCondition{
+	conds := []*dosa.ColumnCondition{
 		{
 			Name:      "a",
 			Condition: &dosa.Condition{Op: dosa.Eq, Value: 4},
@@ -178,7 +178,7 @@ func TestDeleteStmt(t *testing.T) {
 		keyspace string
 		table    string
 		stmt     string
-		conds    []*cassandra.ColumnCondition
+		conds    []*dosa.ColumnCondition
 	}{
 		{
 			keyspace: "ks",

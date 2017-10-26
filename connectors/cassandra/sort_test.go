@@ -47,7 +47,7 @@ func TestSortedConditions(t *testing.T) {
 		},
 	}
 
-	expected := []*ColumnCondition{
+	expected := []*dosa.ColumnCondition{
 		{
 			Name:      "a",
 			Condition: &dosa.Condition{Op: dosa.Eq, Value: 4},
