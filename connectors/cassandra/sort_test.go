@@ -34,7 +34,7 @@ func TestSortedField(t *testing.T) {
 	assert.Equal(t, a, []string{"21", "a", "l", "z"})
 }
 
-func TestSortedConditions(t *testing.T) {
+func TestPrepareConditions(t *testing.T) {
 	conds := map[string][]*dosa.Condition{
 		"b": {{Op: dosa.Eq, Value: 9}},
 		"c": {{Op: dosa.Gt, Value: 0}, {Op: dosa.Lt, Value: 1}},
@@ -82,9 +82,8 @@ func TestSortedConditions(t *testing.T) {
 		},
 	}
 
-	cc, _, _ := prepareConditions(conds)
-	for i, c := range cc {
-		assert.Equal(t, c.Name, expected[i].Name)
-		assert.Equal(t, c.Condition, expected[i].Condition)
-	}
+	cc, values, err := prepareConditions(conds)
+	assert.Equal(t, expected, cc)
+	assert.NoError(t, err)
+	assert.Equal(t, []interface{}{4, 5, 2, 0, 3, 9, 1, 0}, values)
 }

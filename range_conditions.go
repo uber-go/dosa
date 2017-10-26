@@ -42,13 +42,13 @@ type ColumnCondition struct {
 }
 
 // SortedColumnCondition implements sorting of an array of columnConditions
-type SortedColumnCondition []*ColumnCondition
+type sortedColumnCondition []*ColumnCondition
 
-func (list SortedColumnCondition) Len() int { return len(list) }
+func (list sortedColumnCondition) Len() int { return len(list) }
 
-func (list SortedColumnCondition) Swap(i, j int) { list[i], list[j] = list[j], list[i] }
+func (list sortedColumnCondition) Swap(i, j int) { list[i], list[j] = list[j], list[i] }
 
-func (list SortedColumnCondition) Less(i, j int) bool {
+func (list sortedColumnCondition) Less(i, j int) bool {
 	si := list[i]
 	sj := list[j]
 
@@ -71,7 +71,7 @@ func NormalizeConditions(columnConditions map[string][]*Condition) []*ColumnCond
 		}
 	}
 
-	sort.Sort(SortedColumnCondition(cc))
+	sort.Sort(sortedColumnCondition(cc))
 	return cc
 }
 
