@@ -56,6 +56,20 @@ func sortFieldValue(obj map[string]dosa.FieldValue) ([]string, []interface{}, er
 	return columns, values, nil
 }
 
+// transforms a map of column name and the column value to a sorted array of ColumnConditions
+func convertToColumnConditions(keys map[string]dosa.FieldValue) []*dosa.ColumnCondition {
+	colConds := make(map[string][]*dosa.Condition, len(keys))
+	for name, value := range keys {
+		colConds[name] = []*dosa.Condition{
+			{
+				Op:    dosa.Eq,
+				Value: value,
+			},
+		}
+	}
+	return dosa.NormalizeConditions(colConds)
+}
+
 // CreateIfNotExists creates an object if not exists
 func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	keyspace := c.KsMapper.Keyspace(ei.Ref.Scope, ei.Ref.NamePrefix)
@@ -101,19 +115,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 
 	sort.Strings(fields)
 
-	conds := make([]*ColumnCondition, len(keys))
-	pos := 0
-	for name, value := range keys {
-		conds[pos] = &ColumnCondition{
-			Name: name,
-			Condition: &dosa.Condition{
-				Op:    dosa.Eq,
-				Value: value,
-			},
-		}
-		pos++
-	}
-	sort.Sort(sortedColumnCondition(conds))
+	conds := convertToColumnConditions(keys)
 
 	_, sortedValues, err := sortFieldValue(keys)
 	if err != nil {
@@ -173,19 +175,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 
 // Remove object based on primary key
 func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue) error {
-	conds := make([]*ColumnCondition, len(keys))
-	pos := 0
-	for name, value := range keys {
-		conds[pos] = &ColumnCondition{
-			Name: name,
-			Condition: &dosa.Condition{
-				Op:    dosa.Eq,
-				Value: value,
-			},
-		}
-		pos++
-	}
-	sort.Sort(sortedColumnCondition(conds))
+	conds := convertToColumnConditions(keys)
 
 	_, sortedValues, err := sortFieldValue(keys)
 	if err != nil {
@@ -204,7 +194,7 @@ func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, column
 	return c.remove(ctx, ei, conds, values)
 }
 
-func (c *Connector) remove(ctx context.Context, ei *dosa.EntityInfo, conds []*ColumnCondition, values []interface{}) error {
+func (c *Connector) remove(ctx context.Context, ei *dosa.EntityInfo, conds []*dosa.ColumnCondition, values []interface{}) error {
 	keyspace := c.KsMapper.Keyspace(ei.Ref.Scope, ei.Ref.NamePrefix)
 	table := ei.Def.Name
 

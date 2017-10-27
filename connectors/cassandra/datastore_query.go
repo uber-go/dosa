@@ -30,41 +30,8 @@ import (
 	"github.com/uber-go/dosa"
 )
 
-// ColumnCondition represents the condition of each column
-type ColumnCondition struct {
-	Name      string
-	Condition *dosa.Condition
-}
-
-type sortedColumnCondition []*ColumnCondition
-
-func (list sortedColumnCondition) Len() int { return len(list) }
-
-func (list sortedColumnCondition) Swap(i, j int) { list[i], list[j] = list[j], list[i] }
-
-func (list sortedColumnCondition) Less(i, j int) bool {
-	si := list[i]
-	sj := list[j]
-
-	if si.Name != sj.Name {
-		return si.Name < sj.Name
-	}
-
-	return si.Condition.Op < sj.Condition.Op
-}
-
-func prepareConditions(columnConditions map[string][]*dosa.Condition) ([]*ColumnCondition, []interface{}, error) {
-	var cc []*ColumnCondition
-
-	for column, conds := range columnConditions {
-		for _, cond := range conds {
-			cc = append(cc, &ColumnCondition{
-				Name:      column,
-				Condition: cond})
-		}
-	}
-
-	sort.Sort(sortedColumnCondition(cc))
+func prepareConditions(columnConditions map[string][]*dosa.Condition) ([]*dosa.ColumnCondition, []interface{}, error) {
+	cc := dosa.NormalizeConditions(columnConditions)
 	values := make([]interface{}, len(cc))
 	for i, c := range cc {
 		values[i] = c.Condition.Value

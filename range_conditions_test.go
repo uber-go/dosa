@@ -22,7 +22,6 @@ package dosa_test
 
 import (
 	"testing"
-
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -303,5 +302,60 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 			assert.Contains(t, err.Error(), c.errMsg, c.desc)
 			assert.Contains(t, err.Error(), c.errField, c.desc)
 		}
+	}
+}
+
+func TestSortedConditions(t *testing.T) {
+	conds := map[string][]*dosa.Condition{
+		"b": {{Op: dosa.Eq, Value: 9}},
+		"c": {{Op: dosa.Gt, Value: 0}, {Op: dosa.Lt, Value: 1}},
+		"a": {
+			{Op: dosa.Gt, Value: 0},
+			{Op: dosa.LtOrEq, Value: 2},
+			{Op: dosa.GtOrEq, Value: 3},
+			{Op: dosa.Lt, Value: 5},
+			{Op: dosa.Eq, Value: 4},
+		},
+	}
+
+	expected := []*dosa.ColumnCondition{
+		{
+			Name:      "a",
+			Condition: &dosa.Condition{Op: dosa.Eq, Value: 4},
+		},
+		{
+			Name:      "a",
+			Condition: &dosa.Condition{Op: dosa.Lt, Value: 5},
+		},
+		{
+			Name:      "a",
+			Condition: &dosa.Condition{Op: dosa.LtOrEq, Value: 2},
+		},
+		{
+			Name:      "a",
+			Condition: &dosa.Condition{Op: dosa.Gt, Value: 0},
+		},
+		{
+			Name:      "a",
+			Condition: &dosa.Condition{Op: dosa.GtOrEq, Value: 3},
+		},
+		{
+			Name:      "b",
+			Condition: &dosa.Condition{Op: dosa.Eq, Value: 9},
+		},
+		{
+			Name:      "c",
+			Condition: &dosa.Condition{Op: dosa.Lt, Value: 1},
+		},
+		{
+			Name:      "c",
+			Condition: &dosa.Condition{Op: dosa.Gt, Value: 0},
+		},
+	}
+
+	cc := dosa.NormalizeConditions(conds)
+	for i, c := range cc {
+		assert.Equal(t, c.Name, expected[i].Name)
+		assert.Equal(t, c.Condition, expected[i].Condition)
 	}
 }
