@@ -31,11 +31,7 @@ import (
 	"github.com/uber-go/dosa"
 )
 
-const (
-	_defHost        = "127.0.0.1"
-	_defPort        = "5437"
-	_defServiceName = "dosa-gateway"
-)
+const _defServiceName = "dosa-gateway"
 
 var validNameRegex = regexp.MustCompile("^[a-z]+([a-z0-9]|[^-]-)*[^-]$")
 
