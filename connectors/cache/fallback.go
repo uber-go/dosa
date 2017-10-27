@@ -23,7 +23,7 @@ type rangeResults struct {
 }
 
 type rangeQuery struct {
-	Conditions map[string][]*dosa.Condition `json:",omitempty"`
+	Conditions []*dosa.ColumnCondition `json:",omitempty"`
 	Token      string
 	Limit      int
 }
@@ -138,9 +138,8 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 	if !c.isCacheable(ei) {
 		return sourceRows, sourceToken, sourceErr
 	}
-	// TODO serializing dosa.Condition array? conditions could be any order
 	keysMap := rangeQuery{
-		Conditions: columnConditions,
+		Conditions: dosa.NormalizeConditions(columnConditions),
 		Token:      token,
 		Limit:      limit,
 	}

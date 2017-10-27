@@ -171,9 +171,11 @@ func TestReadCases(t *testing.T) {
 
 		connector := NewConnector(mockOrigin, mockFallback, tc.encoder, nil, tc.cachedEntities...)
 		connector.setSynchronousMode(true)
-		resp, err := connector.Read(context.TODO(), testEi, tc.originRead.values, []string{})
-		assert.Equal(t, tc.expectedErr, err, tc.description)
-		assert.Equal(t, tc.expectedResp, resp, tc.description)
+		t.Run(tc.description, func(t *testing.T) {
+			resp, err := connector.Read(context.TODO(), testEi, tc.originRead.values, []string{})
+			assert.Equal(t, tc.expectedErr, err, tc.description)
+			assert.Equal(t, tc.expectedResp, resp, tc.description)
+		})
 	}
 
 	testCases := []testCase{
@@ -197,7 +199,7 @@ func createReadSuccessTestCase() testCase {
 		encoder:        NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
-			resp:   originResponse,
+			resp: originResponse,
 		},
 		fallbackUpsert: &expectArgs{
 			values: map[string]dosa.FieldValue{
@@ -218,7 +220,7 @@ func createReadUncachedEntityTestCase() testCase {
 		encoder:        NewJSONEncoder(),
 		cachedEntities: nil,
 		originRead: &expectArgs{
-			resp:   originResponse,
+			resp: originResponse,
 		},
 		expectedResp: originResponse,
 		expectedErr:  nil,
@@ -231,7 +233,7 @@ func createReadFailTestCase() testCase {
 		encoder:        NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
-			err:    assert.AnError,
+			err: assert.AnError,
 		},
 		fallbackRead: &expectArgs{
 			values: map[string]dosa.FieldValue{key: []byte{}},
@@ -250,7 +252,7 @@ func createReadEncodeErrorTestCase() testCase {
 		encoder:        &BadEncoder{},
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
-			resp:   originResponse,
+			resp: originResponse,
 		},
 		expectedResp: originResponse,
 		expectedErr:  nil,
@@ -266,8 +268,8 @@ func createReadDecodeErrorTestCase() testCase {
 		encoder:        &BadEncoder{},
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
-			resp:   originResponse,
-			err:    originErr,
+			resp: originResponse,
+			err:  originErr,
 		},
 		fallbackRead: &expectArgs{
 			values: map[string]dosa.FieldValue{key: []byte{}},
@@ -287,8 +289,8 @@ func createReadFallbackFailTestCase() testCase {
 		encoder:        NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
-			resp:   originResponse,
-			err:    originErr,
+			resp: originResponse,
+			err:  originErr,
 		},
 		fallbackRead: &expectArgs{
 			values: map[string]dosa.FieldValue{key: []byte{}},
@@ -308,8 +310,8 @@ func createReadFallbackBadValueTestCase() testCase {
 		encoder:        NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
-			resp:   originResponse,
-			err:    originErr,
+			resp: originResponse,
+			err:  originErr,
 		},
 		fallbackRead: &expectArgs{
 			values: map[string]dosa.FieldValue{key: []byte{}},
@@ -350,8 +352,8 @@ func TestFallbackStats(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			counter:      "failure",
-			fallbackErr:  assert.AnError,
+			counter:     "failure",
+			fallbackErr: assert.AnError,
 		},
 		{
 			counter:      "success",
@@ -392,9 +394,11 @@ func TestRangeCases(t *testing.T) {
 		connector := NewConnector(mockOrigin, mockFallback, tc.encoder, nil, tc.cachedEntities...)
 		connector.setSynchronousMode(true)
 		resp, tok, err := connector.Range(context.TODO(), testEi, tc.originRange.columnConditions, []string{}, tc.originRange.token, tc.originRange.limit)
-		assert.Equal(t, tc.expectedErr, err, tc.description)
-		assert.EqualValues(t, tc.expectedManyResp, resp, tc.description)
-		assert.Equal(t, tc.expectedTok, tok, tc.description)
+		t.Run(tc.description, func(t *testing.T) {
+			assert.Equal(t, tc.expectedErr, err, tc.description)
+			assert.EqualValues(t, tc.expectedManyResp, resp, tc.description)
+			assert.Equal(t, tc.expectedTok, tok, tc.description)
+		})
 	}
 
 	testCases := []testCase{
@@ -426,7 +430,7 @@ func createRangeSuccessTestCase() testCase {
 		},
 		fallbackUpsert: &expectArgs{
 			values: map[string]dosa.FieldValue{
-				key:   []byte(`{"Conditions":{"column":[{"Op":5,"Value":"columnVal"}]},"Token":"token","Limit":2}`),
+				key:   []byte(`{"Conditions":[{"Name":"column","Condition":{"Op":5,"Value":"columnVal"}}],"Token":"token","Limit":2}`),
 				value: []byte(`{"Rows":[{"a":"b"}],"TokenNext":"nextToken"}`),
 			},
 			err: nil,
@@ -475,7 +479,7 @@ func createRangeFailTestCase() testCase {
 		},
 		fallbackRead: &expectArgs{
 			values: map[string]dosa.FieldValue{
-				key: []byte(`{"Conditions":{"column":[{"Op":5,"Value":"columnVal"}]},"Token":"token","Limit":2}`),
+				key: []byte(`{"Conditions":[{"Name":"column","Condition":{"Op":5,"Value":"columnVal"}}],"Token":"token","Limit":2}`),
 			},
 			resp: fallbackResponse,
 		},
