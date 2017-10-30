@@ -31,7 +31,7 @@ import (
 
 // NewRedigoClient returns a redigo implementation of SimpleRedis
 func NewRedigoClient(config ServerConfig, scope metrics.Scope) SimpleRedis {
-	c := &simpleRedis{config: config, stats: scope}
+	c := &simpleRedis{config: config, stats: metrics.CheckIfNilStats(scope)}
 	c.pool = &redis.Pool{
 		MaxActive:   config.MaxActive,
 		MaxIdle:     config.MaxIdle,
@@ -90,11 +90,10 @@ func (c *simpleRedis) Shutdown() error {
 // Do is a proxy method that calls Redigo's `Do` method and returns its output. It remembers
 // to close connections taken from the pool
 func (c *simpleRedis) do(commandName string, args ...interface{}) (interface{}, error) {
-	if c.stats != nil {
-		t := c.stats.SubScope("redis").SubScope("latency").Timer(commandName)
-		t.Start()
-		defer t.Stop()
-	}
+	t := c.stats.SubScope("redis").SubScope("latency").Timer(commandName)
+	t.Start()
+	defer t.Stop()
+
 	conn := c.pool.Get()
 	defer func() { _ = conn.Close() }()
 	return conn.Do(commandName, args...)

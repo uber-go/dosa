@@ -96,7 +96,7 @@ func NewConnector(config Config, scope metrics.Scope) dosa.Connector {
 	return &Connector{
 		client: NewRedigoClient(config.ServerSettings, scope),
 		ttl:    config.TTL,
-		stats:  scope,
+		stats:  metrics.CheckIfNilStats(scope),
 	}
 }
 
@@ -244,9 +244,6 @@ func (c *Connector) logError(method string, err error) {
 }
 
 func (c *Connector) incStat(action, method string) {
-	if c.stats == nil {
-		return
-	}
 	c.stats.SubScope("cache").Tagged(map[string]string{"method": method}).Counter(action).Inc(1)
 }
 

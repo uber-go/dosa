@@ -18,19 +18,60 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testclient
+package metrics
 
 import (
-	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/connectors/memory"
+	"time"
 )
 
-// NewTestClient creates a DOSA client useful for testing.
-func NewTestClient(scope, prefix string, entities ...dosa.DomainObject) (dosa.Client, error) {
-	reg, err := dosa.NewRegistrar(scope, prefix, entities...)
-	if err != nil {
-		return nil, err
+// CheckIfNilStats checks whether stats is nil. If it is nil then return default scope
+func CheckIfNilStats(stats Scope) Scope {
+	if stats == nil {
+		return &NoopScope{}
 	}
-	connector := memory.NewConnector()
-	return dosa.NewClient(reg, connector), nil
+	return stats
+}
+
+// NoopScope scopes nothing
+type NoopScope struct{}
+
+// NoopCounter Counts nothing
+type NoopCounter struct{}
+
+// NoopTimer times nothing
+type NoopTimer struct{}
+
+// Counter is a noop
+func (s *NoopScope) Counter(name string) Counter {
+	return &NoopCounter{}
+}
+
+// Tagged is a noop
+func (s *NoopScope) Tagged(tags map[string]string) Scope {
+	return &NoopScope{}
+}
+
+// SubScope is a noop
+func (s *NoopScope) SubScope(name string) Scope {
+	return &NoopScope{}
+}
+
+// Timer is a noop
+func (s *NoopScope) Timer(name string) Timer {
+	return &NoopTimer{}
+}
+
+// Inc is a noop
+func (c *NoopCounter) Inc(delta int64) {
+	return
+}
+
+// Start is a noop
+func (t *NoopTimer) Start() time.Time {
+	return time.Time{}
+}
+
+// Stop is a noop
+func (t *NoopTimer) Stop() {
+	return
 }
