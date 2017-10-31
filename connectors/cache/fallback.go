@@ -29,12 +29,11 @@ type rangeQuery struct {
 }
 
 // NewConnector creates a fallback cache connector
-func NewConnector(origin dosa.Connector, fallback dosa.Connector, encoder Encoder, scope metrics.Scope, entities ...dosa.DomainObject) *Connector {
+func NewConnector(origin, fallback dosa.Connector, encoder Encoder, scope metrics.Scope, entities ...dosa.DomainObject) *Connector {
 	bc := base.Connector{Next: origin}
 	set := createCachedEntitiesSet(entities)
 	return &Connector{
 		Connector:         bc,
-		origin:            origin,
 		fallback:          fallback,
 		encoder:           encoder,
 		cacheableEntities: set,
@@ -45,7 +44,6 @@ func NewConnector(origin dosa.Connector, fallback dosa.Connector, encoder Encode
 // Connector is a fallback cache connector
 type Connector struct {
 	base.Connector
-	origin            dosa.Connector
 	fallback          dosa.Connector
 	encoder           Encoder
 	cacheableEntities map[string]bool
@@ -84,12 +82,12 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		_ = c.cacheWrite(w)
 	}
 
-	return c.origin.Upsert(ctx, ei, values)
+	return c.Next.Upsert(ctx, ei, values)
 }
 
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, minimumFields []string) (values map[string]dosa.FieldValue, err error) {
 	// Read from source of truth first
-	source, sourceErr := c.origin.Read(ctx, ei, keys, dosa.All())
+	source, sourceErr := c.Next.Read(ctx, ei, keys, dosa.All())
 	// If we are not caching for this entity, just return
 	if !c.isCacheable(ei) {
 		return source, sourceErr
@@ -134,7 +132,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 
 // Range returns range from origin, reverts to fallback if origin fails
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	sourceRows, sourceToken, sourceErr := c.origin.Range(ctx, ei, columnConditions, dosa.All(), token, limit)
+	sourceRows, sourceToken, sourceErr := c.Next.Range(ctx, ei, columnConditions, dosa.All(), token, limit)
 	if !c.isCacheable(ei) {
 		return sourceRows, sourceToken, sourceErr
 	}
@@ -203,7 +201,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		_ = c.cacheWrite(w)
 	}
 
-	return c.origin.Remove(ctx, ei, keys)
+	return c.Next.Remove(ctx, ei, keys)
 }
 
 func (c *Connector) getValueFromFallback(ctx context.Context, ei *dosa.EntityInfo, keyValue []byte) ([]byte, error) {
