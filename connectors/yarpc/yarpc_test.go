@@ -831,6 +831,13 @@ func TestConnector_Scan(t *testing.T) {
 	testutil.AssertEqForPointer(testAssert(t), int64(1), values[0]["c1"])
 	testutil.AssertEqForPointer(testAssert(t), float64(2.2), values[0]["c2"])
 
+	// perform a generic error request
+	values, token, err = sut.Scan(ctx, testEi, nil, "", 64)
+	assert.Nil(t, values)
+	assert.Empty(t, token)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "test error")
+
 	// perform a not found request
 	values, token, err = sut.Scan(ctx, testEi, nil, "", 64)
 	assert.Nil(t, values)
@@ -838,12 +845,6 @@ func TestConnector_Scan(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
-	// perform a generic error request
-	values, token, err = sut.Scan(ctx, testEi, nil, "", 64)
-	assert.Nil(t, values)
-	assert.Empty(t, token)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "test error")
 }
 
 func TestConnector_Remove(t *testing.T) {
