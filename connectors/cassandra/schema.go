@@ -113,14 +113,16 @@ func checkClusteringKeys(ed *dosa.EntityDefinition, md *gocql.TableMetadata) err
 	}
 	return nil
 }
+
 func checkColumns(ed *dosa.EntityDefinition, md *gocql.TableMetadata, schemaErrors *RepairableSchemaMismatchError) {
 	// Check each column
 	for _, col := range ed.Columns {
-		_, ok := md.Columns[col.Name]
-		if !ok {
-			schemaErrors.MissingColumns = append(schemaErrors.MissingColumns, MissingColumn{Column: *col, Tablename: ed.Name})
+		cassandraCol, ok := md.Columns[col.Name]
+		if ok && cassandraCol.Type.Type().String() == cassandraType(col.Type) {
+			continue
 		}
-		// TODO: check column type
+
+		schemaErrors.MissingColumns = append(schemaErrors.MissingColumns, MissingColumn{Column: *col, Tablename: ed.Name})
 	}
 }
 

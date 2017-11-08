@@ -50,6 +50,34 @@ func TestCompareStructToSchemaWrongPk(t *testing.T) {
 	assert.Contains(t, err.Error(), `"test"`)
 }
 
+func TestCompareStructToSchemaWrongCk(t *testing.T) {
+	ed := dosa.EntityDefinition{
+		Key: &dosa.PrimaryKey{
+			PartitionKeys: []string{"p1"},
+			ClusteringKeys: []*dosa.ClusteringKey{{Name:"c1", Descending: true}},
+		},
+		Name: "test",
+		Columns: []*dosa.ColumnDefinition{
+			{Name: "p1", Type: dosa.String},
+			{Name: "c1", Type: dosa.String},
+		},
+	}
+	md := gocql.TableMetadata{
+		PartitionKey: []*gocql.ColumnMetadata{
+			{Name: "p1", Type: TestType{typ: gocql.TypeText}},
+		},
+		ClusteringColumns: []*gocql.ColumnMetadata{
+			{Name: "c2", Type: TestType{typ: gocql.TypeText}},
+		},
+		Columns: map[string]*gocql.ColumnMetadata{
+			"p1": {Name: "p1", Type: TestType{typ: gocql.TypeText}},
+		}}
+	missing := RepairableSchemaMismatchError{}
+	err := compareStructToSchema(&ed, &md, &missing)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `"test"`)
+}
+
 func TestCompareStructToSchemaMissingColumn(t *testing.T) {
 	ed := dosa.EntityDefinition{Key: &dosa.PrimaryKey{
 		PartitionKeys: []string{"p1"}},
@@ -60,19 +88,67 @@ func TestCompareStructToSchemaMissingColumn(t *testing.T) {
 		},
 	}
 	md := gocql.TableMetadata{PartitionKey: []*gocql.ColumnMetadata{
-		{Name: "p1", Type: TestType{typ: gocql.TypeVarchar}},
+		{Name: "p1", Type: TestType{typ: gocql.TypeText}},
 	},
 		Columns: map[string]*gocql.ColumnMetadata{
-			"p1": {Name: "p1", Type: TestType{typ: gocql.TypeVarchar}},
+			"p1": {Name: "p1", Type: TestType{typ: gocql.TypeText}},
 		}}
 	missing := RepairableSchemaMismatchError{}
 	err := compareStructToSchema(&ed, &md, &missing)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, missing.HasMissing())
 	assert.Equal(t, 1, len(missing.MissingColumns))
 	assert.Equal(t, "test", missing.MissingColumns[0].Tablename)
 	assert.Equal(t, "c1", missing.MissingColumns[0].Column.Name)
 	assert.Contains(t, missing.Error(), "Missing 1 column")
+}
+
+func TestCompareStructToSchemaMissingColumnType(t *testing.T) {
+	ed := dosa.EntityDefinition{Key: &dosa.PrimaryKey{
+		PartitionKeys: []string{"pk"}},
+		Name: "test",
+		Columns: []*dosa.ColumnDefinition{
+			{Name: "pk", Type: dosa.String},
+		},
+	}
+	md := gocql.TableMetadata{
+		PartitionKey: []*gocql.ColumnMetadata{
+			{Name: "pk", Type: TestType{typ: gocql.TypeVarchar}},
+		},
+		Columns: map[string]*gocql.ColumnMetadata{
+			"pk": {Name: "pk", Type: TestType{typ: gocql.TypeVarchar}},
+		},
+	}
+	missing := RepairableSchemaMismatchError{}
+	err := compareStructToSchema(&ed, &md, &missing)
+	assert.NoError(t, err)
+	assert.True(t, missing.HasMissing())
+	assert.Equal(t, 1, len(missing.MissingColumns))
+	assert.Equal(t, "test", missing.MissingColumns[0].Tablename)
+	assert.Equal(t, "pk", missing.MissingColumns[0].Column.Name)
+	assert.Contains(t, missing.Error(), "Missing 1 column")
+}
+
+func TestCompareStructToSchema(t *testing.T) {
+	ed := dosa.EntityDefinition{Key: &dosa.PrimaryKey{
+		PartitionKeys: []string{"p1"}},
+		Name: "test",
+		Columns: []*dosa.ColumnDefinition{
+			{Name: "p1", Type: dosa.Int32},
+		},
+	}
+	md := gocql.TableMetadata{
+		PartitionKey: []*gocql.ColumnMetadata{
+			{Name: "p1", Type: TestType{typ: gocql.TypeInt}},
+		},
+		Columns: map[string]*gocql.ColumnMetadata{
+			"p1": {Name: "p1", Type: TestType{typ: gocql.TypeInt}},
+		},
+	}
+	missing := RepairableSchemaMismatchError{}
+	err := compareStructToSchema(&ed, &md, &missing)
+	assert.NoError(t, err)
+	assert.False(t, missing.HasMissing())
 }
 
 type TestType struct {

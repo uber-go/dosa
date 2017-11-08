@@ -218,9 +218,7 @@ type client struct {
 	connector   Connector
 }
 
-// NewClient returns a new DOSA client for the registry and connector
-// provided. This is currently only a partial implementation to demonstrate
-// basic CRUD functionality.
+// NewClient returns a new DOSA client for the registry and connector provided.
 func NewClient(reg Registrar, conn Connector) Client {
 	return &client{
 		registrar: reg,
