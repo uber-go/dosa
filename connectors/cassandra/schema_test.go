@@ -54,8 +54,8 @@ func TestCompareStructToSchemaWrongPk(t *testing.T) {
 func TestCompareStructToSchemaWrongCk(t *testing.T) {
 	ed := dosa.EntityDefinition{
 		Key: &dosa.PrimaryKey{
-			PartitionKeys: []string{"p1"},
-			ClusteringKeys: []*dosa.ClusteringKey{{Name:"c1", Descending: true}},
+			PartitionKeys:  []string{"p1"},
+			ClusteringKeys: []*dosa.ClusteringKey{{Name: "c1", Descending: true}},
 		},
 		Name: "test",
 		Columns: []*dosa.ColumnDefinition{
