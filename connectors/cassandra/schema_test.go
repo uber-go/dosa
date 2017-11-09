@@ -104,7 +104,7 @@ func TestCompareStructToSchemaMissingColumn(t *testing.T) {
 	assert.Contains(t, missing.Error(), "Missing 1 column")
 }
 
-// dosa string type is a gocql test type, not varchar
+// dosa string type is a gocql text type, not varchar
 func TestCompareStructToSchemaMissingColumnType(t *testing.T) {
 	ed := dosa.EntityDefinition{Key: &dosa.PrimaryKey{
 		PartitionKeys: []string{"pk"}},
