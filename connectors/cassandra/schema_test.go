@@ -50,6 +50,7 @@ func TestCompareStructToSchemaWrongPk(t *testing.T) {
 	assert.Contains(t, err.Error(), `"test"`)
 }
 
+// test that the cluster key in gocql doesn't match cluster key in dosa definition. c1 != c2
 func TestCompareStructToSchemaWrongCk(t *testing.T) {
 	ed := dosa.EntityDefinition{
 		Key: &dosa.PrimaryKey{
@@ -103,6 +104,7 @@ func TestCompareStructToSchemaMissingColumn(t *testing.T) {
 	assert.Contains(t, missing.Error(), "Missing 1 column")
 }
 
+// dosa string type is a gocql test type, not varchar
 func TestCompareStructToSchemaMissingColumnType(t *testing.T) {
 	ed := dosa.EntityDefinition{Key: &dosa.PrimaryKey{
 		PartitionKeys: []string{"pk"}},
