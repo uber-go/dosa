@@ -86,6 +86,27 @@ var clusteredEi = &dosa.EntityInfo{
 	},
 }
 
+var clusteredByTimeEi = &dosa.EntityInfo{
+	Ref: &testSchemaRef,
+	Def: &dosa.EntityDefinition{
+		Columns: []*dosa.ColumnDefinition{
+			{Name: "f1", Type: dosa.String},
+			{Name: "c1", Type: dosa.Int64},
+			{Name: "c2", Type: dosa.Timestamp},
+		},
+		Key: &dosa.PrimaryKey{
+			PartitionKeys: []string{"f1"},
+			ClusteringKeys: []*dosa.ClusteringKey{
+				{Name: "c1", Descending: false},
+				{Name: "c2", Descending: true},
+			},
+		},
+		Name: "t3",
+		Indexes: map[string]*dosa.IndexDefinition{
+			"i3": {Key: &dosa.PrimaryKey{PartitionKeys: []string{"c1"}}}},
+	},
+}
+
 func TestConnector_CreateIfNotExists(t *testing.T) {
 	sut := NewConnector()
 
@@ -923,6 +944,32 @@ func TestEncoderPanic(t *testing.T) {
 			"oops": func() {},
 		})
 	})
+}
+
+// TestConnector_ScanWithTimeFields ensures time.Time values don't explode
+func TestConnector_ScanWithTimeFields(t *testing.T) {
+	sut := NewConnector()
+	const timeCount = 10
+
+	testTimes := make([]time.Time, timeCount)
+	for x := 0; x < timeCount; x++ {
+		testTimes[x] = time.Date(2017, time.May, 25, 0, x, 0, 0, time.UTC)
+	}
+
+	// first, insert some random UUID values into two partition keys
+	for x := 0; x < timeCount; x++ {
+		err := sut.Upsert(context.TODO(), clusteredByTimeEi, map[string]dosa.FieldValue{
+			"f1": dosa.FieldValue("data" + string(x%2)),
+			"c1": dosa.FieldValue(int64(1)),
+			"c2": dosa.FieldValue(testTimes[x])})
+		assert.NoError(t, err)
+	}
+
+	limit := timeCount - 1
+	data, token, err := sut.Scan(context.TODO(), clusteredByTimeEi, dosa.All(), "", limit)
+	assert.NoError(t, err)
+	assert.Len(t, data, limit)
+	assert.NotEmpty(t, token)
 }
 
 func TestConnector_RangeWithBadCriteria(t *testing.T) {
