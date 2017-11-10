@@ -476,6 +476,7 @@ func decodeToken(token string) (values map[string]dosa.FieldValue, err error) {
 	}
 	gobReader := bytes.NewBuffer(gobData)
 	gob.Register(dosa.UUID(""))
+	gob.Register(time.Time{})
 	decoder := gob.NewDecoder(gobReader)
 	err = decoder.Decode(&values)
 	return values, err
