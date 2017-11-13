@@ -66,7 +66,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 
 	if internal.Consistency != nil {
-		c.Consistency = gocql.ParseConsistency(*internal.Consistency)
+		c.Consistency = gocql.MustParseConsistency(*internal.Consistency)
 	}
 
 	if internal.RetryPolicy != nil {
