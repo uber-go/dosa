@@ -790,13 +790,30 @@ func TestConnector_Scan(t *testing.T) {
 	testToken := "testToken"
 	responseToken := "responseToken"
 	testLimit := int32(32)
-	// set up the parameters
+	// set up the parameters for success request
 	sr := &drpc.ScanRequest{
 		Ref:          &testRPCSchemaRef,
 		Token:        &testToken,
 		Limit:        &testLimit,
 		FieldsToRead: map[string]struct{}{"c1": {}},
 	}
+
+	// set up the parameters for notfound request
+	srNotFound := &drpc.ScanRequest{
+		Ref:          &testRPCSchemaRef,
+		Token:        &testToken,
+		Limit:        &testLimit,
+		FieldsToRead: map[string]struct{}{"c2": {}},
+	}
+
+	// set up the parameters for error request
+	srErr := &drpc.ScanRequest{
+		Ref:          &testRPCSchemaRef,
+		Token:        &testToken,
+		Limit:        &testLimit,
+		FieldsToRead: map[string]struct{}{"c3": {}},
+	}
+
 	// successful call, return results
 	mockedClient.EXPECT().Scan(ctx, sr, gomock.Any()).
 		Do(func(_ context.Context, r *drpc.ScanRequest, option yarpc2.CallOption) {
@@ -813,10 +830,10 @@ func TestConnector_Scan(t *testing.T) {
 			NextToken: &responseToken,
 		}, nil)
 	// failed call, return error
-	mockedClient.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).
-		Return(nil, errors.New("test error")).Times(1)
+	mockedClient.EXPECT().Scan(ctx, srErr, gomock.Any()).
+		Return(nil, errors.New("test error"))
 	// no results, make sure error is exact
-	mockedClient.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).
+	mockedClient.EXPECT().Scan(ctx, srNotFound, gomock.Any()).
 		Return(nil, &dosa.ErrNotFound{})
 
 	// Prepare the dosa client interface using the mocked RPC layer
@@ -831,19 +848,19 @@ func TestConnector_Scan(t *testing.T) {
 	testutil.AssertEqForPointer(testAssert(t), int64(1), values[0]["c1"])
 	testutil.AssertEqForPointer(testAssert(t), float64(2.2), values[0]["c2"])
 
-	// perform a generic error request
-	values, token, err = sut.Scan(ctx, testEi, nil, "", 64)
-	assert.Nil(t, values)
-	assert.Empty(t, token)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "test error")
-
 	// perform a not found request
-	values, token, err = sut.Scan(ctx, testEi, nil, "", 64)
+	values, token, err = sut.Scan(ctx, testEi, []string{"c2"}, testToken, 32)
 	assert.Nil(t, values)
 	assert.Empty(t, token)
 	assert.Error(t, err)
 	assert.True(t, dosa.ErrorIsNotFound(err))
+
+	// perform a generic error request
+	values, token, err = sut.Scan(ctx, testEi, []string{"c3"}, testToken, 32)
+	assert.Nil(t, values)
+	assert.Empty(t, token)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "test error")
 
 }
 
