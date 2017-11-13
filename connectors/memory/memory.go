@@ -459,6 +459,7 @@ func makeToken(v map[string]dosa.FieldValue) string {
 	encodedKey := bytes.Buffer{}
 	encoder := gob.NewEncoder(&encodedKey)
 	gob.Register(dosa.UUID(""))
+	gob.Register(time.Time{})
 	err := encoder.Encode(v)
 	if err != nil {
 		// this should really be impossible, unless someone forgot to
@@ -475,6 +476,7 @@ func decodeToken(token string) (values map[string]dosa.FieldValue, err error) {
 	}
 	gobReader := bytes.NewBuffer(gobData)
 	gob.Register(dosa.UUID(""))
+	gob.Register(time.Time{})
 	decoder := gob.NewDecoder(gobReader)
 	err = decoder.Decode(&values)
 	return values, err
