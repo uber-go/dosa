@@ -56,7 +56,7 @@ func NewRedigoClient(config ServerConfig, scope metrics.Scope) SimpleRedis {
 type simpleRedis struct {
 	config ServerConfig
 	pool   *redis.Pool
-	stats metrics.Scope
+	stats  metrics.Scope
 }
 
 func (c *simpleRedis) getURL() string {
