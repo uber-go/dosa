@@ -102,8 +102,6 @@ var clusteredByTimeEi = &dosa.EntityInfo{
 			},
 		},
 		Name: "t3",
-		Indexes: map[string]*dosa.IndexDefinition{
-			"i3": {Key: &dosa.PrimaryKey{PartitionKeys: []string{"c1"}}}},
 	},
 }
 
