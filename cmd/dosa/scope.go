@@ -35,11 +35,9 @@ type ScopeOptions struct{}
 type ScopeCmd struct{}
 
 func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Context, string) error, scopes []string) error {
-	// set default service name if one isn't provided, this is done here instead
-	// of in the struct tags because schema and scope commands differ slightly
-	// in how the service name should be inferred.
+	// TODO(eculver): use options/configurator pattern to apply defaults
 	if options.ServiceName == "" {
-		options.ServiceName = _defServiceName // defined in options.go
+		options.ServiceName = _defServiceName
 	}
 
 	client, err := getAdminClient(options)

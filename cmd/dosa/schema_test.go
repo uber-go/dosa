@@ -111,45 +111,21 @@ func TestSchema_ExpandDirectories(t *testing.T) {
 	os.Chdir("..")
 }
 
-func TestSchema_ServiceInference(t *testing.T) {
+func TestSchema_Defaults(t *testing.T) {
 	tcs := []struct {
 		serviceName string
-		scope       string
 		expected    string
 	}{
-		//  service = "", scope = "" -> default
+		//  service = "" -> default
 		{
 			expected: _defServiceName,
 		},
-		//  service = "", scope != prod -> default
-		{
-			scope:    "not-production",
-			expected: _defServiceName,
-		},
-		//  service = "", scope = prod -> prod
-		{
-			scope:    _prodScope,
-			expected: _prodServiceName,
-		},
-		//  service = "foo", scope = "" -> "foo"
+		//  service = "foo" -> foo
 		{
 			serviceName: "foo",
 			expected:    "foo",
 		},
-		//  service = "bar", scope != prod -> "bar"
-		{
-			serviceName: "bar",
-			scope:       "bar",
-			expected:    "bar",
-		},
-		//  service = "baz", scope = prod -> "baz"
-		{
-			serviceName: "baz",
-			scope:       _prodScope,
-			expected:    "baz",
-		},
 	}
-
 	for _, tc := range tcs {
 		for _, cmd := range []string{"check", "upsert", "status"} {
 			os.Args = []string{
@@ -159,7 +135,7 @@ func TestSchema_ServiceInference(t *testing.T) {
 				"schema",
 				cmd,
 				"--prefix", "foo",
-				"--scope", tc.scope,
+				"--scope", "bar",
 				"../../testentity",
 			}
 			main()
