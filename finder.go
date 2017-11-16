@@ -36,7 +36,7 @@ import (
 )
 
 // FindEntities finds all entities in the given file paths. An error is
-// returned if there are naming colisions, otherwise, return a slice of
+// returned if there are naming collisions, otherwise, return a slice of
 // warnings (or nil).
 func FindEntities(paths, excludes []string) ([]*Table, []error, error) {
 	var entities []*Table
