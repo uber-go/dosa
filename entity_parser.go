@@ -269,10 +269,7 @@ func translateKeyName(t *Table) {
 
 // parseIndexTag functions parses DOSA index tag
 func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, error) {
-	if len(indexName) == 0 {
-		return "", nil, fmt.Errorf("index name is empty")
-	}
-	if !unicode.IsUpper([]rune(indexName)[0]) {
+	if len(indexName) != 0 && !unicode.IsUpper([]rune(indexName)[0]) {
 		return "", nil, fmt.Errorf("index name (%s) must be exported", indexName)
 	}
 	tag := dosaAnnotation

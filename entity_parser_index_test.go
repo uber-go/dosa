@@ -44,6 +44,19 @@ func TestSingleIndexNoParen(t *testing.T) {
 	}, dosaTable.Indexes)
 }
 
+type SingleIndexUnExported struct {
+	Entity       `dosa:"primaryKey=PrimaryKey"`
+	searchByData Index `dosa:"key=Data"`
+	PrimaryKey   int64
+	Data         string
+}
+
+func TestSingleIndexUnExported(t *testing.T) {
+	dosaTable, err := TableFromInstance(&SingleIndexUnExported{})
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]*IndexDefinition{}, dosaTable.Indexes)
+}
+
 type MultipleIndexes struct {
 	Entity       `dosa:"primaryKey=PrimaryKey"`
 	Index        `dosa:"key=Data, name=SearchByData"`
