@@ -269,6 +269,8 @@ func translateKeyName(t *Table) {
 
 // parseIndexTag functions parses DOSA index tag
 func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, error) {
+	// index name struct must be exported in the entity,
+	// otherwise it will be ignored when upserting the schema.
 	if len(indexName) != 0 && !unicode.IsUpper([]rune(indexName)[0]) {
 		return "", nil, fmt.Errorf("index name (%s) must be exported", indexName)
 	}
