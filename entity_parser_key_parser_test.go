@@ -746,7 +746,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "",
-			Error:          errors.New("index name is empty"),
+			Error:          errors.New("invalid name tag"),
 		},
 		{
 			Tag:               "key=((ok))",
