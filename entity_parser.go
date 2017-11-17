@@ -25,8 +25,8 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
-
 	"time"
+	"unicode"
 
 	"github.com/pkg/errors"
 )
@@ -269,6 +269,14 @@ func translateKeyName(t *Table) {
 
 // parseIndexTag functions parses DOSA index tag
 func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, error) {
+	// index name struct must be exported in the entity,
+	// otherwise it will be ignored when upserting the schema.
+	if len(indexName) != 0 && unicode.IsLower([]rune(indexName)[0]) {
+		expected := []rune(indexName)
+		expected[0] = unicode.ToUpper(expected[0])
+		return "", nil, fmt.Errorf("index name (%s) must be exported, "+
+			"try (%s) instead", indexName, string(expected))
+	}
 	tag := dosaAnnotation
 	// find the primaryKey
 	matchs := indexKeyPattern0.FindStringSubmatch(tag)

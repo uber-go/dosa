@@ -735,7 +735,7 @@ func TestIndexParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
-			InputIndexName: "",
+			InputIndexName: "SearchByKey",
 			Error:          nil,
 		},
 		{
@@ -747,6 +747,16 @@ func TestIndexParse(t *testing.T) {
 			},
 			InputIndexName: "",
 			Error:          errors.New("invalid name tag"),
+		},
+		{
+			Tag:               "key=((ok))",
+			ExpectedIndexName: "",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "searchByKey",
+			Error:          errors.New("index name (searchByKey) must be exported, try (SearchByKey) instead"),
 		},
 	}
 

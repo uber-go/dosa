@@ -54,57 +54,43 @@ func TestNonExistentDirectory(t *testing.T) {
 
 func TestParser(t *testing.T) {
 	entities, errs, err := FindEntities([]string{"."}, []string{})
+	expectedEntities := map[string]DomainObject{
+		"singleprimarykeynoparen":       &SinglePrimaryKeyNoParen{},
+		"singleprimarykey":              &SinglePrimaryKey{},
+		"singlepartitionkey":            &SinglePartitionKey{},
+		"primarykeywithsecondaryrange":  &PrimaryKeyWithSecondaryRange{},
+		"primarykeywithdescendingrange": &PrimaryKeyWithDescendingRange{},
+		"multicomponentprimarykey":      &MultiComponentPrimaryKey{},
+		"nullabletype":                  &NullableType{},
+		"alltypes":                      &AllTypes{},
+		"unexportedfieldtype":           &UnexportedFieldType{},
+		"ignoretagtype":                 &IgnoreTagType{},
+		"badcolnamebutrenamed":          &BadColNameButRenamed{},
+		"singleindexnoparen":            &SingleIndexNoParen{},
+		"multipleindexes":               &MultipleIndexes{},
+		"complexindexes":                &ComplexIndexes{},
+	}
+	entitiesExcludedForTest := map[string]interface{}{
+		"clienttestentity1":      struct{}{}, // skip, see https://jira.uberinternal.com/browse/DOSA-788
+		"clienttestentity2":      struct{}{}, // skip, same as above
+		"registrytestvalid":      struct{}{}, // skip, same as above
+		"allfieldtypes":          struct{}{},
+		"alltypesscantestentity": struct{}{},
+	}
 
-	assert.Equal(t, 19, len(entities), fmt.Sprintf("%s", entities))
-	assert.Equal(t, 20, len(errs), fmt.Sprintf("%v", errs))
+	assert.Equal(t, len(expectedEntities)+len(entitiesExcludedForTest), len(entities), fmt.Sprintf("%s", entities))
+	// TODO(jzhan): remove the hard-coded number of errors.
+	assert.Equal(t, 21, len(errs), fmt.Sprintf("%v", errs))
 	assert.Nil(t, err)
 
 	for _, entity := range entities {
-		var e *Table
-		switch entity.Name {
-		case "singleprimarykeynoparen":
-			e, _ = TableFromInstance(&SinglePrimaryKeyNoParen{})
-		case "singleprimarykey":
-			e, _ = TableFromInstance(&SinglePrimaryKey{})
-		case "singlepartitionkey":
-			e, _ = TableFromInstance(&SinglePartitionKey{})
-		case "primarykeywithsecondaryrange":
-			e, _ = TableFromInstance(&PrimaryKeyWithSecondaryRange{})
-		case "primarykeywithdescendingrange":
-			e, _ = TableFromInstance(&PrimaryKeyWithDescendingRange{})
-		case "multicomponentprimarykey":
-			e, _ = TableFromInstance(&MultiComponentPrimaryKey{})
-		case "nullabletype":
-			e, _ = TableFromInstance(&NullableType{})
-		case "alltypes":
-			e, _ = TableFromInstance(&AllTypes{})
-		case "unexportedfieldtype":
-			e, _ = TableFromInstance(&UnexportedFieldType{})
-		case "ignoretagtype":
-			e, _ = TableFromInstance(&IgnoreTagType{})
-		case "badcolnamebutrenamed":
-			e, _ = TableFromInstance(&BadColNameButRenamed{})
-		case "clienttestentity1": // skip, see https://jira.uberinternal.com/browse/DOSA-788
-			continue
-		case "clienttestentity2": // skip, same as above
-			continue
-		case "registrytestvalid": // skip, same as above
-			continue
-		case "allfieldtypes":
-			continue
-		case "alltypesscantestentity": // skipping test entity defined in scan_test.go
-			continue
-		case "singleindexnoparen":
-			e, _ = TableFromInstance(&SingleIndexNoParen{})
-		case "multipleindexes":
-			e, _ = TableFromInstance(&MultipleIndexes{})
-		case "complexindexes":
-			e, _ = TableFromInstance(&ComplexIndexes{})
-		default:
-			t.Errorf("entity %s not expected", entity.Name)
+		if _, ok := entitiesExcludedForTest[entity.Name]; ok {
 			continue
 		}
-
+		inst, ok := expectedEntities[entity.Name]
+		assert.True(t, ok)
+		e, err := TableFromInstance(inst)
+		assert.NoError(t, err)
 		assert.Equal(t, e, entity)
 	}
 }
