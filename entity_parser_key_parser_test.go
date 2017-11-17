@@ -756,7 +756,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "searchByKey",
-			Error:          errors.New("index name (searchByKey) must be exported"),
+			Error:          errors.New("index name (searchByKey) must be exported, try (SearchByKey) instead"),
 		},
 	}
 
