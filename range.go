@@ -184,14 +184,14 @@ func (m rangeOpMatcher) String() string {
 
 // IndexFromConditions returns the name of the index or the base table to use, along with the key info
 // for that index. If no suitable index could be found, an error is returned
-func (ei *EntityInfo) IndexFromConditions(conditions map[string][]*Condition) (name string, key *PrimaryKey, err error) {
+func (ei *EntityInfo) IndexFromConditions(conditions map[string][]*Condition, searchIndexes bool) (name string, key *PrimaryKey, err error) {
 	identityFunc := func(s string) string { return s }
 	// see if we match the primary key for this table
 	var baseTableError error
 	if baseTableError = EnsureValidRangeConditions(ei.Def, ei.Def.Key, conditions, identityFunc); baseTableError == nil {
 		return ei.Def.Name, ei.Def.Key, nil
 	}
-	if len(ei.Def.Indexes) == 0 {
+	if searchIndexes == false || len(ei.Def.Indexes) == 0 {
 		return "", nil, baseTableError
 	}
 	// see if we match an index on this table

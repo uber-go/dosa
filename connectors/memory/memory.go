@@ -403,11 +403,10 @@ func (c *Connector) RemoveRange(_ context.Context, ei *dosa.EntityInfo, columnCo
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	partitionRange, err := c.findRange(ei, columnConditions)
+	partitionRange, err := c.findRange(ei, columnConditions, false)
 	if err != nil {
 		return err
 	}
-	// TODO: this should have been from a primary key lookup, not an index lookup
 	if partitionRange != nil {
 		for iName, iDef := range ei.Def.Indexes {
 			for _, vals := range partitionRange.values() {
@@ -425,7 +424,7 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	partitionRange, err := c.findRange(ei, columnConditions)
+	partitionRange, err := c.findRange(ei, columnConditions, true)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Invalid range conditions")
 	}
@@ -487,7 +486,7 @@ func decodeToken(token string) (values map[string]dosa.FieldValue, err error) {
 //
 // Note that this function reads from the connector's data map. Any calling functions should hold
 // at least a read lock on the map.
-func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) (*partitionRange, error) {
+func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, searchIndexes bool) (*partitionRange, error) {
 	// no data at all, fine
 	if c.data[ei.Def.Name] == nil {
 		return nil, nil
@@ -497,7 +496,7 @@ func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][
 	values := make(map[string]dosa.FieldValue)
 
 	// figure out which "table" or "index" to use based on the supplied conditions
-	name, key, err := ei.IndexFromConditions(columnConditions)
+	name, key, err := ei.IndexFromConditions(columnConditions, searchIndexes)
 	if err != nil {
 		return nil, err
 	}

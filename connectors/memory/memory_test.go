@@ -984,6 +984,20 @@ func TestConnector_RangeWithBadCriteria(t *testing.T) {
 	assert.Error(t, err)
 
 }
+func TestConnector_RemoveRangeWithSecondaryIndex(t *testing.T) {
+	sut := NewConnector()
+	// we don't look at the criteria unless there is at least one row
+	createTestData(t, sut, func(id int) string {
+		return "data"
+	}, 1)
+
+	err := sut.RemoveRange(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "f1")
+	assert.Contains(t, err.Error(),"partition key")
+}
 
 // createTestData populates some test data. The keyGenFunc can either return a constant,
 // which gives you a single partition of data, or some function of the current offset, which
