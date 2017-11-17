@@ -274,7 +274,7 @@ func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, error
 	if len(indexName) != 0 && unicode.IsLower([]rune(indexName)[0]) {
 		expected := []rune(indexName)
 		expected[0] = unicode.ToUpper(expected[0])
-		return "", nil, fmt.Errorf("index name (%s) must be exported, " +
+		return "", nil, fmt.Errorf("index name (%s) must be exported, "+
 			"try (%s) instead", indexName, string(expected))
 	}
 	tag := dosaAnnotation
