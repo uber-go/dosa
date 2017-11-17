@@ -1,5 +1,5 @@
-hash: 95570ee6b7e45c8d228ee20856ec9ae0f7ca8fd91799c8aa94c290023cf5786f
-updated: 2017-11-15T14:44:41.437172744-08:00
+hash: 44c1b4016b4c802a043b2955cb24e2922ae9949f2ebcbbb0351529107d9d2f11
+updated: 2017-11-16T16:14:50.837044899-08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -205,12 +205,6 @@ testImports:
   version: f6dd0fd0ebc7c8cff8b24c0a585caeef250627a3
 - name: github.com/mattn/goveralls
   version: b71a1e4855f87991aff01c2c833a75a07059c61c
-- name: github.com/mvdan/interfacer
-  version: d7e7372184a059b8fd99d96a593e3811bf989d75
-  subpackages:
-  - cmd/interfacer
-- name: github.com/mvdan/lint
-  version: adc824a0674b99099789b6188a058d485eaf61c0
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
