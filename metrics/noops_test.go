@@ -18,19 +18,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testclient
+package metrics_test
 
 import (
-	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/connectors/memory"
+	"github.com/stretchr/testify/assert"
+	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/uber-go/dosa/metrics"
+	"github.com/uber-go/dosa/mocks"
 )
 
-// NewTestClient creates a DOSA client useful for testing.
-func NewTestClient(scope, prefix string, entities ...dosa.DomainObject) (dosa.Client, error) {
-	reg, err := dosa.NewRegistrar(scope, prefix, entities...)
-	if err != nil {
-		return nil, err
-	}
-	connector := memory.NewConnector()
-	return dosa.NewClient(reg, connector), nil
+func TestCheckIfNilStats(t *testing.T) {
+	noopScope := &metrics.NoopScope{}
+	assert.Equal(t, noopScope, metrics.CheckIfNilStats(nil))
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	stats := mocks.NewMockScope(ctrl)
+
+	assert.Equal(t, stats, metrics.CheckIfNilStats(stats))
+}
+
+func TestOperations(t *testing.T) {
+	noopScope := metrics.CheckIfNilStats(nil)
+	noopCounter := &metrics.NoopCounter{}
+	noopTimer := &metrics.NoopTimer{}
+
+	assert.Equal(t, noopScope.Counter("test"), noopCounter)
+	assert.Equal(t, noopScope.Tagged(make(map[string]string)), noopScope)
+	assert.Equal(t, noopScope.SubScope("test"), noopScope)
+	assert.Equal(t, noopScope.Timer("test"), noopTimer)
+	assert.NotNil(t, noopTimer.Start())
 }
