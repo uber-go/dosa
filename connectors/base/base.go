@@ -24,6 +24,7 @@ import (
 	"context"
 
 	"github.com/uber-go/dosa"
+	"fmt"
 )
 
 const name = "base"
@@ -133,6 +134,14 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 		return dosa.InvalidVersion, ErrNoMoreConnector{}
 	}
 	return c.Next.CheckSchema(ctx, scope, namePrefix, ed)
+}
+
+// CheckSchemaToUpsert calls Next
+func (c *Connector) CheckSchemaToUpsert(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
+	if c.Next == nil {
+		return dosa.InvalidVersion, fmt.Errorf("hererererer")
+	}
+	return c.Next.CheckSchemaToUpsert(ctx, scope, namePrefix, ed)
 }
 
 // UpsertSchema calls Next

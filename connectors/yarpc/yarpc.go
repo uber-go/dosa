@@ -494,6 +494,23 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	return *response.Version, nil
 }
 
+func (c *Connector) CheckSchemaToUpsert(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (int32, error) {
+	// convert the client EntityDefinition to the RPC EntityDefinition
+	rpcEntityDefinition := make([]*dosarpc.EntityDefinition, len(eds))
+	for i, ed := range eds {
+		rpcEntityDefinition[i] = EntityDefinitionToThrift(ed)
+	}
+	csr := dosarpc.CheckSchemaRequest{EntityDefs: rpcEntityDefinition, Scope: &scope, NamePrefix: &namePrefix}
+
+	response, err := c.Client.CheckSchema(ctx, &csr, VersionHeader())
+
+	if err != nil {
+		return dosa.InvalidVersion, wrapError(err, "CheckSchema failed", scope, c.Config.ServiceName)
+	}
+
+	return *response.Version, nil
+}
+
 // UpsertSchema upserts the schema through RPC
 func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
 	rpcEds := make([]*dosarpc.EntityDefinition, len(eds))

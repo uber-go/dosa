@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"fmt"
 )
 
 func TestNoSubcommand(t *testing.T) {
@@ -60,6 +61,7 @@ func TestInvalidHost(t *testing.T) {
 	os.Args = []string{"dosa", "--host", "invalid-hostname.", "schema", "check", "--prefix", "foo", "../../testentity"}
 	main()
 	output := c.stop(true)
+	fmt.Printf("here output: %v", output)
 	assert.Contains(t, output, "invalid-hostname")
 	assert.Contains(t, output, "no such host")
 }

@@ -129,8 +129,15 @@ func TestRandom_Scan(t *testing.T) {
 
 func TestRandom_CheckSchema(t *testing.T) {
 	defs := make([]*dosa.EntityDefinition, 4)
-	versions, err := sut.CheckSchema(ctx, "testScope", "testPrefix", defs)
-	assert.NotNil(t, versions)
+	version, err := sut.CheckSchema(ctx, "testScope", "testPrefix", defs)
+	assert.NotNil(t, version)
+	assert.NoError(t, err)
+}
+
+func TestRandom_CheckSchemaToUpsert(t *testing.T) {
+	defs := make([]*dosa.EntityDefinition, 4)
+	version, err := sut.CheckSchemaToUpsert(ctx, "testScope", "testPrefix", defs)
+	assert.NotNil(t, version)
 	assert.NoError(t, err)
 }
 

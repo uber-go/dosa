@@ -125,8 +125,13 @@ type Connector interface {
 
 	// DDL operations (schema)
 	// CheckSchema validates that the set of entities you have provided is valid and registered already
-	// It returns a list of SchemaRef objects for use with later DML operations.
+	// It returns the latest schema version for use with later DML operations.
 	CheckSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (version int32, err error)
+	// CheckSchemaToUpsert is used by the CLI to validate whether new entities
+	// can be upserted by checking their compatibility with the latest applied schema.
+	// If compatible, the latest schema version is returned,
+	// which can be "invalid" (i.e. -1) if no schema has been applied yet.
+	CheckSchemaToUpsert(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (version int32, err error)
 	// UpsertSchema updates the schema to match what you provide as entities, if possible
 	UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (status *SchemaStatus, err error)
 	// CheckSchemaStatus checks the status of the schema whether it is accepted or in progress of application.

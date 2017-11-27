@@ -146,8 +146,18 @@ func TestBase_CheckSchema(t *testing.T) {
 	_, err := bc.CheckSchema(ctx, "testScope", "testPrefix", defs)
 	assert.Error(t, err)
 
-	versions, err := bcWNext.CheckSchema(ctx, "testScope", "testPrefix", defs)
-	assert.NotNil(t, versions)
+	version, err := bcWNext.CheckSchema(ctx, "testScope", "testPrefix", defs)
+	assert.NotNil(t, version)
+	assert.NoError(t, err)
+}
+
+func TestBase_CheckSchemaToUpsert(t *testing.T) {
+	defs := make([]*dosa.EntityDefinition, 4)
+	_, err := bc.CheckSchema(ctx, "testScope", "testPrefix", defs)
+	assert.Error(t, err)
+
+	version, err := bcWNext.CheckSchemaToUpsert(ctx, "testScope", "testPrefix", defs)
+	assert.NotNil(t, version)
 	assert.NoError(t, err)
 }
 
