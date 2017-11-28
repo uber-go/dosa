@@ -23,8 +23,9 @@ package base
 import (
 	"context"
 
-	"github.com/uber-go/dosa"
 	"fmt"
+
+	"github.com/uber-go/dosa"
 )
 
 const name = "base"

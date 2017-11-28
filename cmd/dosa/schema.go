@@ -84,7 +84,6 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	if options.ServiceName == "" {
 		options.ServiceName = _defServiceName
 	}
-
 	client, err := getAdminClient(options)
 	if err != nil {
 		return err

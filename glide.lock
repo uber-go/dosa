@@ -1,5 +1,5 @@
-hash: 44c1b4016b4c802a043b2955cb24e2922ae9949f2ebcbbb0351529107d9d2f11
-updated: 2017-11-16T16:14:50.837044899-08:00
+hash: 2ff54d6684eff3a6f08b8735dade82b31597521ada7ef5a87002a8c5dd13acfd
+updated: 2017-11-27T16:02:11.666953011-08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -35,7 +35,7 @@ imports:
   subpackages:
   - proto
 - name: github.com/golang/mock
-  version: a18247b9451da0d13e80f7c3e320f1b101d7ea1e
+  version: 747e9e6390e12b0d987c261bdc89a51e76b9f5fc
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
@@ -91,13 +91,13 @@ imports:
 - name: github.com/uber-go/tally
   version: 95078a8f10668bd1fa73ae46761cdc58d25436b8
 - name: github.com/uber/dosa-idl
-  version: 024adae76688c9e850701956834b3e73c8091c8c
+  version: 62c832235d98ed51b3b9cf346635da0c45b4960d
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
   - .gen/dosa/dosatest
 - name: github.com/uber/tchannel-go
-  version: cc230a2942d078a8b01f4a79895dad62e6c572f1
+  version: 7bcb33f4bb908c21374f8bfdc9d4b1ebcbb8dab0
   subpackages:
   - internal/argreader
   - relay
@@ -121,8 +121,9 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: f0d92f66aa8e56d214eb4b755b187e8aee2d8f9e
+  version: 9fe9f33dbb59ff30a8da4bf962683022531ae916
   subpackages:
+  - api/EntityDefsToThrift
   - api/backoff
   - api/encoding
   - api/middleware
@@ -134,7 +135,6 @@ imports:
   - internal
   - internal/backoff
   - internal/bufferpool
-  - internal/clientconfig
   - internal/config
   - internal/digester
   - internal/errorsync
@@ -168,7 +168,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: 9dfe39835686865bff950a07b394c12a98ddc811
+  version: d3b7d8cc97749230ce215d62ba35586191973629
   subpackages:
   - bpf
   - context

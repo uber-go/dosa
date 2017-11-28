@@ -12,13 +12,14 @@ import:
 - package: github.com/satori/go.uuid
   version: ^1.1.0
 - package: github.com/uber/dosa-idl
+  version: CheckSchemaRequest-toUpsert
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
 - package: go.uber.org/yarpc
   version: ^1.7.1
   subpackages:
-  - api/transport
+  - api/EntityDefsToThrift
   - transport/http
   - transport/tchannel
 - package: github.com/gobwas/glob
