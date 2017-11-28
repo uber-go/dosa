@@ -153,7 +153,7 @@ func TestBase_CheckSchema(t *testing.T) {
 
 func TestBase_CheckSchemaToUpsert(t *testing.T) {
 	defs := make([]*dosa.EntityDefinition, 4)
-	_, err := bc.CheckSchema(ctx, "testScope", "testPrefix", defs)
+	_, err := bc.CheckSchemaToUpsert(ctx, "testScope", "testPrefix", defs)
 	assert.Error(t, err)
 
 	version, err := bcWNext.CheckSchemaToUpsert(ctx, "testScope", "testPrefix", defs)

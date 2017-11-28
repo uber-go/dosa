@@ -527,7 +527,7 @@ func TestClient_CheckSchema(t *testing.T) {
 		Scope:      &sp,
 		NamePrefix: &prefix,
 		EntityDefs: yarpc.EntityDefsToThrift([]*dosa.EntityDefinition{&ed.EntityDefinition}),
-		ToUpsert: &toUpsert,
+		ToUpsert:   &toUpsert,
 	}
 	v := int32(1)
 	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.CheckSchemaRequest, opts yarpc2.CallOption) {

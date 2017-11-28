@@ -91,7 +91,6 @@ func getAdminClient(opts GlobalOptions) (dosa.AdminClient, error) {
 		return nil, fmt.Errorf("invalid caller name: %s, must begin with a letter and consist only of dash-delimited lower-case ASCII alphanumeric words", opts.CallerName)
 	}
 
-	fmt.Println("=========")
 	// create connector
 	conn, err := dosa.GetConnector(opts.Connector, map[string]interface{}{
 		"transport":   opts.Transport,

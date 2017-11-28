@@ -23,8 +23,6 @@ package base
 import (
 	"context"
 
-	"fmt"
-
 	"github.com/uber-go/dosa"
 )
 
@@ -140,7 +138,7 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 // CheckSchemaToUpsert calls Next
 func (c *Connector) CheckSchemaToUpsert(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
 	if c.Next == nil {
-		return dosa.InvalidVersion, fmt.Errorf("hererererer")
+		return dosa.InvalidVersion, ErrNoMoreConnector{}
 	}
 	return c.Next.CheckSchemaToUpsert(ctx, scope, namePrefix, ed)
 }

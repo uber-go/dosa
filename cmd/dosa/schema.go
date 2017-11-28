@@ -79,7 +79,6 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 		fmt.Printf("global options are %+v\n", options)
 	}
 
-	fmt.Println("!!!!!!!!!!!!!!!!")
 	// TODO(eculver): use options/configurator pattern to apply defaults
 	if options.ServiceName == "" {
 		options.ServiceName = _defServiceName
