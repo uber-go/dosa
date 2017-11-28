@@ -1,8 +1,19 @@
 # Changelog
 
-## v2.4.0-dev (unreleased)
+## v2.5.0 (unreleased)
 
-Coming soon...
+- Coming Soon
+
+## v2.4.0 (2017-11-28)
+
+- Added new "Routing Connector" allowing for a connector that forwards requests to one of several other connectors (#210 & #222)
+- Remove unimplemented Search API (#227)
+- Better YARPC connector error messages (#230)
+- Add new Test Client (#240)
+- Fix bug with time.Time fields being used as part of the primary key with the in-memory connector (#244)
+- Remove usage of dosa-dev-gateway in the CLI as it's no longer needed (#238)
+- Better error message when trying to do a `RemoveRange` on secondary-index fields (#232)
+- Issue errors when secondary index fields are not exported (#246)
 
 ## v2.3.0 (2017-08-28)
 
