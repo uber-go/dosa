@@ -151,7 +151,7 @@ func TestBase_CheckSchema(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestBase_CheckSchemaToUpsert(t *testing.T) {
+func TestBase_CanUpsertSchema(t *testing.T) {
 	defs := make([]*dosa.EntityDefinition, 4)
 	_, err := bc.CanUpsertSchema(ctx, "testScope", "testPrefix", defs)
 	assert.Error(t, err)
