@@ -114,9 +114,9 @@ func TestDevNull_CheckSchema(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestDevNull_CheckSchemaToUpsert(t *testing.T) {
+func TestDevNull_CanUpsertSchema(t *testing.T) {
 	defs := make([]*dosa.EntityDefinition, 4)
-	version, err := sut.CheckSchemaToUpsert(ctx, "testScope", "testPrefix", defs)
+	version, err := sut.CanUpsertSchema(ctx, "testScope", "testPrefix", defs)
 	assert.NotNil(t, version)
 	assert.NoError(t, err)
 }

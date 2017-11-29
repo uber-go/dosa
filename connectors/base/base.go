@@ -135,12 +135,12 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	return c.Next.CheckSchema(ctx, scope, namePrefix, ed)
 }
 
-// CheckSchemaToUpsert calls Next
-func (c *Connector) CheckSchemaToUpsert(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
+// CanUpsertSchema calls Next
+func (c *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
 	if c.Next == nil {
 		return dosa.InvalidVersion, ErrNoMoreConnector{}
 	}
-	return c.Next.CheckSchemaToUpsert(ctx, scope, namePrefix, ed)
+	return c.Next.CanUpsertSchema(ctx, scope, namePrefix, ed)
 }
 
 // UpsertSchema calls Next

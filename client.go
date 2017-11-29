@@ -196,8 +196,8 @@ type AdminClient interface {
 	Excludes(excludes []string) AdminClient
 	// Scope sets the admin client scope
 	Scope(scope string) AdminClient
-	// CheckSchema checks the compatibility of schemas
-	CheckSchema(ctx context.Context, namePrefix string) (*SchemaStatus, error)
+	// CanUpsertSchema checks the compatibility of to-be-upserted schemas
+	CanUpsertSchema(ctx context.Context, namePrefix string) (*SchemaStatus, error)
 	// CheckSchemaStatus checks the status of schema application
 	CheckSchemaStatus(ctx context.Context, namePrefix string, version int32) (*SchemaStatus, error)
 	// UpsertSchema upserts the schemas
@@ -538,7 +538,7 @@ func (c *adminClient) Scope(scope string) AdminClient {
 	return c
 }
 
-// CheckSchema first searches for entity definitions within configured
+// CanUpsertSchema first searches for entity definitions within configured
 // directories before checking the compatibility of each entity for the givena
 // the namePrefix. The client's scope and search directories should be
 // configured on initialization and be non-empty when CheckSchema is called.
@@ -546,12 +546,12 @@ func (c *adminClient) Scope(scope string) AdminClient {
 // any of the entities found are incompatible, not found or not uniquely named.
 // The definition of "incompatible" and "not found" may vary but is ultimately
 // defined by the client connector implementation.
-func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) (*SchemaStatus, error) {
+func (c *adminClient) CanUpsertSchema(ctx context.Context, namePrefix string) (*SchemaStatus, error) {
 	defs, err := c.GetSchema()
 	if err != nil {
 		return nil, errors.Wrapf(err, "GetSchema failed")
 	}
-	version, err := c.connector.CheckSchemaToUpsert(ctx, c.scope, namePrefix, defs)
+	version, err := c.connector.CanUpsertSchema(ctx, c.scope, namePrefix, defs)
 	if err != nil {
 		return nil, errors.Wrapf(err, "CheckSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
 	}

@@ -51,6 +51,17 @@ func (_m *MockConnector) EXPECT() *_MockConnectorRecorder {
 	return _m.recorder
 }
 
+func (_m *MockConnector) CanUpsertSchema(_param0 context.Context, _param1 string, _param2 string, _param3 []*dosa.EntityDefinition) (int32, error) {
+	ret := _m.ctrl.Call(_m, "CanUpsertSchema", _param0, _param1, _param2, _param3)
+	ret0, _ := ret[0].(int32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockConnectorRecorder) CanUpsertSchema(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "CanUpsertSchema", arg0, arg1, arg2, arg3)
+}
+
 func (_m *MockConnector) CheckSchema(_param0 context.Context, _param1 string, _param2 string, _param3 []*dosa.EntityDefinition) (int32, error) {
 	ret := _m.ctrl.Call(_m, "CheckSchema", _param0, _param1, _param2, _param3)
 	ret0, _ := ret[0].(int32)
@@ -60,17 +71,6 @@ func (_m *MockConnector) CheckSchema(_param0 context.Context, _param1 string, _p
 
 func (_mr *_MockConnectorRecorder) CheckSchema(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CheckSchema", arg0, arg1, arg2, arg3)
-}
-
-func (_m *MockConnector) CheckSchemaToUpsert(_param0 context.Context, _param1 string, _param2 string, _param3 []*dosa.EntityDefinition) (int32, error) {
-	ret := _m.ctrl.Call(_m, "CheckSchemaToUpsert", _param0, _param1, _param2, _param3)
-	ret0, _ := ret[0].(int32)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockConnectorRecorder) CheckSchemaToUpsert(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "CheckSchemaToUpsert", arg0, arg1, arg2, arg3)
 }
 
 func (_m *MockConnector) CheckSchemaStatus(_param0 context.Context, _param1 string, _param2 string, _param3 int32) (*dosa.SchemaStatus, error) {

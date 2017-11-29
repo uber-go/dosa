@@ -127,7 +127,7 @@ type SchemaCheck struct {
 
 // Execute executes a schema check command
 func (c *SchemaCheck) Execute(args []string) error {
-	return c.doSchemaOp("schema check", dosa.AdminClient.CheckSchema, c.Args.Paths)
+	return c.doSchemaOp("schema check", dosa.AdminClient.CanUpsertSchema, c.Args.Paths)
 }
 
 // SchemaUpsert contains data for executing schema upsert command.

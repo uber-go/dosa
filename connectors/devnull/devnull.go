@@ -97,8 +97,8 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	return int32(1), nil
 }
 
-// CheckSchemaToUpsert always returns schema version 1
-func (c *Connector) CheckSchemaToUpsert(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
+// CanUpsertSchema always returns schema version 1
+func (c *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
 	return int32(1), nil
 }
 

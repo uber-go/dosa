@@ -1,5 +1,5 @@
 hash: 2ff54d6684eff3a6f08b8735dade82b31597521ada7ef5a87002a8c5dd13acfd
-updated: 2017-11-27T16:02:11.666953011-08:00
+updated: 2017-11-28T16:50:43.146386438-08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -69,7 +69,7 @@ imports:
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: e3fb1a1acd7605367a2b378bc2e2f893c05174b7
+  version: 2f17f4a9d485bf34b4bfaccc273805040e4f86c8
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
@@ -91,7 +91,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 95078a8f10668bd1fa73ae46761cdc58d25436b8
 - name: github.com/uber/dosa-idl
-  version: 62c832235d98ed51b3b9cf346635da0c45b4960d
+  version: de4297f2603dc7a3d4011223e0a1749ec47b745e
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -168,7 +168,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: d3b7d8cc97749230ce215d62ba35586191973629
+  version: 894f8ed5849b15b810ae41e9590a0d05395bba27
   subpackages:
   - bpf
   - context
