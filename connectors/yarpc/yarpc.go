@@ -481,11 +481,9 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	// convert the client EntityDefinition to the RPC EntityDefinition
 	rpcEntityDefinition := EntityDefsToThrift(eds)
 	csr := dosarpc.CheckSchemaRequest{
-		ScopeDef: &dosarpc.ScopeDefinition{
-			EntityDefs: rpcEntityDefinition,
-			Scope:      &scope,
-			NamePrefix: &namePrefix,
-		},
+		EntityDefs: rpcEntityDefinition,
+		Scope:      &scope,
+		NamePrefix: &namePrefix,
 	}
 	response, err := c.Client.CheckSchema(ctx, &csr, VersionHeader())
 	if err != nil {
@@ -502,11 +500,9 @@ func (c *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix strin
 	// convert the client EntityDefinition to the RPC EntityDefinition
 	rpcEntityDefinition := EntityDefsToThrift(eds)
 	csr := dosarpc.CanUpsertSchemaRequest{
-		ScopeDef: &dosarpc.ScopeDefinition{
-			EntityDefs: rpcEntityDefinition,
-			Scope:      &scope,
-			NamePrefix: &namePrefix,
-		},
+		EntityDefs: rpcEntityDefinition,
+		Scope:      &scope,
+		NamePrefix: &namePrefix,
 	}
 	response, err := c.Client.CanUpsertSchema(ctx, &csr, VersionHeader())
 	if err != nil {

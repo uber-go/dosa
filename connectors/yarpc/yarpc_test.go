@@ -522,16 +522,15 @@ func TestClient_CheckSchema(t *testing.T) {
 
 	ed, err := dosa.TableFromInstance(&TestDosaObject{})
 	assert.NoError(t, err)
-	expectedScopeDef := &drpc.ScopeDefinition{
+	expectedRequest := &drpc.CheckSchemaRequest{
 		Scope:      &sp,
 		NamePrefix: &prefix,
 		EntityDefs: yarpc.EntityDefsToThrift([]*dosa.EntityDefinition{&ed.EntityDefinition}),
 	}
-	expectedRequest := &drpc.CheckSchemaRequest{
-		ScopeDef: expectedScopeDef,
-	}
 	expectedRequest2 := &drpc.CanUpsertSchemaRequest{
-		ScopeDef: expectedScopeDef,
+		Scope:      &sp,
+		NamePrefix: &prefix,
+		EntityDefs: yarpc.EntityDefsToThrift([]*dosa.EntityDefinition{&ed.EntityDefinition}),
 	}
 	v := int32(1)
 
