@@ -124,8 +124,11 @@ type Connector interface {
 	Scan(ctx context.Context, ei *EntityInfo, minimumFields []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)
 
 	// DDL operations (schema)
-	// CheckSchema validates that the set of entities you have provided is valid and registered already
-	// It returns a list of SchemaRef objects for use with later DML operations.
+	// CheckSchema validates the provided entities against the latest applied schema.
+	// Depending on the value set in the context,
+	// - if the requester is DOSA CLI, it checks whether the provided entities are compatible with the latest schema,
+	// - otherwise it checks whether the latest schema is compatible with the provided entities.
+	// It returns the latest schema version for use with later DML operations.
 	CheckSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (version int32, err error)
 	// UpsertSchema updates the schema to match what you provide as entities, if possible
 	UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (status *SchemaStatus, err error)
