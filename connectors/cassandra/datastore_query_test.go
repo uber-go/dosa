@@ -37,7 +37,6 @@ var (
 
 func TestRangeQuery(t *testing.T) {
 	sut := GetTestConnector(t)
-	defer ShutdownTestConnector()
 	partitionKey := dosa.UUID(gouuid.NewV4().String())
 	populateEntityRange(t, partitionKey)
 
@@ -102,7 +101,6 @@ func TestRangeQuery(t *testing.T) {
 
 func TestRangeQueryInvalidToken(t *testing.T) {
 	sut := GetTestConnector(t)
-	defer ShutdownTestConnector()
 	_, _, err := sut.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
 		uuidKeyField: {{Op: dosa.Eq, Value: dosa.UUID(gouuid.NewV4().String())}},
 	}, []string{int32Field}, "西瓜", pageSize)
@@ -112,7 +110,6 @@ func TestRangeQueryInvalidToken(t *testing.T) {
 
 func TestRangeQueryFieldsToRead(t *testing.T) {
 	sut := GetTestConnector(t)
-	defer ShutdownTestConnector()
 	partitionKey := dosa.UUID(gouuid.NewV4().String())
 	populateEntityRange(t, partitionKey)
 
@@ -135,7 +132,6 @@ func TestRangeQueryFieldsToRead(t *testing.T) {
 // as Scan shares doCommonQuery code path with Range, we'll skip invalid token test and fieldsToRead test
 func TestScan(t *testing.T) {
 	sut := GetTestConnector(t)
-	defer ShutdownTestConnector()
 	sp := "datastore_scan_test"
 	entityInfo := newTestEntityInfo(sp)
 
@@ -193,7 +189,6 @@ func TestScan(t *testing.T) {
 
 func populateEntityRange(t *testing.T, uuid dosa.UUID) {
 	sut := GetTestConnector(t)
-	defer ShutdownTestConnector()
 	for _, strKey := range strKeys {
 		for i := 0; i < pageSize; i++ {
 			err := sut.Upsert(context.TODO(), testEntityInfo, map[string]dosa.FieldValue{
