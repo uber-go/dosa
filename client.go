@@ -102,6 +102,18 @@ func ErrorIsAlreadyExists(err error) bool {
 	return ok
 }
 
+type contextKey string
+
+const (
+	// CheckSchemaSource is the context key to look up who triggered the CheckSchema request
+	CheckSchemaSource = contextKey("CheckSchema source")
+
+	// DosaCLI is the context value set by DOSA CLI
+	DosaCLI = "dosa cli"
+	// DosaClient is the context value set by DOSA client during initialization
+	DosaClient = "dosa client"
+)
+
 // Client defines the methods to operate with DOSA entities
 type Client interface {
 	// Initialize must be called before any data operation
@@ -243,6 +255,9 @@ func (c *client) Initialize(ctx context.Context) error {
 	for _, re := range registered {
 		eds = append(eds, re.EntityDefinition())
 	}
+
+	// set context to indicate this checkSchema command is from dosa client initialization.
+	ctx = context.WithValue(ctx, CheckSchemaSource, DosaClient)
 
 	// fetch latest version for all registered entities, assume order is preserved
 	version, err := c.connector.CheckSchema(ctx, c.registrar.Scope(), c.registrar.NamePrefix(), eds)
@@ -551,6 +566,10 @@ func (c *adminClient) CheckSchema(ctx context.Context, namePrefix string) (*Sche
 	if err != nil {
 		return nil, errors.Wrapf(err, "GetSchema failed")
 	}
+
+	// set context to indicate this checkSchema command is from dosa CLI.
+	ctx = context.WithValue(ctx, CheckSchemaSource, DosaCLI)
+
 	version, err := c.connector.CheckSchema(ctx, c.scope, namePrefix, defs)
 	if err != nil {
 		return nil, errors.Wrapf(err, "CheckSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)

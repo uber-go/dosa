@@ -62,6 +62,8 @@ var (
 	cte1          = &ClientTestEntity1{ID: int64(1), Name: "foo", Email: "foo@uber.com"}
 	cte2          = &ClientTestEntity2{UUID: "b1f23fa3-f453-45b4-a5d5-6d73078ac3bd", Color: "blue", IsActive: true}
 	ctx           = context.TODO()
+	contextClient = context.WithValue(ctx, dosaRenamed.CheckSchemaSource, dosaRenamed.DosaClient)
+	contextCLI    = context.WithValue(ctx, dosaRenamed.CheckSchemaSource, dosaRenamed.DosaCLI)
 	scope         = "test"
 	namePrefix    = "team.service"
 	nullConnector dosaRenamed.Connector
@@ -178,7 +180,7 @@ func TestClient_Initialize(t *testing.T) {
 
 	// CheckSchema error
 	errConn := mocks.NewMockConnector(ctrl)
-	errConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(-1), errors.New("CheckSchema error")).AnyTimes()
+	errConn.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(-1), errors.New("CheckSchema error")).AnyTimes()
 	c2 := dosaRenamed.NewClient(reg, errConn)
 	assert.Error(t, c2.Initialize(ctx))
 
@@ -214,7 +216,7 @@ func TestClient_Read(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
 	mockConn.EXPECT().Read(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, _ *dosaRenamed.EntityInfo, columnValues map[string]dosaRenamed.FieldValue, columnsToRead []string) {
 			assert.Equal(t, columnValues["id"], cte1.ID)
@@ -253,7 +255,7 @@ func TestClient_Read_pointer_result(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
 	mockConn.EXPECT().Read(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, _ *dosaRenamed.EntityInfo, columnValues map[string]dosaRenamed.FieldValue, columnsToRead []string) {
 			assert.Equal(t, columnValues["id"], cte1.ID)
@@ -319,7 +321,7 @@ func TestClient_Read_pointer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
 	mockConn.EXPECT().Read(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, _ *dosaRenamed.EntityInfo, columnValues map[string]dosaRenamed.FieldValue, columnsToRead []string) {
 			assert.Equal(t, columnValues["id"], allTypes.ID)
@@ -351,7 +353,7 @@ func TestClient_Read_Errors(t *testing.T) {
 	defer ctrl.Finish()
 	readError := errors.New("oops")
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
 	mockConn.EXPECT().Read(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, _ *dosaRenamed.EntityInfo, columnValues map[string]dosaRenamed.FieldValue, columnsToRead []string) {
 			assert.Equal(t, columnValues["id"], cte1.ID)
@@ -387,7 +389,7 @@ func TestClient_Upsert(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
 	mockConn.EXPECT().Upsert(ctx, gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, _ *dosaRenamed.EntityInfo, columnValues map[string]dosaRenamed.FieldValue) {
 			assert.Equal(t, columnValues["id"], cte1.ID)
@@ -418,7 +420,7 @@ func TestClient_CreateIfNotExists(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
 	mockConn.EXPECT().CreateIfNotExists(ctx, gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, _ *dosaRenamed.EntityInfo, columnValues map[string]dosaRenamed.FieldValue) {
 			assert.Equal(t, columnValues["id"], cte1.ID)
@@ -438,7 +440,7 @@ func TestClient_Upsert_Errors(t *testing.T) {
 	defer ctrl.Finish()
 	readError := errors.New("oops")
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
 
 	c1 := dosaRenamed.NewClient(reg1, mockConn)
 	assert.NoError(t, c1.Initialize(ctx))
@@ -482,7 +484,7 @@ func TestClient_RemoveRange(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
 	mockConn.EXPECT().RemoveRange(ctx, gomock.Any(), gomock.Any()).Return(nil)
 	c2 := dosaRenamed.NewClient(reg1, mockConn)
 	c2.Initialize(ctx)
@@ -533,7 +535,7 @@ func TestClient_Range(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
 	mockConn.EXPECT().Range(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return([]map[string]dosaRenamed.FieldValue{resultRow}, "continuation-token", nil)
 	c2 := dosaRenamed.NewClient(reg1, mockConn)
@@ -582,7 +584,7 @@ func TestClient_WalkRange(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn1 := mocks.NewMockConnector(ctrl)
-	mockConn1.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn1.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
 	mockConn1.EXPECT().Range(ctx, gomock.Any(), gomock.Any(), gomock.Any(), "", gomock.Any()).
 		Return([]map[string]dosaRenamed.FieldValue{resultRow0}, "token0", nil)
 	mockConn1.EXPECT().Range(ctx, gomock.Any(), gomock.Any(), gomock.Any(), "token0", gomock.Any()).
@@ -608,7 +610,7 @@ func TestClient_WalkRange(t *testing.T) {
 
 	// Range with closure error
 	mockConn2 := mocks.NewMockConnector(ctrl)
-	mockConn2.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil)
+	mockConn2.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil)
 	mockConn2.EXPECT().Range(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return([]map[string]dosaRenamed.FieldValue{resultRow0}, "", nil)
 	c2 := dosaRenamed.NewClient(reg1, mockConn2)
@@ -655,7 +657,7 @@ func TestClient_ScanEverything(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
 	mockConn.EXPECT().Scan(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return([]map[string]dosaRenamed.FieldValue{resultRow}, "continuation-token", nil)
 	c2 := dosaRenamed.NewClient(reg1, mockConn)
@@ -696,7 +698,7 @@ func TestClient_Remove(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().CheckSchema(contextClient, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
 	mockConn.EXPECT().Remove(ctx, gomock.Any(), map[string]dosaRenamed.FieldValue{"id": dosaRenamed.FieldValue(int64(123))}).Return(nil)
 	c2 := dosaRenamed.NewClient(reg1, mockConn)
 	c2.Initialize(ctx)
@@ -800,8 +802,8 @@ type TestEntityB struct {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(ctx, scope, "error", gomock.Any()).Return(int32(-1), errors.New("connector error")).Times(1)
-	mockConn.EXPECT().CheckSchema(ctx, scope, namePrefix, gomock.Any()).Return(int32(1), nil).Times(1)
+	mockConn.EXPECT().CheckSchema(contextCLI, scope, "error", gomock.Any()).Return(int32(-1), errors.New("connector error")).Times(1)
+	mockConn.EXPECT().CheckSchema(contextCLI, scope, namePrefix, gomock.Any()).Return(int32(1), nil).Times(1)
 
 	for _, d := range data {
 		_, err := dosaRenamed.NewAdminClient(mockConn).
