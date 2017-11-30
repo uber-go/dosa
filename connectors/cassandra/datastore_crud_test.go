@@ -47,6 +47,7 @@ func TestReadNotFound(t *testing.T) {
 
 func TestReadTimeout(t *testing.T) {
 	sut := GetTestConnector(t)
+	defer ShutdownTestConnector()
 	id := constructKeys(dosa.UUID(gouuid.NewV4().String()))
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Microsecond)
 	defer cancel()
@@ -121,6 +122,7 @@ func TestUpsertAndRead(t *testing.T) {
 
 func TestCreateIfNotExists(t *testing.T) {
 	sut := GetTestConnector(t)
+	defer ShutdownTestConnector()
 	uuid := dosa.UUID(gouuid.NewV4().String())
 	values := constructFullValues(uuid)
 	err := sut.CreateIfNotExists(context.TODO(), testEntityInfo, values)
@@ -143,6 +145,7 @@ func TestCreateIfNotExists(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	sut := GetTestConnector(t)
+	defer ShutdownTestConnector()
 	uuid1 := dosa.UUID(gouuid.NewV4().String())
 	id1 := constructKeys(uuid1)
 	v1 := constructFullValues(uuid1)
@@ -167,6 +170,7 @@ func TestDelete(t *testing.T) {
 
 func TestRemoveRange(t *testing.T) {
 	sut := GetTestConnector(t)
+	defer ShutdownTestConnector()
 	uuid1 := dosa.UUID(gouuid.NewV4().String())
 	v1 := constructFullValues(uuid1)
 	v1[int64KeyField] = 1
