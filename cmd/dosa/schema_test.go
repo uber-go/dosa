@@ -144,6 +144,22 @@ func TestSchema_Defaults(t *testing.T) {
 	}
 }
 
+func TestSchema_ScopeRequired(t *testing.T) {
+	for _, cmd := range []string{"check", "upsert"} {
+		c := StartCapture()
+		exit = func(r int) {}
+		os.Args = []string{
+			"dosa",
+			"schema",
+			cmd,
+			"--prefix", "foo",
+			"../../testentity",
+		}
+		main()
+		assert.Contains(t, c.stop(true), "-s, --scope' was not specified")
+	}
+}
+
 func TestSchema_PrefixRequired(t *testing.T) {
 	for _, cmd := range []string{"check", "upsert"} {
 		c := StartCapture()
