@@ -21,8 +21,9 @@
 package metrics_test
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/golang/mock/gomock"
 	"github.com/uber-go/dosa/metrics"
