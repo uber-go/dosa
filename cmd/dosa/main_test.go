@@ -57,7 +57,7 @@ func TestHostOptionButNothingElse(t *testing.T) {
 func TestInvalidHost(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "--host", "invalid-hostname.", "schema", "check", "--prefix", "foo", "../../testentity"}
+	os.Args = []string{"dosa", "--host", "invalid-hostname.", "schema", "check", "--scope", "bar", "--prefix", "foo", "../../testentity"}
 	main()
 	output := c.stop(true)
 	assert.Contains(t, output, "invalid-hostname")
@@ -69,7 +69,7 @@ func TestInvalidHost(t *testing.T) {
 func TestInvalidPort(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "-p", "invalid-port", "schema", "check", "--prefix", "foo", "../../testentity"}
+	os.Args = []string{"dosa", "-p", "invalid-port", "schema", "check", "--scope", "bar", "--prefix", "foo", "../../testentity"}
 	main()
 	output := c.stop(true)
 	assert.Contains(t, output, "invalid-port")
@@ -80,7 +80,7 @@ func TestInvalidPort(t *testing.T) {
 func TestInvalidTransport(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "--transport", "invalid-transport", "schema", "check", "--prefix", "foo", "../../testentity"}
+	os.Args = []string{"dosa", "--transport", "invalid-transport", "schema", "check", "--scope", "bar", "--prefix", "foo", "../../testentity"}
 	main()
 	output := c.stop(true)
 	assert.Contains(t, output, "invalid transport")

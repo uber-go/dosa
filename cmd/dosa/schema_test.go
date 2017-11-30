@@ -168,6 +168,7 @@ func TestSchema_PrefixRequired(t *testing.T) {
 			"dosa",
 			"schema",
 			cmd,
+			"--scope", "foo",
 			"../../testentity",
 		}
 		main()
@@ -191,7 +192,7 @@ func TestSchema_InvalidDirectory(t *testing.T) {
 			cmd,
 		}
 		if hasPrefix {
-			os.Args = append(os.Args, "--prefix", "foo")
+			os.Args = append(os.Args, "--scope", "bar", "--prefix", "foo")
 		}
 		os.Args = append(os.Args, []string{
 			"-e", "testentity.go",
@@ -219,7 +220,7 @@ func TestSchema_NoEntitiesFound(t *testing.T) {
 			cmd,
 		}
 		if hasPrefix {
-			os.Args = append(os.Args, "--prefix", "foo")
+			os.Args = append(os.Args, "--scope", "bar", "--prefix", "foo")
 		}
 		os.Args = append(os.Args, []string{
 			"-e", "testentity.go",
