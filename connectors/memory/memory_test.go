@@ -996,7 +996,7 @@ func TestConnector_RemoveRangeWithSecondaryIndex(t *testing.T) {
 	})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "f1")
-	assert.Contains(t, err.Error(),"partition key")
+	assert.Contains(t, err.Error(), "partition key")
 }
 
 // createTestData populates some test data. The keyGenFunc can either return a constant,

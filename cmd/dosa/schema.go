@@ -68,7 +68,7 @@ type SchemaOptions struct {
 // SchemaCmd is a placeholder for all schema commands
 type SchemaCmd struct {
 	*SchemaOptions
-	Scope      scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation."`
+	Scope      scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
 	NamePrefix string    `long:"prefix" description:"Name prefix for schema types." required:"true"`
 }
 
