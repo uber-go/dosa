@@ -36,7 +36,7 @@ func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 	// drop the old scope, ignoring errors
 	err := c.DropScope(ctx, scope)
 	if err != nil {
-		fmt.Errorf("drop scope failed: %v", err)
+		fmt.Printf("drop scope error: %v, ignore it if it does not exist", err)
 	}
 	ksn := CleanupKeyspaceName(scope)
 	// TODO: improve the replication factor, should have 3 replicas in each datacenter
