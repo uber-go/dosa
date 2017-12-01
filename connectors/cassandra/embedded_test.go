@@ -22,6 +22,7 @@ package cassandra_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -40,7 +41,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic("failed to bring up cassandra: " + err.Error())
 	}
-	println(m, "cassandra started successfully")
+	fmt.Println("cassandra started successfully")
 
 	if testConnector == nil {
 		testConnector, err = NewConnector(
@@ -58,7 +59,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic("failed to upsert test schema: " + err.Error())
 	}
-	println(m, "upsert test schema successfully")
+	fmt.Println("upsert test schema successfully")
 	exitVal := m.Run()
 
 	testConnector.DropScope(context.Background(), testScope)
