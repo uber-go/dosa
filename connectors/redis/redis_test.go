@@ -249,7 +249,7 @@ func TestLogStats(t *testing.T) {
 		defer ctrl3.Finish()
 		timer := mocks.NewMockTimer(ctrl3)
 
-		setupStatsExpectations(stats, counter, timer, tc.method, tc.scenario)
+		setupStatsExpectations(stats, counter, timer, tc.method, tc.scenario, tc.writeValues != nil)
 
 		rc := redis.NewConnector(tc.config, stats)
 		rc.Upsert(context.TODO(), testEi, tc.writeValues)
@@ -261,7 +261,7 @@ func TestLogStats(t *testing.T) {
 	testCases := []testCase{
 		// Test that a successful read from redis logs as cache hit
 		{
-			scenario:    "hit",
+			scenario:    "success",
 			writeValues: values,
 			config:      testRedisConfig,
 			method:      "Read",
@@ -307,11 +307,16 @@ func TestLogStats(t *testing.T) {
 	}
 }
 
-func setupStatsExpectations(stats *mocks.MockScope, counter *mocks.MockCounter, timer *mocks.MockTimer, method, action string) {
-	stats.EXPECT().SubScope("cache").Return(stats)
+func setupStatsExpectations(stats *mocks.MockScope, counter *mocks.MockCounter, timer *mocks.MockTimer, method, action string, redisWrite bool) {
+	stats.EXPECT().SubScope("cache").Return(stats).AnyTimes()
 	stats.EXPECT().Tagged(map[string]string{"method": method}).Return(stats)
 	stats.EXPECT().Counter(action).Return(counter)
-	counter.EXPECT().Inc(int64(1))
+	counter.EXPECT().Inc(int64(1)).AnyTimes()
+
+	if redisWrite {
+		stats.EXPECT().Tagged(map[string]string{"method": "Upsert"}).Return(stats)
+		stats.EXPECT().Counter("success").Return(counter)
+	}
 
 	stats.EXPECT().SubScope(gomock.Any()).Return(stats).AnyTimes()
 	stats.EXPECT().Timer(gomock.Any()).Return(timer).AnyTimes()
