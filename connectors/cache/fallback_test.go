@@ -384,7 +384,7 @@ func TestFallbackStats(t *testing.T) {
 		mockOrigin.EXPECT().Read(context.TODO(), testEi, nil, dosa.All()).Return(nil, assert.AnError)
 		mockFallback.EXPECT().Read(context.TODO(), adaptedEi, gomock.Any(), dosa.All()).Return(t.fallbackResp, t.fallbackErr)
 		mockStats.EXPECT().SubScope("fallback").Return(mockStats)
-		mockStats.EXPECT().Tagged(map[string]string{"method": "READ", "enitytName": "awesome_test_entity"}).Return(mockStats)
+		mockStats.EXPECT().Tagged(map[string]string{"method": "READ", "entityName": "awesome_test_entity"}).Return(mockStats)
 		mockStats.EXPECT().Counter(t.counter).Return(mockCounter)
 		mockCounter.EXPECT().Inc(int64(1))
 
