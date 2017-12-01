@@ -35,6 +35,8 @@ import (
 )
 
 func TestNewConnector(t *testing.T) {
+	EnsureLocalCassandraStarted()
+
 	c, err := cassandra.NewConnector(
 		gocql.NewCluster("127.0.0.1:"+strconv.Itoa(cassandra.CassandraPort)),
 		&cassandra.UseNamePrefix{},
@@ -45,8 +47,16 @@ func TestNewConnector(t *testing.T) {
 	}
 
 	ctx := context.Background()
+	if err := c.CreateScope(ctx, "example"); err != nil {
+		t.Fatal(err)
+	}
+	defer c.DropScope(ctx, "example")
 	ei, _ := dosa.TableFromInstance(&testentity.TestEntity{})
-	sr := dosa.SchemaRef{Scope: testScope, NamePrefix: testEntityInfo.Ref.NamePrefix}
+	_, err = c.UpsertSchema(ctx, "example", "example", []*dosa.EntityDefinition{&ei.EntityDefinition})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
 
 	err = c.Upsert(ctx, &dosa.EntityInfo{Ref: &sr, Def: &ei.EntityDefinition}, map[string]dosa.FieldValue{
 		"an_uuid_key": dosa.UUID("c778ba9e-a241-471c-9b5b-4b4c1ef1c5b7"),

@@ -21,12 +21,12 @@
 package cassandra_test
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"strconv"
 	"testing"
 	"time"
-	"context"
 
 	"github.com/gocql/gocql"
 	"github.com/pkg/errors"
