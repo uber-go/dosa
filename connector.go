@@ -127,8 +127,8 @@ type Connector interface {
 	// CheckSchema validates that the set of entities you have provided is valid and registered already
 	// It returns the latest schema version for use with later DML operations.
 	CheckSchema(ctx context.Context, scope string, namePrefix string, eds []*EntityDefinition) (version int32, err error)
-	// CanUpsertSchema is used by the CLI to validate whether new entities
-	// can be upserted by checking their compatibility with the latest applied schema.
+	// CanUpsertSchema is used to validate whether new entities can be upserted
+	// by checking their compatibility with the latest applied schema.
 	// If compatible, the latest schema version is returned,
 	// which can be "invalid" (i.e. -1) if no schema has been applied yet.
 	CanUpsertSchema(ctx context.Context, scope string, namePrefix string, eds []*EntityDefinition) (version int32, err error)

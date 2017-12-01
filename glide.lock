@@ -1,5 +1,5 @@
-hash: 2ff54d6684eff3a6f08b8735dade82b31597521ada7ef5a87002a8c5dd13acfd
-updated: 2017-11-30T15:29:37.424843201-08:00
+hash: de5105ec10fc13833983cac257da83367a3e5d087752ff89b435459260a38913
+updated: 2017-11-30T21:09:59.162120125-08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -123,7 +123,6 @@ imports:
 - name: go.uber.org/yarpc
   version: 9fe9f33dbb59ff30a8da4bf962683022531ae916
   subpackages:
-  - api/EntityDefsToThrift
   - api/backoff
   - api/encoding
   - api/middleware

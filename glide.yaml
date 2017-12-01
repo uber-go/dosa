@@ -19,7 +19,7 @@ import:
 - package: go.uber.org/yarpc
   version: ^1.7.1
   subpackages:
-  - api/EntityDefsToThrift
+  - api/transport
   - transport/http
   - transport/tchannel
 - package: github.com/gobwas/glob
