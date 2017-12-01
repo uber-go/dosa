@@ -72,6 +72,8 @@ func removeTestSchema(ks string) {
 
 var testEntityInfo = newTestEntityInfo(keyspace)
 
+var testScope = "test.datastore"
+
 func newTestEntityInfo(sp string) *dosa.EntityInfo {
 	return &dosa.EntityInfo{
 		Ref: &dosa.SchemaRef{

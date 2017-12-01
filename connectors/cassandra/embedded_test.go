@@ -54,7 +54,6 @@ func TestMain(m *testing.M) {
 	}
 	testStore = testConnector.(*Connector)
 
-	testScope := "test.datastore"
 	err = initTestSchema(testScope, testEntityInfo)
 	if err != nil {
 		panic("failed to upsert test schema: " + err.Error())

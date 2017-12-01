@@ -46,7 +46,7 @@ func TestNewConnector(t *testing.T) {
 
 	ctx := context.Background()
 	ei, _ := dosa.TableFromInstance(&testentity.TestEntity{})
-	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
+	sr := dosa.SchemaRef{Scope: testScope, NamePrefix: "example"}
 
 	err = c.Upsert(ctx, &dosa.EntityInfo{Ref: &sr, Def: &ei.EntityDefinition}, map[string]dosa.FieldValue{
 		"an_uuid_key": dosa.UUID("c778ba9e-a241-471c-9b5b-4b4c1ef1c5b7"),
