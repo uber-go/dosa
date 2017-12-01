@@ -21,6 +21,9 @@
 package cassandra_test
 
 import (
+	"context"
+	"fmt"
+	"os"
 	"os/exec"
 	"strconv"
 	"testing"
@@ -33,6 +36,36 @@ import (
 	. "github.com/uber-go/dosa/connectors/cassandra"
 )
 
+func TestMain(m *testing.M) {
+	err := EnsureLocalCassandraStarted()
+	if err != nil {
+		panic("failed to bring up cassandra: " + err.Error())
+	}
+	fmt.Println("cassandra started successfully")
+
+	if testConnector == nil {
+		testConnector, err = NewConnector(
+			gocql.NewCluster("127.0.0.1:"+strconv.Itoa(CassandraPort)),
+			&cassandra.UseNamePrefix{},
+			nil,
+		)
+		if err != nil {
+			panic("failed to create new connector: " + err.Error())
+		}
+	}
+	testStore = testConnector.(*Connector)
+
+	err = initTestSchema(testScope, testEntityInfo)
+	if err != nil {
+		panic("failed to upsert test schema: " + err.Error())
+	}
+	fmt.Println("upsert test schema successfully")
+	exitVal := m.Run()
+
+	testConnector.DropScope(context.Background(), testScope)
+	os.Exit(exitVal)
+}
+
 var testConnector dosa.Connector
 
 func EnsureLocalCassandraStarted() error {
@@ -43,28 +76,6 @@ func EnsureLocalCassandraStarted() error {
 }
 
 func GetTestConnector(t *testing.T) dosa.Connector {
-	if testConnector == nil {
-		err := EnsureLocalCassandraStarted()
-		if err != nil {
-			t.Fatal(err)
-			return nil
-		}
-		testConnector, err = NewConnector(
-			gocql.NewCluster("127.0.0.1:"+strconv.Itoa(CassandraPort)),
-			&cassandra.UseNamePrefix{},
-			nil,
-		)
-		if err != nil {
-			t.Fatal(err)
-			return nil
-		}
-		testStore = testConnector.(*Connector)
-		err = initTestSchema("test.datastore", testEntityInfo)
-		if err != nil {
-			t.Fatal(err)
-			return nil
-		}
-	}
 	return testConnector
 }
 

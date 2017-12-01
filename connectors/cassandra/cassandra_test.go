@@ -50,12 +50,12 @@ func TestNewConnector(t *testing.T) {
 	if err := c.CreateScope(ctx, "example"); err != nil {
 		t.Fatal(err)
 	}
+	defer c.DropScope(ctx, "example")
 	ei, _ := dosa.TableFromInstance(&testentity.TestEntity{})
 	_, err = c.UpsertSchema(ctx, "example", "example", []*dosa.EntityDefinition{&ei.EntityDefinition})
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
 
 	err = c.Upsert(ctx, &dosa.EntityInfo{Ref: &sr, Def: &ei.EntityDefinition}, map[string]dosa.FieldValue{

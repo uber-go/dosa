@@ -34,11 +34,13 @@ import (
 // CreateScope creates a keyspace
 func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 	// drop the old scope, ignoring errors
-	_ = c.DropScope(ctx, scope)
-
+	err := c.DropScope(ctx, scope)
+	if err != nil {
+		fmt.Printf("drop scope error: %v, ignore it if it does not exist", err)
+	}
 	ksn := CleanupKeyspaceName(scope)
 	// TODO: improve the replication factor, should have 3 replicas in each datacenter
-	err := c.Session.Query(
+	err = c.Session.Query(
 		fmt.Sprintf(`CREATE KEYSPACE "%s" WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': 1}`,
 			ksn)).
 		Exec()
