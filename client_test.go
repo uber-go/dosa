@@ -800,14 +800,14 @@ type TestEntityB struct {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
-	mockConn.EXPECT().CheckSchema(ctx, scope, "error", gomock.Any()).Return(int32(-1), errors.New("connector error")).Times(1)
-	mockConn.EXPECT().CheckSchema(ctx, scope, namePrefix, gomock.Any()).Return(int32(1), nil).Times(1)
+	mockConn.EXPECT().CanUpsertSchema(ctx, scope, "error", gomock.Any()).Return(int32(-1), errors.New("connector error")).Times(1)
+	mockConn.EXPECT().CanUpsertSchema(ctx, scope, namePrefix, gomock.Any()).Return(int32(1), nil).Times(1)
 
 	for _, d := range data {
 		_, err := dosaRenamed.NewAdminClient(mockConn).
 			Directories(d.dirs).
 			Scope(d.scope).
-			CheckSchema(ctx, d.namePrefix)
+			CanUpsertSchema(ctx, d.namePrefix)
 		if d.errContains != "" {
 			assert.Contains(t, err.Error(), d.errContains)
 			continue

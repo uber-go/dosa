@@ -92,12 +92,17 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 	return nil, "", &dosa.ErrNotFound{}
 }
 
-// CheckSchema always returns a slice of int32 values that match its index
+// CheckSchema always returns schema version 1
 func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
 	return int32(1), nil
 }
 
-// UpsertSchema always returns a slice of int32 values that match its index
+// CanUpsertSchema always returns schema version 1
+func (c *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
+	return int32(1), nil
+}
+
+// UpsertSchema always returns a SchemaStatus with version 1 and COMPLETED status
 func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
 	return &dosa.SchemaStatus{Version: int32(1), Status: "COMPLETED"}, nil
 }

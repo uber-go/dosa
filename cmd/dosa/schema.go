@@ -83,7 +83,6 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	if options.ServiceName == "" {
 		options.ServiceName = _defServiceName
 	}
-
 	client, err := getAdminClient(options)
 	if err != nil {
 		return err
@@ -128,7 +127,7 @@ type SchemaCheck struct {
 
 // Execute executes a schema check command
 func (c *SchemaCheck) Execute(args []string) error {
-	return c.doSchemaOp("schema check", dosa.AdminClient.CheckSchema, c.Args.Paths)
+	return c.doSchemaOp("schema check", dosa.AdminClient.CanUpsertSchema, c.Args.Paths)
 }
 
 // SchemaUpsert contains data for executing schema upsert command.

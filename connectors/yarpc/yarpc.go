@@ -479,14 +479,13 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 // a schema service downstream.
 func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (int32, error) {
 	// convert the client EntityDefinition to the RPC EntityDefinition
-	rpcEntityDefinition := make([]*dosarpc.EntityDefinition, len(eds))
-	for i, ed := range eds {
-		rpcEntityDefinition[i] = EntityDefinitionToThrift(ed)
+	rpcEntityDefinition := EntityDefsToThrift(eds)
+	csr := dosarpc.CheckSchemaRequest{
+		EntityDefs: rpcEntityDefinition,
+		Scope:      &scope,
+		NamePrefix: &namePrefix,
 	}
-	csr := dosarpc.CheckSchemaRequest{EntityDefs: rpcEntityDefinition, Scope: &scope, NamePrefix: &namePrefix}
-
 	response, err := c.Client.CheckSchema(ctx, &csr, VersionHeader())
-
 	if err != nil {
 		return dosa.InvalidVersion, wrapError(err, "CheckSchema failed", scope, c.Config.ServiceName)
 	}
@@ -494,13 +493,28 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 	return *response.Version, nil
 }
 
-// UpsertSchema upserts the schema through RPC
-func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
-	rpcEds := make([]*dosarpc.EntityDefinition, len(eds))
-	for i, ed := range eds {
-		rpcEds[i] = EntityDefinitionToThrift(ed)
+// CanUpsertSchema checks whether the provided entities are compatible with the latest applied schema.
+// A non-nil error indicates the entities are not backward-compatible with the latest schema, thus will fail
+// if they were to be upserted.
+func (c *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (int32, error) {
+	// convert the client EntityDefinition to the RPC EntityDefinition
+	rpcEntityDefinition := EntityDefsToThrift(eds)
+	csr := dosarpc.CanUpsertSchemaRequest{
+		EntityDefs: rpcEntityDefinition,
+		Scope:      &scope,
+		NamePrefix: &namePrefix,
+	}
+	response, err := c.Client.CanUpsertSchema(ctx, &csr, VersionHeader())
+	if err != nil {
+		return dosa.InvalidVersion, wrapError(err, "Check schema compatibility failed", scope, c.Config.ServiceName)
 	}
 
+	return *response.Version, nil
+}
+
+// UpsertSchema upserts the schema through RPC
+func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
+	rpcEds := EntityDefsToThrift(eds)
 	request := &dosarpc.UpsertSchemaRequest{
 		Scope:      &scope,
 		NamePrefix: &namePrefix,

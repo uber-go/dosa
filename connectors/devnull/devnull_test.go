@@ -109,8 +109,15 @@ func TestDevNull_Scan(t *testing.T) {
 
 func TestDevNull_CheckSchema(t *testing.T) {
 	defs := make([]*dosa.EntityDefinition, 4)
-	versions, err := sut.CheckSchema(ctx, "testScope", "testPrefix", defs)
-	assert.NotNil(t, versions)
+	version, err := sut.CheckSchema(ctx, "testScope", "testPrefix", defs)
+	assert.NotNil(t, version)
+	assert.NoError(t, err)
+}
+
+func TestDevNull_CanUpsertSchema(t *testing.T) {
+	defs := make([]*dosa.EntityDefinition, 4)
+	version, err := sut.CanUpsertSchema(ctx, "testScope", "testPrefix", defs)
+	assert.NotNil(t, version)
 	assert.NoError(t, err)
 }
 

@@ -525,14 +525,26 @@ func TestClient_CheckSchema(t *testing.T) {
 	expectedRequest := &drpc.CheckSchemaRequest{
 		Scope:      &sp,
 		NamePrefix: &prefix,
-		EntityDefs: []*drpc.EntityDefinition{yarpc.EntityDefinitionToThrift(&ed.EntityDefinition)},
+		EntityDefs: yarpc.EntityDefsToThrift([]*dosa.EntityDefinition{&ed.EntityDefinition}),
+	}
+	expectedRequest2 := &drpc.CanUpsertSchemaRequest{
+		Scope:      &sp,
+		NamePrefix: &prefix,
+		EntityDefs: yarpc.EntityDefsToThrift([]*dosa.EntityDefinition{&ed.EntityDefinition}),
 	}
 	v := int32(1)
+
 	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.CheckSchemaRequest, opts yarpc2.CallOption) {
 		assert.Equal(t, expectedRequest, request)
 	}).Return(&drpc.CheckSchemaResponse{Version: &v}, nil)
-
 	sr, err := sut.CheckSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
+	assert.NoError(t, err)
+	assert.Equal(t, v, sr)
+
+	mockedClient.EXPECT().CanUpsertSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.CanUpsertSchemaRequest, opts yarpc2.CallOption) {
+		assert.Equal(t, expectedRequest2, request)
+	}).Return(&drpc.CanUpsertSchemaResponse{Version: &v}, nil)
+	sr, err = sut.CanUpsertSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
 	assert.Equal(t, v, sr)
 }
@@ -575,7 +587,7 @@ func TestClient_UpsertSchema(t *testing.T) {
 	expectedRequest := &drpc.UpsertSchemaRequest{
 		Scope:      &sp,
 		NamePrefix: &prefix,
-		EntityDefs: []*drpc.EntityDefinition{yarpc.EntityDefinitionToThrift(&ed.EntityDefinition)},
+		EntityDefs: yarpc.EntityDefsToThrift([]*dosa.EntityDefinition{&ed.EntityDefinition}),
 	}
 	v := int32(1)
 	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.UpsertSchemaRequest, option yarpc2.CallOption) {

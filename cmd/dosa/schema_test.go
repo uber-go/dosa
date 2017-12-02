@@ -248,7 +248,7 @@ func TestSchema_Check_Happy(t *testing.T) {
 	}
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().CheckSchema(gomock.Any(), "scope", "foo", gomock.Any()).
+		mc.EXPECT().CanUpsertSchema(gomock.Any(), "scope", "foo", gomock.Any()).
 			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
 				dl, ok := ctx.Deadline()
 				assert.True(t, ok)

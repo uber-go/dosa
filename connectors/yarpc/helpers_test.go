@@ -182,8 +182,8 @@ var testEntityDefinition = &dosa.EntityDefinition{
 }
 
 func TestEntityDefinitionConvert(t *testing.T) {
-	rpcEd := EntityDefinitionToThrift(testEntityDefinition)
-	ed := FromThriftToEntityDefinition(rpcEd)
+	rpcEd := EntityDefsToThrift([]*dosa.EntityDefinition{testEntityDefinition})
+	ed := FromThriftToEntityDefinition(rpcEd[0])
 	assert.Equal(t, testEntityDefinition.Key, ed.Key)
 	assert.Equal(t, testEntityDefinition.Name, ed.Name)
 	assert.Equal(t, testEntityDefinition.Indexes, ed.Indexes)

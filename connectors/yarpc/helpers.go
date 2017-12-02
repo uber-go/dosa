@@ -196,8 +196,16 @@ func PrimaryKeyToThrift(key *dosa.PrimaryKey) *dosarpc.PrimaryKey {
 	return &dosarpc.PrimaryKey{PartitionKeys: key.PartitionKeys, ClusteringKeys: ck}
 }
 
-// EntityDefinitionToThrift converts the client EntityDefinition to the RPC EntityDefinition
-func EntityDefinitionToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
+// EntityDefsToThrift coverts a set of client EntityDefinition to the corresponding RPC EntityDefinitions
+func EntityDefsToThrift(eds []*dosa.EntityDefinition) []*dosarpc.EntityDefinition {
+	rpcEntityDefs := make([]*dosarpc.EntityDefinition, len(eds))
+	for i, ed := range eds {
+		rpcEntityDefs[i] = entityDefToThrift(ed)
+	}
+	return rpcEntityDefs
+}
+
+func entityDefToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
 	fd := make(map[string]*dosarpc.FieldDesc, len(ed.Columns))
 	for _, column := range ed.Columns {
 		rpcType := RPCTypeFromClientType(column.Type)
