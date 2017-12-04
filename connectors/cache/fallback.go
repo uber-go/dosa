@@ -138,7 +138,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	// if source of truth fails, try the fallback. If the fallback fails,
 	// return the original error
 	value, err := c.getValueFromFallback(ctx, adaptedEi, cacheKey)
-	c.logFallback("READ", err)
+	c.logFallback("READ", ei.Def.Name, err)
 	if err != nil {
 		return source, sourceErr
 	}
@@ -189,7 +189,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 		return sourceRows, sourceToken, sourceErr
 	}
 	value, err := c.getValueFromFallback(ctx, adaptedEi, cacheKey)
-	c.logFallback("RANGE", err)
+	c.logFallback("RANGE", ei.Def.Name, err)
 	if err != nil {
 		return sourceRows, sourceToken, sourceErr
 	}
@@ -238,9 +238,9 @@ func (c *Connector) getValueFromFallback(ctx context.Context, ei *dosa.EntityInf
 	return cacheValue, nil
 }
 
-func (c *Connector) logFallback(method string, err error) {
+func (c *Connector) logFallback(method, entityName string, err error) {
 	if c.stats != nil {
-		s := c.stats.SubScope("fallback").Tagged(map[string]string{"method": method})
+		s := c.stats.SubScope("fallback").Tagged(map[string]string{"method": method, "entityName": entityName})
 		if err != nil {
 			s.Counter("failure").Inc(1)
 		} else {
