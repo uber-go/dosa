@@ -146,7 +146,7 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 // Shutdown not implemented
 func (c *Connector) Shutdown() error {
 	err := c.client.Shutdown()
-	c.logError("Shutdown", err)
+	c.logCallCount("Shutdown", err)
 	return err
 }
 
@@ -204,7 +204,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 	}
 
 	err = c.client.SetEx(cacheKey, cacheValueBytes, c.ttl)
-	c.logError("Upsert", err)
+	c.logCallCount("Upsert", err)
 	return err
 }
 
@@ -221,25 +221,23 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 	}
 
 	err = c.client.Del(cacheKey)
-	c.logError("Remove", err)
+	c.logCallCount("Remove", err)
 	return err
 }
 
 func (c *Connector) logHitRate(method string, err error) {
-	if err != nil {
-		if dosa.ErrorIsNotFound(err) {
-			c.incStat("miss", method)
-			return
-		}
-		c.logError(method, err)
+	if err != nil && dosa.ErrorIsNotFound(err) {
+		c.incStat("miss", method)
 		return
 	}
-	c.incStat("hit", method)
+	c.logCallCount(method, err)
 }
 
-func (c *Connector) logError(method string, err error) {
+func (c *Connector) logCallCount(method string, err error) {
 	if err != nil {
 		c.incStat("error", method)
+	} else {
+		c.incStat("success", method)
 	}
 }
 
