@@ -83,7 +83,7 @@ func IsValidName(name string) error {
 		return errors.Errorf("cannot be empty")
 	}
 	if len(name) > maxNameLen {
-		return errors.Errorf("too long: %v has length %d, max allowed is %d", name, maxNameLen, len(name))
+		return errors.Errorf("too long: %v has length %d, max allowed is %d", name, len(name), maxNameLen)
 	}
 	if strings.IndexFunc(name[:1], isInvalidFirstRune) != -1 {
 		return errors.Errorf("name must start with [a-z_]. Actual='%s'", name)
