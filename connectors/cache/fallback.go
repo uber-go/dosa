@@ -135,6 +135,10 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 
 		return source, sourceErr
 	}
+	if dosa.ErrorIsNotFound(sourceErr) {
+		return source, sourceErr
+	}
+
 	// if source of truth fails, try the fallback. If the fallback fails,
 	// return the original error
 	value, err := c.getValueFromFallback(ctx, adaptedEi, cacheKey)
@@ -188,6 +192,10 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 
 		return sourceRows, sourceToken, sourceErr
 	}
+	if dosa.ErrorIsNotFound(sourceErr) {
+		return sourceRows, sourceToken, sourceErr
+	}
+
 	value, err := c.getValueFromFallback(ctx, adaptedEi, cacheKey)
 	c.logFallback("RANGE", ei.Def.Name, err)
 	if err != nil {

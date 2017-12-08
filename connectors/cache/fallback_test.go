@@ -202,6 +202,7 @@ func TestReadCases(t *testing.T) {
 		createReadSuccessTestCase(),
 		createReadUncachedEntityTestCase(),
 		createReadFailTestCase(),
+		createReadNotFoundTestCase(),
 		createReadEncodeErrorTestCase(),
 		createReadDecodeErrorTestCase(),
 		createReadFallbackFailTestCase(),
@@ -262,6 +263,22 @@ func createReadFailTestCase() testCase {
 		expectedResp: map[string]dosa.FieldValue{"b": float64(7)},
 		expectedErr:  nil,
 		description:  "Test that when read origin has error, we return from the fallback",
+	}
+}
+
+func createReadNotFoundTestCase() testCase {
+	originResponse := map[string]dosa.FieldValue{"a": "b"}
+	originErr := &dosa.ErrNotFound{}
+	return testCase{
+		encoder:        NewJSONEncoder(),
+		cachedEntities: cacheableEntities,
+		originRead: &expectArgs{
+			err: originErr,
+			resp: originResponse,
+		},
+		expectedResp: originResponse,
+		expectedErr:  originErr,
+		description:  "Test that when read origin has err not found, do not read from fallback, return origin response and error",
 	}
 }
 
@@ -425,6 +442,7 @@ func TestRangeCases(t *testing.T) {
 		createRangeSuccessTestCase(),
 		createRangeUncachedEntityTestCase(),
 		createRangeFailTestCase(),
+		createRangeNotFoundTestCase(),
 		createRangeEncodeErrorTestCase(),
 		createRangeDecodeErrorTestCase(),
 		createRangeFallbackFailTestCase(),
@@ -507,6 +525,30 @@ func createRangeFailTestCase() testCase {
 		expectedManyResp: []map[string]dosa.FieldValue{{"b": float64(7)}},
 		expectedTok:      "nextToken",
 		description:      "Test range from origin has error and fallback succeeds",
+	}
+}
+
+func createRangeNotFoundTestCase() testCase {
+	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
+	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
+	rangeTok := "nextToken"
+	rangeErr := &dosa.ErrNotFound{}
+
+	return testCase{
+		encoder:        &BadEncoder{},
+		cachedEntities: cacheableEntities,
+		originRange: &rangeArgs{
+			columnConditions: conditions,
+			token:            "token",
+			limit:            2,
+			resp:             rangeResponse,
+			nextToken:        rangeTok,
+			err:              rangeErr,
+		},
+		expectedErr:      rangeErr,
+		expectedManyResp: rangeResponse,
+		expectedTok:      rangeTok,
+		description:      "Test that when origin has err not found, do not read from fallback, return origin response and error",
 	}
 }
 
