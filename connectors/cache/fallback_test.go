@@ -273,7 +273,7 @@ func createReadNotFoundTestCase() testCase {
 		encoder:        NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
-			err: originErr,
+			err:  originErr,
 			resp: originResponse,
 		},
 		expectedResp: originResponse,
