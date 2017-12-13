@@ -577,7 +577,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 	}
 
 	if response.Version == nil {
-		return nil, errors.New("failed to upsertschema: server returns version nil")
+		return nil, errors.New("failed to UpsertSchema: server returns version nil")
 	}
 
 	return &dosa.SchemaStatus{
