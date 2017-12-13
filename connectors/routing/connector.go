@@ -179,7 +179,7 @@ func (rc *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumField
 func (rc *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
 	connector, err := rc.getConnector(scope, namePrefix, "CheckSchema")
 	if err != nil {
-		return dosa.InvalidVersion, base.ErrNoMoreConnector{}
+		return dosa.InvalidVersion, err
 	}
 	return connector.CheckSchema(ctx, scope, namePrefix, ed)
 }
@@ -188,7 +188,7 @@ func (rc *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, 
 func (rc *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
 	connector, err := rc.getConnector(scope, namePrefix, "UpsertSchema")
 	if err != nil {
-		return nil, base.ErrNoMoreConnector{}
+		return nil, err
 	}
 	return connector.UpsertSchema(ctx, scope, namePrefix, ed)
 }
@@ -197,7 +197,7 @@ func (rc *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string,
 func (rc *Connector) CheckSchemaStatus(ctx context.Context, scope string, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
 	connector, err := rc.getConnector(scope, namePrefix, "CheckSchemaStatus")
 	if err != nil {
-		return nil, base.ErrNoMoreConnector{}
+		return nil, err
 	}
 	return connector.CheckSchemaStatus(ctx, scope, namePrefix, version)
 }
@@ -207,7 +207,7 @@ func (rc *Connector) CreateScope(ctx context.Context, scope string) error {
 	// will fall to default connector
 	connector, err := rc.getConnector(scope, "", "CreateScope")
 	if err != nil {
-		return base.ErrNoMoreConnector{}
+		return err
 	}
 	return connector.CreateScope(ctx, scope)
 }
@@ -217,7 +217,7 @@ func (rc *Connector) TruncateScope(ctx context.Context, scope string) error {
 	// will fall to default connector
 	connector, err := rc.getConnector(scope, "", "TruncateScope")
 	if err != nil {
-		return base.ErrNoMoreConnector{}
+		return err
 	}
 	return connector.TruncateScope(ctx, scope)
 }
@@ -227,7 +227,7 @@ func (rc *Connector) DropScope(ctx context.Context, scope string) error {
 	// will fall to default connector
 	connector, err := rc.getConnector(scope, "", "DropScope")
 	if err != nil {
-		return base.ErrNoMoreConnector{}
+		return err
 	}
 	return connector.DropScope(ctx, scope)
 }
@@ -237,7 +237,7 @@ func (rc *Connector) ScopeExists(ctx context.Context, scope string) (bool, error
 	// will fall to default connector
 	connector, err := rc.getConnector(scope, "", "ScopeExists")
 	if err != nil {
-		return false, base.ErrNoMoreConnector{}
+		return false, err
 	}
 	return connector.ScopeExists(ctx, scope)
 }
