@@ -395,13 +395,13 @@ func parensBalanced(s string) bool {
 	var ssize uint
 	for i := 0; i < len(s); i++ {
 		if s[i] == '(' {
-			ssize += 1
+			ssize++
 		} else if s[i] == ')' {
 			if ssize == 0 {
 				// Extra right paren
 				return false
 			}
-			ssize -= 1
+			ssize--
 		}
 	}
 	// Stack must be empty

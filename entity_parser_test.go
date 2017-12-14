@@ -513,12 +513,12 @@ func TestParensBalanced(t *testing.T) {
 	assert.True(t, parensBalanced(""))
 	assert.True(t, parensBalanced("()(()(()(()()))())()()"))
 
-	assert.True(t, !parensBalanced("("))
-	assert.True(t, !parensBalanced(")"))
-	assert.True(t, !parensBalanced("(()"))
-	assert.True(t, !parensBalanced(")("))
-	assert.True(t, !parensBalanced("(()))"))
-	assert.True(t, !parensBalanced("((()())"))
+	assert.False(t, parensBalanced("("))
+	assert.False(t, parensBalanced(")"))
+	assert.False(t, parensBalanced("(()"))
+	assert.False(t, parensBalanced(")("))
+	assert.False(t, parensBalanced("(()))"))
+	assert.False(t, parensBalanced("((()())"))
 }
 
 /*

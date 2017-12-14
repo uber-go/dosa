@@ -80,7 +80,7 @@ func TestParser(t *testing.T) {
 
 	assert.Equal(t, len(expectedEntities)+len(entitiesExcludedForTest), len(entities), fmt.Sprintf("%s", entities))
 	// TODO(jzhan): remove the hard-coded number of errors.
-	assert.Equal(t, 21, len(errs), fmt.Sprintf("%v", errs))
+	assert.Equal(t, 22, len(errs), fmt.Sprintf("%v", errs))
 	assert.Nil(t, err)
 
 	for _, entity := range entities {
