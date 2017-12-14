@@ -492,6 +492,35 @@ func TestInvalidFieldInTag(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid")
 }
 
+func TestInvalidSyntaxInTag(t *testing.T) {
+	type HasInvalidTagSyntax struct {
+		Entity `dosa:"primaryKey=((Val, Key), TS DESC"`
+		Val    string
+		Key    string
+		TS     time.Time
+	}
+	table, err := TableFromInstance(&HasInvalidTagSyntax{})
+	assert.Nil(t, table)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unmatched parentheses")
+}
+
+func TestParensBalanced(t *testing.T) {
+	assert.True(t, parensBalanced("()"))
+	assert.True(t, parensBalanced("()()"))
+	assert.True(t, parensBalanced("(()())"))
+	assert.True(t, parensBalanced("()"))
+	assert.True(t, parensBalanced(""))
+	assert.True(t, parensBalanced("()(()(()(()()))())()()"))
+
+	assert.False(t, parensBalanced("("))
+	assert.False(t, parensBalanced(")"))
+	assert.False(t, parensBalanced("(()"))
+	assert.False(t, parensBalanced(")("))
+	assert.False(t, parensBalanced("(()))"))
+	assert.False(t, parensBalanced("((()())"))
+}
+
 /*
  These tests do not currently pass, but I think they should
 */

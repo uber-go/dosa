@@ -100,6 +100,10 @@ func parsePartitionKey(pkStr string) []string {
 
 // parsePrimaryKey func parses the primary key of DOSA object
 func parsePrimaryKey(tableName, pkStr string) (*PrimaryKey, error) {
+	// parens must be matched
+	if !parensBalanced(pkStr) {
+		return nil, fmt.Errorf("unmatched parentheses: %q", pkStr)
+	}
 	// filter out "trailing comma and space"
 	pkStr = strings.TrimRight(pkStr, ", ")
 	pkStr = strings.TrimSpace(pkStr)
@@ -382,6 +386,26 @@ func parseField(typ Type, isPointer bool, name string, tag string) (*ColumnDefin
 	}
 
 	return &ColumnDefinition{Name: name, IsPointer: isPointer, Type: typ}, nil
+}
+
+func parensBalanced(s string) bool {
+	// This is effectively pushing left parens on the stack, and popping them when
+	// a right paren is seen. Since the stack only ever contains the same character,
+	// we don't actually need the stack -- only its size.
+	var ssize uint
+	for i := 0; i < len(s); i++ {
+		if s[i] == '(' {
+			ssize++
+		} else if s[i] == ')' {
+			if ssize == 0 {
+				// Extra right paren
+				return false
+			}
+			ssize--
+		}
+	}
+	// Stack must be empty
+	return ssize == 0
 }
 
 var (
