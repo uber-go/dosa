@@ -22,9 +22,10 @@ package dosa
 
 import (
 	"bytes"
+	"reflect"
 	"strings"
 
-	"reflect"
+	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 
 	"github.com/pkg/errors"
 )
@@ -81,6 +82,31 @@ func (pk PrimaryKey) Clone() *PrimaryKey {
 	}
 
 	return npk
+}
+
+// ToRPCFields converts primary key definition to the corresponding rpc definition.
+func (pk PrimaryKey) ToRPCFields() *dosarpc.PrimaryKey {
+	pkRPC := dosarpc.PrimaryKey{}
+
+	if pk.PartitionKeys != nil {
+		pkRPC.PartitionKeys = make([]string, len(pk.PartitionKeys))
+
+		for i, k := range pk.PartitionKeys {
+			pkRPC.PartitionKeys[i] = k
+		}
+	}
+
+	if pk.ClusteringKeys != nil {
+		pkRPC.ClusteringKeys = make([]*dosarpc.ClusteringKey, len(pk.ClusteringKeys))
+		for i, c := range pk.ClusteringKeys {
+			asc := !c.Descending
+			pkRPC.ClusteringKeys[i] = &dosarpc.ClusteringKey{
+				Name: &c.Name,
+				Asc:  &asc,
+			}
+		}
+	}
+	return &pkRPC
 }
 
 // ClusteringKeySet returns a set of all clustering keys.
@@ -170,6 +196,13 @@ type IndexDefinition struct {
 func (id *IndexDefinition) Clone() *IndexDefinition {
 	return &IndexDefinition{
 		Key: id.Key.Clone(),
+	}
+}
+
+// ToRPCFields converts index definition to the corresponding rpc definition.
+func (id *IndexDefinition) ToRPCFields() *dosarpc.IndexDefinition {
+	return &dosarpc.IndexDefinition{
+		Key: id.Key.ToRPCFields(),
 	}
 }
 

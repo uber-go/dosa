@@ -317,11 +317,18 @@ func entityInfoToSchemaRef(ei *dosa.EntityInfo) *dosarpc.SchemaRef {
 	namePrefix := ei.Ref.NamePrefix
 	entityName := ei.Ref.EntityName
 	version := ei.Ref.Version
+	primaryKey := ei.Def.Key.ToRPCFields()
+	indexes := make(map[string]*dosarpc.IndexDefinition)
+	for name, idx := range ei.Def.Indexes {
+		indexes[name] = idx.ToRPCFields()
+	}
 	sr := dosarpc.SchemaRef{
 		Scope:      &scope,
 		NamePrefix: &namePrefix,
 		EntityName: &entityName,
 		Version:    &version,
+		PrimaryKey: primaryKey,
+		Indexes:    indexes,
 	}
 	return &sr
 }

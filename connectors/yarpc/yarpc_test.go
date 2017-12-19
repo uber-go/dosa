@@ -66,11 +66,17 @@ var testSchemaRef = dosa.SchemaRef{
 	Version:    12345,
 }
 
+var testRPCPrimaryKey = testEi.Def.Key.ToRPCFields()
+
+var testRPCIndexes = make(map[string]*drpc.IndexDefinition)
+
 var testRPCSchemaRef = drpc.SchemaRef{
 	Scope:      testutil.TestStringPtr("scope1"),
 	NamePrefix: testutil.TestStringPtr("namePrefix"),
 	EntityName: testutil.TestStringPtr("eName"),
 	Version:    testutil.TestInt32Ptr(12345),
+	PrimaryKey: testRPCPrimaryKey,
+	Indexes:    testRPCIndexes,
 }
 
 var testCfg = &yarpc.Config{

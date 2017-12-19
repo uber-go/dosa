@@ -1,5 +1,5 @@
-hash: 516c6facf953dc17480fc5e2b6e445934b1ffd91f513dc33610f94fd9e3816e1
-updated: 2017-12-01T16:29:32.473498497-08:00
+hash: 26118f59e782e9bf3c24b462aeb2f236224aa1148752f4a3beb36a29a41c211c
+updated: 2017-12-18T15:56:04.19084741-08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -89,9 +89,9 @@ imports:
   subpackages:
   - internal/mapstructure
 - name: github.com/uber-go/tally
-  version: 95078a8f10668bd1fa73ae46761cdc58d25436b8
+  version: 6c4631652c6aab57c64f65c2e0aaec2e9aae3a64
 - name: github.com/uber/dosa-idl
-  version: f87eaf2b564249cf90a0814b06442276d294f170
+  version: 2aa77fe7494cead1a6511ee082b4821fffe38f9e
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -110,7 +110,7 @@ imports:
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - name: go.uber.org/thriftrw
-  version: bce7fd589d505915f56a7901d8c143e1625e085c
+  version: 61a13b1cb9cf4d6b26aeabf3fb907d90aaa693af
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -121,7 +121,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 9fe9f33dbb59ff30a8da4bf962683022531ae916
+  version: 2d0a33eb8e2753af5bdace504b6579ce0f4317a7
   subpackages:
   - api/backoff
   - api/encoding
@@ -147,6 +147,7 @@ imports:
   - internal/outboundmiddleware
   - internal/pally
   - internal/request
+  - internal/yarpcerrors
   - peer
   - peer/hostport
   - pkg/encoding
