@@ -66,11 +66,24 @@ var testSchemaRef = dosa.SchemaRef{
 	Version:    12345,
 }
 
+var testRPCPrimaryKey = yarpc.PrimaryKeyToThrift(testEi.Def.Key)
+
+var testRPCIndexes = make(map[string]*drpc.IndexDefinition)
+
 var testRPCSchemaRef = drpc.SchemaRef{
 	Scope:      testutil.TestStringPtr("scope1"),
 	NamePrefix: testutil.TestStringPtr("namePrefix"),
 	EntityName: testutil.TestStringPtr("eName"),
 	Version:    testutil.TestInt32Ptr(12345),
+}
+
+var testFieldDescs = yarpc.EntityDefsToThrift([]*dosa.EntityDefinition{testEi.Def})[0].FieldDescs
+
+var testRPCEntityDef = drpc.EntityDefinition{
+	Name:       &testEi.Def.Name,
+	FieldDescs: testFieldDescs,
+	PrimaryKey: testRPCPrimaryKey,
+	Indexes:    testRPCIndexes,
 }
 
 var testCfg = &yarpc.Config{
@@ -193,6 +206,7 @@ func TestYaRPCClient_Read(t *testing.T) {
 		Ref:          &testRPCSchemaRef,
 		KeyValues:    map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}}},
 		FieldsToRead: map[string]struct{}{"f1": {}},
+		EntityDef:    &testRPCEntityDef,
 	}
 
 	// we expect a single call to Read, and we return back two fields, f1 which is in the typemap and another field that is not
@@ -245,7 +259,8 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 	}{
 		{
 			Request: &drpc.MultiReadRequest{
-				Ref: &testRPCSchemaRef,
+				Ref:       &testRPCSchemaRef,
+				EntityDef: &testRPCEntityDef,
 				KeyValues: []drpc.FieldValueMap{
 					{
 						"f1": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
@@ -288,7 +303,8 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 		},
 		{
 			Request: &drpc.MultiReadRequest{
-				Ref: &testRPCSchemaRef,
+				Ref:       &testRPCSchemaRef,
+				EntityDef: &testRPCEntityDef,
 				KeyValues: []drpc.FieldValueMap{
 					{
 						"f1": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
@@ -304,7 +320,8 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 		},
 		{
 			Request: &drpc.MultiReadRequest{
-				Ref: &testRPCSchemaRef,
+				Ref:       &testRPCSchemaRef,
+				EntityDef: &testRPCEntityDef,
 				KeyValues: []drpc.FieldValueMap{
 					{
 						"f1": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
@@ -372,6 +389,7 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	// here are the data types to test; the names are random
@@ -410,7 +428,12 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 			outFields[item.Name] = &drpc.Value{ElemValue: rv}
 		}
 
-		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields}, gomock.Any())
+		createRequest := &drpc.CreateRequest{
+			Ref:          &testRPCSchemaRef,
+			EntityDef:    &testRPCEntityDef,
+			EntityValues: outFields,
+		}
+		mockedClient.EXPECT().CreateIfNotExists(ctx, createRequest, gomock.Any())
 
 		// create the YaRPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
@@ -421,14 +444,12 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 		assert.Nil(t, err)
 
 		errCode := int32(409)
-		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields}, gomock.Any()).Return(
+		mockedClient.EXPECT().CreateIfNotExists(ctx, createRequest, gomock.Any()).Return(
 			&drpc.BadRequestError{ErrorCode: &errCode},
 		)
 
 		err = sut.CreateIfNotExists(ctx, testEi, inFields)
 		assert.True(t, dosa.ErrorIsAlreadyExists(err))
-		// make sure we actually called CreateIfNotExists on the interface
-		ctrl.Finish()
 
 		// cover the conversion error case
 		err = sut.CreateIfNotExists(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
@@ -443,6 +464,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 func TestYaRPCClient_Upsert(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	// here are the data types to test; the names are random
@@ -483,6 +505,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 
 		mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
 			Ref:          &testRPCSchemaRef,
+			EntityDef:    &testRPCEntityDef,
 			EntityValues: outFields,
 		}, gomock.Any())
 
@@ -499,9 +522,6 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "\"c7\"")    // must contain name of bad field
 		assert.Contains(t, err.Error(), "too short") // must mention that the uuid is too short
-
-		// make sure we actually called CreateIfNotExists on the interface
-		ctrl.Finish()
 	}
 }
 
@@ -805,6 +825,7 @@ func TestConnector_Scan(t *testing.T) {
 	// set up the parameters for success request
 	sr := &drpc.ScanRequest{
 		Ref:          &testRPCSchemaRef,
+		EntityDef:    &testRPCEntityDef,
 		Token:        &testToken,
 		Limit:        &testLimit,
 		FieldsToRead: map[string]struct{}{"c1": {}},
@@ -813,6 +834,7 @@ func TestConnector_Scan(t *testing.T) {
 	// set up the parameters for notfound request
 	srNotFound := &drpc.ScanRequest{
 		Ref:          &testRPCSchemaRef,
+		EntityDef:    &testRPCEntityDef,
 		Token:        &testToken,
 		Limit:        &testLimit,
 		FieldsToRead: map[string]struct{}{"c2": {}},
@@ -821,6 +843,7 @@ func TestConnector_Scan(t *testing.T) {
 	// set up the parameters for error request
 	srErr := &drpc.ScanRequest{
 		Ref:          &testRPCSchemaRef,
+		EntityDef:    &testRPCEntityDef,
 		Token:        &testToken,
 		Limit:        &testLimit,
 		FieldsToRead: map[string]struct{}{"c3": {}},
@@ -884,6 +907,7 @@ func TestConnector_Remove(t *testing.T) {
 	// set up the parameters
 	removeRequest := &drpc.RemoveRequest{
 		Ref:       &testRPCSchemaRef,
+		EntityDef: &testRPCEntityDef,
 		KeyValues: map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}}},
 	}
 

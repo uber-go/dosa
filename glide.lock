@@ -1,5 +1,5 @@
-hash: 516c6facf953dc17480fc5e2b6e445934b1ffd91f513dc33610f94fd9e3816e1
-updated: 2017-12-01T16:29:32.473498497-08:00
+hash: 3a6dd3142c9d99c994bc3ba32b1619b796355fad33d0071f614bdbb13fb175d6
+updated: 2017-12-19T14:11:41.374558632-08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -35,7 +35,7 @@ imports:
   subpackages:
   - proto
 - name: github.com/golang/mock
-  version: 747e9e6390e12b0d987c261bdc89a51e76b9f5fc
+  version: b3e60bcdc577185fce3cf625fc96b62857ce5574
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
@@ -89,9 +89,9 @@ imports:
   subpackages:
   - internal/mapstructure
 - name: github.com/uber-go/tally
-  version: 95078a8f10668bd1fa73ae46761cdc58d25436b8
+  version: 6c4631652c6aab57c64f65c2e0aaec2e9aae3a64
 - name: github.com/uber/dosa-idl
-  version: f87eaf2b564249cf90a0814b06442276d294f170
+  version: c41d43003f26d208e6d81b31e1f892bd91f1d2de
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -110,7 +110,7 @@ imports:
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - name: go.uber.org/thriftrw
-  version: bce7fd589d505915f56a7901d8c143e1625e085c
+  version: 61a13b1cb9cf4d6b26aeabf3fb907d90aaa693af
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -121,7 +121,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 9fe9f33dbb59ff30a8da4bf962683022531ae916
+  version: 2d0a33eb8e2753af5bdace504b6579ce0f4317a7
   subpackages:
   - api/backoff
   - api/encoding
@@ -147,6 +147,7 @@ imports:
   - internal/outboundmiddleware
   - internal/pally
   - internal/request
+  - internal/yarpcerrors
   - peer
   - peer/hostport
   - pkg/encoding
@@ -167,7 +168,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: a8b9294777976932365dabb6640cf1468d95c70f
+  version: d866cfc389cec985d6fda2859936a575a55a3ab6
   subpackages:
   - bpf
   - context
