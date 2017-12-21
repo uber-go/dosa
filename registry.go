@@ -168,7 +168,12 @@ func (e *RegisteredEntity) SetFieldValues(entity DomainObject, fieldValues map[s
 		if !ok {
 			continue // we ignore fields that we don't know about
 		}
-		fieldValue := fieldValues[columnName]
+
+		fieldValue, ok  := fieldValues[columnName]
+		if !ok {
+			continue
+		}
+
 		val := r.FieldByName(fieldName)
 		if !val.IsValid() {
 			panic("Field " + fieldName + " is is not a valid field for " + e.table.StructName)
