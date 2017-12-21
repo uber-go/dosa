@@ -107,7 +107,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, minimumFields []string) (values map[string]dosa.FieldValue, err error) {
 	// Read from source of truth first
-	source, sourceErr := c.Next.Read(ctx, ei, keys, dosa.All())
+	source, sourceErr := c.Next.Read(ctx, ei, keys, getAllColumnNames(ei))
 	// If we are not caching for this entity, just return
 	if !c.isCacheable(ei) {
 		return source, sourceErr
@@ -156,7 +156,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 
 // Range returns range from origin, reverts to fallback if origin fails
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	sourceRows, sourceToken, sourceErr := c.Next.Range(ctx, ei, columnConditions, dosa.All(), token, limit)
+	sourceRows, sourceToken, sourceErr := c.Next.Range(ctx, ei, columnConditions, getAllColumnNames(ei), token, limit)
 	if !c.isCacheable(ei) {
 		return sourceRows, sourceToken, sourceErr
 	}
@@ -336,4 +336,13 @@ func createCacheKey(ei *dosa.EntityInfo, values map[string]dosa.FieldValue, e En
 
 func createContextForFallback(ctx context.Context) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(ctx, 5*time.Minute)
+}
+
+func getAllColumnNames(ei *dosa.EntityInfo) []string {
+	var columns []string
+	for name := range ei.Def.ColumnMap() {
+		columns = append(columns, name)
+	}
+	sort.Strings(columns)
+	return columns
 }

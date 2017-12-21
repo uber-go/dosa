@@ -38,6 +38,7 @@ import (
 var (
 	schemaRef = dosa.SchemaRef{Scope: "testing", NamePrefix: "example"}
 	testEi    = createTestEi(schemaRef)
+	allColumns = getAllColumnNames(testEi)
 	adaptedEi = &dosa.EntityInfo{
 		Def: &dosa.EntityDefinition{
 			Name: "awesome_test_entity",
@@ -181,7 +182,7 @@ func TestReadCases(t *testing.T) {
 		defer fallbackCtrl.Finish()
 		mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
-		mockOrigin.EXPECT().Read(context.TODO(), testEi, tc.originRead.values, dosa.All()).Return(tc.originRead.resp, tc.originRead.err)
+		mockOrigin.EXPECT().Read(context.TODO(), testEi, tc.originRead.values, allColumns).Return(tc.originRead.resp, tc.originRead.err)
 		if tc.fallbackRead != nil {
 			mockFallback.EXPECT().Read(context.TODO(), adaptedEi, tc.fallbackRead.values, dosa.All()).Return(tc.fallbackRead.resp, tc.fallbackRead.err)
 		}
@@ -398,7 +399,7 @@ func TestFallbackStats(t *testing.T) {
 		},
 	}
 	for _, t := range testCases {
-		mockOrigin.EXPECT().Read(context.TODO(), testEi, nil, dosa.All()).Return(nil, assert.AnError)
+		mockOrigin.EXPECT().Read(context.TODO(), testEi, nil, allColumns).Return(nil, assert.AnError)
 		mockFallback.EXPECT().Read(context.TODO(), adaptedEi, gomock.Any(), dosa.All()).Return(t.fallbackResp, t.fallbackErr)
 		mockStats.EXPECT().SubScope("fallback").Return(mockStats)
 		mockStats.EXPECT().Tagged(map[string]string{"method": "READ", "entityName": "awesome_test_entity"}).Return(mockStats)
@@ -419,7 +420,7 @@ func TestRangeCases(t *testing.T) {
 		defer fallbackCtrl.Finish()
 		mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
-		mockOrigin.EXPECT().Range(context.TODO(), testEi, tc.originRange.columnConditions, dosa.All(), tc.originRange.token, tc.originRange.limit).
+		mockOrigin.EXPECT().Range(context.TODO(), testEi, tc.originRange.columnConditions, allColumns, tc.originRange.token, tc.originRange.limit).
 			Return(tc.originRange.resp, tc.originRange.nextToken, tc.originRange.err)
 		if tc.fallbackRead != nil {
 			mockFallback.EXPECT().Read(context.TODO(), adaptedEi, tc.fallbackRead.values, dosa.All()).Return(tc.fallbackRead.resp, tc.fallbackRead.err)
@@ -667,7 +668,7 @@ func TestScan(t *testing.T) {
 
 	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
 	rangeTok := "nextToken"
-	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
+	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, allColumns, "token", 2).Return(rangeResponse, rangeTok, nil)
 
 	connector := NewConnector(mockOrigin, memory.NewConnector(), NewJSONEncoder(), nil)
 	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
@@ -745,7 +746,7 @@ func TestUpsertRead(t *testing.T) {
 	// Origin upsert succeeds
 	mockDownstreamConnector.EXPECT().Upsert(context.TODO(), testEi, values).Return(nil)
 	// origin read fails
-	mockDownstreamConnector.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(nil, assert.AnError)
+	mockDownstreamConnector.EXPECT().Read(context.TODO(), testEi, values, allColumns).Return(nil, assert.AnError)
 
 	connector := NewConnector(mockDownstreamConnector, redisC, NewGobEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
@@ -795,4 +796,9 @@ func TestSettingCachedEntities(t *testing.T) {
 	assert.Contains(t, connector.cacheableEntities, "e2")
 	connector.SetCachedEntities(nil)
 	assert.Empty(t, connector.cacheableEntities)
+}
+
+func TestGetAllColumnNames(t *testing.T) {
+	columns := getAllColumnNames(testEi)
+	assert.Equal(t, []string{"an_int64_value", "an_uuid_key", "blobv", "boolv", "boolvp", "doublev", "doublevp", "int32v", "int32vp", "int64key", "int64vp", "strkey", "strv", "strvp", "tsv", "tsvp", "uuidv", "uuidvp"}, columns)
 }
