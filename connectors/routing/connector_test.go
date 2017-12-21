@@ -202,18 +202,17 @@ func TestGetConnector(t *testing.T) {
 	assert.NotNil(t, conn)
 	assert.Equal(t, reflect.TypeOf(conn), reflect.TypeOf(memory.NewConnector()))
 
-	// with plugin
-	rc.PluginFunc = func(scope, namePrefix, opName string) (string, string, error) {
-		return "ebook", "ebook-store", nil
+	// plugin indicates to throw out error rather than fall into default connector
+	rc.PluginFunc = func(scope, namePrefix, opName string) (string, string, bool, error) {
+		return "", "", true, nil
 	}
-
 	conn, err = rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Read")
-	assert.NoError(t, err)
-	assert.NotNil(t, conn)
+	assert.Contains(t, err.Error(), "requests failed because they are explicitly set to fail")
+	assert.Nil(t, conn)
 
 	// plugin returns error
-	rc.PluginFunc = func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("")
+	rc.PluginFunc = func(scope, namePrefix, opName string) (string, string, bool, error) {
+		return "", "", true, errors.New("")
 	}
 	conn, err = rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Read")
 	assert.Contains(t, err.Error(), "failed to execute getConnector due to Plugin function error")
@@ -241,8 +240,8 @@ func TestConnector_CreateIfNotExistsDefaultScope(t *testing.T) {
 		"p1": dosa.FieldValue("data")})
 	assert.NoError(t, err)
 
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
+	plugin := func(scope, namePrefix, opName string) (string, string, bool, error) {
+		return "", "", true, errors.New("dummy errors")
 	}
 	rc.PluginFunc = plugin
 	// not exist scope, use default
@@ -380,8 +379,8 @@ func TestConnector_Read(t *testing.T) {
 		"c7": dosa.FieldValue(id)}, dosa.All())
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
+	plugin := func(scope, namePrefix, opName string) (string, string, bool, error) {
+		return "", "", true, errors.New("dummy errors")
 	}
 	rc.PluginFunc = plugin
 	// not exist scope, use default
@@ -413,8 +412,8 @@ func TestMultiRead(t *testing.T) {
 	_, err := rc.MultiRead(ctx, testInfoRandom, testMultiValues, dosa.All())
 	assert.NoError(t, err)
 
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
+	plugin := func(scope, namePrefix, opName string) (string, string, bool, error) {
+		return "", "", true, errors.New("dummy errors")
 	}
 	rc.PluginFunc = plugin
 	// not exist scope, use default
@@ -480,8 +479,8 @@ func TestConnector_Upsert(t *testing.T) {
 	assert.Len(t, data, 20)
 	assert.NotNil(t, data[0]["c6"])
 
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
+	plugin := func(scope, namePrefix, opName string) (string, string, bool, error) {
+		return "", "", true, errors.New("dummy errors")
 	}
 	rc.PluginFunc = plugin
 	// not exist scope, use default
@@ -506,8 +505,8 @@ func TestConnector_MultiUpsert(t *testing.T) {
 	_, err := rc.MultiUpsert(ctx, testInfoRandom, testMultiValues)
 	assert.NoError(t, err)
 
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
+	plugin := func(scope, namePrefix, opName string) (string, string, bool, error) {
+		return "", "", true, errors.New("dummy errors")
 	}
 	rc.PluginFunc = plugin
 	// not exist scope, use default
@@ -567,8 +566,8 @@ func TestConnector_Remove(t *testing.T) {
 		"c7": dosa.FieldValue(id)})
 	assert.NoError(t, err)
 
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
+	plugin := func(scope, namePrefix, opName string) (string, string, bool, error) {
+		return "", "", true, errors.New("dummy errors")
 	}
 	rc.PluginFunc = plugin
 	// not exist scope, use default
@@ -656,8 +655,8 @@ func TestConnector_RemoveRange(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, data)
 
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
+	plugin := func(scope, namePrefix, opName string) (string, string, bool, error) {
+		return "", "", true, errors.New("dummy errors")
 	}
 	rc.PluginFunc = plugin
 	// not exist scope, use default
@@ -686,8 +685,8 @@ func TestConnector_MultiRemove(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, errs)
 
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
+	plugin := func(scope, namePrefix, opName string) (string, string, bool, error) {
+		return "", "", true, errors.New("dummy errors")
 	}
 	rc.PluginFunc = plugin
 	// not exist scope, use default
@@ -818,8 +817,8 @@ func TestConnector_Range(t *testing.T) {
 	assert.Empty(t, data)
 	assert.Empty(t, token)
 
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
+	plugin := func(scope, namePrefix, opName string) (string, string, bool, error) {
+		return "", "", true, errors.New("dummy errors")
 	}
 	rc.PluginFunc = plugin
 	// not exist scope, use default
@@ -869,8 +868,8 @@ func TestConnector_Scan(t *testing.T) {
 	assert.Empty(t, data)
 	assert.Empty(t, token)
 
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
+	plugin := func(scope, namePrefix, opName string) (string, string, bool, error) {
+		return "", "", true, errors.New("dummy errors")
 	}
 	rc.PluginFunc = plugin
 	// not exist scope, use default
