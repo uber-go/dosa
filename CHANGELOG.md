@@ -1,8 +1,14 @@
 # Changelog
 
-## v2.5.0 (unreleased)
-
+## v2.6.0 (unreleased)
 - Coming Soon
+
+## v2.5.0 (2017-12-21)
+-  Fix the `check` schema command in CLI, which can be used to check whether a new entity can be upserted or not (#247)
+-  Make scope name required for CLI schema commands, to avoid accidental access of unintended scope and misleading error message (#251)
+-  Obtain redis connector success rate (#253)
+-  Better error handling in yarpc connector (https://github.com/uber-go/dosa/pull/258) and routing connector (#259)
+-  Better error message for malformed entity tag (#260)
 
 ## v2.4.0 (2017-11-28)
 
