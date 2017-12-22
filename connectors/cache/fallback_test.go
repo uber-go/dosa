@@ -173,25 +173,25 @@ func TestAsyncUpsert(t *testing.T) {
 
 func TestReadCases(t *testing.T) {
 	runTestCase := func(tc testCase) {
-		originCtrl := gomock.NewController(t)
-		defer originCtrl.Finish()
-		mockOrigin := mocks.NewMockConnector(originCtrl)
-
-		fallbackCtrl := gomock.NewController(t)
-		defer fallbackCtrl.Finish()
-		mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
-		mockOrigin.EXPECT().Read(context.TODO(), testEi, tc.originRead.values, dosa.All()).Return(tc.originRead.resp, tc.originRead.err)
-		if tc.fallbackRead != nil {
-			mockFallback.EXPECT().Read(context.TODO(), adaptedEi, tc.fallbackRead.values, dosa.All()).Return(tc.fallbackRead.resp, tc.fallbackRead.err)
-		}
-		if tc.fallbackUpsert != nil {
-			mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, tc.fallbackUpsert.values).Return(tc.fallbackUpsert.err)
-		}
-
-		connector := NewConnector(mockOrigin, mockFallback, tc.encoder, nil, tc.cachedEntities...)
-		connector.setSynchronousMode(true)
 		t.Run(tc.description, func(t *testing.T) {
+			originCtrl := gomock.NewController(t)
+			defer originCtrl.Finish()
+			mockOrigin := mocks.NewMockConnector(originCtrl)
+
+			fallbackCtrl := gomock.NewController(t)
+			defer fallbackCtrl.Finish()
+			mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+			mockOrigin.EXPECT().Read(context.TODO(), testEi, tc.originRead.values, dosa.All()).Return(tc.originRead.resp, tc.originRead.err)
+			if tc.fallbackRead != nil {
+				mockFallback.EXPECT().Read(context.TODO(), adaptedEi, tc.fallbackRead.values, dosa.All()).Return(tc.fallbackRead.resp, tc.fallbackRead.err)
+			}
+			if tc.fallbackUpsert != nil {
+				mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, tc.fallbackUpsert.values).Return(tc.fallbackUpsert.err)
+			}
+
+			connector := NewConnector(mockOrigin, mockFallback, tc.encoder, nil, tc.cachedEntities...)
+			connector.setSynchronousMode(true)
 			resp, err := connector.Read(context.TODO(), testEi, tc.originRead.values, []string{})
 			assert.Equal(t, tc.expectedErr, err, tc.description)
 			assert.Equal(t, tc.expectedResp, resp, tc.description)
@@ -412,27 +412,28 @@ func TestFallbackStats(t *testing.T) {
 
 func TestRangeCases(t *testing.T) {
 	runTestCase := func(tc testCase) {
-		originCtrl := gomock.NewController(t)
-		defer originCtrl.Finish()
-		mockOrigin := mocks.NewMockConnector(originCtrl)
-
-		fallbackCtrl := gomock.NewController(t)
-		defer fallbackCtrl.Finish()
-		mockFallback := mocks.NewMockConnector(fallbackCtrl)
-
-		mockOrigin.EXPECT().Range(context.TODO(), testEi, tc.originRange.columnConditions, dosa.All(), tc.originRange.token, tc.originRange.limit).
-			Return(tc.originRange.resp, tc.originRange.nextToken, tc.originRange.err)
-		if tc.fallbackRead != nil {
-			mockFallback.EXPECT().Read(context.TODO(), adaptedEi, tc.fallbackRead.values, dosa.All()).Return(tc.fallbackRead.resp, tc.fallbackRead.err)
-		}
-		if tc.fallbackUpsert != nil {
-			mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, tc.fallbackUpsert.values).Return(tc.fallbackUpsert.err)
-		}
-
-		connector := NewConnector(mockOrigin, mockFallback, tc.encoder, nil, tc.cachedEntities...)
-		connector.setSynchronousMode(true)
-		resp, tok, err := connector.Range(context.TODO(), testEi, tc.originRange.columnConditions, []string{}, tc.originRange.token, tc.originRange.limit)
 		t.Run(tc.description, func(t *testing.T) {
+			originCtrl := gomock.NewController(t)
+			defer originCtrl.Finish()
+			mockOrigin := mocks.NewMockConnector(originCtrl)
+
+			fallbackCtrl := gomock.NewController(t)
+			defer fallbackCtrl.Finish()
+			mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+			mockOrigin.EXPECT().Range(context.TODO(), testEi, tc.originRange.columnConditions, dosa.All(), tc.originRange.token, tc.originRange.limit).
+				Return(tc.originRange.resp, tc.originRange.nextToken, tc.originRange.err)
+			if tc.fallbackRead != nil {
+				mockFallback.EXPECT().Read(context.TODO(), adaptedEi, tc.fallbackRead.values, dosa.All()).Return(tc.fallbackRead.resp, tc.fallbackRead.err)
+			}
+			if tc.fallbackUpsert != nil {
+				mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, tc.fallbackUpsert.values).Return(tc.fallbackUpsert.err)
+			}
+
+			connector := NewConnector(mockOrigin, mockFallback, tc.encoder, nil, tc.cachedEntities...)
+			connector.setSynchronousMode(true)
+
+			resp, tok, err := connector.Range(context.TODO(), testEi, tc.originRange.columnConditions, []string{}, tc.originRange.token, tc.originRange.limit)
 			assert.Equal(t, tc.expectedErr, err, tc.description)
 			assert.EqualValues(t, tc.expectedManyResp, resp, tc.description)
 			assert.Equal(t, tc.expectedTok, tok, tc.description)
