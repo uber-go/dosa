@@ -108,6 +108,12 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, minimumFields []string) (values map[string]dosa.FieldValue, err error) {
 	// Read from source of truth first
 	source, sourceErr := c.Next.Read(ctx, ei, keys, dosa.All())
+	// Add the primary keys back into results map as dosa.All() does not fetch the keys
+	if sourceErr == nil && source != nil {
+		for k, v := range keys {
+			source[k] = v
+		}
+	}
 	// If we are not caching for this entity, just return
 	if !c.isCacheable(ei) {
 		return source, sourceErr
