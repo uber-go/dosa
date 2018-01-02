@@ -217,7 +217,7 @@ func (c *Connector) remove(ctx context.Context, ei *dosa.EntityInfo, conds []*do
 
 func convertToDOSATypes(ei *dosa.EntityInfo, row map[string]interface{}) map[string]dosa.FieldValue {
 	res := make(map[string]dosa.FieldValue)
-	ct := extractColumnTypes(ei)
+	ct := ei.Def.ColumnTypes()
 	for k, v := range row {
 		dosaType := ct[k]
 		raw := v
@@ -235,14 +235,6 @@ func convertToDOSATypes(ei *dosa.EntityInfo, row map[string]interface{}) map[str
 		res[k] = raw
 	}
 	return res
-}
-
-func extractColumnTypes(ei *dosa.EntityInfo) map[string]dosa.Type {
-	m := make(map[string]dosa.Type)
-	for _, c := range ei.Def.Columns {
-		m[c.Name] = c.Type
-	}
-	return m
 }
 
 func extractNonKeyColumns(ed *dosa.EntityDefinition) []string {
