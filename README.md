@@ -25,7 +25,6 @@ DOSA is a storage library that supports:
  * struct annotations to describe queries against data
  * tools to create and/or migrate database schemas
  * implementations that serialize requests to remote stateless servers
- * encoding library wrapping json or gob encoder for serializing data
 
 ## Annotations
 
