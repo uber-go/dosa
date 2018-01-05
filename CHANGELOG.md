@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.6.0 (unreleased)
+- Add encoding package which contains basic implementations of json and gob encoding
+
 ## v2.5.0 (unreleased)
 
 - Coming Soon
