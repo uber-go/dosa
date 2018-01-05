@@ -127,7 +127,7 @@ func TestUpsertCases(t *testing.T) {
 	testCases := []testCase{
 		{
 			description: "Successful origin upsert also upserts to fallback",
-			encoder:     encoding.encoding.NewJSONEncoder(),
+			encoder:     encoding.NewJSONEncoder(),
 			originUpsert: &expectArgs{
 				values: map[string]dosa.FieldValue{
 					"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
