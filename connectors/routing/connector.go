@@ -194,10 +194,10 @@ func (rc *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string,
 }
 
 // CanUpsertSchema calls selected connector
-func (rc *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
+func (rc *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
 	connector, err := rc.getConnector(scope, namePrefix, "CanUpsertSchema")
 	if err != nil {
-		return nil, err
+		return dosa.InvalidVersion, err
 	}
 	return connector.CanUpsertSchema(ctx, scope, namePrefix, ed)
 }
