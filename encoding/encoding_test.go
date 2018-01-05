@@ -18,16 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package cache
+package encoding_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/encoding"
 )
 
-var j = NewJSONEncoder()
-var g = NewGobEncoder()
+var j = encoding.NewJSONEncoder()
+var g = encoding.NewGobEncoder()
 
 func TestJsonEncoder_Decode(t *testing.T) {
 	var i int
@@ -51,4 +54,20 @@ func TestGobEncoder_Encode(t *testing.T) {
 	m, err := g.Encode(22)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte{3, 4, 0, 44}, m)
+}
+
+func TestGobEncoder_Register(t *testing.T) {
+	u := dosa.UUID("uuid-pointer")
+	ts := time.Now()
+	bytes, err := g.Encode(map[string]dosa.FieldValue{
+		"uuidField":    dosa.UUID("some-uuid"),
+		"timeField":    ts,
+		"uuidFieldPtr": &u,
+		"timeFieldPtr": &ts,
+	})
+	assert.NoError(t, err)
+
+	unpack := map[string]dosa.FieldValue{}
+	err = g.Decode(bytes, &unpack)
+	assert.NoError(t, err)
 }

@@ -29,6 +29,7 @@ import (
 
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
+	"github.com/uber-go/dosa/encoding"
 	"github.com/uber-go/dosa/metrics"
 )
 
@@ -49,7 +50,7 @@ type rangeQuery struct {
 }
 
 // NewConnector creates a fallback cache connector
-func NewConnector(origin, fallback dosa.Connector, encoder Encoder, scope metrics.Scope, entities ...dosa.DomainObject) *Connector {
+func NewConnector(origin, fallback dosa.Connector, encoder encoding.Encoder, scope metrics.Scope, entities ...dosa.DomainObject) *Connector {
 	bc := base.Connector{Next: origin}
 	set := createCachedEntitiesSet(entities)
 	return &Connector{
@@ -65,7 +66,7 @@ func NewConnector(origin, fallback dosa.Connector, encoder Encoder, scope metric
 type Connector struct {
 	base.Connector
 	fallback          dosa.Connector
-	encoder           Encoder
+	encoder           encoding.Encoder
 	cacheableEntities map[string]bool
 	mux               sync.Mutex
 	stats             metrics.Scope
@@ -314,7 +315,7 @@ func adaptToKeyValue(ei *dosa.EntityInfo) *dosa.EntityInfo {
 }
 
 // used for single entry reads/writes
-func createCacheKey(ei *dosa.EntityInfo, values map[string]dosa.FieldValue, e Encoder) []byte {
+func createCacheKey(ei *dosa.EntityInfo, values map[string]dosa.FieldValue, e encoding.Encoder) []byte {
 	keys := []string{}
 	for pk := range ei.Def.KeySet() {
 		if _, ok := values[pk]; ok {

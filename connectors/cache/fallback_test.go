@@ -31,6 +31,7 @@ import (
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/memory"
 	"github.com/uber-go/dosa/connectors/redis"
+	"github.com/uber-go/dosa/encoding"
 	"github.com/uber-go/dosa/mocks"
 	"github.com/uber-go/dosa/testentity"
 )
@@ -73,7 +74,7 @@ func createTestEi(sr dosa.SchemaRef) *dosa.EntityInfo {
 }
 
 type testCase struct {
-	encoder          Encoder
+	encoder          encoding.Encoder
 	cachedEntities   []dosa.DomainObject
 	originRead       *expectArgs
 	originUpsert     *expectArgs
@@ -126,7 +127,7 @@ func TestUpsertCases(t *testing.T) {
 	testCases := []testCase{
 		{
 			description: "Successful origin upsert also upserts to fallback",
-			encoder:     NewJSONEncoder(),
+			encoder:     encoding.NewJSONEncoder(),
 			originUpsert: &expectArgs{
 				values: map[string]dosa.FieldValue{
 					"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
@@ -166,7 +167,7 @@ func TestAsyncUpsert(t *testing.T) {
 		"StrV":        "test value string",
 		"BoolV":       false,
 	}
-	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), NewJSONEncoder(), nil, cacheableEntities...)
+	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), encoding.NewJSONEncoder(), nil, cacheableEntities...)
 	err := connector.Upsert(context.TODO(), testEi, values)
 	assert.NoError(t, err)
 }
@@ -217,11 +218,11 @@ func createReadSuccessTestCase() testCase {
 	originResponse := map[string]dosa.FieldValue{"a": "b"}
 
 	return testCase{
-		encoder:        NewJSONEncoder(),
+		encoder:        encoding.NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
 			values: map[string]dosa.FieldValue{"primaryKey": "primaryValue"},
-			resp: originResponse,
+			resp:   originResponse,
 		},
 		fallbackUpsert: &expectArgs{
 			values: map[string]dosa.FieldValue{
@@ -239,7 +240,7 @@ func createReadUncachedEntityTestCase() testCase {
 	originResponse := map[string]dosa.FieldValue{"a": "b"}
 
 	return testCase{
-		encoder:        NewJSONEncoder(),
+		encoder:        encoding.NewJSONEncoder(),
 		cachedEntities: nil,
 		originRead: &expectArgs{
 			resp: originResponse,
@@ -252,7 +253,7 @@ func createReadUncachedEntityTestCase() testCase {
 
 func createReadFailTestCase() testCase {
 	return testCase{
-		encoder:        NewJSONEncoder(),
+		encoder:        encoding.NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
 			err: assert.AnError,
@@ -271,7 +272,7 @@ func createReadNotFoundTestCase() testCase {
 	originResponse := map[string]dosa.FieldValue{"a": "b"}
 	originErr := &dosa.ErrNotFound{}
 	return testCase{
-		encoder:        NewJSONEncoder(),
+		encoder:        encoding.NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
 			err:  originErr,
@@ -324,7 +325,7 @@ func createReadFallbackFailTestCase() testCase {
 	originErr := errors.New("origin error")
 
 	return testCase{
-		encoder:        NewJSONEncoder(),
+		encoder:        encoding.NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
 			resp: originResponse,
@@ -345,7 +346,7 @@ func createReadFallbackBadValueTestCase() testCase {
 	originErr := errors.New("origin error")
 
 	return testCase{
-		encoder:        NewJSONEncoder(),
+		encoder:        encoding.NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
 			resp: originResponse,
@@ -386,7 +387,7 @@ func TestFallbackStats(t *testing.T) {
 		fallbackResp map[string]dosa.FieldValue
 		fallbackErr  error
 	}
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), mockStats, cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, encoding.NewJSONEncoder(), mockStats, cacheableEntities...)
 
 	testCases := []testCase{
 		{
@@ -459,7 +460,7 @@ func createRangeSuccessTestCase() testCase {
 	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
 	rangeTok := "nextToken"
 	return testCase{
-		encoder:        NewJSONEncoder(),
+		encoder:        encoding.NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRange: &rangeArgs{
 			columnConditions: map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}},
@@ -488,7 +489,7 @@ func createRangeUncachedEntityTestCase() testCase {
 	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
 
 	return testCase{
-		encoder:        NewJSONEncoder(),
+		encoder:        encoding.NewJSONEncoder(),
 		cachedEntities: nil,
 		originRange: &rangeArgs{
 			columnConditions: conditions,
@@ -509,7 +510,7 @@ func createRangeFailTestCase() testCase {
 	fallbackResponse := map[string]dosa.FieldValue{"value": []byte("{\"rows\": [{\"b\": 7}], \"tokenNext\": \"nextToken\"}")}
 
 	return testCase{
-		encoder:        NewJSONEncoder(),
+		encoder:        encoding.NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRange: &rangeArgs{
 			columnConditions: conditions,
@@ -611,7 +612,7 @@ func createRangeFallbackFailTestCase() testCase {
 	rangeErr := errors.New("origin error")
 
 	return testCase{
-		encoder:        NewJSONEncoder(),
+		encoder:        encoding.NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRange: &rangeArgs{
 			token:     "token",
@@ -639,7 +640,7 @@ func createRangeFallbackBadValueTestCase() testCase {
 	rangeErr := errors.New("origin error")
 
 	return testCase{
-		encoder:        NewJSONEncoder(),
+		encoder:        encoding.NewJSONEncoder(),
 		cachedEntities: cacheableEntities,
 		originRange: &rangeArgs{
 			token:     "token",
@@ -671,7 +672,7 @@ func TestScan(t *testing.T) {
 	rangeTok := "nextToken"
 	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
 
-	connector := NewConnector(mockOrigin, memory.NewConnector(), NewJSONEncoder(), nil)
+	connector := NewConnector(mockOrigin, memory.NewConnector(), encoding.NewJSONEncoder(), nil)
 	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
 	assert.NoError(t, err)
 	assert.EqualValues(t, rangeResponse, resp)
@@ -693,7 +694,7 @@ func TestRemove(t *testing.T) {
 	mockOrigin.EXPECT().Remove(context.TODO(), testEi, keys).Return(nil)
 	mockFallback.EXPECT().Remove(gomock.Not(context.TODO()), adaptedEi, transformedKeys).Return(nil)
 
-	connector := NewConnector(mockOrigin, mockFallback, NewJSONEncoder(), nil, cacheableEntities...)
+	connector := NewConnector(mockOrigin, mockFallback, encoding.NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	err := connector.Remove(context.TODO(), testEi, keys)
 	assert.NoError(t, err)
@@ -709,7 +710,7 @@ func TestCreateIfNotExists(t *testing.T) {
 	values := map[string]dosa.FieldValue{}
 	mockOrigin.EXPECT().CreateIfNotExists(context.TODO(), testEi, values).Return(nil)
 
-	connector := NewConnector(mockOrigin, nil, NewJSONEncoder(), nil, cacheableEntities...)
+	connector := NewConnector(mockOrigin, nil, encoding.NewJSONEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	err := connector.CreateIfNotExists(context.TODO(), testEi, values)
 	assert.NoError(t, err)
@@ -749,7 +750,7 @@ func TestUpsertRead(t *testing.T) {
 	// origin read fails
 	mockDownstreamConnector.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(nil, assert.AnError)
 
-	connector := NewConnector(mockDownstreamConnector, redisC, NewGobEncoder(), nil, cacheableEntities...)
+	connector := NewConnector(mockDownstreamConnector, redisC, encoding.NewGobEncoder(), nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 
 	err := connector.Upsert(context.TODO(), testEi, values)
@@ -771,7 +772,7 @@ func TestCreateCacheKey(t *testing.T) {
 		"blobv":       []byte("test value byte array"),
 		"strkey":      "test key string",
 	}
-	key := createCacheKey(testEi, values, NewJSONEncoder())
+	key := createCacheKey(testEi, values, encoding.NewJSONEncoder())
 	assert.Equal(t, []byte(`[{"an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9"},{"int64key":2932},{"strkey":"test key string"}]`), key)
 }
 
@@ -791,7 +792,7 @@ func TestSettingCachedEntities(t *testing.T) {
 		dosa.Entity `dosa:"name=e2, primaryKey=(World)"`
 		World       string
 	}{}
-	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), NewJSONEncoder(), nil, &e1, &e2)
+	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), encoding.NewJSONEncoder(), nil, &e1, &e2)
 	assert.Len(t, connector.cacheableEntities, 2)
 	assert.Contains(t, connector.cacheableEntities, "e1")
 	assert.Contains(t, connector.cacheableEntities, "e2")
