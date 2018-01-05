@@ -23,19 +23,17 @@ package memory
 import (
 	"bytes"
 	"context"
-	"encoding/gob"
+	"encoding/base64"
+	"encoding/binary"
 	"sort"
 	"sync"
 	"time"
-
-	"encoding/binary"
-
-	"encoding/base64"
 
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
+	"github.com/uber-go/dosa/encoding"
 )
 
 // Connector is an in-memory connector.
@@ -88,16 +86,16 @@ func (pr *partitionRange) values() []map[string]dosa.FieldValue {
 // generating a unique string. It uses the encoding/gob method to make a byte array as the
 // key, and returns this as a string
 func partitionKeyBuilder(pk *dosa.PrimaryKey, values map[string]dosa.FieldValue) (string, error) {
-	encodedKey := bytes.Buffer{}
-	encoder := gob.NewEncoder(&encodedKey)
+	encoder := encoding.NewGobEncoder()
+	var encodedKey []byte
 	for _, k := range pk.PartitionKeys {
 		if v, ok := values[k]; ok {
-			_ = encoder.Encode(v)
+			encodedKey, _ = encoder.Encode(v)
 		} else {
 			return "", errors.Errorf("Missing value for partition key %q", k)
 		}
 	}
-	return string(encodedKey.Bytes()), nil
+	return string(encodedKey), nil
 }
 
 // findInsertionPoint locates the place within a partition where the data belongs.
@@ -455,17 +453,14 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 }
 
 func makeToken(v map[string]dosa.FieldValue) string {
-	encodedKey := bytes.Buffer{}
-	encoder := gob.NewEncoder(&encodedKey)
-	gob.Register(dosa.UUID(""))
-	gob.Register(time.Time{})
-	err := encoder.Encode(v)
+	encoder := encoding.NewGobEncoder()
+	encodedKey, err := encoder.Encode(v)
 	if err != nil {
 		// this should really be impossible, unless someone forgot to
 		// register some newly supported type with the encoder
 		panic(err)
 	}
-	return base64.StdEncoding.EncodeToString([]byte(encodedKey.String()))
+	return base64.StdEncoding.EncodeToString(encodedKey)
 }
 
 func decodeToken(token string) (values map[string]dosa.FieldValue, err error) {
@@ -473,11 +468,9 @@ func decodeToken(token string) (values map[string]dosa.FieldValue, err error) {
 	if err != nil {
 		return nil, err
 	}
-	gobReader := bytes.NewBuffer(gobData)
-	gob.Register(dosa.UUID(""))
-	gob.Register(time.Time{})
-	decoder := gob.NewDecoder(gobReader)
-	err = decoder.Decode(&values)
+
+	decoder := encoding.NewGobEncoder()
+	err = decoder.Decode(gobData, &values)
 	return values, err
 }
 
