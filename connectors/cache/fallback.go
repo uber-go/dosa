@@ -50,13 +50,13 @@ type rangeQuery struct {
 }
 
 // NewConnector creates a fallback cache connector
-func NewConnector(origin, fallback dosa.Connector, encoder encoding.Encoder, scope metrics.Scope, entities ...dosa.DomainObject) *Connector {
+func NewConnector(origin, fallback dosa.Connector, scope metrics.Scope, entities ...dosa.DomainObject) *Connector {
 	bc := base.Connector{Next: origin}
 	set := createCachedEntitiesSet(entities)
 	return &Connector{
 		Connector:         bc,
 		fallback:          fallback,
-		encoder:           encoder,
+		encoder:           encoding.NewGobEncoder(),
 		cacheableEntities: set,
 		stats:             scope,
 	}
@@ -158,7 +158,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	if err != nil {
 		return source, sourceErr
 	}
-	return result, err
+	return rawRowAsPointers(ei, result), err
 }
 
 // Range returns range from origin, reverts to fallback if origin fails
@@ -172,7 +172,11 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 		Token:      token,
 		Limit:      limit,
 	}
-	cacheKey, _ := c.encoder.Encode(keysMap)
+	cacheKey, err := c.encoder.Encode(keysMap)
+
+	if err != nil {
+		cacheKey = []byte{}
+	}
 	adaptedEi := adaptToKeyValue(ei)
 
 	if sourceErr == nil {
@@ -213,7 +217,8 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 	if err != nil {
 		return sourceRows, sourceToken, sourceErr
 	}
-	return unpack.Rows, unpack.TokenNext, err
+
+	return rawRowsAsPointers(ei, unpack.Rows), unpack.TokenNext, err
 }
 
 // Scan returns scan result from origin.
@@ -343,4 +348,64 @@ func createCacheKey(ei *dosa.EntityInfo, values map[string]dosa.FieldValue, e en
 
 func createContextForFallback(ctx context.Context) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(ctx, 5*time.Minute)
+}
+
+// Convert the values returned from Read calls into pointers to those values.
+// Everything read from cache is always the absolute value and not a pointer to the value.
+// Dosa's registry.go uses reflection to set values onto a dosa entity.
+// It works better to de-reference a pointer instead of trying to get the address of a value
+// as some things are not easily addressable
+func rawRowAsPointers(ei *dosa.EntityInfo, values map[string]dosa.FieldValue) map[string]dosa.FieldValue {
+	convertedValues := map[string]dosa.FieldValue{}
+	// Using the type of the column as source of truth, convert from an interface{} back
+	// to its native type before taking the address.
+	// Values from the cache with a type mismatch will not be included in the results
+	for colName, colType := range ei.Def.ColumnTypes() {
+		if val, ok := values[colName]; ok {
+			switch colType {
+			case dosa.Blob:
+				// do nothing with byte arrays
+				convertedValues[colName] = val
+			case dosa.TUUID:
+				if u, ok := val.(dosa.UUID); ok {
+					convertedValues[colName] = &u
+				}
+			case dosa.String:
+				if s, ok := val.(string); ok {
+					convertedValues[colName] = &s
+				}
+			case dosa.Int32:
+				if i, ok := val.(int32); ok {
+					convertedValues[colName] = &i
+				}
+			case dosa.Int64:
+				if i, ok := val.(int64); ok {
+					convertedValues[colName] = &i
+				}
+			case dosa.Double:
+				if d, ok := val.(float64); ok {
+					convertedValues[colName] = &d
+				}
+			case dosa.Timestamp:
+				if t, ok := val.(time.Time); ok {
+					convertedValues[colName] = &t
+				}
+			case dosa.Bool:
+				if b, ok := val.(bool); ok {
+					convertedValues[colName] = &b
+				}
+			default:
+				convertedValues[colName] = &val
+			}
+		}
+	}
+	return convertedValues
+}
+
+func rawRowsAsPointers(ei *dosa.EntityInfo, values []map[string]dosa.FieldValue) []map[string]dosa.FieldValue {
+	convertedValues := []map[string]dosa.FieldValue{}
+	for _, v := range values {
+		convertedValues = append(convertedValues, rawRowAsPointers(ei, v))
+	}
+	return convertedValues
 }
