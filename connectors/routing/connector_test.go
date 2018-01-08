@@ -22,16 +22,13 @@ package routing
 
 import (
 	"context"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-
-	"sort"
-
 	"reflect"
+	"sort"
+	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/devnull"
 	"github.com/uber-go/dosa/connectors/memory"
@@ -1124,4 +1121,34 @@ func createTestData(t *testing.T, rc *Connector, keyGenFunc func(int) string, id
 			"c7": dosa.FieldValue(dosa.UUID(uuid.NewV1().String()))})
 		assert.NoError(t, err)
 	}
+}
+
+func TestConnector_UpsertSchema(t *testing.T) {
+	connectorMap := getConnectorMap()
+	rc := NewConnector(cfg, connectorMap, nil)
+
+	v, err := rc.CanUpsertSchema(ctx, testInfo.Ref.Scope, testInfo.Ref.NamePrefix, []*dosa.EntityDefinition{testInfo.Def})
+	assert.NoError(t, err)
+	assert.Equal(t, int32(0), v)
+
+	v, err = rc.CheckSchema(ctx, testInfo.Ref.Scope, testInfo.Ref.NamePrefix, []*dosa.EntityDefinition{testInfo.Def})
+	assert.Error(t, err)
+	assert.Equal(t, int32(-1), v)
+
+	status, err := rc.UpsertSchema(ctx, testInfo.Ref.Scope, testInfo.Ref.NamePrefix, []*dosa.EntityDefinition{testInfo.Def})
+	assert.NoError(t, err)
+	t.Log(status)
+
+	status, err = rc.CheckSchemaStatus(ctx, testInfo.Ref.Scope, testInfo.Ref.NamePrefix, 1)
+	assert.NoError(t, err)
+	assert.Equal(t, "Applied", status.Status)
+	assert.Equal(t, int32(1), status.Version)
+
+	v, err = rc.CanUpsertSchema(ctx, testInfo.Ref.Scope, testInfo.Ref.NamePrefix, []*dosa.EntityDefinition{testInfo.Def})
+	assert.NoError(t, err)
+	assert.Equal(t, int32(1), v)
+
+	v, err = rc.CheckSchema(ctx, testInfo.Ref.Scope, testInfo.Ref.NamePrefix, []*dosa.EntityDefinition{testInfo.Def})
+	assert.NoError(t, err)
+	assert.Equal(t, int32(1), v)
 }

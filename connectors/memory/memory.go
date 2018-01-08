@@ -23,14 +23,13 @@ package memory
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/binary"
 	"encoding/gob"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
-
-	"encoding/binary"
-
-	"encoding/base64"
 
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
@@ -51,10 +50,21 @@ import (
 // A read-write mutex lock is used to control concurrency, making reads work in parallel but
 // writes are not. There is no attempt to improve the concurrency of the read or write path by
 // adding more granular locks.
+//
+// The in-memory connector also stores the entity schemas in a table
+// keyed by scope name and entity name, in the format of:
+// map[string]map[string]*dosa.EntityDefinition
+//
+// the first 'string' is the scope name
+// the second 'string' is the entity name
+//
+// it also maintains a schema 'version' which gets incremented upon each successfully schema upsert.
 type Connector struct {
 	base.Connector
-	data map[string]map[string][]map[string]dosa.FieldValue
-	lock sync.RWMutex
+	data    map[string]map[string][]map[string]dosa.FieldValue
+	schema  map[string]map[string]*dosa.EntityDefinition
+	version int32
+	lock    sync.RWMutex
 }
 
 // partitionRange represents one section of a partition.
@@ -643,10 +653,77 @@ func getStartingPoint(ei *dosa.EntityInfo, token string) (start string, startPar
 	return start, startPartKey, nil
 }
 
-// CheckSchema is just a stub; there is no schema management for the in memory connector
-// since creating a new one leaves you with no data!
-func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
-	return 1, nil
+// CheckSchema validates that the set of entities you have provided is valid and registered already
+func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (int32, error) {
+	if _, ok := c.schema[scope]; !ok {
+		return -1, fmt.Errorf("scope %s not found", scope)
+	}
+	for _, ed := range eds {
+		edLatest, ok := c.schema[scope][ed.Name]
+		if !ok {
+			return -1, fmt.Errorf("entity %s not found", ed.Name)
+		}
+		if err := edLatest.IsCompatible(ed); err != nil {
+			return -1, err
+		}
+	}
+	return c.version, nil
+}
+
+// CanUpsertSchema is used to validate whether new entities can be upserted
+// by checking their compatibility with the latest applied schema.
+func (c *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (int32, error) {
+	if _, ok := c.schema[scope]; !ok {
+		return 0, nil
+	}
+	for _, ed := range eds {
+		if edLatest, ok := c.schema[scope][ed.Name]; ok {
+			if err := ed.IsCompatible(edLatest); err != nil {
+				return -1, err
+			}
+		}
+	}
+	return c.version, nil
+}
+
+// UpsertSchema stores the entity schema. If the entity already exists, it validate against the
+// latest applied schema and overwrite it if so.
+func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, eds []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
+	if _, ok := c.schema[scope]; !ok {
+		c.schema[scope] = make(map[string]*dosa.EntityDefinition)
+	}
+	for _, ed := range eds {
+		if edLatest, ok := c.schema[scope][ed.Name]; ok {
+			if err := ed.IsCompatible(edLatest); err != nil {
+				return nil, err
+			}
+		}
+		c.schema[scope][ed.Name] = ed
+	}
+	c.version++
+	return nil, nil
+}
+
+// CheckSchemaStatus checks whether the designated schema has been applied or not.
+func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
+	if _, ok := c.schema[scope]; !ok {
+		return &dosa.SchemaStatus{
+			Version: -1,
+			Status:  "Not applied",
+		}, fmt.Errorf("scope not found")
+	}
+
+	if version > c.version {
+		return &dosa.SchemaStatus{
+			Version: c.version,
+			Status:  "Not applied",
+		}, fmt.Errorf("version not found")
+	}
+
+	return &dosa.SchemaStatus{
+		Version: c.version,
+		Status:  "Applied",
+	}, nil
 }
 
 // Shutdown deletes all the data
@@ -661,6 +738,7 @@ func (c *Connector) Shutdown() error {
 func NewConnector() *Connector {
 	c := Connector{}
 	c.data = make(map[string]map[string][]map[string]dosa.FieldValue)
+	c.schema = make(map[string]map[string]*dosa.EntityDefinition)
 	return &c
 }
 
