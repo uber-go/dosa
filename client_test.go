@@ -705,13 +705,12 @@ func TestClient_Remove(t *testing.T) {
 
 }
 
-
 func TestClient_MultiRead(t *testing.T) {
 	reg1, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1)
 	reg2, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1, cte2)
 	fieldsToRead := []string{"ID", "Email"}
-	e1          := &ClientTestEntity1{ID: int64(1)}
-	e2          := &ClientTestEntity1{ID: int64(2)}
+	e1 := &ClientTestEntity1{ID: int64(1)}
+	e2 := &ClientTestEntity1{ID: int64(2)}
 	results := []*dosaRenamed.FieldValuesOrError{
 		{
 			Values: map[string]dosaRenamed.FieldValue{
@@ -742,11 +741,11 @@ func TestClient_MultiRead(t *testing.T) {
 	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
 	mockConn.EXPECT().MultiRead(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, _ *dosaRenamed.EntityInfo, columnValues []map[string]dosaRenamed.FieldValue, columnsToRead []string) {
-		assert.Equal(t, columnValues[0]["id"], e1.ID)
-		assert.Equal(t, columnValues[1]["id"], e2.ID)
-		assert.Equal(t, columnsToRead, []string{"id", "email"})
+			assert.Equal(t, columnValues[0]["id"], e1.ID)
+			assert.Equal(t, columnValues[1]["id"], e2.ID)
+			assert.Equal(t, columnsToRead, []string{"id", "email"})
 
-	}).Return(results, nil).MinTimes(1)
+		}).Return(results, nil).MinTimes(1)
 	c3 := dosaRenamed.NewClient(reg2, mockConn)
 	assert.NoError(t, c3.Initialize(ctx))
 	rs, err := c3.MultiRead(ctx, fieldsToRead, e1, e2)
