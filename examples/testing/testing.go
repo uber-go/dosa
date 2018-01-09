@@ -38,7 +38,7 @@ type User struct {
 
 // MenuItem represents a single item on a Menu.
 type MenuItem struct {
-	dosa.Entity  `dosa:"primaryKey=((MenuUUID), MenuItemUUID)"`
+	dosa.Entity  `dosa:"primaryKey=((MenuUUID), MenuItemUUID"`
 	MenuUUID     dosa.UUID
 	MenuItemUUID dosa.UUID
 	Name         string

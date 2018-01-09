@@ -120,10 +120,9 @@ type Client interface {
 	// as a result of the read
 	Read(ctx context.Context, fieldsToRead []string, objectToRead DomainObject) error
 
-	// TODO: Coming in v2.1
 	// MultiRead fetches several rows by primary key. A list of fields can be
 	// specified. Use All() or nil for all fields.
-	// MultiRead(context.Context, []string, ...DomainObject) (MultiResult, error)
+	MultiRead(context.Context, []string, ...DomainObject) (MultiResult, error)
 
 	// Upsert creates or update a row. A list of fields to update can be
 	// specified. Use All() or nil for all fields.
@@ -306,8 +305,58 @@ func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainO
 // must contain values for all components of its primary key for the operation
 // to succeed. If `fieldsToRead` is provided, only a subset of fields will be
 // marshalled onto the given entities.
-func (c *client) MultiRead(context.Context, []string, ...DomainObject) (MultiResult, error) {
-	panic("not implemented")
+func (c *client) MultiRead(ctx context.Context, fieldsToRead []string, entities ...DomainObject) (MultiResult, error) {
+	if !c.initialized {
+		return nil, &ErrNotInitialized{}
+	}
+
+	if len(entities) == 0 {
+		return nil, fmt.Errorf("the number of entities to read is zero")
+	}
+
+	// lookup registered entity, registry will return error if registration
+	// is not found
+	var re *RegisteredEntity
+	var listFieldValues []map[string]FieldValue
+	for _, entity := range entities {
+		ere, err := c.registrar.Find(entity)
+		if err != nil {
+			return nil, err
+		}
+
+		if re == nil {
+			re = ere
+		} else if re != ere {
+			return nil, fmt.Errorf("inconsistent entity type for multi read: %v vs %v", re, ere)
+		}
+
+		// translate entity field values to a map of primary key name/values pairs
+		// required to perform a read
+		listFieldValues = append(listFieldValues, re.KeyFieldValues(entity))
+	}
+
+	// build a list of column names from a list of entities field names
+	columnsToRead, err := re.ColumnNames(fieldsToRead)
+	if err != nil {
+		return nil, err
+	}
+
+	results, err := c.connector.MultiRead(ctx, re.EntityInfo(), listFieldValues, columnsToRead)
+	if err != nil {
+		return nil, err
+	}
+
+	multiResult := MultiResult{}
+	// map results to entity fields
+	for i, entity := range entities {
+		if results[i].Error != nil {
+			multiResult[entity] = results[i].Error
+			continue
+		}
+		re.SetFieldValues(entity, results[i].Values, columnsToRead)
+	}
+
+	return multiResult, nil
 }
 
 type createOrUpsertType func(context.Context, *EntityInfo, map[string]FieldValue) error
