@@ -372,6 +372,7 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	// here are the data types to test; the names are random
@@ -427,8 +428,6 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 
 		err = sut.CreateIfNotExists(ctx, testEi, inFields)
 		assert.True(t, dosa.ErrorIsAlreadyExists(err))
-		// make sure we actually called CreateIfNotExists on the interface
-		ctrl.Finish()
 
 		// cover the conversion error case
 		err = sut.CreateIfNotExists(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
@@ -443,6 +442,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 func TestYaRPCClient_Upsert(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	// here are the data types to test; the names are random
@@ -499,9 +499,6 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
 		assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
-
-		// make sure we actually called CreateIfNotExists on the interface
-		ctrl.Finish()
 	}
 }
 
