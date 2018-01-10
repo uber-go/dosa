@@ -122,6 +122,10 @@ type Client interface {
 
 	// MultiRead fetches several rows by primary key. A list of fields can be
 	// specified. Use All() or nil for all fields.
+	// The domainObject will be filled by corresponding values if the object is fetched successfully.
+	// Otherwise the DomainObject as key and an error message as value will be saved into
+	// MultiResult map.
+	// NOTE: This API only fetches objects of same entity type from same scope.
 	MultiRead(context.Context, []string, ...DomainObject) (MultiResult, error)
 
 	// Upsert creates or update a row. A list of fields to update can be

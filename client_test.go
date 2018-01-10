@@ -730,7 +730,13 @@ func TestClient_MultiRead(t *testing.T) {
 
 	// unregistered object
 	c1.Initialize(ctx)
-	err := c1.Read(ctx, dosaRenamed.All(), cte2)
+	_, err := c1.MultiRead(ctx, dosaRenamed.All(), cte2)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity2")
+
+	// multi read different types of object
+	c1.Initialize(ctx)
+	_, err = c1.MultiRead(ctx, dosaRenamed.All(), cte2, cte1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "ClientTestEntity2")
 
