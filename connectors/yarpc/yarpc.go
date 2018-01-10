@@ -617,7 +617,8 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 // CreateScope creates the scope specified
 func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 	request := &dosarpc.CreateScopeRequest{
-		Name: &scope,
+		Name:      &scope,
+		Requester: dosa.GetUsername(),
 	}
 
 	if err := c.Client.CreateScope(ctx, request, VersionHeader()); err != nil {
@@ -633,8 +634,11 @@ func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 
 // TruncateScope truncates all data in the scope specified
 func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
+	// A better authn story is needed -- an evildoer could just craft a request with a
+	// bogus owner name and send it directly, bypassing this client.
 	request := &dosarpc.TruncateScopeRequest{
-		Name: &scope,
+		Name:      &scope,
+		Requester: dosa.GetUsername(),
 	}
 
 	if err := c.Client.TruncateScope(ctx, request, VersionHeader()); err != nil {
@@ -650,8 +654,11 @@ func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
 
 // DropScope removes the scope specified
 func (c *Connector) DropScope(ctx context.Context, scope string) error {
+	// A better authn story is needed -- an evildoer could just craft a request with a
+	// bogus owner name and send it directly, bypassing this client.
 	request := &dosarpc.DropScopeRequest{
-		Name: &scope,
+		Name:      &scope,
+		Requester: dosa.GetUsername(),
 	}
 
 	if err := c.Client.DropScope(ctx, request, VersionHeader()); err != nil {

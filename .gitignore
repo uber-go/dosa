@@ -179,3 +179,7 @@ cscope.po.out
 
 # End of https://www.gitignore.io/api/go,node,intellij+iml,tags
 
+### Editor backup files ###
+
+# emacs
+*~

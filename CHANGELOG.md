@@ -2,6 +2,7 @@
 
 ## v2.6.0 (unreleased)
 - Add encoding package which contains basic implementations of json and gob encoding
+- Send invoking user's ID when creating a scope
 
 ## v2.5.0 (unreleased)
 

@@ -12,7 +12,7 @@ import:
 - package: github.com/satori/go.uuid
   version: ^1.1.0
 - package: github.com/uber/dosa-idl
-  version: master
+  version: eb3b9d2908e4ee8b40d2f59859c5bd492db180d2
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
