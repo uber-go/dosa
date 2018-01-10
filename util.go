@@ -25,12 +25,9 @@ import "os/user"
 // GetUsername returns the username of the current user.
 func GetUsername() *string {
 	// user.Current only fails on some internal cache error: not sure what
-	// corrective action is appropriate... on failure return a string that
-	// will never map to a valid username.
-	name := "(unknown)"
-
+	// corrective action is appropriate... on failure return NULL.
 	if u, err := user.Current(); err == nil {
-		name = u.Username
+		return &u.Username
 	}
-	return &name
+	return nil
 }

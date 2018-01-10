@@ -146,9 +146,9 @@ func TestUpsertCases(t *testing.T) {
 				}},
 		},
 		{
-			description: "Unsuccessful origin upsert does not upsert to fallback",
+			description:  "Unsuccessful origin upsert does not upsert to fallback",
 			originUpsert: &expectArgs{err: assert.AnError},
-			expectedErr: assert.AnError,
+			expectedErr:  assert.AnError,
 		},
 	}
 	for _, t := range testCases {
