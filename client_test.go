@@ -705,14 +705,68 @@ func TestClient_Remove(t *testing.T) {
 
 }
 
+func TestClient_MultiRead(t *testing.T) {
+	reg1, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1)
+	reg2, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1, cte2)
+	fieldsToRead := []string{"ID", "Email"}
+	e1 := &ClientTestEntity1{ID: int64(1)}
+	e2 := &ClientTestEntity1{ID: int64(2)}
+	results := []*dosaRenamed.FieldValuesOrError{
+		{
+			Values: map[string]dosaRenamed.FieldValue{
+				"id":    testutil.TestInt64Ptr(int64(1)),
+				"name":  testutil.TestStringPtr("xxx"),
+				"email": testutil.TestStringPtr("xxx@gmail.com"),
+			},
+		},
+		{
+			Error: errors.New("not fonud"),
+		},
+	}
+
+	// uninitialized
+	c1 := dosaRenamed.NewClient(reg1, nullConnector)
+	assert.Error(t, c1.Read(ctx, fieldsToRead, cte1))
+
+	// unregistered object
+	c1.Initialize(ctx)
+	_, err := c1.MultiRead(ctx, dosaRenamed.All(), cte2)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity2")
+
+	// multi read different types of object
+	c1.Initialize(ctx)
+	_, err = c1.MultiRead(ctx, dosaRenamed.All(), cte2, cte1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity2")
+
+	// happy path, mock connector
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().MultiRead(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ *dosaRenamed.EntityInfo, columnValues []map[string]dosaRenamed.FieldValue, columnsToRead []string) {
+			assert.Equal(t, columnValues[0]["id"], e1.ID)
+			assert.Equal(t, columnValues[1]["id"], e2.ID)
+			assert.Equal(t, columnsToRead, []string{"id", "email"})
+
+		}).Return(results, nil).MinTimes(1)
+	c3 := dosaRenamed.NewClient(reg2, mockConn)
+	assert.NoError(t, c3.Initialize(ctx))
+	rs, err := c3.MultiRead(ctx, fieldsToRead, e1, e2)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), e1.ID)
+	assert.Empty(t, e1.Name)
+	assert.Equal(t, "xxx@gmail.com", e1.Email)
+	assert.Equal(t, rs[e2].Error(), "not fonud")
+}
+
 /* TODO: Coming in v2.1
 func TestClient_Unimplemented(t *testing.T) {
 	reg1, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1)
 
 	c := dosaRenamed.NewClient(reg1, nullConnector)
-	assert.Panics(t, func() {
-		c.MultiRead(ctx, dosaRenamed.All(), &ClientTestEntity1{})
-	})
 	assert.Panics(t, func() {
 		c.MultiUpsert(ctx, dosaRenamed.All(), &ClientTestEntity1{})
 	})
