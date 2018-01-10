@@ -102,7 +102,7 @@ func TestUpsertCases(t *testing.T) {
 		defer fallbackCtrl.Finish()
 		mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
-		mockOrigin.EXPECT().Upsert(context.TODO(), testEi, tc.originUpsert.values).Return(nil)
+		mockOrigin.EXPECT().Upsert(context.TODO(), testEi, tc.originUpsert.values).Return(tc.originUpsert.err)
 		if tc.fallbackUpsert != nil {
 			// use gomock.Any() because gob encoding of maps is non-deterministic so could be a different argument value every time
 			mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, gomock.Any()).Return(nil).AnyTimes()
@@ -111,7 +111,7 @@ func TestUpsertCases(t *testing.T) {
 		connector := NewConnector(mockOrigin, mockFallback, nil, cacheableEntities...)
 		connector.setSynchronousMode(true)
 		err := connector.Upsert(context.TODO(), testEi, tc.originUpsert.values)
-		assert.NoError(t, err, tc.description)
+		assert.Equal(t, tc.expectedErr, err, tc.description)
 	}
 
 	var testBool bool
@@ -144,6 +144,11 @@ func TestUpsertCases(t *testing.T) {
 					"StrV":        errors.New("some unknown value type"),
 					"BoolV":       false,
 				}},
+		},
+		{
+			description: "Unsuccessful origin upsert does not upsert to fallback",
+			originUpsert: &expectArgs{err: assert.AnError},
+			expectedErr: assert.AnError,
 		},
 	}
 	for _, t := range testCases {

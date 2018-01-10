@@ -2,6 +2,7 @@
 
 ## v2.6.0 (unreleased)
 - Add encoding package which contains basic implementations of json and gob encoding
+- Fallback connector fixes, including always return all results as pointers and only writing to fallback when origin succeeds 
 
 ## v2.5.0 (unreleased)
 
