@@ -292,6 +292,24 @@ func (c *Connector) Read(_ context.Context, ei *dosa.EntityInfo, values map[stri
 	return partitionRef[inx], nil
 }
 
+// MultiRead fetches a series of values at once.
+func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, minimumFields []string) ([]*dosa.FieldValuesOrError, error) {
+	var fvoes []*dosa.FieldValuesOrError
+	for _, v := range values {
+		fieldValue, err := c.Read(ctx, ei, v, minimumFields)
+		fvoe := &dosa.FieldValuesOrError{}
+		if err != nil {
+			 fvoe.Error = err
+		} else {
+			fvoe.Values = fieldValue
+		}
+
+		fvoes = append(fvoes, fvoe)
+	}
+
+	return fvoes, nil
+}
+
 func overwriteValuesFunc(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
 	for k, v := range from {
 		into[k] = v
