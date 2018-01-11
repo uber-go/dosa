@@ -221,6 +221,48 @@ func TestConnector_Read(t *testing.T) {
 	assert.True(t, dosa.ErrorIsNotFound(err))
 }
 
+func TestConnector_MultiRead(t *testing.T) {
+	sut := NewConnector()
+
+	// insert into clustered entity
+	id := dosa.NewUUID()
+	err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
+		"f1": dosa.FieldValue("key"),
+		"c1": dosa.FieldValue(int64(1)),
+		"c2": dosa.FieldValue(float64(1.2)),
+		"c7": dosa.FieldValue(id)})
+	assert.NoError(t, err)
+
+	// read that row
+	vals, err := sut.MultiRead(context.TODO(), clusteredEi, []map[string]dosa.FieldValue{
+		{
+			"f1": dosa.FieldValue("key"),
+			"c1": dosa.FieldValue(int64(1)),
+			"c7": dosa.FieldValue(id)},
+	}, dosa.All())
+	assert.NoError(t, err)
+	assert.Len(t, vals, 1)
+	assert.Equal(t, dosa.FieldValue(float64(1.2)), vals[0].Values["c2"])
+
+	// and fail a read on a clustered key
+	vals, err = sut.MultiRead(context.TODO(), clusteredEi, []map[string]dosa.FieldValue{
+		{
+			"f1": dosa.FieldValue("key"),
+			"c1": dosa.FieldValue(int64(2)),
+			"c7": dosa.FieldValue(id),
+		},
+		{
+			"f1": dosa.FieldValue("key"),
+			"c1": dosa.FieldValue(int64(1)),
+			"c7": dosa.FieldValue(id),
+		},
+	}, dosa.All())
+	assert.Len(t, vals, 2)
+	assert.True(t, dosa.ErrorIsNotFound(vals[0].Error))
+	assert.Equal(t, dosa.FieldValue(float64(1.2)), vals[1].Values["c2"])
+
+}
+
 func TestConnector_Remove(t *testing.T) {
 	sut := NewConnector()
 
