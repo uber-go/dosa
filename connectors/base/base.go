@@ -22,6 +22,7 @@ package base
 
 import (
 	"context"
+	"runtime/debug"
 
 	"github.com/uber-go/dosa"
 )
@@ -30,6 +31,13 @@ const name = "base"
 
 // ErrNoMoreConnector is used when there is no more next connector
 type ErrNoMoreConnector struct {
+}
+
+// NewErrNoMoreConnector prints the call stack and
+// constructs a new ErrNoMoreConnector.
+func NewErrNoMoreConnector() ErrNoMoreConnector {
+	debug.PrintStack()
+	return ErrNoMoreConnector{}
 }
 
 // Error satisfies the error interface.
@@ -50,7 +58,7 @@ func NewConnector(next dosa.Connector) dosa.Connector {
 // CreateIfNotExists calls Next
 func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	if c.Next == nil {
-		return ErrNoMoreConnector{}
+		return NewErrNoMoreConnector()
 	}
 	return c.Next.CreateIfNotExists(ctx, ei, values)
 }
@@ -58,7 +66,7 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 // Read calls Next
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, minimumFields []string) (map[string]dosa.FieldValue, error) {
 	if c.Next == nil {
-		return nil, ErrNoMoreConnector{}
+		return nil, NewErrNoMoreConnector()
 	}
 	return c.Next.Read(ctx, ei, values, minimumFields)
 }
@@ -66,7 +74,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[st
 // MultiRead calls Next
 func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, minimumFields []string) ([]*dosa.FieldValuesOrError, error) {
 	if c.Next == nil {
-		return nil, ErrNoMoreConnector{}
+		return nil, NewErrNoMoreConnector()
 	}
 	return c.Next.MultiRead(ctx, ei, values, minimumFields)
 }
@@ -74,7 +82,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values [
 // Upsert calls Next
 func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	if c.Next == nil {
-		return ErrNoMoreConnector{}
+		return NewErrNoMoreConnector()
 	}
 	return c.Next.Upsert(ctx, ei, values)
 }
@@ -82,7 +90,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 // MultiUpsert calls Next
 func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue) ([]error, error) {
 	if c.Next == nil {
-		return nil, ErrNoMoreConnector{}
+		return nil, NewErrNoMoreConnector()
 	}
 	return c.Next.MultiUpsert(ctx, ei, values)
 }
@@ -90,7 +98,7 @@ func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values
 // Remove calls Next
 func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	if c.Next == nil {
-		return ErrNoMoreConnector{}
+		return NewErrNoMoreConnector()
 	}
 	return c.Next.Remove(ctx, ei, values)
 }
@@ -98,7 +106,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[
 // RemoveRange calls Next.
 func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) error {
 	if c.Next == nil {
-		return ErrNoMoreConnector{}
+		return NewErrNoMoreConnector()
 	}
 	return c.Next.RemoveRange(ctx, ei, columnConditions)
 }
@@ -106,7 +114,7 @@ func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, column
 // MultiRemove calls Next
 func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
 	if c.Next == nil {
-		return nil, ErrNoMoreConnector{}
+		return nil, NewErrNoMoreConnector()
 	}
 	return c.Next.MultiRemove(ctx, ei, multiValues)
 }
@@ -114,7 +122,7 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiV
 // Range calls Next
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	if c.Next == nil {
-		return nil, "", ErrNoMoreConnector{}
+		return nil, "", NewErrNoMoreConnector()
 	}
 	return c.Next.Range(ctx, ei, columnConditions, minimumFields, token, limit)
 }
@@ -122,7 +130,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 // Scan calls Next
 func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	if c.Next == nil {
-		return nil, "", ErrNoMoreConnector{}
+		return nil, "", NewErrNoMoreConnector()
 	}
 	return c.Next.Scan(ctx, ei, minimumFields, token, limit)
 }
@@ -130,7 +138,7 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 // CheckSchema calls Next
 func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
 	if c.Next == nil {
-		return dosa.InvalidVersion, ErrNoMoreConnector{}
+		return dosa.InvalidVersion, NewErrNoMoreConnector()
 	}
 	return c.Next.CheckSchema(ctx, scope, namePrefix, ed)
 }
@@ -138,7 +146,7 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 // CanUpsertSchema calls Next
 func (c *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
 	if c.Next == nil {
-		return dosa.InvalidVersion, ErrNoMoreConnector{}
+		return dosa.InvalidVersion, NewErrNoMoreConnector()
 	}
 	return c.Next.CanUpsertSchema(ctx, scope, namePrefix, ed)
 }
@@ -146,7 +154,7 @@ func (c *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix strin
 // UpsertSchema calls Next
 func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
 	if c.Next == nil {
-		return nil, ErrNoMoreConnector{}
+		return nil, NewErrNoMoreConnector()
 	}
 	return c.Next.UpsertSchema(ctx, scope, namePrefix, ed)
 }
@@ -154,7 +162,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 // CheckSchemaStatus calls Next
 func (c *Connector) CheckSchemaStatus(ctx context.Context, scope string, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
 	if c.Next == nil {
-		return nil, ErrNoMoreConnector{}
+		return nil, NewErrNoMoreConnector()
 	}
 	return c.Next.CheckSchemaStatus(ctx, scope, namePrefix, version)
 }
@@ -162,7 +170,7 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope string, namePre
 // CreateScope calls Next
 func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 	if c.Next == nil {
-		return ErrNoMoreConnector{}
+		return NewErrNoMoreConnector()
 	}
 	return c.Next.CreateScope(ctx, scope)
 }
@@ -170,7 +178,7 @@ func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 // TruncateScope calls Next
 func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
 	if c.Next == nil {
-		return ErrNoMoreConnector{}
+		return NewErrNoMoreConnector()
 	}
 	return c.Next.TruncateScope(ctx, scope)
 }
@@ -178,7 +186,7 @@ func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
 // DropScope calls Next
 func (c *Connector) DropScope(ctx context.Context, scope string) error {
 	if c.Next == nil {
-		return ErrNoMoreConnector{}
+		return NewErrNoMoreConnector()
 	}
 	return c.Next.DropScope(ctx, scope)
 }
@@ -186,7 +194,7 @@ func (c *Connector) DropScope(ctx context.Context, scope string) error {
 // ScopeExists calls Next
 func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error) {
 	if c.Next == nil {
-		return false, ErrNoMoreConnector{}
+		return false, NewErrNoMoreConnector()
 	}
 	return c.Next.ScopeExists(ctx, scope)
 }
@@ -194,7 +202,7 @@ func (c *Connector) ScopeExists(ctx context.Context, scope string) (bool, error)
 // Shutdown always returns nil
 func (c *Connector) Shutdown() error {
 	if c.Next == nil {
-		return ErrNoMoreConnector{}
+		return NewErrNoMoreConnector()
 	}
 	return c.Next.Shutdown()
 }
