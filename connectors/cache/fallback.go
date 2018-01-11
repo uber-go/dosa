@@ -51,12 +51,16 @@ type rangeQuery struct {
 
 // NewConnector creates a fallback cache connector
 func NewConnector(origin, fallback dosa.Connector, scope metrics.Scope, entities ...dosa.DomainObject) *Connector {
+	return newConnector(origin, fallback, scope, encoding.NewGobEncoder(), entities...)
+}
+
+func newConnector(origin, fallback dosa.Connector, scope metrics.Scope, encoder encoding.Encoder, entities ...dosa.DomainObject) *Connector {
 	bc := base.Connector{Next: origin}
 	set := createCachedEntitiesSet(entities)
 	return &Connector{
 		Connector:         bc,
 		fallback:          fallback,
-		encoder:           encoding.NewGobEncoder(),
+		encoder:           encoder,
 		cacheableEntities: set,
 		stats:             scope,
 	}
