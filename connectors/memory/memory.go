@@ -299,7 +299,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values [
 		fieldValue, err := c.Read(ctx, ei, v, minimumFields)
 		fvoe := &dosa.FieldValuesOrError{}
 		if err != nil {
-			 fvoe.Error = err
+			fvoe.Error = err
 		} else {
 			fvoe.Values = fieldValue
 		}

@@ -104,6 +104,9 @@ func ErrorIsAlreadyExists(err error) bool {
 
 // Client defines the methods to operate with DOSA entities
 type Client interface {
+	// GetRegistrar returns the registrar
+	GetRegistrar() Registrar
+
 	// Initialize must be called before any data operation
 	Initialize(ctx context.Context) error
 
@@ -229,6 +232,11 @@ func NewClient(reg Registrar, conn Connector) Client {
 		registrar: reg,
 		connector: conn,
 	}
+}
+
+// GetRegistrar returns the registrar that is registered in the client
+func (c *client) GetRegistrar() Registrar {
+	return c.registrar
 }
 
 // Initialize performs initial schema checks against all registered entities.
