@@ -31,7 +31,7 @@ import (
 )
 
 type SinglePrimaryKeyNoParen struct {
-	Entity     `dosa:"primaryKey=PrimaryKey"`
+	Entity     `dosa:"etl=true,name=jzhan,primaryKey=PrimaryKey"`
 	PrimaryKey int64
 	Data       string
 }
