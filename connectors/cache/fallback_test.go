@@ -199,7 +199,7 @@ func TestAsyncUpsert(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// Thest dosa read and the various behaviors of the fallback
+// Test dosa read and the various behaviors of the fallback
 func TestReadCases(t *testing.T) {
 	runTestCase := func(tc testCase) {
 		t.Run(tc.description, func(t *testing.T) {
