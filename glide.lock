@@ -1,5 +1,5 @@
-hash: d604b421479c6269594a6a2fd10d1859633afac7a35084989e28af36c034b003
-updated: 2018-01-10T13:10:40.304444-08:00
+hash: d7ebf372c57a928d6e9ae6ae12f14062d2d05794409646a22e9407bb0d5788cb
+updated: 2018-01-12T11:58:39.246857-08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -25,7 +25,7 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gocql/gocql
-  version: 6c01199a66689472d8fab787edda1edefc0f4a79
+  version: c4da86d17b3b2812ada159b1c75887cadb4c120e
   subpackages:
   - internal/lru
   - internal/murmur
@@ -69,7 +69,7 @@ imports:
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: 2e54d0b93cba2fd133edc32211dcc32c06ef72ca
+  version: 89604d197083d4781071d3c65855d24ecfb0a563
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
@@ -91,7 +91,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 6c4631652c6aab57c64f65c2e0aaec2e9aae3a64
 - name: github.com/uber/dosa-idl
-  version: 77e3db627aef4dcd86ad247321b9c4868763fdad
+  version: 6779547b4aeb57ec04913efcda03ff6279d918a2
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -110,11 +110,10 @@ imports:
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - name: go.uber.org/thriftrw
-  version: 61a13b1cb9cf4d6b26aeabf3fb907d90aaa693af
+  version: 6216e5bb19132c14e979cf9c62abae6f022a0c0d
   subpackages:
   - envelope
   - internal/envelope/exception
-  - internal/semver
   - protocol
   - protocol/binary
   - thriftreflect
@@ -168,7 +167,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: 434ec0c7fe3742c984919a691b2018a6e9694425
+  version: 5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec
   subpackages:
   - bpf
   - context
@@ -222,6 +221,6 @@ testImports:
 - name: github.com/yookoala/realpath
   version: d19ef9c409d9817c1e685775e53d361b03eabbc8
 - name: golang.org/x/tools
-  version: 8cab8a1319f0be9798e7fe78b15da75e5f94b2e9
+  version: fbec762f837dc349b73d1eaa820552e2ad177942
   subpackages:
   - cover
