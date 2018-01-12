@@ -115,17 +115,14 @@ func findInsertionPoint(pk *dosa.PrimaryKey, data []map[string]dosa.FieldValue, 
 	return
 }
 
-// compareRows compares two maps of row data based on clustering keys. It handles ascending/descending
-// based on the passed-in schema
+// compareRows compares two maps of row data based on clustering keys.
 func compareRows(pk *dosa.PrimaryKey, v1 map[string]dosa.FieldValue, v2 map[string]dosa.FieldValue) (cmp int8) {
 	keys := pk.ClusteringKeys
 	for _, key := range keys {
 		d1 := v1[key.Name]
 		d2 := v2[key.Name]
 		cmp = compareType(d1, d2)
-		if key.Descending {
-			cmp = -cmp
-		}
+
 		if cmp != 0 {
 			return cmp
 		}
