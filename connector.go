@@ -140,7 +140,7 @@ type Connector interface {
 	// Datastore management
 	// CreateScope creates a scope for storage of data, usually implemented by a keyspace for this data
 	// This is usually followed by UpsertSchema
-	CreateScope(ctx context.Context, scope string) error
+	CreateScope(ctx context.Context, scope, owner string) error
 	// TruncateScope keeps the scope around, but removes all the data
 	TruncateScope(ctx context.Context, scope string) error
 	// DropScope removes the scope and all of the data

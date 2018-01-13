@@ -185,7 +185,7 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 }
 
 // CreateScope returns success
-func (c *Connector) CreateScope(ctx context.Context, scope string) error {
+func (c *Connector) CreateScope(ctx context.Context, scope, owner string) error {
 	return nil
 }
 
