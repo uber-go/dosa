@@ -22,6 +22,7 @@ package yarpc_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -607,11 +608,11 @@ func TestClient_CreateScope(t *testing.T) {
 
 	sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 	mockedClient.EXPECT().CreateScope(ctx, gomock.Any(), gomock.Any()).Return(nil)
-	err := sut.CreateScope(ctx, "scope")
+	err := sut.CreateScope(ctx, "scope", "fred")
 	assert.NoError(t, err)
 
 	mockedClient.EXPECT().CreateScope(ctx, gomock.Any(), gomock.Any()).Return(errors.New("test error"))
-	err = sut.CreateScope(ctx, "scope")
+	err = sut.CreateScope(ctx, "scope", "fred")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
 }

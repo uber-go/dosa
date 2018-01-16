@@ -172,8 +172,8 @@ func TestBase_UpsertSchema(t *testing.T) {
 }
 
 func TestBase_CreateScope(t *testing.T) {
-	assert.Error(t, bc.CreateScope(ctx, ""))
-	assert.NoError(t, bcWNext.CreateScope(ctx, ""))
+	assert.Error(t, bc.CreateScope(ctx, "", ""))
+	assert.NoError(t, bcWNext.CreateScope(ctx, "", ""))
 }
 
 func TestBase_TruncateScope(t *testing.T) {

@@ -135,7 +135,7 @@ func TestDevNull_UpsertSchema(t *testing.T) {
 }
 
 func TestDevNull_CreateScope(t *testing.T) {
-	assert.NoError(t, sut.CreateScope(ctx, ""))
+	assert.NoError(t, sut.CreateScope(ctx, "", ""))
 }
 
 func TestDevNull_TruncateScope(t *testing.T) {

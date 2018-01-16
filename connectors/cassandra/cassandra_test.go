@@ -47,7 +47,7 @@ func TestNewConnector(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	if err := c.CreateScope(ctx, "example"); err != nil {
+	if err := c.CreateScope(ctx, "example", "fred"); err != nil {
 		t.Fatal(err)
 	}
 	defer c.DropScope(ctx, "example")

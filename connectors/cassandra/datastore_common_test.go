@@ -55,7 +55,7 @@ func initTestStore(t *testing.T) {
 
 func initTestSchema(ks string, entityInfo *dosa.EntityInfo) error {
 	ctx := context.Background()
-	err := testStore.CreateScope(ctx, ks)
+	err := testStore.CreateScope(ctx, ks, "fred")
 	if err != nil {
 		return errors.Wrapf(err, "Could not create keyspace %q", ks)
 	}

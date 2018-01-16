@@ -107,15 +107,15 @@ func (mr *MockConnectorMockRecorder) CreateIfNotExists(arg0, arg1, arg2 interfac
 }
 
 // CreateScope mocks base method
-func (m *MockConnector) CreateScope(arg0 context.Context, arg1 string) error {
-	ret := m.ctrl.Call(m, "CreateScope", arg0, arg1)
+func (m *MockConnector) CreateScope(arg0 context.Context, arg1, arg2 string) error {
+	ret := m.ctrl.Call(m, "CreateScope", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateScope indicates an expected call of CreateScope
-func (mr *MockConnectorMockRecorder) CreateScope(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateScope", reflect.TypeOf((*MockConnector)(nil).CreateScope), arg0, arg1)
+func (mr *MockConnectorMockRecorder) CreateScope(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateScope", reflect.TypeOf((*MockConnector)(nil).CreateScope), arg0, arg1, arg2)
 }
 
 // DropScope mocks base method
