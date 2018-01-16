@@ -34,27 +34,6 @@ type ScopeOptions struct{}
 // ScopeCmd are options for all scope commands
 type ScopeCmd struct{}
 
-func (c *ScopeCmd) doScopeOpWithOwner(name string, f func(dosa.AdminClient, context.Context, string, string) error, scopes []string, owner string) error {
-	// TODO(eculver): use options/configurator pattern to apply defaults
-	if options.ServiceName == "" {
-		options.ServiceName = _defServiceName
-	}
-
-	client, err := getAdminClient(options)
-	if err != nil {
-		return err
-	}
-	for _, s := range scopes {
-		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
-		defer cancel()
-		if err := f(client, ctx, s, owner); err != nil {
-			return errors.Wrapf(err, "%s scope on %q", name, s)
-		}
-		fmt.Printf("%s scope %q: OK\n", name, s)
-	}
-	return nil
-}
-
 func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Context, string) error, scopes []string) error {
 	// TODO(eculver): use options/configurator pattern to apply defaults
 	if options.ServiceName == "" {
@@ -87,7 +66,10 @@ type ScopeCreate struct {
 
 // Execute executes a scope create command
 func (c *ScopeCreate) Execute(args []string) error {
-	return c.doScopeOpWithOwner("create", dosa.AdminClient.CreateScope, c.Args.Scopes, c.Owner)
+	return c.doScopeOp("create",
+		func(client dosa.AdminClient, ctx context.Context, scope string) error {
+			return dosa.AdminClient.CreateScope(client, ctx, scope, c.Owner)
+		}, c.Args.Scopes)
 }
 
 // ScopeDrop contains data for executing scope drop command.
