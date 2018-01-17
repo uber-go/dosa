@@ -98,10 +98,16 @@ var clusteredByTimeEi = &dosa.EntityInfo{
 			PartitionKeys: []string{"f1"},
 			ClusteringKeys: []*dosa.ClusteringKey{
 				{Name: "c1", Descending: false},
-				{Name: "c2", Descending: true},
 			},
 		},
 		Name: "t3",
+		Indexes: map[string]*dosa.IndexDefinition{
+			"i3": {Key: &dosa.PrimaryKey{
+				PartitionKeys: []string{"f1"},
+				ClusteringKeys: []*dosa.ClusteringKey{
+					{Name: "c2", Descending: true},
+					{Name: "c1", Descending: false},
+				}}}},
 	},
 }
 
@@ -1015,14 +1021,14 @@ func TestConnector_ScanWithTimeFields(t *testing.T) {
 
 	testTimes := make([]time.Time, timeCount)
 	for x := 0; x < timeCount; x++ {
-		testTimes[x] = time.Date(2017, time.May, 25, 0, x, 0, 0, time.UTC)
+		testTimes[x] = time.Date(2017, time.May, 25, 0, x, 0, x, time.UTC)
 	}
 
 	// first, insert some random UUID values into two partition keys
 	for x := 0; x < timeCount; x++ {
 		err := sut.Upsert(context.TODO(), clusteredByTimeEi, map[string]dosa.FieldValue{
-			"f1": dosa.FieldValue("data" + string(x%2)),
-			"c1": dosa.FieldValue(int64(1)),
+			"f1": dosa.FieldValue("data"),
+			"c1": dosa.FieldValue(int64(x)),
 			"c2": dosa.FieldValue(testTimes[x])})
 		assert.NoError(t, err)
 	}
@@ -1032,6 +1038,30 @@ func TestConnector_ScanWithTimeFields(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, data, limit)
 	assert.NotEmpty(t, token)
+
+	data, token, err = sut.Range(context.TODO(), clusteredByTimeEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c2": {{Op: dosa.Gt, Value: dosa.FieldValue(time.Time{})}},
+	}, dosa.All(), "",  200)
+	assert.NoError(t, err)
+	assert.Len(t, data, timeCount)
+	assert.Empty(t, token)
+
+	data, token, err = sut.Range(context.TODO(), clusteredByTimeEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c2": {{Op: dosa.Gt, Value: dosa.FieldValue(time.Time{})}},
+	}, dosa.All(), "",  6)
+	assert.NoError(t, err)
+	assert.Len(t, data, 6)
+	assert.NotEmpty(t, token)
+
+	data, token, err = sut.Range(context.TODO(), clusteredByTimeEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c2": {{Op: dosa.Gt, Value: dosa.FieldValue(time.Time{})}},
+	}, dosa.All(), token,  6)
+	assert.NoError(t, err)
+	assert.Len(t, data, timeCount - 6)
+	assert.Empty(t, token)
 }
 
 func TestConnector_RangeWithBadCriteria(t *testing.T) {
