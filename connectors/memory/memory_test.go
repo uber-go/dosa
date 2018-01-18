@@ -31,7 +31,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"math/rand"
-	"fmt"
 )
 
 var testSchemaRef = dosa.SchemaRef{
@@ -563,7 +562,7 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[idcount/2-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Len(t, data, idcount/2-1)
+	assert.Len(t, data, idcount/2)
 
 	// there's one more for greater than or equal
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
@@ -572,7 +571,7 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.GtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Len(t, data, idcount/2)
+	assert.Len(t, data, idcount/2+1)
 
 	// find the midpoint and look for all values less than that
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
@@ -581,7 +580,7 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[idcount/2])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Len(t, data, idcount/2-1)
+	assert.Len(t, data, idcount/2)
 
 	// and same for less than or equal
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
@@ -590,14 +589,14 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.LtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Len(t, data, idcount/2)
+	assert.Len(t, data, idcount/2+1)
 
 	// look off the end of the left side, so greater than maximum (edge case)
 	// (uuids are ordered descending so this is non-intuitively backwards)
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
-		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[0])}},
+		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[idcount-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Empty(t, data)
@@ -606,7 +605,7 @@ func TestConnector_Range(t *testing.T) {
 	data, _, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
-		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[idcount-1])}},
+		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[0])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Empty(t, data)
@@ -616,16 +615,16 @@ func TestConnector_Range(t *testing.T) {
 	// Get "1" partition
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
-	}, dosa.All(), "", 5)
+	}, dosa.All(), "", idcount/2)
 	assert.NoError(t, err)
-	assert.Len(t, data, 5)
+	assert.Len(t, data, idcount/2)
 
 	// Get "1" partition
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
-	}, dosa.All(), token, 5)
+	}, dosa.All(), token, idcount)
 	assert.NoError(t, err)
-	assert.Len(t, data, 5)
+	assert.Len(t, data, idcount/2)
 	assert.Empty(t, token)
 
 	// Get the "2" partition, should be empty
@@ -657,7 +656,6 @@ func TestConnector_TUUIDs(t *testing.T) {
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
 	}
-
 	sort.Sort(ByUUID(testUUIDs))
 	// read them back, they should be in reverse order
 	data, _, _ := sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
@@ -667,6 +665,7 @@ func TestConnector_TUUIDs(t *testing.T) {
 
 	// check that the order is backwards
 	for idx, row := range data {
+
 		assert.Equal(t, testUUIDs[idcount-idx-1], row["c7"])
 	}
 
@@ -701,7 +700,7 @@ type ByUUID []dosa.UUID
 
 func (u ByUUID) Len() int           { return len(u) }
 func (u ByUUID) Swap(i, j int)      { u[i], u[j] = u[j], u[i] }
-func (u ByUUID) Less(i, j int) bool { return string(u[i]) > string(u[j]) }
+func (u ByUUID) Less(i, j int) bool { return string(u[i]) < string(u[j]) }
 
 func BenchmarkConnector_CreateIfNotExists(b *testing.B) {
 	sut := NewConnector()
@@ -1021,12 +1020,11 @@ func TestConnector_ScanWithTimeFields(t *testing.T) {
 	sut := NewConnector()
 	const timeCount = 10
 
+	rand.Seed(42)
 	testTimes := make([]time.Time, timeCount)
 	for x := 0; x < timeCount; x++ {
-		testTimes[x] = time.Date(2017, time.May, 25, 0, x, 0, x, time.UTC)
+		testTimes[x] = time.Date(2017, time.May, 25, rand.Intn(24), x, 0, x, time.UTC)
 	}
-
-	rand.Seed(42)
 	// first, insert some random UUID values into two partition keys
 	for x := 0; x < timeCount; x++ {
 		err := sut.Upsert(context.TODO(), clusteredByTimeEi, map[string]dosa.FieldValue{
@@ -1045,7 +1043,7 @@ func TestConnector_ScanWithTimeFields(t *testing.T) {
 	data, token, err = sut.Range(context.TODO(), clusteredByTimeEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c2": {{Op: dosa.Gt, Value: dosa.FieldValue(time.Time{})}},
-	}, dosa.All(), "",  200)
+	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Len(t, data, timeCount)
 	assert.Empty(t, token)
@@ -1053,20 +1051,18 @@ func TestConnector_ScanWithTimeFields(t *testing.T) {
 	data, token, err = sut.Range(context.TODO(), clusteredByTimeEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c2": {{Op: dosa.Gt, Value: dosa.FieldValue(time.Time{})}},
-	}, dosa.All(), "",  6)
+	}, dosa.All(), "", 6)
 	assert.NoError(t, err)
 	assert.Len(t, data, 6)
 	assert.NotEmpty(t, token)
 
-	fmt.Println(data)
 	data, token, err = sut.Range(context.TODO(), clusteredByTimeEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c2": {{Op: dosa.Gt, Value: dosa.FieldValue(time.Time{})}},
-	}, dosa.All(), token,  6)
+	}, dosa.All(), token, 6)
 	assert.NoError(t, err)
-	assert.Len(t, data, timeCount - 6)
+	assert.Len(t, data, timeCount-6)
 	assert.Empty(t, token)
-	fmt.Println(data)
 }
 
 func TestConnector_RangeWithBadCriteria(t *testing.T) {

@@ -122,7 +122,9 @@ func compareRows(pk *dosa.PrimaryKey, v1 map[string]dosa.FieldValue, v2 map[stri
 		d1 := v1[key.Name]
 		d2 := v2[key.Name]
 		cmp = compareType(d1, d2)
-
+		if key.Descending {
+			cmp = -cmp
+		}
 		if cmp != 0 {
 			return cmp
 		}
@@ -519,7 +521,7 @@ func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][
 	partitionRef := entityRef[encodedPartitionKey]
 	// no data in this partition? easy out!
 	if len(partitionRef) == 0 {
-		return nil,nil,nil
+		return nil, nil, nil
 	}
 	// hunt through the partitionRef and return values that match search criteria
 	// TODO: This can be done much faster using a binary search
@@ -531,7 +533,7 @@ func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][
 		endinx--
 	}
 	if endinx < startinx {
-		return nil, nil,nil
+		return nil, nil, nil
 	}
 
 	return &partitionRange{
