@@ -321,6 +321,20 @@ func TestConnector_Remove(t *testing.T) {
 		"c1": dosa.FieldValue(int64(1)),
 		"c7": dosa.FieldValue(id)})
 	assert.NoError(t, err)
+
+	// insert into entity primary key'd on [f1, c1] and indexed on [f1, c2, c1]
+	id = dosa.NewUUID()
+	err = sut.CreateIfNotExists(context.TODO(), clusteredByTimeEi, map[string]dosa.FieldValue{
+		"f1": dosa.FieldValue("key"),
+		"c1": dosa.FieldValue(int64(1)),
+		"c2": dosa.FieldValue(time.Unix(1516237125, 0)),
+	})
+	assert.NoError(t, err)
+	err = sut.Remove(context.TODO(), clusteredByTimeEi, map[string]dosa.FieldValue{
+		"f1": dosa.FieldValue("key"),
+		"c1": dosa.FieldValue(int64(1)),
+	})
+	assert.NoError(t, err)
 }
 
 func TestConnector_RemoveRange(t *testing.T) {
