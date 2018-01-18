@@ -31,7 +31,7 @@ import (
 )
 
 type SinglePrimaryKeyNoParen struct {
-	Entity     `dosa:"etl=true,name=jzhan,primaryKey=PrimaryKey"`
+	Entity     `dosa:"primaryKey=PrimaryKey"`
 	PrimaryKey int64
 	Data       string
 }
@@ -152,6 +152,67 @@ func TestMultiComponentPrimaryKey(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"partkey", "anotherpartkey"}, dosaTable.Key.PartitionKeys)
 	assert.Nil(t, dosaTable.Key.ClusteringKeys)
+}
+
+type NoETLTag struct {
+	Entity     `dosa:"name=noetltag,primaryKey=PrimaryKey"`
+	PrimaryKey int64
+	Data       string
+}
+
+func TestNoETLTag(t *testing.T) {
+	dosaTable, err := TableFromInstance(&NoETLTag{})
+	assert.Nil(t, err)
+	assert.Equal(t, false, dosaTable.EnableETL)
+}
+
+type ETLTagFalse struct {
+	Entity     `dosa:"primaryKey=PrimaryKey,etl=false"`
+	PrimaryKey int64
+	Data       string
+}
+
+func TestETLTagFalse(t *testing.T) {
+	dosaTable, err := TableFromInstance(&ETLTagFalse{})
+	assert.Nil(t, err)
+	assert.Equal(t, false, dosaTable.EnableETL)
+}
+
+type ETLTagTrue struct {
+	Entity     `dosa:"name=etltagtrue,primaryKey=PrimaryKey,etl=true"`
+	PrimaryKey int64
+	Data       string
+}
+
+func TestETLTagTrue(t *testing.T) {
+	dosaTable, err := TableFromInstance(&ETLTagTrue{})
+	assert.Nil(t, err)
+	assert.Equal(t, true, dosaTable.EnableETL)
+}
+
+type ETLTagIncomplete struct {
+	Entity     `dosa:"primaryKey=PrimaryKey,etl="`
+	PrimaryKey int64
+	Data       string
+}
+
+func TestETLTagInComplete(t *testing.T) {
+	dosaTable, err := TableFromInstance(&ETLTagIncomplete{})
+	assert.Error(t, err)
+	t.Log(err)
+	assert.Nil(t, dosaTable)
+}
+
+type ETLTagNoMatch struct {
+	Entity     `dosa:"primaryKey=PrimaryKey,etl"`
+	PrimaryKey int64
+	Data       string
+}
+
+func TestETLTagNoMatch(t *testing.T) {
+	dosaTable, err := TableFromInstance(&ETLTagNoMatch{})
+	assert.Error(t, err)
+	assert.Nil(t, dosaTable)
 }
 
 type InvalidDosaAttribute struct {
@@ -557,6 +618,6 @@ func TestRenameStructToValidName(t *testing.T) {
 		Dummy  bool
 	}
 	table, err := TableFromInstance(&ABădNăme{})
-	assert.NotNil(t, table)
 	assert.NoError(t, err)
+	assert.NotNil(t, table)
 }

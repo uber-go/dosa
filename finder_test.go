@@ -61,6 +61,9 @@ func TestParser(t *testing.T) {
 		"primarykeywithsecondaryrange":  &PrimaryKeyWithSecondaryRange{},
 		"primarykeywithdescendingrange": &PrimaryKeyWithDescendingRange{},
 		"multicomponentprimarykey":      &MultiComponentPrimaryKey{},
+		"noetltag":                      &NoETLTag{},
+		"etltagfalse":                   &ETLTagFalse{},
+		"etltagtrue":                    &ETLTagTrue{},
 		"nullabletype":                  &NullableType{},
 		"alltypes":                      &AllTypes{},
 		"unexportedfieldtype":           &UnexportedFieldType{},
@@ -80,7 +83,7 @@ func TestParser(t *testing.T) {
 
 	assert.Equal(t, len(expectedEntities)+len(entitiesExcludedForTest), len(entities), fmt.Sprintf("%s", entities))
 	// TODO(jzhan): remove the hard-coded number of errors.
-	assert.Equal(t, 22, len(errs), fmt.Sprintf("%v", errs))
+	assert.Equal(t, 24, len(errs), fmt.Sprintf("%v", errs))
 	assert.Nil(t, err)
 
 	for _, entity := range entities {
@@ -88,6 +91,7 @@ func TestParser(t *testing.T) {
 			continue
 		}
 		inst, ok := expectedEntities[entity.Name]
+		fmt.Printf("checking %s\n", entity.Name)
 		assert.True(t, ok)
 		e, err := TableFromInstance(inst)
 		assert.NoError(t, err)

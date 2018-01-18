@@ -1,5 +1,5 @@
-hash: 516c6facf953dc17480fc5e2b6e445934b1ffd91f513dc33610f94fd9e3816e1
-updated: 2017-12-01T16:29:32.473498497-08:00
+hash: c481640d2247b07080a2e5c8dfae173ea0f3682250e22885d64c806ad90e6962
+updated: 2018-01-17T14:24:09.483048-08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -25,7 +25,7 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gocql/gocql
-  version: 33a5f3c1bcc2c421b3221c5858312afb141bf605
+  version: 31287b6955a73af4828a9bbbec98060fa3449f6d
   subpackages:
   - internal/lru
   - internal/murmur
@@ -35,7 +35,7 @@ imports:
   subpackages:
   - proto
 - name: github.com/golang/mock
-  version: 747e9e6390e12b0d987c261bdc89a51e76b9f5fc
+  version: b3e60bcdc577185fce3cf625fc96b62857ce5574
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
@@ -65,21 +65,21 @@ imports:
   - prometheus
   - prometheus/promhttp
 - name: github.com/prometheus/client_model
-  version: 6f3806018612930941127f2a7c6c453ba2c527d2
+  version: 99fa1f4be8e564e8a6b613da7fa6f46c9edafc6c
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: e3fb1a1acd7605367a2b378bc2e2f893c05174b7
+  version: 89604d197083d4781071d3c65855d24ecfb0a563
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
   - model
 - name: github.com/prometheus/procfs
-  version: a6e9df898b1336106c743392c48ee0b71f5c4efa
+  version: b15cd069a83443be3154b719d0cc9fe8117f09fb
   subpackages:
   - xfs
 - name: github.com/satori/go.uuid
-  version: 879c5887cd475cd7864858769793b2ceb0d44feb
+  version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/uber-go/atomic
   version: 8474b86a5a6f79c443ce4b2992817ff32cf208b8
   subpackages:
@@ -89,9 +89,9 @@ imports:
   subpackages:
   - internal/mapstructure
 - name: github.com/uber-go/tally
-  version: 95078a8f10668bd1fa73ae46761cdc58d25436b8
+  version: 6c4631652c6aab57c64f65c2e0aaec2e9aae3a64
 - name: github.com/uber/dosa-idl
-  version: f87eaf2b564249cf90a0814b06442276d294f170
+  version: b00b175f834bb435781158d6ecd0945e28045d3b
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -110,7 +110,7 @@ imports:
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - name: go.uber.org/thriftrw
-  version: bce7fd589d505915f56a7901d8c143e1625e085c
+  version: 6216e5bb19132c14e979cf9c62abae6f022a0c0d
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -121,7 +121,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 9fe9f33dbb59ff30a8da4bf962683022531ae916
+  version: 584eb8fc6268aaad27d58d5a651929d7e7bdedf6
   subpackages:
   - api/backoff
   - api/encoding
@@ -147,6 +147,7 @@ imports:
   - internal/outboundmiddleware
   - internal/pally
   - internal/request
+  - internal/yarpcerrors
   - peer
   - peer/hostport
   - pkg/encoding
@@ -167,7 +168,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: a8b9294777976932365dabb6640cf1468d95c70f
+  version: 5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec
   subpackages:
   - bpf
   - context
@@ -178,7 +179,7 @@ imports:
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/yaml.v2
-  version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
+  version: d670f9405373e636a5a2765eea47fac0c9bc91a4
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -187,13 +188,13 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  version: ecdeabc65495df2dec95d7c4a4c3e021903035e5
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
-  version: 364a39b842c5d3772ad0789a24326b9f134e7038
+  version: b472d5a5b9424bffa8444021b47d1b7b4c894b23
 - name: github.com/golang/lint
-  version: 6aaf7c34af0f4c36a57e0c429bace4d706d8e931
+  version: e14d9b0f1d332b1420c1ffa32562ad2dc84d645d
   subpackages:
   - golint
 - name: github.com/kisielk/errcheck
@@ -205,7 +206,7 @@ testImports:
 - name: github.com/mattn/goveralls
   version: b71a1e4855f87991aff01c2c833a75a07059c61c
 - name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/russross/blackfriday
@@ -215,12 +216,12 @@ testImports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 86672fcb3f950f35f2e675df2240550f2a50762f
 - name: github.com/stretchr/testify
-  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  version: b91bfb9ebec76498946beb6af7c0230c7cc7ba6c
   subpackages:
   - assert
 - name: github.com/yookoala/realpath
   version: d19ef9c409d9817c1e685775e53d361b03eabbc8
 - name: golang.org/x/tools
-  version: 4de4a8d2069ae83551a383b100f80859283a6a12
+  version: af2bfe26b6891a197d033db63786cf8eb6bebd7b
   subpackages:
   - cover

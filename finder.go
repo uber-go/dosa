@@ -229,7 +229,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 
 		if kind == packagePrefix+"."+entityName || (packagePrefix == "" && kind == entityName) {
 			var err error
-			if t.EntityDefinition.Name, t.Key, err = parseEntityTag(structName, dosaTag); err != nil {
+			if t.EntityDefinition.Name, t.EnableETL, t.Key, err = parseEntityTag(structName, dosaTag); err != nil {
 				return nil, err
 			}
 		} else {

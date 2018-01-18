@@ -73,14 +73,15 @@ func TestRawValueConversionError(t *testing.T) {
 		input  interface{}
 		errmsg string
 	}{
-		{dosa.UUID(""), "short"}, // empty string
-		{dosa.UUID("1"), "short"},
-		{dosa.UUID("this is not a uuid, uuids shouldnt contain something like a t in them"), "invalid byte"},
+		{dosa.UUID(""), "incorrect UUID length"}, // empty string
+		{dosa.UUID("1"), "incorrect UUID length"},
+		{dosa.UUID("this is not a uuid, uuids shouldnt contain something like a t in them"), "incorrect UUID"},
 	}
 
 	for _, test := range data {
 		_, err := RawValueFromInterface(test.input)
 		assert.Error(t, err, "test %+v", test)
+		t.Log(err)
 		assert.Contains(t, err.Error(), test.errmsg, "test %+v", test)
 	}
 
@@ -179,6 +180,7 @@ var testEntityDefinition = &dosa.EntityDefinition{
 			Type: dosa.Int64,
 		},
 	},
+	EnableETL: true,
 }
 
 func TestEntityDefinitionConvert(t *testing.T) {
@@ -187,6 +189,7 @@ func TestEntityDefinitionConvert(t *testing.T) {
 	assert.Equal(t, testEntityDefinition.Key, ed.Key)
 	assert.Equal(t, testEntityDefinition.Name, ed.Name)
 	assert.Equal(t, testEntityDefinition.Indexes, ed.Indexes)
+	assert.Equal(t, testEntityDefinition.EnableETL, ed.EnableETL)
 	edCols := make(map[string]*dosa.ColumnDefinition)
 	for _, c := range ed.Columns {
 		edCols[c.Name] = c

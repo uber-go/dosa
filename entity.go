@@ -175,17 +175,19 @@ func (id *IndexDefinition) Clone() *IndexDefinition {
 
 // EntityDefinition stores information about a DOSA entity
 type EntityDefinition struct {
-	Name    string // normalized entity name
-	Key     *PrimaryKey
-	Columns []*ColumnDefinition
-	Indexes map[string]*IndexDefinition
+	Name      string // normalized entity name
+	Key       *PrimaryKey
+	Columns   []*ColumnDefinition
+	Indexes   map[string]*IndexDefinition
+	EnableETL bool
 }
 
 // Clone returns a deep copy of EntityDefinition
 func (e *EntityDefinition) Clone() *EntityDefinition {
 	newEd := &EntityDefinition{
-		Name: e.Name,
-		Key:  e.Key.Clone(),
+		Name:      e.Name,
+		Key:       e.Key.Clone(),
+		EnableETL: e.EnableETL,
 	}
 
 	if e.Columns != nil {
@@ -438,7 +440,11 @@ func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
 			}
 		}
 	}
-	// TODO Handle tags in the future
+
+	// ETL tag cannot be disabled
+	if e1.EnableETL == false && e2.EnableETL == true {
+		return errors.Errorf("ETL tag cannot be disabled once it's on")
+	}
 
 	return nil
 }

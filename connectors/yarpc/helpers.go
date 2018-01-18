@@ -218,11 +218,14 @@ func entityDefToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
 		pkI := PrimaryKeyToThrift(index.Key)
 		indexes[name] = &dosarpc.IndexDefinition{Key: pkI}
 	}
+
+	// ETL
 	return &dosarpc.EntityDefinition{
 		PrimaryKey: PrimaryKeyToThrift(ed.Key),
 		FieldDescs: fd,
 		Name:       &ed.Name,
 		Indexes:    indexes,
+		EnableETL:  &ed.EnableETL,
 	}
 }
 
@@ -264,10 +267,11 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 	}
 
 	return &dosa.EntityDefinition{
-		Name:    *ed.Name,
-		Columns: fields,
-		Key:     FromThriftToPrimaryKey(ed.PrimaryKey),
-		Indexes: indexes,
+		Name:      *ed.Name,
+		Columns:   fields,
+		Key:       FromThriftToPrimaryKey(ed.PrimaryKey),
+		Indexes:   indexes,
+		EnableETL: *ed.EnableETL,
 	}
 }
 

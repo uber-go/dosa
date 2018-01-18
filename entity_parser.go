@@ -198,7 +198,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		name := structField.Name
 		if name == entityName {
 			var err error
-			if t.EntityDefinition.Name, t.Key, err = parseEntityTag(t.StructName, tag); err != nil {
+			if t.EntityDefinition.Name, t.EnableETL, t.Key, err = parseEntityTag(t.StructName, tag); err != nil {
 				return nil, err
 			}
 		} else {
@@ -336,72 +336,68 @@ func parseNameTag(tag, defaultName string) (string, string, error) {
 }
 
 // parseETLTag functions parses DOSA "enableETL" tag
-func parseETLTag(tag, defaultName string) (string, string, error) {
-	fullNameTag := ""
-	name := defaultName
-
+func parseETLTag(tag string) (string, bool, error) {
+	fullETLTag := ""
+	etlTag := ""
 	matches := etlPattern0.FindStringSubmatch(tag)
 	if len(matches) == 2 {
-		fullNameTag = matches[0]
-		name = matches[1]
+		fullETLTag = matches[0]
+		etlTag = matches[1]
+	}
+
+	// TODO(jzhan): add more check on the match, = 1?
+	if len(matches) == 0 {
+		return "", false, nil
 	}
 
 	// filter out "trailing comma"
-	name = strings.TrimRight(name, " ,")
+	etlTag = strings.TrimRight(etlTag, " ,")
 
 	var err error
-	name, err = NormalizeName(name)
+	etlTag, err = NormalizeName(etlTag)
 	if err != nil {
-		return "", "", err
+		return "", false, err
 	}
 
-	return fullNameTag, name, nil
+	return fullETLTag, etlTag == "true", nil
 }
 
 // parseEntityTag function parses DOSA tag on the "Entity" field
-func parseEntityTag(structName, dosaAnnotation string) (string, *PrimaryKey, error) {
+func parseEntityTag(structName, dosaAnnotation string) (string, bool, *PrimaryKey, error) {
 	tag := dosaAnnotation
+
+	// find the ETL flag
+	fullETLTag, enableETL, err := parseETLTag(tag)
+	if err != nil {
+		return "", false, nil, errors.Wrapf(err, "invalid enableETL tag: %s", tag)
+	}
+	tag = strings.Replace(tag, fullETLTag, "", 1)
+
 	// find the primaryKey
 	matchs := primaryKeyPattern0.FindStringSubmatch(tag)
-	fmt.Printf("matchs: %q\n", matchs)
 	if len(matchs) != 4 {
-		return "", nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag %q, matches = %q", structName, tag, matchs)
+		return "", false, nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag %q, matches = %q", structName, tag, matchs)
 	}
 	pkString := matchs[1]
 	key, err := parsePrimaryKey(structName, pkString)
 	if err != nil {
-		return "", nil, errors.Wrapf(err, "struct %s has an invalid primary key %q", structName, pkString)
+		return "", false, nil, errors.Wrapf(err, "struct %s has an invalid primary key %q", structName, pkString)
 	}
 	toRemove := strings.TrimSuffix(matchs[0], matchs[2])
 	toRemove = strings.TrimSuffix(matchs[0], matchs[3])
 	tag = strings.Replace(tag, toRemove, "", 1)
 
-	//find the name
+	// find the name
 	fullNameTag, name, err := parseNameTag(tag, structName)
-	fmt.Printf("fullNameTag:%q, name:%q\n", fullNameTag, name)
 	if err != nil {
-		return "", nil, errors.Wrapf(err, "invalid name tag: %s", tag)
+		return "", false, nil, errors.Wrapf(err, "invalid name tag: %s", tag)
 	}
 
 	tag = strings.Replace(tag, fullNameTag, "", 1)
-	/*
 	if strings.TrimSpace(tag) != "" {
-		return "", nil, fmt.Errorf("struct %s with an invalid dosa struct tag: %s", structName, tag)
-	}*/
-
-	// find the enableETL tag
-	fullETLTag, enableETL, err := parseETLTag(tag, structName)
-	if err != nil {
-		return "", nil, errors.Wrapf(err, "invalid enableETL tag: %s", tag)
+		return "", false, nil, fmt.Errorf("struct %s with an invalid dosa struct tag: %s", structName, tag)
 	}
-	tag = strings.Replace(tag, fullETLTag, "", 1)
-	if strings.TrimSpace(tag) != "" {
-		return "", nil, fmt.Errorf("struct %s with an invalid dosa struct tag: %s", structName, tag)
-	}
-
-	fmt.Printf("fullETLTag: %q, enableETL: %q\n", fullETLTag, enableETL)
-
-	return name, key, nil
+	return name, enableETL, key, nil
 }
 
 // parseFieldTag function parses DOSA tag on the fields in the DOSA struct except the "Entity" field

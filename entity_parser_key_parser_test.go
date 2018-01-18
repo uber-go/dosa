@@ -411,6 +411,7 @@ func TestEntityParse(t *testing.T) {
 		TableName  string
 		PrimaryKey *PrimaryKey
 		Error      error
+		EnableETL  bool
 	}{
 		{
 			Tag:       "name=jj primaryKey=ok",
@@ -529,6 +530,46 @@ func TestEntityParse(t *testing.T) {
 			Error: nil,
 		},
 		{
+			Tag:       "name=jj primaryKey=ok, etl=true",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error:     nil,
+			EnableETL: true,
+		},
+		{
+			Tag:       "name=jj primaryKey=ok etl=false",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error:     nil,
+			EnableETL: false,
+		},
+		{
+			Tag:       "name=jj primaryKey=ok etl=",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error:     errors.New("cannot be empty"),
+			EnableETL: false,
+		},
+		{
+			Tag:       "name=jj primaryKey=ok etl",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error:     errors.New("struct testStruct has an invalid primary key \"ok etl\""),
+			EnableETL: false,
+		},
+		{
 			Tag:        "primaryKey=ok,adsf, name=jj",
 			TableName:  "jj",
 			PrimaryKey: nil,
@@ -555,13 +596,14 @@ func TestEntityParse(t *testing.T) {
 	}
 
 	for _, d := range data {
-		tableName, primaryKey, err := parseEntityTag(structName, d.Tag)
+		tableName, etl, primaryKey, err := parseEntityTag(structName, d.Tag)
 		if d.Error != nil {
 			assert.Contains(t, err.Error(), d.Error.Error())
 		} else {
 			assert.Nil(t, err)
 			assert.Equal(t, tableName, d.TableName)
 			assert.Equal(t, primaryKey, d.PrimaryKey)
+			assert.Equal(t, etl, d.EnableETL)
 		}
 	}
 }
