@@ -30,6 +30,8 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
+	"math/rand"
+	"fmt"
 )
 
 var testSchemaRef = dosa.SchemaRef{
@@ -1024,11 +1026,12 @@ func TestConnector_ScanWithTimeFields(t *testing.T) {
 		testTimes[x] = time.Date(2017, time.May, 25, 0, x, 0, x, time.UTC)
 	}
 
+	rand.Seed(42)
 	// first, insert some random UUID values into two partition keys
 	for x := 0; x < timeCount; x++ {
 		err := sut.Upsert(context.TODO(), clusteredByTimeEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),
-			"c1": dosa.FieldValue(int64(x)),
+			"c1": dosa.FieldValue(rand.Int63()),
 			"c2": dosa.FieldValue(testTimes[x])})
 		assert.NoError(t, err)
 	}
@@ -1055,6 +1058,7 @@ func TestConnector_ScanWithTimeFields(t *testing.T) {
 	assert.Len(t, data, 6)
 	assert.NotEmpty(t, token)
 
+	fmt.Println(data)
 	data, token, err = sut.Range(context.TODO(), clusteredByTimeEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c2": {{Op: dosa.Gt, Value: dosa.FieldValue(time.Time{})}},
@@ -1062,6 +1066,7 @@ func TestConnector_ScanWithTimeFields(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, data, timeCount - 6)
 	assert.Empty(t, token)
+	fmt.Println(data)
 }
 
 func TestConnector_RangeWithBadCriteria(t *testing.T) {
