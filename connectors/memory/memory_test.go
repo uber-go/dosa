@@ -27,10 +27,11 @@ import (
 
 	"sort"
 
+	"math/rand"
+
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
-	"math/rand"
 )
 
 var testSchemaRef = dosa.SchemaRef{
