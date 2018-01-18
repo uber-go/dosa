@@ -86,6 +86,16 @@ func TestScope_Create(t *testing.T) {
 
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
+		mc.EXPECT().CreateScope(gomock.Any(), "fred_dev", "fred").Times(1).Return(nil)
+		return mc, nil
+	})
+	os.Args = []string{"dosa", "--connector", "mock", "scope", "create", "--owner", "fred", "fred_dev"}
+	c = StartCapture()
+	main()
+	assert.Contains(t, c.stop(false), "\"fred_dev\"")
+
+	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
+		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("oops"))
 		return mc, nil
 	})
