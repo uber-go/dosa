@@ -69,7 +69,7 @@ main() {
 
     echo "DONE"
     echo "Darwin package built: ./out/dosa-darwin-${tag}.tar.gz"
-    echo "Linux package built: ./out/dosa-darwin-${tag}.tar.gz"
+    echo "Linux package built: ./out/dosa-linux-${tag}.tar.gz"
 }
 
 main "$@"
