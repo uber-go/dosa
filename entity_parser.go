@@ -335,7 +335,7 @@ func parseNameTag(tag, defaultName string) (string, string, error) {
 	return fullNameTag, name, nil
 }
 
-// parseETLTag functions parses DOSA "enableETL" tag
+// parseETLTag functions parses DOSA "etl" tag
 func parseETLTag(tag string) (string, bool, error) {
 	fullETLTag := ""
 	etlTag := ""
@@ -345,7 +345,6 @@ func parseETLTag(tag string) (string, bool, error) {
 		etlTag = matches[1]
 	}
 
-	// TODO(jzhan): add more check on the match, = 1?
 	if len(matches) == 0 {
 		return "", false, nil
 	}
@@ -369,14 +368,14 @@ func parseEntityTag(structName, dosaAnnotation string) (string, bool, *PrimaryKe
 	// find the ETL flag
 	fullETLTag, enableETL, err := parseETLTag(tag)
 	if err != nil {
-		return "", false, nil, errors.Wrapf(err, "invalid enableETL tag: %s", tag)
+		return "", false, nil, errors.Wrapf(err, "invalid etl tag: %s", tag)
 	}
 	tag = strings.Replace(tag, fullETLTag, "", 1)
 
 	// find the primaryKey
 	matchs := primaryKeyPattern0.FindStringSubmatch(tag)
 	if len(matchs) != 4 {
-		return "", false, nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag %q, matches = %q", structName, tag, matchs)
+		return "", false, nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag %q", structName, tag)
 	}
 	pkString := matchs[1]
 	key, err := parsePrimaryKey(structName, pkString)

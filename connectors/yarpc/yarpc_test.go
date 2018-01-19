@@ -24,6 +24,7 @@ import (
 	"context"
 	"testing"
 	"time"
+	"fmt"
 
 	"go.uber.org/yarpc/api/transport/transporttest"
 
@@ -433,8 +434,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 		err = sut.CreateIfNotExists(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
-		assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
-
+		assert.Contains(t, err.Error(), yarpc.ErrInCorrectUUIDLength) // must mention that the uuid is too short
 		assert.NoError(t, sut.Shutdown())
 	}
 }
@@ -744,7 +744,7 @@ func TestConnector_Range(t *testing.T) {
 		}},
 	}, nil, "", 64)
 	assert.Error(t, err)
-	assert.EqualError(t, errors.Cause(err), "uuid: incorrect UUID length: baduuid")
+	assert.EqualError(t, errors.Cause(err), fmt.Sprintf("%s: baduuid", yarpc.ErrInCorrectUUIDLength))
 }
 
 func TestConnector_RemoveRange(t *testing.T) {
@@ -901,7 +901,7 @@ func TestConnector_Remove(t *testing.T) {
 	err = sut.Remove(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("321")})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
-	assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
+	assert.Contains(t, err.Error(), yarpc.ErrInCorrectUUIDLength) // must mention that the uuid is too short
 
 	// make sure we actually called Read on the interface
 	ctrl.Finish()

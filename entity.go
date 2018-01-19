@@ -440,6 +440,7 @@ func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
 			}
 		}
 	}
+	// TODO Handle tags in the future
 
 	// ETL tag cannot be disabled
 	if e1.EnableETL == false && e2.EnableETL == true {

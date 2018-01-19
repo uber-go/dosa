@@ -41,6 +41,8 @@ var (
 	blobField      = "blobfield"
 	timestampField = "timestampfield"
 	boolField      = "boolfield"
+
+	ErrInCorrectUUIDLength = "uuid: incorrect UUID length"
 )
 
 func TestRawValueFromInterfaceBadType(t *testing.T) {
@@ -73,15 +75,14 @@ func TestRawValueConversionError(t *testing.T) {
 		input  interface{}
 		errmsg string
 	}{
-		{dosa.UUID(""), "incorrect UUID length"}, // empty string
-		{dosa.UUID("1"), "incorrect UUID length"},
+		{dosa.UUID(""), ErrInCorrectUUIDLength}, // empty string
+		{dosa.UUID("1"), ErrInCorrectUUIDLength},
 		{dosa.UUID("this is not a uuid, uuids shouldnt contain something like a t in them"), "incorrect UUID"},
 	}
 
 	for _, test := range data {
 		_, err := RawValueFromInterface(test.input)
 		assert.Error(t, err, "test %+v", test)
-		t.Log(err)
 		assert.Contains(t, err.Error(), test.errmsg, "test %+v", test)
 	}
 

@@ -219,7 +219,6 @@ func entityDefToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
 		indexes[name] = &dosarpc.IndexDefinition{Key: pkI}
 	}
 
-	// ETL
 	return &dosarpc.EntityDefinition{
 		PrimaryKey: PrimaryKeyToThrift(ed.Key),
 		FieldDescs: fd,
