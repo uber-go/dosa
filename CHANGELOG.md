@@ -3,7 +3,7 @@
 ## v2.6.0 (unreleased)
 - Coming Soon
 
-## v2.5.0 (2018-01-11)
+## v2.5.0 (2018-01-19)
 -  Fix memory connector in remove API (#278) and findInsertionPoint (#276)
 -  Exposed GetRegistrart() API in client (#272)
 -  Implement multiread for dosa client (#270, #274)
