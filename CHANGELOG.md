@@ -4,8 +4,8 @@
 - Coming Soon
 
 ## v2.5.0 (2018-01-19)
--  Fix memory connector in remove API (#278) and findInsertionPoint (#276)
--  Exposed GetRegistrart() API in client (#272)
+-  Fix memory connector bugs in remove API (#278) and findInsertionPoint (#276)
+-  Exposed GetRegistrar() API in client (#272)
 -  Implement multiread for dosa client (#270, #274)
 -  Add encoding package which contains basic implementations of json and gob encoding (#267)
 -  Fallback connector fixes, including always return all results as pointers and only writing to fallback when origin succeeds (#264, #266, #271)
