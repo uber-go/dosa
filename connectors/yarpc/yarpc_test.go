@@ -22,9 +22,9 @@ package yarpc_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
-	"fmt"
 
 	"go.uber.org/yarpc/api/transport/transporttest"
 
@@ -433,7 +433,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 		// cover the conversion error case
 		err = sut.CreateIfNotExists(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
+		assert.Contains(t, err.Error(), "\"c7\"")                     // must contain name of bad field
 		assert.Contains(t, err.Error(), yarpc.ErrInCorrectUUIDLength) // must mention that the uuid is too short
 		assert.NoError(t, sut.Shutdown())
 	}
@@ -900,7 +900,7 @@ func TestConnector_Remove(t *testing.T) {
 	// cover the conversion error case
 	err = sut.Remove(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("321")})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
+	assert.Contains(t, err.Error(), "\"c7\"")                     // must contain name of bad field
 	assert.Contains(t, err.Error(), yarpc.ErrInCorrectUUIDLength) // must mention that the uuid is too short
 
 	// make sure we actually called Read on the interface
