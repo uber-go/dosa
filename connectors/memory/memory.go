@@ -380,23 +380,25 @@ func (c *Connector) Remove(_ context.Context, ei *dosa.EntityInfo, values map[st
 	if c.data[ei.Def.Name] == nil {
 		return nil
 	}
-	for iName, iDef := range ei.Def.Indexes {
-		c.removeItem(iName, ei.Def.UniqueKey(iDef.Key), values)
+	removedValues := c.removeItem(ei.Def.Name, ei.Def.Key, values)
+	if removedValues != nil {
+		for iName, iDef := range ei.Def.Indexes {
+			c.removeItem(iName, ei.Def.UniqueKey(iDef.Key), removedValues)
+		}
 	}
-	c.removeItem(ei.Def.Name, ei.Def.Key, values)
-	return nil
+		return nil
 }
 
-func (c *Connector) removeItem(name string, key *dosa.PrimaryKey, values map[string]dosa.FieldValue) {
+func (c *Connector) removeItem(name string, key *dosa.PrimaryKey, values map[string]dosa.FieldValue) map[string]dosa.FieldValue {
 	entityRef := c.data[name]
 	encodedPartitionKey, err := partitionKeyBuilder(key, values)
 	if err != nil || entityRef[encodedPartitionKey] == nil {
-		return
+		return nil
 	}
 	partitionRef := entityRef[encodedPartitionKey]
 	// no data in this partition? easy out!
 	if len(partitionRef) == 0 {
-		return
+		return nil
 	}
 
 	// no clustering keys? Simple, delete this
@@ -404,13 +406,16 @@ func (c *Connector) removeItem(name string, key *dosa.PrimaryKey, values map[str
 		// NOT delete(entityRef, encodedPartitionKey)
 		// Unfortunately, Scan relies on the fact that these are not completely deleted
 		entityRef[encodedPartitionKey] = nil
-		return
+		return nil
 	}
+
+	var deletedValues map[string]dosa.FieldValue
 	found, offset := findInsertionPoint(key, partitionRef, values)
 	if found {
+		deletedValues = entityRef[encodedPartitionKey][offset]
 		entityRef[encodedPartitionKey] = append(entityRef[encodedPartitionKey][:offset], entityRef[encodedPartitionKey][offset+1:]...)
 	}
-	return
+	return deletedValues
 }
 
 // RemoveRange removes all of the elements in the range specified by the entity info and the column conditions.
