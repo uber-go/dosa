@@ -196,6 +196,24 @@ func PrimaryKeyToThrift(key *dosa.PrimaryKey) *dosarpc.PrimaryKey {
 	return &dosarpc.PrimaryKey{PartitionKeys: key.PartitionKeys, ClusteringKeys: ck}
 }
 
+func ETLStateToThrift(etl dosa.ETLState) dosarpc.ETLState {
+	switch etl {
+	case dosa.EtlOn:
+		return dosarpc.ETLStateOn
+	default:
+		return dosarpc.ETLStateOff
+	}
+}
+
+func fromThriftToETLState(etl *dosarpc.ETLState) dosa.ETLState{
+	switch *etl {
+	case dosarpc.ETLStateOn:
+		return dosa.EtlOn
+	default:
+		return dosa.EtlOff
+	}
+}
+
 // EntityDefsToThrift coverts a set of client EntityDefinition to the corresponding RPC EntityDefinitions
 func EntityDefsToThrift(eds []*dosa.EntityDefinition) []*dosarpc.EntityDefinition {
 	rpcEntityDefs := make([]*dosarpc.EntityDefinition, len(eds))
@@ -219,12 +237,13 @@ func entityDefToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
 		indexes[name] = &dosarpc.IndexDefinition{Key: pkI}
 	}
 
+	etl := ETLStateToThrift(ed.ETL)
 	return &dosarpc.EntityDefinition{
 		PrimaryKey: PrimaryKeyToThrift(ed.Key),
 		FieldDescs: fd,
 		Name:       &ed.Name,
 		Indexes:    indexes,
-		EnableETL:  &ed.EnableETL,
+		Etl:  		&etl,
 	}
 }
 
@@ -270,7 +289,7 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 		Columns:   fields,
 		Key:       FromThriftToPrimaryKey(ed.PrimaryKey),
 		Indexes:   indexes,
-		EnableETL: *ed.EnableETL,
+		ETL: 	   fromThriftToETLState(ed.Etl),
 	}
 }
 

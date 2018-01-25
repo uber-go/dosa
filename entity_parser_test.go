@@ -163,31 +163,31 @@ type NoETLTag struct {
 func TestNoETLTag(t *testing.T) {
 	dosaTable, err := TableFromInstance(&NoETLTag{})
 	assert.Nil(t, err)
-	assert.Equal(t, false, dosaTable.EnableETL)
+	assert.Equal(t, EtlOff, dosaTable.ETL)
 }
 
-type ETLTagFalse struct {
-	Entity     `dosa:"primaryKey=PrimaryKey,etl=false"`
+type ETLTagOff struct {
+	Entity     `dosa:"primaryKey=PrimaryKey,etl=off"`
 	PrimaryKey int64
 	Data       string
 }
 
-func TestETLTagFalse(t *testing.T) {
-	dosaTable, err := TableFromInstance(&ETLTagFalse{})
+func TestETLTagOff(t *testing.T) {
+	dosaTable, err := TableFromInstance(&ETLTagOff{})
 	assert.Nil(t, err)
-	assert.Equal(t, false, dosaTable.EnableETL)
+	assert.Equal(t, EtlOff, dosaTable.ETL)
 }
 
-type ETLTagTrue struct {
-	Entity     `dosa:"name=etltagtrue,primaryKey=PrimaryKey,etl=true"`
+type ETLTagOn struct {
+	Entity     `dosa:"name=etltagon,primaryKey=PrimaryKey,etl=on"`
 	PrimaryKey int64
 	Data       string
 }
 
-func TestETLTagTrue(t *testing.T) {
-	dosaTable, err := TableFromInstance(&ETLTagTrue{})
+func TestETLTagOn(t *testing.T) {
+	dosaTable, err := TableFromInstance(&ETLTagOn{})
 	assert.Nil(t, err)
-	assert.Equal(t, true, dosaTable.EnableETL)
+	assert.Equal(t, EtlOn, dosaTable.ETL)
 }
 
 type ETLTagIncomplete struct {

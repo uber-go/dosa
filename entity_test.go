@@ -364,7 +364,7 @@ func getValidEntityDefinition() *dosa.EntityDefinition {
 				Type: dosa.Blob,
 			},
 		},
-		EnableETL: true,
+		ETL: dosa.EtlOn,
 	}
 }
 
@@ -502,20 +502,20 @@ func TestEntityDefinitionIsCompatible(t *testing.T) {
 	assert.NoError(t, err)
 
 	// test ETL tag change
-	validEd.EnableETL = false
+	validEd.ETL = dosa.EtlOff
 	aEd = getValidEntityDefinition()
-	aEd.EnableETL = false
+	aEd.ETL = dosa.EtlOff
 	err = aEd.IsCompatible(validEd)
 	assert.NoError(t, err)
 
 	// test turn ETL on
-	aEd.EnableETL = true
+	aEd.ETL = dosa.EtlOn
 	err = aEd.IsCompatible(validEd)
 	assert.NoError(t, err)
 
 	// test turn ETL off
 	bEd := getValidEntityDefinition()
-	bEd.EnableETL = false
+	bEd.ETL = dosa.EtlOff
 	err = bEd.IsCompatible(aEd)
 	assert.Error(t, err)
 }

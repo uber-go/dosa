@@ -503,7 +503,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 }
 
 type TestDosaObject struct {
-	dosa.Entity `dosa:"primaryKey=(F1, F2), etl=true"`
+	dosa.Entity `dosa:"primaryKey=(F1, F2), etl=on"`
 	F1          int64
 	F2          int32
 }
@@ -519,13 +519,13 @@ func TestClient_CheckSchema(t *testing.T) {
 
 	ed, err := dosa.TableFromInstance(&TestDosaObject{})
 	assert.NoError(t, err)
-	assert.True(t, ed.EnableETL)
+	assert.Equal(t, ed.ETL, dosa.EtlOn)
 	expectedRequest := &drpc.CheckSchemaRequest{
 		Scope:      &sp,
 		NamePrefix: &prefix,
 		EntityDefs: yarpc.EntityDefsToThrift([]*dosa.EntityDefinition{&ed.EntityDefinition}),
 	}
-	assert.Equal(t, ed.EnableETL, *expectedRequest.EntityDefs[0].EnableETL)
+	assert.Equal(t, yarpc.ETLStateToThrift(ed.ETL), *expectedRequest.EntityDefs[0].Etl)
 	expectedRequest2 := &drpc.CanUpsertSchemaRequest{
 		Scope:      &sp,
 		NamePrefix: &prefix,
@@ -535,7 +535,7 @@ func TestClient_CheckSchema(t *testing.T) {
 
 	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.CheckSchemaRequest, opts yarpc2.CallOption) {
 		assert.Equal(t, expectedRequest, request)
-		assert.NotNil(t, request.EntityDefs[0].EnableETL)
+		assert.NotNil(t, request.EntityDefs[0].Etl)
 	}).Return(&drpc.CheckSchemaResponse{Version: &v}, nil)
 	sr, err := sut.CheckSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)

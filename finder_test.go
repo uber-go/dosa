@@ -54,6 +54,7 @@ func TestNonExistentDirectory(t *testing.T) {
 
 func TestParser(t *testing.T) {
 	entities, errs, err := FindEntities([]string{"."}, []string{})
+	assert.NoError(t, err)
 	expectedEntities := map[string]DomainObject{
 		"singleprimarykeynoparen":       &SinglePrimaryKeyNoParen{},
 		"singleprimarykey":              &SinglePrimaryKey{},
@@ -62,8 +63,8 @@ func TestParser(t *testing.T) {
 		"primarykeywithdescendingrange": &PrimaryKeyWithDescendingRange{},
 		"multicomponentprimarykey":      &MultiComponentPrimaryKey{},
 		"noetltag":                      &NoETLTag{},
-		"etltagfalse":                   &ETLTagFalse{},
-		"etltagtrue":                    &ETLTagTrue{},
+		"etltagoff":                   	&ETLTagOff{},
+		"etltagon":                     &ETLTagOn{},
 		"nullabletype":                  &NullableType{},
 		"alltypes":                      &AllTypes{},
 		"unexportedfieldtype":           &UnexportedFieldType{},
@@ -84,7 +85,7 @@ func TestParser(t *testing.T) {
 	assert.Equal(t, len(expectedEntities)+len(entitiesExcludedForTest), len(entities), fmt.Sprintf("%s", entities))
 	// TODO(jzhan): remove the hard-coded number of errors.
 	assert.Equal(t, 24, len(errs), fmt.Sprintf("%v", errs))
-	assert.Nil(t, err)
+
 
 	for _, entity := range entities {
 		if _, ok := entitiesExcludedForTest[entity.Name]; ok {

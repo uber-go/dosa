@@ -179,7 +179,7 @@ type EntityDefinition struct {
 	Key       *PrimaryKey
 	Columns   []*ColumnDefinition
 	Indexes   map[string]*IndexDefinition
-	EnableETL bool
+	ETL 	  ETLState
 }
 
 // Clone returns a deep copy of EntityDefinition
@@ -187,7 +187,7 @@ func (e *EntityDefinition) Clone() *EntityDefinition {
 	newEd := &EntityDefinition{
 		Name:      e.Name,
 		Key:       e.Key.Clone(),
-		EnableETL: e.EnableETL,
+		ETL: 	   e.ETL,
 	}
 
 	if e.Columns != nil {
@@ -443,7 +443,7 @@ func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
 	// TODO Handle tags in the future
 
 	// ETL tag cannot be disabled
-	if e1.EnableETL == false && e2.EnableETL == true {
+	if e1.ETL != EtlOn && e2.ETL == EtlOn {
 		return errors.Errorf("ETL tag cannot be disabled once it's on")
 	}
 

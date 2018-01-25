@@ -1,5 +1,5 @@
 hash: c481640d2247b07080a2e5c8dfae173ea0f3682250e22885d64c806ad90e6962
-updated: 2018-01-17T14:24:09.483048-08:00
+updated: 2018-01-25T11:40:37.504261-08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -25,21 +25,17 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gocql/gocql
-  version: 31287b6955a73af4828a9bbbec98060fa3449f6d
+  version: dd47639f787e8583e1a13e17e20a9f6c4332bc29
   subpackages:
   - internal/lru
   - internal/murmur
   - internal/streams
-- name: github.com/gogo/protobuf
-  version: 342cbe0a04158f6dcb03ca0079991a51a4248c02
-  subpackages:
-  - proto
 - name: github.com/golang/mock
   version: b3e60bcdc577185fce3cf625fc96b62857ce5574
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: 1e59b77b52bf8e4b449a57e6f79f21226d571845
+  version: c65a0412e71e8b9b3bfd22925720d23c0f054237
   subpackages:
   - proto
 - name: github.com/golang/snappy
@@ -75,8 +71,10 @@ imports:
   - internal/bitbucket.org/ww/goautoneg
   - model
 - name: github.com/prometheus/procfs
-  version: b15cd069a83443be3154b719d0cc9fe8117f09fb
+  version: cb4147076ac75738c9a7d279075a253c0cc5acbd
   subpackages:
+  - internal/util
+  - nfs
   - xfs
 - name: github.com/satori/go.uuid
   version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
@@ -91,7 +89,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 6c4631652c6aab57c64f65c2e0aaec2e9aae3a64
 - name: github.com/uber/dosa-idl
-  version: b00b175f834bb435781158d6ecd0945e28045d3b
+  version: 3e55e2ed452a0e4b7c8fe74d62f737b0f55364b5
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -109,19 +107,24 @@ imports:
   version: 8474b86a5a6f79c443ce4b2992817ff32cf208b8
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
+- name: go.uber.org/net/metrics
+  version: 1e19de5b971489a45d178e12a0f72a78c70e300e
+  subpackages:
+  - bucket
+  - push
+  - tallypush
 - name: go.uber.org/thriftrw
   version: 6216e5bb19132c14e979cf9c62abae6f022a0c0d
   subpackages:
   - envelope
   - internal/envelope/exception
-  - internal/semver
   - protocol
   - protocol/binary
   - thriftreflect
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 584eb8fc6268aaad27d58d5a651929d7e7bdedf6
+  version: 112080bb21323a681a9b269fa7b5a1489558aab0
   subpackages:
   - api/backoff
   - api/encoding
@@ -145,7 +148,6 @@ imports:
   - internal/net
   - internal/observability
   - internal/outboundmiddleware
-  - internal/pally
   - internal/request
   - internal/yarpcerrors
   - peer
@@ -168,7 +170,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: 5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec
+  version: 0ed95abb35c445290478a5348a7b38bb154135fd
   subpackages:
   - bpf
   - context
@@ -222,6 +224,6 @@ testImports:
 - name: github.com/yookoala/realpath
   version: d19ef9c409d9817c1e685775e53d361b03eabbc8
 - name: golang.org/x/tools
-  version: af2bfe26b6891a197d033db63786cf8eb6bebd7b
+  version: 25101aadb97aa42907eee6a238d6d26a6cb3c756
   subpackages:
   - cover

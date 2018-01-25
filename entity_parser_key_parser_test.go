@@ -410,8 +410,8 @@ func TestEntityParse(t *testing.T) {
 		Tag        string
 		TableName  string
 		PrimaryKey *PrimaryKey
+		ETL        ETLState
 		Error      error
-		EnableETL  bool
 	}{
 		{
 			Tag:       "name=jj primaryKey=ok",
@@ -420,6 +420,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL: EtlOff,
 			Error: nil,
 		},
 		{
@@ -429,6 +430,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL: EtlOff,
 			Error: nil,
 		},
 		{
@@ -438,6 +440,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL: EtlOff,
 			Error: nil,
 		},
 		{
@@ -447,6 +450,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL: EtlOff,
 			Error: nil,
 		},
 		{
@@ -456,6 +460,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL: EtlOff,
 			Error: nil,
 		},
 		{
@@ -465,6 +470,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL: EtlOff,
 			Error: nil,
 		},
 		{
@@ -474,6 +480,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL: EtlOff,
 			Error: nil,
 		},
 		{
@@ -483,6 +490,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL: EtlOff,
 			Error: nil,
 		},
 		{
@@ -505,6 +513,7 @@ func TestEntityParse(t *testing.T) {
 					},
 				},
 			},
+			ETL: EtlOff,
 			Error: nil,
 		},
 		{
@@ -527,27 +536,28 @@ func TestEntityParse(t *testing.T) {
 					},
 				},
 			},
+			ETL: EtlOff,
 			Error: nil,
 		},
 		{
-			Tag:       "name=jj primaryKey=ok, etl=true",
+			Tag:       "name=jj primaryKey=ok, etl=on",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
 			Error:     nil,
-			EnableETL: true,
+			ETL: EtlOn,
 		},
 		{
-			Tag:       "name=jj primaryKey=ok etl=false",
+			Tag:       "name=jj primaryKey=ok etl=off",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
 			Error:     nil,
-			EnableETL: false,
+			ETL: EtlOff,
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl=",
@@ -557,7 +567,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			Error:     errors.New("cannot be empty"),
-			EnableETL: false,
+			ETL: EtlOff,
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl",
@@ -567,7 +577,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			Error:     errors.New("struct testStruct has an invalid primary key \"ok etl\""),
-			EnableETL: false,
+			ETL: EtlOff,
 		},
 		{
 			Tag:        "primaryKey=ok,adsf, name=jj",
@@ -603,7 +613,7 @@ func TestEntityParse(t *testing.T) {
 			assert.Nil(t, err)
 			assert.Equal(t, tableName, d.TableName)
 			assert.Equal(t, primaryKey, d.PrimaryKey)
-			assert.Equal(t, etl, d.EnableETL)
+			assert.Equal(t, d.ETL, etl)
 		}
 	}
 }

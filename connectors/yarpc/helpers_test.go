@@ -181,7 +181,7 @@ var testEntityDefinition = &dosa.EntityDefinition{
 			Type: dosa.Int64,
 		},
 	},
-	EnableETL: true,
+	ETL: dosa.EtlOn,
 }
 
 func TestEntityDefinitionConvert(t *testing.T) {
@@ -190,7 +190,7 @@ func TestEntityDefinitionConvert(t *testing.T) {
 	assert.Equal(t, testEntityDefinition.Key, ed.Key)
 	assert.Equal(t, testEntityDefinition.Name, ed.Name)
 	assert.Equal(t, testEntityDefinition.Indexes, ed.Indexes)
-	assert.Equal(t, testEntityDefinition.EnableETL, ed.EnableETL)
+	assert.Equal(t, testEntityDefinition.ETL, ed.ETL)
 	edCols := make(map[string]*dosa.ColumnDefinition)
 	for _, c := range ed.Columns {
 		edCols[c.Name] = c
