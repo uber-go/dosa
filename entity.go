@@ -175,19 +175,19 @@ func (id *IndexDefinition) Clone() *IndexDefinition {
 
 // EntityDefinition stores information about a DOSA entity
 type EntityDefinition struct {
-	Name      string // normalized entity name
-	Key       *PrimaryKey
-	Columns   []*ColumnDefinition
-	Indexes   map[string]*IndexDefinition
-	ETL 	  ETLState
+	Name    string // normalized entity name
+	Key     *PrimaryKey
+	Columns []*ColumnDefinition
+	Indexes map[string]*IndexDefinition
+	ETL     ETLState
 }
 
 // Clone returns a deep copy of EntityDefinition
 func (e *EntityDefinition) Clone() *EntityDefinition {
 	newEd := &EntityDefinition{
-		Name:      e.Name,
-		Key:       e.Key.Clone(),
-		ETL: 	   e.ETL,
+		Name: e.Name,
+		Key:  e.Key.Clone(),
+		ETL:  e.ETL,
 	}
 
 	if e.Columns != nil {

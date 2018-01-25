@@ -196,6 +196,7 @@ func PrimaryKeyToThrift(key *dosa.PrimaryKey) *dosarpc.PrimaryKey {
 	return &dosarpc.PrimaryKey{PartitionKeys: key.PartitionKeys, ClusteringKeys: ck}
 }
 
+// ETLStateToThrift convert the dosa ETLState to the thrift ETLState enum type
 func ETLStateToThrift(etl dosa.ETLState) dosarpc.ETLState {
 	switch etl {
 	case dosa.EtlOn:
@@ -205,7 +206,7 @@ func ETLStateToThrift(etl dosa.ETLState) dosarpc.ETLState {
 	}
 }
 
-func fromThriftToETLState(etl *dosarpc.ETLState) dosa.ETLState{
+func fromThriftToETLState(etl *dosarpc.ETLState) dosa.ETLState {
 	switch *etl {
 	case dosarpc.ETLStateOn:
 		return dosa.EtlOn
@@ -243,7 +244,7 @@ func entityDefToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
 		FieldDescs: fd,
 		Name:       &ed.Name,
 		Indexes:    indexes,
-		Etl:  		&etl,
+		Etl:        &etl,
 	}
 }
 
@@ -285,11 +286,11 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 	}
 
 	return &dosa.EntityDefinition{
-		Name:      *ed.Name,
-		Columns:   fields,
-		Key:       FromThriftToPrimaryKey(ed.PrimaryKey),
-		Indexes:   indexes,
-		ETL: 	   fromThriftToETLState(ed.Etl),
+		Name:    *ed.Name,
+		Columns: fields,
+		Key:     FromThriftToPrimaryKey(ed.PrimaryKey),
+		Indexes: indexes,
+		ETL:     fromThriftToETLState(ed.Etl),
 	}
 }
 
