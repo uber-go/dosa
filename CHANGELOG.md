@@ -3,6 +3,9 @@
 ## v2.6.0 (unreleased)
 - Coming Soon
 
+## v2.5.1 (2018-01-23)
+-  Fix the broken 2.5.0 tag
+
 ## v2.5.0 (2018-01-19)
 -  Fix memory connector bugs in remove API (#278) and findInsertionPoint (#276)
 -  Exposed GetRegistrar() API in client (#272)

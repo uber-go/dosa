@@ -762,7 +762,7 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.GtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Len(t, data, idcount/2 + 1)
+	assert.Len(t, data, idcount/2+1)
 
 	// find the midpoint and look for all values less than that
 	data, token, err = rc.Range(ctx, clusteredEi, map[string][]*dosa.Condition{
@@ -780,14 +780,14 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.LtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Len(t, data, idcount/2 + 1)
+	assert.Len(t, data, idcount/2+1)
 
 	// look off the end of the left side, so greater than maximum (edge case)
 	// (uuids are ordered descending so this is non-intuitively backwards)
 	data, token, err = rc.Range(ctx, clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
-		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[len(testUUIDs) - 1])}},
+		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[len(testUUIDs)-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Empty(t, data)
