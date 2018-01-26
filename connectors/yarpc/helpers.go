@@ -201,8 +201,10 @@ func ETLStateToThrift(etl dosa.ETLState) dosarpc.ETLState {
 	switch etl {
 	case dosa.EtlOn:
 		return dosarpc.ETLStateOn
-	default:
+	case dosa.EtlOff:
 		return dosarpc.ETLStateOff
+	default:
+		panic("bad ETL state")
 	}
 }
 
@@ -210,8 +212,10 @@ func fromThriftToETLState(etl *dosarpc.ETLState) dosa.ETLState {
 	switch *etl {
 	case dosarpc.ETLStateOn:
 		return dosa.EtlOn
-	default:
+	case dosarpc.ETLStateOff:
 		return dosa.EtlOff
+	default:
+		panic("bad ETL state")
 	}
 }
 
