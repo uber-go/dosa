@@ -21,6 +21,7 @@
 package yarpc
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -204,7 +205,7 @@ func ETLStateToThrift(etl dosa.ETLState) dosarpc.ETLState {
 	case dosa.EtlOff:
 		return dosarpc.ETLStateOff
 	default:
-		panic("bad ETL state")
+		panic(fmt.Sprintf("bad ETL state: %v", etl))
 	}
 }
 
@@ -215,7 +216,7 @@ func fromThriftToETLState(etl *dosarpc.ETLState) dosa.ETLState {
 	case dosarpc.ETLStateOff:
 		return dosa.EtlOff
 	default:
-		panic("bad ETL state")
+		panic(fmt.Sprintf("bad ETL state: %v", *etl))
 	}
 }
 

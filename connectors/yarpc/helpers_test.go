@@ -203,6 +203,21 @@ func TestEntityDefinitionConvert(t *testing.T) {
 	assert.Equal(t, edCols, testCols)
 }
 
+func TestETLStateConvert(t *testing.T) {
+	data := []struct {
+		etl    dosa.ETLState
+		rpcETL dosarpc.ETLState
+	}{
+		{etl: dosa.EtlOn, rpcETL: dosarpc.ETLStateOn},
+		{etl: dosa.EtlOff, rpcETL: dosarpc.ETLStateOff},
+	}
+
+	for _, d := range data {
+		assert.Equal(t, d.rpcETL, ETLStateToThrift(d.etl))
+		assert.Equal(t, d.etl, fromThriftToETLState(&d.rpcETL))
+	}
+}
+
 func TestEncodeOperator(t *testing.T) {
 	data := []struct {
 		dop   dosa.Operator
