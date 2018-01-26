@@ -386,7 +386,7 @@ func (c *Connector) Remove(_ context.Context, ei *dosa.EntityInfo, values map[st
 			c.removeItem(iName, ei.Def.UniqueKey(iDef.Key), removedValues)
 		}
 	}
-		return nil
+	return nil
 }
 
 func (c *Connector) removeItem(name string, key *dosa.PrimaryKey, values map[string]dosa.FieldValue) map[string]dosa.FieldValue {
