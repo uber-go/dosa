@@ -218,6 +218,7 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 	}
 	createRequest := dosarpc.CreateRequest{
 		Ref:          entityInfoToSchemaRef(ei),
+		EntityDef:    entityDefToThrift(ei.Def),
 		EntityValues: ev,
 	}
 
@@ -244,6 +245,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 	}
 	upsertRequest := dosarpc.UpsertRequest{
 		Ref:          entityInfoToSchemaRef(ei),
+		EntityDef:    entityDefToThrift(ei.Def),
 		EntityValues: ev,
 	}
 
@@ -284,6 +286,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	// perform the read request
 	readRequest := &dosarpc.ReadRequest{
 		Ref:          entityInfoToSchemaRef(ei),
+		EntityDef:    entityDefToThrift(ei.Def),
 		KeyValues:    rpcFields,
 		FieldsToRead: rpcMinimumFields,
 	}
@@ -333,6 +336,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 	// perform the multi read request
 	request := &dosarpc.MultiReadRequest{
 		Ref:          entityInfoToSchemaRef(ei),
+		EntityDef:    entityDefToThrift(ei.Def),
 		KeyValues:    rpcFields,
 		FieldsToRead: rpcMinimumFields,
 	}
@@ -391,6 +395,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 	// perform the remove request
 	removeRequest := &dosarpc.RemoveRequest{
 		Ref:       entityInfoToSchemaRef(ei),
+		EntityDef: entityDefToThrift(ei.Def),
 		KeyValues: rpcFields,
 	}
 
@@ -414,6 +419,7 @@ func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, column
 
 	request := &dosarpc.RemoveRangeRequest{
 		Ref:        entityInfoToSchemaRef(ei),
+		EntityDef:  entityDefToThrift(ei.Def),
 		Conditions: rpcConditions,
 	}
 
@@ -441,6 +447,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 	}
 	rangeRequest := dosarpc.RangeRequest{
 		Ref:          entityInfoToSchemaRef(ei),
+		EntityDef:    entityDefToThrift(ei.Def),
 		Token:        &token,
 		Limit:        &limit32,
 		Conditions:   rpcConditions,
@@ -491,6 +498,7 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 	rpcMinimumFields := makeRPCminimumFields(minimumFields)
 	scanRequest := dosarpc.ScanRequest{
 		Ref:          entityInfoToSchemaRef(ei),
+		EntityDef:    entityDefToThrift(ei.Def),
 		Token:        &token,
 		Limit:        &limit32,
 		FieldsToRead: rpcMinimumFields,

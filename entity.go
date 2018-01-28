@@ -22,9 +22,8 @@ package dosa
 
 import (
 	"bytes"
-	"strings"
-
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 )
