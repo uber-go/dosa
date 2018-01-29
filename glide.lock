@@ -1,5 +1,5 @@
-hash: c481640d2247b07080a2e5c8dfae173ea0f3682250e22885d64c806ad90e6962
-updated: 2018-01-25T11:40:37.504261-08:00
+hash: 6bdbb95238ab06e9b6036e2261b8fe56adfdb29beb5f8adbe181a9583bbf2686
+updated: 2018-01-29T13:30:07.438723-08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -25,7 +25,7 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gocql/gocql
-  version: dd47639f787e8583e1a13e17e20a9f6c4332bc29
+  version: 33a5f3c1bcc2c421b3221c5858312afb141bf605
   subpackages:
   - internal/lru
   - internal/murmur
@@ -35,7 +35,7 @@ imports:
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: c65a0412e71e8b9b3bfd22925720d23c0f054237
+  version: 925541529c1fa6821df4e44ce2723319eb2be768
   subpackages:
   - proto
 - name: github.com/golang/snappy
@@ -65,7 +65,7 @@ imports:
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: 89604d197083d4781071d3c65855d24ecfb0a563
+  version: 2f17f4a9d485bf34b4bfaccc273805040e4f86c8
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
@@ -190,7 +190,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: ecdeabc65495df2dec95d7c4a4c3e021903035e5
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
