@@ -18,12 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package cache
+package encoding
 
 import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
+	"time"
+
+	"github.com/uber-go/dosa"
 )
 
 // Encoder serializes and deserializes the data in cache
@@ -50,14 +53,18 @@ func (j *jsonEncoder) Decode(data []byte, v interface{}) error {
 }
 
 // NewGobEncoder returns a gob encoder
-func NewGobEncoder() Encoder {
-	return &gobEncoder{}
+func NewGobEncoder() GobEncoder {
+	// Register non-primitive dosa types
+	gob.Register(time.Time{})
+	gob.Register(dosa.NewUUID())
+	return GobEncoder{}
 }
 
-type gobEncoder struct{}
+// GobEncoder implemented Encoder interface with gob
+type GobEncoder struct{}
 
 // Encode returns a series of bytes using golang's encoding/gob package
-func (g *gobEncoder) Encode(v interface{}) ([]byte, error) {
+func (g GobEncoder) Encode(v interface{}) ([]byte, error) {
 	var buf bytes.Buffer
 	e := gob.NewEncoder(&buf)
 	err := e.Encode(v)
@@ -65,7 +72,7 @@ func (g *gobEncoder) Encode(v interface{}) ([]byte, error) {
 }
 
 // Decode unmarshals bytes into an object using golang's encoding/gob package
-func (g *gobEncoder) Decode(data []byte, v interface{}) error {
+func (g GobEncoder) Decode(data []byte, v interface{}) error {
 	e := gob.NewDecoder(bytes.NewBuffer(data))
 	return e.Decode(v)
 }

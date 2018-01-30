@@ -436,7 +436,7 @@ func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
 			}
 
 			if !reflect.DeepEqual(index1, index2) {
-				return errors.Errorf("index mismatch: (%v vs %v)", index1, index2)
+				return errors.Errorf("index %q mismatch: (%v vs %v)", name, index1, index2)
 			}
 		}
 	}

@@ -27,6 +27,8 @@ import (
 
 	"sort"
 
+	"math/rand"
+
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
@@ -98,10 +100,16 @@ var clusteredByTimeEi = &dosa.EntityInfo{
 			PartitionKeys: []string{"f1"},
 			ClusteringKeys: []*dosa.ClusteringKey{
 				{Name: "c1", Descending: false},
-				{Name: "c2", Descending: true},
 			},
 		},
 		Name: "t3",
+		Indexes: map[string]*dosa.IndexDefinition{
+			"i3": {Key: &dosa.PrimaryKey{
+				PartitionKeys: []string{"f1"},
+				ClusteringKeys: []*dosa.ClusteringKey{
+					{Name: "c2", Descending: true},
+					{Name: "c1", Descending: false},
+				}}}},
 	},
 }
 
@@ -221,6 +229,48 @@ func TestConnector_Read(t *testing.T) {
 	assert.True(t, dosa.ErrorIsNotFound(err))
 }
 
+func TestConnector_MultiRead(t *testing.T) {
+	sut := NewConnector()
+
+	// insert into clustered entity
+	id := dosa.NewUUID()
+	err := sut.CreateIfNotExists(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
+		"f1": dosa.FieldValue("key"),
+		"c1": dosa.FieldValue(int64(1)),
+		"c2": dosa.FieldValue(float64(1.2)),
+		"c7": dosa.FieldValue(id)})
+	assert.NoError(t, err)
+
+	// read that row
+	vals, err := sut.MultiRead(context.TODO(), clusteredEi, []map[string]dosa.FieldValue{
+		{
+			"f1": dosa.FieldValue("key"),
+			"c1": dosa.FieldValue(int64(1)),
+			"c7": dosa.FieldValue(id)},
+	}, dosa.All())
+	assert.NoError(t, err)
+	assert.Len(t, vals, 1)
+	assert.Equal(t, dosa.FieldValue(float64(1.2)), vals[0].Values["c2"])
+
+	// and fail a read on a clustered key
+	vals, err = sut.MultiRead(context.TODO(), clusteredEi, []map[string]dosa.FieldValue{
+		{
+			"f1": dosa.FieldValue("key"),
+			"c1": dosa.FieldValue(int64(2)),
+			"c7": dosa.FieldValue(id),
+		},
+		{
+			"f1": dosa.FieldValue("key"),
+			"c1": dosa.FieldValue(int64(1)),
+			"c7": dosa.FieldValue(id),
+		},
+	}, dosa.All())
+	assert.Len(t, vals, 2)
+	assert.True(t, dosa.ErrorIsNotFound(vals[0].Error))
+	assert.Equal(t, dosa.FieldValue(float64(1.2)), vals[1].Values["c2"])
+
+}
+
 func TestConnector_Remove(t *testing.T) {
 	sut := NewConnector()
 
@@ -270,6 +320,20 @@ func TestConnector_Remove(t *testing.T) {
 		"f1": dosa.FieldValue("key"),
 		"c1": dosa.FieldValue(int64(1)),
 		"c7": dosa.FieldValue(id)})
+	assert.NoError(t, err)
+
+	// insert into entity primary key'd on [f1, c1] and indexed on [f1, c2, c1]
+	id = dosa.NewUUID()
+	err = sut.CreateIfNotExists(context.TODO(), clusteredByTimeEi, map[string]dosa.FieldValue{
+		"f1": dosa.FieldValue("key"),
+		"c1": dosa.FieldValue(int64(1)),
+		"c2": dosa.FieldValue(time.Unix(1516237125, 0)),
+	})
+	assert.NoError(t, err)
+	err = sut.Remove(context.TODO(), clusteredByTimeEi, map[string]dosa.FieldValue{
+		"f1": dosa.FieldValue("key"),
+		"c1": dosa.FieldValue(int64(1)),
+	})
 	assert.NoError(t, err)
 }
 
@@ -501,8 +565,9 @@ func TestConnector_Range(t *testing.T) {
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
 	}, dosa.All(), "", 200)
+
 	for idx, row := range data {
-		assert.Equal(t, testUUIDs[idx], row["c7"])
+		assert.Equal(t, testUUIDs[len(data)-idx-1], row["c7"])
 	}
 
 	// find the midpoint and look for all values greater than that
@@ -512,7 +577,7 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[idcount/2-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Len(t, data, idcount/2-1)
+	assert.Len(t, data, idcount/2)
 
 	// there's one more for greater than or equal
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
@@ -521,7 +586,7 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.GtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Len(t, data, idcount/2)
+	assert.Len(t, data, idcount/2+1)
 
 	// find the midpoint and look for all values less than that
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
@@ -530,7 +595,7 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[idcount/2])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Len(t, data, idcount/2-1)
+	assert.Len(t, data, idcount/2)
 
 	// and same for less than or equal
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
@@ -539,14 +604,14 @@ func TestConnector_Range(t *testing.T) {
 		"c7": {{Op: dosa.LtOrEq, Value: dosa.FieldValue(testUUIDs[idcount/2])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
-	assert.Len(t, data, idcount/2)
+	assert.Len(t, data, idcount/2+1)
 
 	// look off the end of the left side, so greater than maximum (edge case)
 	// (uuids are ordered descending so this is non-intuitively backwards)
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
-		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[0])}},
+		"c7": {{Op: dosa.Gt, Value: dosa.FieldValue(testUUIDs[idcount-1])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Empty(t, data)
@@ -555,7 +620,7 @@ func TestConnector_Range(t *testing.T) {
 	data, _, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
-		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[idcount-1])}},
+		"c7": {{Op: dosa.Lt, Value: dosa.FieldValue(testUUIDs[0])}},
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Empty(t, data)
@@ -565,9 +630,16 @@ func TestConnector_Range(t *testing.T) {
 	// Get "1" partition
 	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
-	}, dosa.All(), "", 200)
+	}, dosa.All(), "", idcount/2)
 	assert.NoError(t, err)
-	assert.Len(t, data, 10)
+	assert.Len(t, data, idcount/2)
+
+	// Get "1" partition
+	data, token, err = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
+	}, dosa.All(), token, idcount)
+	assert.NoError(t, err)
+	assert.Len(t, data, idcount/2)
 	assert.Empty(t, token)
 
 	// Get the "2" partition, should be empty
@@ -579,9 +651,16 @@ func TestConnector_Range(t *testing.T) {
 	assert.Empty(t, token)
 }
 
-func TestConnector_TimeUUIDs(t *testing.T) {
+func TestConnector_TUUIDs(t *testing.T) {
 	sut := NewConnector()
 	const idcount = 10
+
+	// insert some data into data/1/uuid with a random set of uuids
+	// we insert them in a random order
+	testUUIDs := make([]dosa.UUID, idcount)
+	for x := 0; x < idcount; x++ {
+		testUUIDs[x] = dosa.NewUUID()
+	}
 
 	// insert a bunch of values with V1 timestamps as clustering keys
 	for x := 0; x < idcount; x++ {
@@ -589,10 +668,10 @@ func TestConnector_TimeUUIDs(t *testing.T) {
 			"f1": dosa.FieldValue("data"),
 			"c1": dosa.FieldValue(int64(1)),
 			"c6": dosa.FieldValue(int32(x)),
-			"c7": dosa.FieldValue(dosa.UUID(uuid.NewV1().String()))})
+			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
 	}
-
+	sort.Sort(ByUUID(testUUIDs))
 	// read them back, they should be in reverse order
 	data, _, _ := sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
@@ -601,7 +680,12 @@ func TestConnector_TimeUUIDs(t *testing.T) {
 
 	// check that the order is backwards
 	for idx, row := range data {
-		assert.Equal(t, int32(idcount-idx-1), row["c6"])
+
+		assert.Equal(t, testUUIDs[idcount-idx-1], row["c7"])
+	}
+
+	for x := 0; x < idcount; x++ {
+		testUUIDs = append(testUUIDs, dosa.NewUUID())
 	}
 
 	// now mix in a few V4 UUIDs
@@ -610,26 +694,28 @@ func TestConnector_TimeUUIDs(t *testing.T) {
 			"f1": dosa.FieldValue("data"),
 			"c1": dosa.FieldValue(int64(1)),
 			"c6": dosa.FieldValue(int32(idcount + x)),
-			"c7": dosa.FieldValue(dosa.NewUUID())})
+			"c7": dosa.FieldValue(testUUIDs[x+idcount])})
 		assert.NoError(t, err)
 	}
+
+	sort.Sort(ByUUID(testUUIDs))
 
 	// the V4's should all be first, since V4 UUIDs sort > V1 UUIDs
 	data, _, _ = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
 		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
 	}, dosa.All(), "", 200)
-	for _, row := range data[0:idcount] {
-		assert.True(t, row["c6"].(int32) >= idcount, row["c6"])
-	}
 
+	for idx, row := range data {
+		assert.Equal(t, testUUIDs[len(data)-idx-1], row["c7"])
+	}
 }
 
 type ByUUID []dosa.UUID
 
 func (u ByUUID) Len() int           { return len(u) }
 func (u ByUUID) Swap(i, j int)      { u[i], u[j] = u[j], u[i] }
-func (u ByUUID) Less(i, j int) bool { return string(u[i]) > string(u[j]) }
+func (u ByUUID) Less(i, j int) bool { return string(u[i]) < string(u[j]) }
 
 func BenchmarkConnector_CreateIfNotExists(b *testing.B) {
 	sut := NewConnector()
@@ -949,16 +1035,16 @@ func TestConnector_ScanWithTimeFields(t *testing.T) {
 	sut := NewConnector()
 	const timeCount = 10
 
+	rand.Seed(42)
 	testTimes := make([]time.Time, timeCount)
 	for x := 0; x < timeCount; x++ {
-		testTimes[x] = time.Date(2017, time.May, 25, 0, x, 0, 0, time.UTC)
+		testTimes[x] = time.Date(2017, time.May, 25, rand.Intn(24), x, 0, x, time.UTC)
 	}
-
 	// first, insert some random UUID values into two partition keys
 	for x := 0; x < timeCount; x++ {
 		err := sut.Upsert(context.TODO(), clusteredByTimeEi, map[string]dosa.FieldValue{
-			"f1": dosa.FieldValue("data" + string(x%2)),
-			"c1": dosa.FieldValue(int64(1)),
+			"f1": dosa.FieldValue("data"),
+			"c1": dosa.FieldValue(rand.Int63()),
 			"c2": dosa.FieldValue(testTimes[x])})
 		assert.NoError(t, err)
 	}
@@ -968,6 +1054,30 @@ func TestConnector_ScanWithTimeFields(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, data, limit)
 	assert.NotEmpty(t, token)
+
+	data, token, err = sut.Range(context.TODO(), clusteredByTimeEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c2": {{Op: dosa.Gt, Value: dosa.FieldValue(time.Time{})}},
+	}, dosa.All(), "", 200)
+	assert.NoError(t, err)
+	assert.Len(t, data, timeCount)
+	assert.Empty(t, token)
+
+	data, token, err = sut.Range(context.TODO(), clusteredByTimeEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c2": {{Op: dosa.Gt, Value: dosa.FieldValue(time.Time{})}},
+	}, dosa.All(), "", 6)
+	assert.NoError(t, err)
+	assert.Len(t, data, 6)
+	assert.NotEmpty(t, token)
+
+	data, token, err = sut.Range(context.TODO(), clusteredByTimeEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c2": {{Op: dosa.Gt, Value: dosa.FieldValue(time.Time{})}},
+	}, dosa.All(), token, 6)
+	assert.NoError(t, err)
+	assert.Len(t, data, timeCount-6)
+	assert.Empty(t, token)
 }
 
 func TestConnector_RangeWithBadCriteria(t *testing.T) {

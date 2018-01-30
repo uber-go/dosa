@@ -150,6 +150,9 @@ jspm_packages
 # dotenv environment variables file
 .env
 
+# cli binaries
+*.tar.gz
+
 
 ### Tags ###
 # Ignore tags created by etags, ctags, gtags (GNU global) and cscope
