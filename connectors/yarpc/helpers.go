@@ -290,12 +290,17 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 		}
 	}
 
+	etlState := dosa.EtlOff
+	if ed.Etl != nil {
+		etlState = fromThriftToETLState(ed.Etl)
+	}
+
 	return &dosa.EntityDefinition{
 		Name:    *ed.Name,
 		Columns: fields,
 		Key:     FromThriftToPrimaryKey(ed.PrimaryKey),
 		Indexes: indexes,
-		ETL:     fromThriftToETLState(ed.Etl),
+		ETL:     etlState,
 	}
 }
 
