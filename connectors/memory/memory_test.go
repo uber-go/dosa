@@ -1129,7 +1129,6 @@ func TestCompoundPartSecondaryIndex(t *testing.T) {
 	sut := NewConnector()
 	bucketID := 1
 	now := time.Now()
-	fourHoursAgo := now.Add(-4 * time.Hour)
 
 	repoUUID0 := uuid.NewV4().String()
 	createdAt0 := now.Add(-1 * time.Hour)
