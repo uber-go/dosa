@@ -90,7 +90,8 @@ func partitionKeyBuilder(pk *dosa.PrimaryKey, values map[string]dosa.FieldValue)
 	var encodedKey []byte
 	for _, k := range pk.PartitionKeys {
 		if v, ok := values[k]; ok {
-			encodedKey, _ = encoder.Encode(v)
+			encodedVal, _ := encoder.Encode(v)
+			encodedKey = append(encodedKey, encodedVal...)
 		} else {
 			return "", errors.Errorf("Missing value for partition key %q", k)
 		}
@@ -386,7 +387,7 @@ func (c *Connector) Remove(_ context.Context, ei *dosa.EntityInfo, values map[st
 			c.removeItem(iName, ei.Def.UniqueKey(iDef.Key), removedValues)
 		}
 	}
-		return nil
+	return nil
 }
 
 func (c *Connector) removeItem(name string, key *dosa.PrimaryKey, values map[string]dosa.FieldValue) map[string]dosa.FieldValue {
