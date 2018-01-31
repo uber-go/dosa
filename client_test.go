@@ -1007,7 +1007,7 @@ package main
 import "github.com/uber-go/dosa"
 
 type TestEntityC struct {
-	dosa.Entity ` + "`dosa:\"primaryKey=ID,etl=\"`" + `
+	dosa.Entity ` + "`dosa:\"primaryKey=ID, etl=\"`" + `
 	ID int32
 }
 `
