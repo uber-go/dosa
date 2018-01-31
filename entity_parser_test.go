@@ -154,6 +154,18 @@ func TestMultiComponentPrimaryKey(t *testing.T) {
 	assert.Nil(t, dosaTable.Key.ClusteringKeys)
 }
 
+type NameInPrimaryKey struct {
+	Entity     `dosa:"name=nameinprimarykey,primaryKey=(PrimaryKey, Name)"`
+	PrimaryKey int64
+	Name       string
+}
+
+func TestNameInPrimaryKey(t *testing.T) {
+	dosaTable, err := TableFromInstance(&NameInPrimaryKey{})
+	assert.Nil(t, err)
+	assert.Equal(t, "nameinprimarykey", dosaTable.Name)
+}
+
 type NoETLTag struct {
 	Entity     `dosa:"name=noetltag,primaryKey=PrimaryKey"`
 	PrimaryKey int64
@@ -167,7 +179,7 @@ func TestNoETLTag(t *testing.T) {
 }
 
 type ETLTagOff struct {
-	Entity     `dosa:"primaryKey=PrimaryKey,etl=off"`
+	Entity     `dosa:"primaryKey=PrimaryKey, etl=off"`
 	PrimaryKey int64
 	Data       string
 }
@@ -179,7 +191,7 @@ func TestETLTagOff(t *testing.T) {
 }
 
 type ETLTagOn struct {
-	Entity     `dosa:"name=etltagon,primaryKey=PrimaryKey,etl=on"`
+	Entity     `dosa:"name=etltagon, primaryKey=PrimaryKey, etl=on"`
 	PrimaryKey int64
 	Data       string
 }
@@ -191,7 +203,7 @@ func TestETLTagOn(t *testing.T) {
 }
 
 type ETLTagIncomplete struct {
-	Entity     `dosa:"primaryKey=PrimaryKey,etl="`
+	Entity     `dosa:"primaryKey=PrimaryKey, etl="`
 	PrimaryKey int64
 	Data       string
 }
@@ -204,7 +216,7 @@ func TestETLTagInComplete(t *testing.T) {
 }
 
 type ETLTagNoMatch struct {
-	Entity     `dosa:"primaryKey=PrimaryKey,etl"`
+	Entity     `dosa:"primaryKey=PrimaryKey, etl"`
 	PrimaryKey int64
 	Data       string
 }
@@ -213,6 +225,19 @@ func TestETLTagNoMatch(t *testing.T) {
 	dosaTable, err := TableFromInstance(&ETLTagNoMatch{})
 	assert.Error(t, err)
 	assert.Nil(t, dosaTable)
+}
+
+type ETLInPrimaryKey struct {
+	Entity     `dosa:"primaryKey=(PrimaryKey, Etl), etl=on"`
+	PrimaryKey int64
+	Data       string
+	Etl        string
+}
+
+func TestETLInPrimaryKey(t *testing.T) {
+	dosaTable, err := TableFromInstance(&ETLInPrimaryKey{})
+	assert.NoError(t, err)
+	assert.Equal(t, EtlOn, dosaTable.ETL)
 }
 
 type InvalidDosaAttribute struct {
