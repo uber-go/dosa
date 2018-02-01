@@ -410,6 +410,7 @@ func TestEntityParse(t *testing.T) {
 		Tag        string
 		TableName  string
 		PrimaryKey *PrimaryKey
+		ETL        ETLState
 		Error      error
 	}{
 		{
@@ -419,6 +420,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL:   EtlOff,
 			Error: nil,
 		},
 		{
@@ -428,6 +430,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL:   EtlOff,
 			Error: nil,
 		},
 		{
@@ -437,6 +440,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL:   EtlOff,
 			Error: nil,
 		},
 		{
@@ -446,6 +450,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL:   EtlOff,
 			Error: nil,
 		},
 		{
@@ -455,6 +460,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL:   EtlOff,
 			Error: nil,
 		},
 		{
@@ -464,6 +470,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL:   EtlOff,
 			Error: nil,
 		},
 		{
@@ -473,6 +480,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL:   EtlOff,
 			Error: nil,
 		},
 		{
@@ -482,6 +490,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
+			ETL:   EtlOff,
 			Error: nil,
 		},
 		{
@@ -504,6 +513,7 @@ func TestEntityParse(t *testing.T) {
 					},
 				},
 			},
+			ETL:   EtlOff,
 			Error: nil,
 		},
 		{
@@ -526,7 +536,88 @@ func TestEntityParse(t *testing.T) {
 					},
 				},
 			},
+			ETL:   EtlOff,
 			Error: nil,
+		},
+		{
+			Tag:       "name=jj primaryKey=ok, etl=on",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error: nil,
+			ETL:   EtlOn,
+		},
+		{
+			Tag:       "name=jj primaryKey=ok, etl=ON",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error: nil,
+			ETL:   EtlOn,
+		},
+		{
+			Tag:       "name=jj primaryKey=ok, etl=On",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error: nil,
+			ETL:   EtlOn,
+		},
+		{
+			Tag:       "name=jj primaryKey=ok etl=off",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error: nil,
+			ETL:   EtlOff,
+		},
+		{
+			Tag:       "name=jj primaryKey=ok etl=OFF",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error: nil,
+			ETL:   EtlOff,
+		},
+		{
+			Tag:       "name=jj primaryKey=ok etl=Off",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error: nil,
+			ETL:   EtlOff,
+		},
+		{
+			Tag:       "name=jj primaryKey=ok etl=",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error: errors.New("cannot be empty"),
+			ETL:   EtlOff,
+		},
+		{
+			Tag:       "name=jj primaryKey=ok etl",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error: errors.New("struct testStruct has an invalid primary key \"ok etl\""),
+			ETL:   EtlOff,
 		},
 		{
 			Tag:        "primaryKey=ok,adsf, name=jj",
@@ -555,13 +646,14 @@ func TestEntityParse(t *testing.T) {
 	}
 
 	for _, d := range data {
-		tableName, primaryKey, err := parseEntityTag(structName, d.Tag)
+		tableName, etl, primaryKey, err := parseEntityTag(structName, d.Tag)
 		if d.Error != nil {
 			assert.Contains(t, err.Error(), d.Error.Error())
 		} else {
 			assert.Nil(t, err)
 			assert.Equal(t, tableName, d.TableName)
 			assert.Equal(t, primaryKey, d.PrimaryKey)
+			assert.Equal(t, d.ETL, etl)
 		}
 	}
 }

@@ -22,6 +22,7 @@ package yarpc_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -372,6 +373,7 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	// here are the data types to test; the names are random
@@ -427,15 +429,12 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 
 		err = sut.CreateIfNotExists(ctx, testEi, inFields)
 		assert.True(t, dosa.ErrorIsAlreadyExists(err))
-		// make sure we actually called CreateIfNotExists on the interface
-		ctrl.Finish()
 
 		// cover the conversion error case
 		err = sut.CreateIfNotExists(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "\"c7\"")    // must contain name of bad field
-		assert.Contains(t, err.Error(), "too short") // must mention that the uuid is too short
-
+		assert.Contains(t, err.Error(), "\"c7\"")                     // must contain name of bad field
+		assert.Contains(t, err.Error(), yarpc.ErrInCorrectUUIDLength) // must mention that the uuid is too short
 		assert.NoError(t, sut.Shutdown())
 	}
 }
@@ -443,6 +442,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 func TestYaRPCClient_Upsert(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	// here are the data types to test; the names are random
@@ -497,16 +497,13 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 		// cover the conversion error case
 		err = sut.Upsert(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "\"c7\"")    // must contain name of bad field
-		assert.Contains(t, err.Error(), "too short") // must mention that the uuid is too short
-
-		// make sure we actually called CreateIfNotExists on the interface
-		ctrl.Finish()
+		assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
+		assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
 	}
 }
 
 type TestDosaObject struct {
-	dosa.Entity `dosa:"primaryKey=(F1, F2)"`
+	dosa.Entity `dosa:"primaryKey=(F1, F2), etl=on"`
 	F1          int64
 	F2          int32
 }
@@ -522,11 +519,13 @@ func TestClient_CheckSchema(t *testing.T) {
 
 	ed, err := dosa.TableFromInstance(&TestDosaObject{})
 	assert.NoError(t, err)
+	assert.Equal(t, ed.ETL, dosa.EtlOn)
 	expectedRequest := &drpc.CheckSchemaRequest{
 		Scope:      &sp,
 		NamePrefix: &prefix,
 		EntityDefs: yarpc.EntityDefsToThrift([]*dosa.EntityDefinition{&ed.EntityDefinition}),
 	}
+	assert.Equal(t, yarpc.ETLStateToThrift(ed.ETL), *expectedRequest.EntityDefs[0].Etl)
 	expectedRequest2 := &drpc.CanUpsertSchemaRequest{
 		Scope:      &sp,
 		NamePrefix: &prefix,
@@ -536,6 +535,7 @@ func TestClient_CheckSchema(t *testing.T) {
 
 	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.CheckSchemaRequest, opts yarpc2.CallOption) {
 		assert.Equal(t, expectedRequest, request)
+		assert.NotNil(t, request.EntityDefs[0].Etl)
 	}).Return(&drpc.CheckSchemaResponse{Version: &v}, nil)
 	sr, err := sut.CheckSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
@@ -744,7 +744,7 @@ func TestConnector_Range(t *testing.T) {
 		}},
 	}, nil, "", 64)
 	assert.Error(t, err)
-	assert.EqualError(t, errors.Cause(err), "uuid: UUID string too short: baduuid")
+	assert.EqualError(t, errors.Cause(err), fmt.Sprintf("%s: baduuid", yarpc.ErrInCorrectUUIDLength))
 }
 
 func TestConnector_RemoveRange(t *testing.T) {
@@ -791,7 +791,7 @@ func TestConnector_RemoveRange(t *testing.T) {
 		}},
 	})
 	assert.Error(t, err)
-	assert.EqualError(t, errors.Cause(err), "uuid: UUID string too short: baduuid")
+	assert.EqualError(t, errors.Cause(err), "uuid: incorrect UUID length: baduuid")
 }
 
 func TestConnector_Scan(t *testing.T) {
@@ -900,8 +900,8 @@ func TestConnector_Remove(t *testing.T) {
 	// cover the conversion error case
 	err = sut.Remove(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("321")})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "\"c7\"")    // must contain name of bad field
-	assert.Contains(t, err.Error(), "too short") // must mention that the uuid is too short
+	assert.Contains(t, err.Error(), "\"c7\"")                     // must contain name of bad field
+	assert.Contains(t, err.Error(), yarpc.ErrInCorrectUUIDLength) // must mention that the uuid is too short
 
 	// make sure we actually called Read on the interface
 	ctrl.Finish()

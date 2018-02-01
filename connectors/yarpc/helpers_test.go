@@ -41,6 +41,8 @@ var (
 	blobField      = "blobfield"
 	timestampField = "timestampfield"
 	boolField      = "boolfield"
+
+	ErrInCorrectUUIDLength = "uuid: incorrect UUID length"
 )
 
 func TestRawValueFromInterfaceBadType(t *testing.T) {
@@ -73,9 +75,9 @@ func TestRawValueConversionError(t *testing.T) {
 		input  interface{}
 		errmsg string
 	}{
-		{dosa.UUID(""), "short"}, // empty string
-		{dosa.UUID("1"), "short"},
-		{dosa.UUID("this is not a uuid, uuids shouldnt contain something like a t in them"), "invalid byte"},
+		{dosa.UUID(""), ErrInCorrectUUIDLength}, // empty string
+		{dosa.UUID("1"), ErrInCorrectUUIDLength},
+		{dosa.UUID("this is not a uuid, uuids shouldnt contain something like a t in them"), "incorrect UUID"},
 	}
 
 	for _, test := range data {
@@ -179,6 +181,7 @@ var testEntityDefinition = &dosa.EntityDefinition{
 			Type: dosa.Int64,
 		},
 	},
+	ETL: dosa.EtlOn,
 }
 
 func TestEntityDefinitionConvert(t *testing.T) {
@@ -187,6 +190,7 @@ func TestEntityDefinitionConvert(t *testing.T) {
 	assert.Equal(t, testEntityDefinition.Key, ed.Key)
 	assert.Equal(t, testEntityDefinition.Name, ed.Name)
 	assert.Equal(t, testEntityDefinition.Indexes, ed.Indexes)
+	assert.Equal(t, testEntityDefinition.ETL, ed.ETL)
 	edCols := make(map[string]*dosa.ColumnDefinition)
 	for _, c := range ed.Columns {
 		edCols[c.Name] = c
@@ -197,6 +201,21 @@ func TestEntityDefinitionConvert(t *testing.T) {
 		testCols[c.Name] = c
 	}
 	assert.Equal(t, edCols, testCols)
+}
+
+func TestETLStateConvert(t *testing.T) {
+	data := []struct {
+		etl    dosa.ETLState
+		rpcETL dosarpc.ETLState
+	}{
+		{etl: dosa.EtlOn, rpcETL: dosarpc.ETLStateOn},
+		{etl: dosa.EtlOff, rpcETL: dosarpc.ETLStateOff},
+	}
+
+	for _, d := range data {
+		assert.Equal(t, d.rpcETL, ETLStateToThrift(d.etl))
+		assert.Equal(t, d.etl, fromThriftToETLState(&d.rpcETL))
+	}
 }
 
 func TestEncodeOperator(t *testing.T) {
