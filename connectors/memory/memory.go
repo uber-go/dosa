@@ -133,6 +133,26 @@ func compareRows(pk *dosa.PrimaryKey, v1 map[string]dosa.FieldValue, v2 map[stri
 	return cmp
 }
 
+// copyRows copies all the rows in the given slice and returns a new slice with copies
+// of each of the copies. Order is maintained.
+func copyRows(rows []map[string]dosa.FieldValue) []map[string]dosa.FieldValue {
+	copied := make([]map[string]dosa.FieldValue, len(rows))
+	for i, row := range rows {
+		copied[i] = copyRow(row)
+	}
+	return copied
+}
+
+// copyRow takes in a given "row" and returns a new map containing all of the same
+// values that were in the given row.
+func copyRow(row map[string]dosa.FieldValue) map[string]dosa.FieldValue {
+	copied := make(map[string]dosa.FieldValue, len(row))
+	for k, v := range row {
+		copied[k] = v
+	}
+	return copied
+}
+
 // This function returns the time bits from a UUID
 // You would have to scale this to nanos to make a
 // time.Time but we don't generally need that for
@@ -282,14 +302,14 @@ func (c *Connector) Read(_ context.Context, ei *dosa.EntityInfo, values map[stri
 	}
 
 	if len(ei.Def.Key.ClusteringKeySet()) == 0 {
-		return partitionRef[0], nil
+		return copyRow(partitionRef[0]), nil
 	}
 	// clustering key, search for the value in the set
 	found, inx := findInsertionPoint(ei.Def.Key, partitionRef, values)
 	if !found {
 		return nil, &dosa.ErrNotFound{}
 	}
-	return partitionRef[inx], nil
+	return copyRow(partitionRef[inx]), nil
 }
 
 // MultiRead fetches a series of values at once.
@@ -472,7 +492,8 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 		token = makeToken(slice[limit-1])
 		slice = slice[:limit]
 	}
-	return slice, token, nil
+
+	return copyRows(slice), token, nil
 }
 
 func makeToken(v map[string]dosa.FieldValue) string {
@@ -638,7 +659,7 @@ func (c *Connector) Scan(_ context.Context, ei *dosa.EntityInfo, minimumFields [
 		token = makeToken(allTheThings[limit-1])
 		allTheThings = allTheThings[:limit]
 	}
-	return allTheThings, token, nil
+	return copyRows(allTheThings), token, nil
 }
 
 // getStartingPoint determines the partition key of the starting point to resume a scan
