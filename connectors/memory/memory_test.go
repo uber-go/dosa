@@ -41,6 +41,22 @@ var testSchemaRef = dosa.SchemaRef{
 	Version:    12345,
 }
 
+var compoundPartEi = &dosa.EntityInfo{
+	Ref: &testSchemaRef,
+	Def: &dosa.EntityDefinition{
+		Columns: []*dosa.ColumnDefinition{
+			{Name: "RepositoryUUID", Type: dosa.TUUID},
+			{Name: "BucketID", Type: dosa.Int32},
+			{Name: "CreatedAt", Type: dosa.Timestamp},
+			{Name: "Result", Type: dosa.Int32},
+		},
+		Key: &dosa.PrimaryKey{
+			PartitionKeys: []string{"RepositoryUUID", "BucketID"},
+		},
+		Name: "compoundPartTable",
+	},
+}
+
 var testEi = &dosa.EntityInfo{
 	Ref: &testSchemaRef,
 	Def: &dosa.EntityDefinition{
@@ -1107,6 +1123,54 @@ func TestConnector_RemoveRangeWithSecondaryIndex(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "f1")
 	assert.Contains(t, err.Error(), "partition key")
+}
+
+func TestCompoundPartSecondaryIndex(t *testing.T) {
+	sut := NewConnector()
+	bucketID := 1
+	now := time.Now()
+
+	repoUUID0 := uuid.NewV4().String()
+	createdAt0 := now.Add(-1 * time.Hour)
+	result0 := 5
+
+	err := sut.Upsert(context.TODO(), compoundPartEi, map[string]dosa.FieldValue{
+		"RepositoryUUID": dosa.FieldValue(dosa.UUID(repoUUID0)),
+		"BucketID":       dosa.FieldValue(int32(bucketID)),
+		"CreatedAt":      dosa.FieldValue(createdAt0),
+		"Result":         dosa.FieldValue(int32(result0)),
+	})
+
+	repoUUID1 := uuid.NewV4().String()
+	createdAt1 := now.Add(-2 * time.Hour)
+	result1 := 4
+
+	err = sut.Upsert(context.TODO(), compoundPartEi, map[string]dosa.FieldValue{
+		"RepositoryUUID": dosa.FieldValue(dosa.UUID(repoUUID1)),
+		"BucketID":       dosa.FieldValue(int32(bucketID)),
+		"CreatedAt":      dosa.FieldValue(createdAt1),
+		"Result":         dosa.FieldValue(int32(result1)),
+	})
+
+	assert.NoError(t, err)
+
+	pk0 := map[string]dosa.FieldValue{
+		"RepositoryUUID": dosa.FieldValue(dosa.UUID(repoUUID0)),
+		"BucketID":       dosa.FieldValue(int32(bucketID)),
+	}
+	readVals0, err := sut.Read(context.TODO(), compoundPartEi, pk0, dosa.All())
+	assert.NoError(t, err)
+	assert.Equal(t, readVals0["Result"], int32(result0))
+	assert.Equal(t, readVals0["CreatedAt"], createdAt0)
+
+	pk1 := map[string]dosa.FieldValue{
+		"RepositoryUUID": dosa.FieldValue(dosa.UUID(repoUUID1)),
+		"BucketID":       dosa.FieldValue(int32(bucketID)),
+	}
+	readVals1, err := sut.Read(context.TODO(), compoundPartEi, pk1, dosa.All())
+	assert.NoError(t, err)
+	assert.Equal(t, readVals1["Result"], int32(result1))
+	assert.EqualValues(t, readVals1["CreatedAt"], createdAt1)
 }
 
 // createTestData populates some test data. The keyGenFunc can either return a constant,

@@ -90,7 +90,8 @@ func partitionKeyBuilder(pk *dosa.PrimaryKey, values map[string]dosa.FieldValue)
 	var encodedKey []byte
 	for _, k := range pk.PartitionKeys {
 		if v, ok := values[k]; ok {
-			encodedKey, _ = encoder.Encode(v)
+			encodedVal, _ := encoder.Encode(v)
+			encodedKey = append(encodedKey, encodedVal...)
 		} else {
 			return "", errors.Errorf("Missing value for partition key %q", k)
 		}
