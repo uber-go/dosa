@@ -134,7 +134,7 @@ func compareRows(pk *dosa.PrimaryKey, v1 map[string]dosa.FieldValue, v2 map[stri
 }
 
 // copyRows copies all the rows in the given slice and returns a new slice with copies
-// of each of the copies. Order is maintained.
+// of each row. Order is maintained.
 func copyRows(rows []map[string]dosa.FieldValue) []map[string]dosa.FieldValue {
 	copied := make([]map[string]dosa.FieldValue, len(rows))
 	for i, row := range rows {
