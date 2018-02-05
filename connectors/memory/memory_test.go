@@ -1402,6 +1402,9 @@ func TestScanRace(t *testing.T) {
 }
 
 func TestUpsertRace(t *testing.T) {
+	// Ensure that the data inserted into the in-memory connector
+	// can't be mutated by anyone but the in-memory connector
+
 	sut := NewConnector()
 	wg := sync.WaitGroup{}
 	wg.Add(3)
@@ -1441,6 +1444,9 @@ func TestUpsertRace(t *testing.T) {
 }
 
 func TestCreateIfNotExistsRace(t *testing.T) {
+	// Ensure that the data inserted into the in-memory connector
+	// can't be mutated by anyone but the in-memory connector
+
 	sut := NewConnector()
 	wg := sync.WaitGroup{}
 	wg.Add(3)
