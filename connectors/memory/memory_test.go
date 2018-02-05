@@ -1401,6 +1401,90 @@ func TestScanRace(t *testing.T) {
 	wg.Wait()
 }
 
+func TestUpsertRace(t *testing.T) {
+	// Ensure that the data inserted into the in-memory connector
+	// can't be mutated by anyone but the in-memory connector
+
+	sut := NewConnector()
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+
+	myVals := map[string]dosa.FieldValue{
+		"p1": dosa.FieldValue("part1"),
+		"c1": dosa.FieldValue(int64(0)),
+		"c3": dosa.FieldValue("hello"),
+	}
+
+	err := sut.Upsert(context.TODO(), testEi, myVals)
+	assert.NoError(t, err)
+
+	go func() {
+		defer wg.Done()
+		myVals["c3"] = dosa.FieldValue("goodbye")
+	}()
+
+	go func() {
+		defer wg.Done()
+		readVals, err := sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
+			"p1": dosa.FieldValue("part1"),
+		}, dosa.All())
+		assert.NoError(t, err)
+		assert.Equal(t, "hello", readVals["c3"])
+	}()
+
+	go func() {
+		defer wg.Done()
+		conds := map[string][]*dosa.Condition{"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(0))}}}
+		readVals, _, err := sut.Range(context.TODO(), testEi, conds, dosa.All(), "", 100)
+		assert.NoError(t, err)
+		assert.Equal(t, "hello", readVals[0]["c3"])
+	}()
+
+	wg.Wait()
+}
+
+func TestCreateIfNotExistsRace(t *testing.T) {
+	// Ensure that the data inserted into the in-memory connector
+	// can't be mutated by anyone but the in-memory connector
+
+	sut := NewConnector()
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+
+	myVals := map[string]dosa.FieldValue{
+		"p1": dosa.FieldValue("part1"),
+		"c1": dosa.FieldValue(int64(0)),
+		"c3": dosa.FieldValue("hello"),
+	}
+
+	err := sut.CreateIfNotExists(context.TODO(), testEi, myVals)
+	assert.NoError(t, err)
+
+	go func() {
+		defer wg.Done()
+		myVals["c3"] = dosa.FieldValue("goodbye")
+	}()
+
+	go func() {
+		defer wg.Done()
+		readVals, err := sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
+			"p1": dosa.FieldValue("part1"),
+		}, dosa.All())
+		assert.NoError(t, err)
+		assert.Equal(t, "hello", readVals["c3"])
+	}()
+
+	go func() {
+		defer wg.Done()
+		conds := map[string][]*dosa.Condition{"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(0))}}}
+		readVals, _, err := sut.Range(context.TODO(), testEi, conds, dosa.All(), "", 100)
+		assert.NoError(t, err)
+		assert.Equal(t, "hello", readVals[0]["c3"])
+	}()
+
+	wg.Wait()
+}
+
 // createTestData populates some test data. The keyGenFunc can either return a constant,
 // which gives you a single partition of data, or some function of the current offset, which
 // will scatter the data across different partition keys

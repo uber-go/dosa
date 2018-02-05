@@ -267,7 +267,9 @@ func compareType(d1 dosa.FieldValue, d2 dosa.FieldValue) int8 {
 func (c *Connector) CreateIfNotExists(_ context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	err := c.mergedInsert(ei.Def.Name, ei.Def.Key, values, func(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
+
+	valsCopy := copyRow(values)
+	err := c.mergedInsert(ei.Def.Name, ei.Def.Key, valsCopy, func(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
 		return &dosa.ErrAlreadyExists{}
 	})
 	if err != nil {
@@ -276,7 +278,7 @@ func (c *Connector) CreateIfNotExists(_ context.Context, ei *dosa.EntityInfo, va
 	for iName, iDef := range ei.Def.Indexes {
 		// this error must be ignored, so we skip indexes when the value
 		// for one of the index fields is not specified
-		_ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), values, overwriteValuesFunc)
+		_ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), valsCopy, overwriteValuesFunc)
 	}
 	return nil
 }
@@ -341,11 +343,13 @@ func overwriteValuesFunc(into map[string]dosa.FieldValue, from map[string]dosa.F
 func (c *Connector) Upsert(_ context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	if err := c.mergedInsert(ei.Def.Name, ei.Def.Key, values, overwriteValuesFunc); err != nil {
+
+	valsCopy := copyRow(values)
+	if err := c.mergedInsert(ei.Def.Name, ei.Def.Key, valsCopy, overwriteValuesFunc); err != nil {
 		return err
 	}
 	for iName, iDef := range ei.Def.Indexes {
-		_ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), values, overwriteValuesFunc)
+		_ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), valsCopy, overwriteValuesFunc)
 	}
 
 	return nil
