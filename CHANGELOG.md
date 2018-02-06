@@ -3,6 +3,11 @@
 ## v2.6.0 (unreleased)
 - Coming Soon
 
+## v2.5.2 (2018-02-05)
+- Fix memory connector bug with compound partition keys (#281)
+- Fix memory connector race condition with Read, MultiRead, Range, and Scane (#282)
+- Fix memory connector race condition with Upsert and CreateIfNotExists (#283)
+
 ## v2.5.1 (2018-01-23)
 -  Fix the broken 2.5.0 tag
 
