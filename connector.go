@@ -49,7 +49,7 @@ const (
 	GtOrEq
 
 	// InvalidVersion is version which is less than 1
-	InvalidVersion = -1
+	InvalidVersion = 0
 )
 
 // FieldNameValuePair is a field name and value
