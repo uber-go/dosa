@@ -85,23 +85,18 @@ func (c *Connector) SetCachedEntities(entities ...dosa.DomainObject) {
 	c.cacheableEntities = createCachedEntitiesSet(entities)
 }
 
-// Upsert dual writes to the fallback cache and the origin
+// Upsert writes to origin and removes (invalidates) the entry from the fallback
 func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	w := func() error {
 		newCtx, cancel := createContextForFallback(ctx)
 		defer cancel()
 
 		cacheKey := createCacheKey(ei, values, c.encoder)
-		cacheValue, err := c.encoder.Encode(values)
-		if err != nil {
-			return err
-		}
 		adaptedEi := adaptToKeyValue(ei)
 		newValues := map[string]dosa.FieldValue{
 			key:   cacheKey,
-			value: cacheValue,
 		}
-		return c.fallback.Upsert(newCtx, adaptedEi, newValues)
+		return c.fallback.Remove(newCtx, adaptedEi, newValues)
 	}
 
 	originalErr := c.Next.Upsert(ctx, ei, values)

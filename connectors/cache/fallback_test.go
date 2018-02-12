@@ -176,7 +176,7 @@ func TestUpsertCases(t *testing.T) {
 			encoder: testEncoder{encodeErr: assert.AnError},
 		},
 		{
-			description:  "Unsuccessful origin upsert does not upsert to fallback",
+			description:  "Unsuccessful origin upsert does not remove from fallback",
 			originUpsert: &expectArgs{err: assert.AnError},
 			expectedErr:  assert.AnError,
 		},
