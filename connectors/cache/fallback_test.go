@@ -135,7 +135,7 @@ func TestUpsertCases(t *testing.T) {
 
 			mockOrigin.EXPECT().Upsert(context.TODO(), testEi, tc.originUpsert.values).Return(tc.originUpsert.err)
 			if tc.fallbackUpsert != nil {
-				mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, tc.fallbackUpsert.values).Return(nil).AnyTimes()
+				mockFallback.EXPECT().Remove(gomock.Not(context.TODO()), adaptedEi, tc.fallbackUpsert.values).Return(nil).AnyTimes()
 			}
 
 			connector := newConnector(mockOrigin, mockFallback, nil, tc.encoder, cacheableEntities...)
@@ -149,7 +149,7 @@ func TestUpsertCases(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			description: "Successful origin upsert also upserts to fallback",
+			description: "Successful origin upsert invalidates the key in fallback",
 			originUpsert: &expectArgs{
 				values: map[string]dosa.FieldValue{
 					"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
@@ -160,23 +160,27 @@ func TestUpsertCases(t *testing.T) {
 			fallbackUpsert: &expectArgs{
 				values: map[string]dosa.FieldValue{
 					"key":   encodedValue,
-					"value": encodedValue,
 				},
 			},
 			encoder: testEncoder{},
 		},
 		{
-			description: "Encoding error while creating cache key means no upsert to fallback",
+			description: "Encoding error while creating cache key means we use empty key when calling fallback",
 			originUpsert: &expectArgs{
 				values: map[string]dosa.FieldValue{
 					"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
 					"strkey":      "test key string",
 					"BoolV":       false,
 				}},
+			fallbackUpsert: &expectArgs{
+				values: map[string]dosa.FieldValue{
+					"key":   []byte{},
+				},
+			},
 			encoder: testEncoder{encodeErr: assert.AnError},
 		},
 		{
-			description:  "Unsuccessful origin upsert does not upsert to fallback",
+			description:  "Unsuccessful origin upsert does not invalidate fallback",
 			originUpsert: &expectArgs{err: assert.AnError},
 			expectedErr:  assert.AnError,
 		},
@@ -748,10 +752,10 @@ func TestCreateIfNotExists(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// Test read write against actual redis fallback.
-// First upsert successfully to origin and redis.
-// On origin read errors, should return result from redis
-func TestUpsertRead(t *testing.T) {
+// Test read and write against actual redis fallback.
+// First read successfully to origin, which should populate the entry into redis cache
+// Then force origin to fail, and verify that it returns the value from redis
+func TestFallbackEndToEnd(t *testing.T) {
 	if !redis.IsRunning() {
 		t.Skip("Redis is not running")
 	}
@@ -805,15 +809,15 @@ func TestUpsertRead(t *testing.T) {
 		"tsvp":     &testTime,
 	}
 
-	// Fake origin upserting succeeding and actually upsert into redis
-	mockDownstreamConnector.EXPECT().Upsert(context.TODO(), testEi, values).Return(nil)
-	// Fake origin read failing and read from redis
+	// Fake origin read succeeding, which will upsert the result into redis
+	mockDownstreamConnector.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(values, nil)
+	// Fake origin read failing, and then read from redis
 	mockDownstreamConnector.EXPECT().Read(context.TODO(), testEi, values, dosa.All()).Return(nil, assert.AnError)
 
 	connector := NewConnector(mockDownstreamConnector, redisC, nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 
-	err := connector.Upsert(context.TODO(), testEi, values)
+	_, err := connector.Read(context.TODO(), testEi, values, nil)
 	assert.NoError(t, err)
 
 	resp, err := connector.Read(context.TODO(), testEi, values, nil)
