@@ -3,11 +3,28 @@
 ## v2.6.0 (unreleased)
 - Add encoding package which contains basic implementations of json and gob encoding
 - Send invoking user's ID when creating a scope
-- Fallback connector fixes, including always return all results as pointers and only writing to fallback when origin succeeds 
+- Fallback connector fixes, including always return all results as pointers and only writing to fallback when origin succeeds
+- Invalidate fallback cache on upsert (#285)
 
-## v2.5.0 (unreleased)
+## v2.5.2 (2018-02-05)
+- Fix memory connector bug with compound partition keys (#281)
+- Fix memory connector race condition with Read, MultiRead, Range, and Scane (#282)
+- Fix memory connector race condition with Upsert and CreateIfNotExists (#283)
 
-- Coming Soon
+## v2.5.1 (2018-01-23)
+-  Fix the broken 2.5.0 tag
+
+## v2.5.0 (2018-01-19)
+-  Fix memory connector bugs in remove API (#278) and findInsertionPoint (#276)
+-  Exposed GetRegistrar() API in client (#272)
+-  Implement multiread for dosa client (#270, #274)
+-  Add encoding package which contains basic implementations of json and gob encoding (#267)
+-  Fallback connector fixes, including always return all results as pointers and only writing to fallback when origin succeeds (#264, #266, #271)
+-  Fix the `check` schema command in CLI, which can be used to check whether a new entity can be upserted or not (#247, #268)
+-  Make scope name required for CLI schema commands, to avoid accidental access of unintended scope and misleading error message (#251)
+-  Obtain redis connector success rate (#253)
+-  Better error handling in yarpc connector (#258) and routing connector (#259)
+-  Better error message for malformed entity tag (#260)
 
 ## v2.4.0 (2017-11-28)
 

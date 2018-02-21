@@ -90,7 +90,8 @@ func partitionKeyBuilder(pk *dosa.PrimaryKey, values map[string]dosa.FieldValue)
 	var encodedKey []byte
 	for _, k := range pk.PartitionKeys {
 		if v, ok := values[k]; ok {
-			encodedKey, _ = encoder.Encode(v)
+			encodedVal, _ := encoder.Encode(v)
+			encodedKey = append(encodedKey, encodedVal...)
 		} else {
 			return "", errors.Errorf("Missing value for partition key %q", k)
 		}
@@ -115,8 +116,7 @@ func findInsertionPoint(pk *dosa.PrimaryKey, data []map[string]dosa.FieldValue, 
 	return
 }
 
-// compareRows compares two maps of row data based on clustering keys. It handles ascending/descending
-// based on the passed-in schema
+// compareRows compares two maps of row data based on clustering keys.
 func compareRows(pk *dosa.PrimaryKey, v1 map[string]dosa.FieldValue, v2 map[string]dosa.FieldValue) (cmp int8) {
 	keys := pk.ClusteringKeys
 	for _, key := range keys {
@@ -131,6 +131,26 @@ func compareRows(pk *dosa.PrimaryKey, v1 map[string]dosa.FieldValue, v2 map[stri
 		}
 	}
 	return cmp
+}
+
+// copyRows copies all the rows in the given slice and returns a new slice with copies
+// of each row. Order is maintained.
+func copyRows(rows []map[string]dosa.FieldValue) []map[string]dosa.FieldValue {
+	copied := make([]map[string]dosa.FieldValue, len(rows))
+	for i, row := range rows {
+		copied[i] = copyRow(row)
+	}
+	return copied
+}
+
+// copyRow takes in a given "row" and returns a new map containing all of the same
+// values that were in the given row.
+func copyRow(row map[string]dosa.FieldValue) map[string]dosa.FieldValue {
+	copied := make(map[string]dosa.FieldValue, len(row))
+	for k, v := range row {
+		copied[k] = v
+	}
+	return copied
 }
 
 // This function returns the time bits from a UUID
@@ -247,7 +267,9 @@ func compareType(d1 dosa.FieldValue, d2 dosa.FieldValue) int8 {
 func (c *Connector) CreateIfNotExists(_ context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	err := c.mergedInsert(ei.Def.Name, ei.Def.Key, values, func(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
+
+	valsCopy := copyRow(values)
+	err := c.mergedInsert(ei.Def.Name, ei.Def.Key, valsCopy, func(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
 		return &dosa.ErrAlreadyExists{}
 	})
 	if err != nil {
@@ -256,7 +278,7 @@ func (c *Connector) CreateIfNotExists(_ context.Context, ei *dosa.EntityInfo, va
 	for iName, iDef := range ei.Def.Indexes {
 		// this error must be ignored, so we skip indexes when the value
 		// for one of the index fields is not specified
-		_ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), values, overwriteValuesFunc)
+		_ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), valsCopy, overwriteValuesFunc)
 	}
 	return nil
 }
@@ -282,14 +304,14 @@ func (c *Connector) Read(_ context.Context, ei *dosa.EntityInfo, values map[stri
 	}
 
 	if len(ei.Def.Key.ClusteringKeySet()) == 0 {
-		return partitionRef[0], nil
+		return copyRow(partitionRef[0]), nil
 	}
 	// clustering key, search for the value in the set
 	found, inx := findInsertionPoint(ei.Def.Key, partitionRef, values)
 	if !found {
 		return nil, &dosa.ErrNotFound{}
 	}
-	return partitionRef[inx], nil
+	return copyRow(partitionRef[inx]), nil
 }
 
 // MultiRead fetches a series of values at once.
@@ -321,11 +343,13 @@ func overwriteValuesFunc(into map[string]dosa.FieldValue, from map[string]dosa.F
 func (c *Connector) Upsert(_ context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	if err := c.mergedInsert(ei.Def.Name, ei.Def.Key, values, overwriteValuesFunc); err != nil {
+
+	valsCopy := copyRow(values)
+	if err := c.mergedInsert(ei.Def.Name, ei.Def.Key, valsCopy, overwriteValuesFunc); err != nil {
 		return err
 	}
 	for iName, iDef := range ei.Def.Indexes {
-		_ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), values, overwriteValuesFunc)
+		_ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), valsCopy, overwriteValuesFunc)
 	}
 
 	return nil
@@ -381,23 +405,25 @@ func (c *Connector) Remove(_ context.Context, ei *dosa.EntityInfo, values map[st
 	if c.data[ei.Def.Name] == nil {
 		return nil
 	}
-	for iName, iDef := range ei.Def.Indexes {
-		c.removeItem(iName, ei.Def.UniqueKey(iDef.Key), values)
+	removedValues := c.removeItem(ei.Def.Name, ei.Def.Key, values)
+	if removedValues != nil {
+		for iName, iDef := range ei.Def.Indexes {
+			c.removeItem(iName, ei.Def.UniqueKey(iDef.Key), removedValues)
+		}
 	}
-	c.removeItem(ei.Def.Name, ei.Def.Key, values)
 	return nil
 }
 
-func (c *Connector) removeItem(name string, key *dosa.PrimaryKey, values map[string]dosa.FieldValue) {
+func (c *Connector) removeItem(name string, key *dosa.PrimaryKey, values map[string]dosa.FieldValue) map[string]dosa.FieldValue {
 	entityRef := c.data[name]
 	encodedPartitionKey, err := partitionKeyBuilder(key, values)
 	if err != nil || entityRef[encodedPartitionKey] == nil {
-		return
+		return nil
 	}
 	partitionRef := entityRef[encodedPartitionKey]
 	// no data in this partition? easy out!
 	if len(partitionRef) == 0 {
-		return
+		return nil
 	}
 
 	// no clustering keys? Simple, delete this
@@ -405,13 +431,16 @@ func (c *Connector) removeItem(name string, key *dosa.PrimaryKey, values map[str
 		// NOT delete(entityRef, encodedPartitionKey)
 		// Unfortunately, Scan relies on the fact that these are not completely deleted
 		entityRef[encodedPartitionKey] = nil
-		return
+		return nil
 	}
+
+	var deletedValues map[string]dosa.FieldValue
 	found, offset := findInsertionPoint(key, partitionRef, values)
 	if found {
+		deletedValues = entityRef[encodedPartitionKey][offset]
 		entityRef[encodedPartitionKey] = append(entityRef[encodedPartitionKey][:offset], entityRef[encodedPartitionKey][offset+1:]...)
 	}
-	return
+	return deletedValues
 }
 
 // RemoveRange removes all of the elements in the range specified by the entity info and the column conditions.
@@ -419,7 +448,7 @@ func (c *Connector) RemoveRange(_ context.Context, ei *dosa.EntityInfo, columnCo
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	partitionRange, err := c.findRange(ei, columnConditions, false)
+	partitionRange, _, err := c.findRange(ei, columnConditions, false)
 	if err != nil {
 		return err
 	}
@@ -440,7 +469,7 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	partitionRange, err := c.findRange(ei, columnConditions, true)
+	partitionRange, key, err := c.findRange(ei, columnConditions, true)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Invalid range conditions")
 	}
@@ -454,7 +483,7 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 		if err != nil {
 			return nil, "", errors.Wrapf(err, "Invalid token %q", token)
 		}
-		found, offset := findInsertionPoint(ei.Def.Key, partitionRange.values(), values)
+		found, offset := findInsertionPoint(key, partitionRange.values(), values)
 		if found {
 			partitionRange.start += offset + 1
 		} else {
@@ -467,7 +496,8 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 		token = makeToken(slice[limit-1])
 		slice = slice[:limit]
 	}
-	return slice, token, nil
+
+	return copyRows(slice), token, nil
 }
 
 func makeToken(v map[string]dosa.FieldValue) string {
@@ -497,10 +527,10 @@ func decodeToken(token string) (values map[string]dosa.FieldValue, err error) {
 //
 // Note that this function reads from the connector's data map. Any calling functions should hold
 // at least a read lock on the map.
-func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, searchIndexes bool) (*partitionRange, error) {
+func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, searchIndexes bool) (*partitionRange, *dosa.PrimaryKey, error) {
 	// no data at all, fine
 	if c.data[ei.Def.Name] == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	// find the equals conditions on each of the partition keys
@@ -509,7 +539,7 @@ func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][
 	// figure out which "table" or "index" to use based on the supplied conditions
 	name, key, err := ei.IndexFromConditions(columnConditions, searchIndexes)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for _, pk := range key.PartitionKeys {
@@ -522,20 +552,19 @@ func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][
 	partitionRef := entityRef[encodedPartitionKey]
 	// no data in this partition? easy out!
 	if len(partitionRef) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 	// hunt through the partitionRef and return values that match search criteria
 	// TODO: This can be done much faster using a binary search
 	startinx, endinx := 0, len(partitionRef)-1
-	for startinx < len(partitionRef) && !matchesClusteringConditions(ei, columnConditions, partitionRef[startinx]) {
+	for startinx < len(partitionRef) && !matchesClusteringConditions(key, columnConditions, partitionRef[startinx]) {
 		startinx++
 	}
-	for endinx >= startinx && !matchesClusteringConditions(ei, columnConditions, partitionRef[endinx]) {
+	for endinx >= startinx && !matchesClusteringConditions(key, columnConditions, partitionRef[endinx]) {
 		endinx--
-
 	}
 	if endinx < startinx {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	return &partitionRange{
@@ -543,14 +572,14 @@ func (c *Connector) findRange(ei *dosa.EntityInfo, columnConditions map[string][
 		partitionKey: encodedPartitionKey,
 		start:        startinx,
 		end:          endinx,
-	}, nil
+	}, key, nil
 }
 
 // matchesClusteringConditions checks if a data row matches the conditions in the columnConditions that apply to
 // clustering columns. If a condition does NOT match, it returns false, otherwise true
 // This function is pretty fast if there are no conditions on the clustering columns
-func matchesClusteringConditions(ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, data map[string]dosa.FieldValue) bool {
-	for _, col := range ei.Def.Key.ClusteringKeys {
+func matchesClusteringConditions(key *dosa.PrimaryKey, columnConditions map[string][]*dosa.Condition, data map[string]dosa.FieldValue) bool {
+	for _, col := range key.ClusteringKeys {
 		if conds, ok := columnConditions[col.Name]; ok {
 			// conditions exist on this clustering key
 			for _, cond := range conds {
@@ -634,7 +663,7 @@ func (c *Connector) Scan(_ context.Context, ei *dosa.EntityInfo, minimumFields [
 		token = makeToken(allTheThings[limit-1])
 		allTheThings = allTheThings[:limit]
 	}
-	return allTheThings, token, nil
+	return copyRows(allTheThings), token, nil
 }
 
 // getStartingPoint determines the partition key of the starting point to resume a scan

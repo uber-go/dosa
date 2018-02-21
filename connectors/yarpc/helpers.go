@@ -21,6 +21,7 @@
 package yarpc
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -196,6 +197,29 @@ func PrimaryKeyToThrift(key *dosa.PrimaryKey) *dosarpc.PrimaryKey {
 	return &dosarpc.PrimaryKey{PartitionKeys: key.PartitionKeys, ClusteringKeys: ck}
 }
 
+// ETLStateToThrift convert the dosa ETLState to the thrift ETLState enum type
+func ETLStateToThrift(etl dosa.ETLState) dosarpc.ETLState {
+	switch etl {
+	case dosa.EtlOn:
+		return dosarpc.ETLStateOn
+	case dosa.EtlOff:
+		return dosarpc.ETLStateOff
+	default:
+		panic(fmt.Sprintf("bad ETL state: %v", etl))
+	}
+}
+
+func fromThriftToETLState(etl *dosarpc.ETLState) dosa.ETLState {
+	switch *etl {
+	case dosarpc.ETLStateOn:
+		return dosa.EtlOn
+	case dosarpc.ETLStateOff:
+		return dosa.EtlOff
+	default:
+		panic(fmt.Sprintf("bad ETL state: %v", *etl))
+	}
+}
+
 // EntityDefsToThrift coverts a set of client EntityDefinition to the corresponding RPC EntityDefinitions
 func EntityDefsToThrift(eds []*dosa.EntityDefinition) []*dosarpc.EntityDefinition {
 	rpcEntityDefs := make([]*dosarpc.EntityDefinition, len(eds))
@@ -218,11 +242,14 @@ func entityDefToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
 		pkI := PrimaryKeyToThrift(index.Key)
 		indexes[name] = &dosarpc.IndexDefinition{Key: pkI}
 	}
+
+	etl := ETLStateToThrift(ed.ETL)
 	return &dosarpc.EntityDefinition{
 		PrimaryKey: PrimaryKeyToThrift(ed.Key),
 		FieldDescs: fd,
 		Name:       &ed.Name,
 		Indexes:    indexes,
+		Etl:        &etl,
 	}
 }
 
@@ -263,11 +290,17 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 		}
 	}
 
+	etlState := dosa.EtlOff
+	if ed.Etl != nil {
+		etlState = fromThriftToETLState(ed.Etl)
+	}
+
 	return &dosa.EntityDefinition{
 		Name:    *ed.Name,
 		Columns: fields,
 		Key:     FromThriftToPrimaryKey(ed.PrimaryKey),
 		Indexes: indexes,
+		ETL:     etlState,
 	}
 }
 

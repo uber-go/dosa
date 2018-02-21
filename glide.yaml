@@ -24,6 +24,8 @@ import:
   - transport/tchannel
 - package: github.com/gobwas/glob
 - package: github.com/gocql/gocql
+  # Fix gocql version until we confirm this issue has been resolved: https://github.com/gocql/gocql/issues/1050
+  version: 33a5f3c1bcc2c421b3221c5858312afb141bf605
 - package: github.com/garyburd/redigo
   version: ~1.1.0
   subpackages:

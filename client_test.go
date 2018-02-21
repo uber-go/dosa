@@ -800,9 +800,9 @@ func TestAdminClient_DropScope(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAdminClient_CheckSchema(t *testing.T) {
+func TestAdminClient_CanUpsertSchema(t *testing.T) {
 	// write some entities to disk
-	tmpdir := ".testcheckschema"
+	tmpdir := ".testcanupsertschema"
 	os.RemoveAll(tmpdir)
 	defer os.RemoveAll(tmpdir)
 	content := `
@@ -1007,7 +1007,7 @@ package main
 import "github.com/uber-go/dosa"
 
 type TestEntityC struct {
-	dosa.Entity ` + "`dosa:\"invalidtag\"`" + `
+	dosa.Entity ` + "`dosa:\"primaryKey=ID, etl=\"`" + `
 	ID int32
 }
 `
@@ -1044,7 +1044,7 @@ type TestEntityC struct {
 		{
 			dirs:        []string{tmpdir},
 			scope:       scope,
-			errContains: "invalidtag",
+			errContains: "cannot be empty",
 		},
 	}
 
