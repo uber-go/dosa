@@ -149,7 +149,7 @@ func TestRandom_UpsertSchema(t *testing.T) {
 }
 
 func TestRandom_CreateScope(t *testing.T) {
-	assert.NoError(t, sut.CreateScope(ctx, "", ""))
+	assert.NoError(t, sut.CreateScope(ctx, "", &dosa.ScopeMetadata{}))
 }
 
 func TestRandom_TruncateScope(t *testing.T) {

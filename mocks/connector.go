@@ -107,7 +107,7 @@ func (mr *MockConnectorMockRecorder) CreateIfNotExists(arg0, arg1, arg2 interfac
 }
 
 // CreateScope mocks base method
-func (m *MockConnector) CreateScope(arg0 context.Context, arg1, arg2 string) error {
+func (m *MockConnector) CreateScope(arg0 context.Context, arg1 string, arg2 *dosa.ScopeMetadata) error {
 	ret := m.ctrl.Call(m, "CreateScope", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0

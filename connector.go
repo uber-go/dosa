@@ -22,6 +22,8 @@ package dosa
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -73,6 +75,38 @@ type EntityInfo struct {
 	Ref *SchemaRef
 	Def *EntityDefinition
 }
+
+// ScopeMetadata is metadata about a scope.
+type ScopeMetadata struct {
+	Entity      `dosa:"primaryKey=(Name)"`
+	Name        string
+	Owner       string // group name, or the same as Creator
+	Type        int32  // Production, Staging, or Development
+	Version     int32
+	PrefixStr   string // With ":" separators
+	Creator     string
+	CreatedOn   time.Time
+	ExpiresOn   *time.Time
+	ExtendCount int32
+	NotifyCount int32
+	Prefixes    map[string]struct{} `dosa:"-"` // PrefixStr decoded into a set for convenience
+}
+
+// MetadataSchemaVersion is the version of the schema of the scope metadata
+const MetadataSchemaVersion = 1
+
+// ScopeType is the type of a scope
+type ScopeType int32
+
+// Scope types
+const (
+	// Production scope
+	Production = iota
+	// Staging doesn't really exist yet, but may in the future
+	Staging
+	// Development scope
+	Development
+)
 
 // FieldValue holds a field value. It's just a marker.
 type FieldValue interface{}
@@ -140,7 +174,7 @@ type Connector interface {
 	// Datastore management
 	// CreateScope creates a scope for storage of data, usually implemented by a keyspace for this data
 	// This is usually followed by UpsertSchema
-	CreateScope(ctx context.Context, scope, owner string) error
+	CreateScope(ctx context.Context, scope string, md *ScopeMetadata) error
 	// TruncateScope keeps the scope around, but removes all the data
 	TruncateScope(ctx context.Context, scope string) error
 	// DropScope removes the scope and all of the data
@@ -176,4 +210,16 @@ func GetConnector(name string, args CreationArgs) (Connector, error) {
 		return creationFunc(args)
 	}
 	return nil, errors.Errorf("No such connector %q", name)
+}
+
+func (t ScopeType) String() string {
+	switch t {
+	case Production:
+		return "production"
+	case Staging:
+		return "staging"
+	case Development:
+		return "development"
+	}
+	return fmt.Sprintf("unknown scope type %d", t)
 }

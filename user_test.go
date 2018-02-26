@@ -32,6 +32,5 @@ func TestGetUsername(t *testing.T) {
 	username := os.Getenv("USER")
 
 	u := dosa.GetUsername()
-	assert.NotNil(t, u)
 	assert.Equal(t, username, *u)
 }

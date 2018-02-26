@@ -32,7 +32,7 @@ import (
 )
 
 // CreateScope creates a keyspace
-func (c *Connector) CreateScope(ctx context.Context, scope, _ string) error {
+func (c *Connector) CreateScope(ctx context.Context, scope string, _ *dosa.ScopeMetadata) error {
 	// drop the old scope, ignoring errors
 	err := c.DropScope(ctx, scope)
 	if err != nil {

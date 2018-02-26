@@ -77,7 +77,7 @@ func TestRawValueConversionError(t *testing.T) {
 	}{
 		{dosa.UUID(""), ErrInCorrectUUIDLength}, // empty string
 		{dosa.UUID("1"), ErrInCorrectUUIDLength},
-		{dosa.UUID("this is not a uuid, uuids shouldnt contain something like a t in them"), "incorrect UUID format"},
+		{dosa.UUID("this is not a uuid, uuids shouldnt contain something like a t in them"), "invalid uuid string"},
 	}
 
 	for _, test := range data {

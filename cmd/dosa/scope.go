@@ -23,6 +23,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
@@ -58,7 +59,8 @@ func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Conte
 // ScopeCreate contains data for executing scope create command.
 type ScopeCreate struct {
 	*ScopeCmd
-	Owner string `short:"o" long:"owner" description:"The owning LDAP group"`
+	Owner string `short:"o" long:"owner" description:"The owning group"`
+	Type  string `short:"t" long:"type" description:"Scope type (default: 'development')"`
 	Args  struct {
 		Scopes []string `positional-arg-name:"scopes" required:"1"`
 	} `positional-args:"yes" required:"1"`
@@ -66,9 +68,18 @@ type ScopeCreate struct {
 
 // Execute executes a scope create command
 func (c *ScopeCreate) Execute(args []string) error {
+	typ, err := parseType(c.Type)
+	if err != nil {
+		return err
+	}
 	return c.doScopeOp("create",
 		func(client dosa.AdminClient, ctx context.Context, scope string) error {
-			return dosa.AdminClient.CreateScope(client, ctx, scope, c.Owner)
+			return dosa.AdminClient.CreateScope(client, ctx, scope, &dosa.ScopeMetadata{
+				Name:    scope,
+				Owner:   c.Owner,
+				Type:    int32(typ),
+				Creator: *dosa.GetUsername(),
+			})
 		}, c.Args.Scopes)
 }
 
@@ -96,4 +107,18 @@ type ScopeTruncate struct {
 // Execute executes a scope truncate command
 func (c *ScopeTruncate) Execute(args []string) error {
 	return c.doScopeOp("truncate", dosa.AdminClient.TruncateScope, c.Args.Scopes)
+}
+
+func parseType(t string) (dosa.ScopeType, error) {
+	lt := strings.ToLower(t)
+	if strings.HasPrefix("production", lt) {
+		return dosa.Production, nil
+	}
+	if strings.HasPrefix("staging", lt) {
+		return dosa.Staging, nil
+	}
+	if strings.HasPrefix("development", lt) {
+		return dosa.Development, nil
+	}
+	return dosa.Development, fmt.Errorf("unknown scope type %q", t)
 }

@@ -610,11 +610,11 @@ func TestClient_CreateScope(t *testing.T) {
 
 	sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 	mockedClient.EXPECT().CreateScope(ctx, gomock.Any(), gomock.Any()).Return(nil)
-	err := sut.CreateScope(ctx, "scope", "fred")
+	err := sut.CreateScope(ctx, "scope", &dosa.ScopeMetadata{})
 	assert.NoError(t, err)
 
 	mockedClient.EXPECT().CreateScope(ctx, gomock.Any(), gomock.Any()).Return(errors.New("test error"))
-	err = sut.CreateScope(ctx, "scope", "fred")
+	err = sut.CreateScope(ctx, "scope", &dosa.ScopeMetadata{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
 }

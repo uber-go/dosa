@@ -1,5 +1,5 @@
-hash: a7c49629e90f48bc1f5fd857429c11c0ebb3848edb34a6d74821c9f2e25b43f2
-updated: 2018-01-30T00:35:10.000297-08:00
+hash: 25710a7554cd6ef0f657e5f96eb5a904e90b70f3b1d0720baa30694e946c7cca
+updated: 2018-02-26T13:04:11.760801-08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -15,7 +15,7 @@ imports:
   - internal
   - redis
 - name: github.com/gobwas/glob
-  version: 51eb1ee00b6d931c66d229ceeb7c31b985563420
+  version: 19c076cdf202b3d1c0489bdfa2f2f289f634474b
   subpackages:
   - compiler
   - match
@@ -31,11 +31,11 @@ imports:
   - internal/murmur
   - internal/streams
 - name: github.com/golang/mock
-  version: b3e60bcdc577185fce3cf625fc96b62857ce5574
+  version: 58cd061d09382b6011f84c1291ebe50ef2e25bab
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: 925541529c1fa6821df4e44ce2723319eb2be768
+  version: bbd03ef6da3a115852eaf24c8a1c46aeb39aa175
   subpackages:
   - proto
 - name: github.com/golang/snappy
@@ -65,13 +65,13 @@ imports:
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: 2f17f4a9d485bf34b4bfaccc273805040e4f86c8
+  version: 89604d197083d4781071d3c65855d24ecfb0a563
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
   - model
 - name: github.com/prometheus/procfs
-  version: cb4147076ac75738c9a7d279075a253c0cc5acbd
+  version: 282c8707aa210456a825798969cc27edda34992a
   subpackages:
   - internal/util
   - nfs
@@ -87,15 +87,15 @@ imports:
   subpackages:
   - internal/mapstructure
 - name: github.com/uber-go/tally
-  version: 6c4631652c6aab57c64f65c2e0aaec2e9aae3a64
+  version: 522328b48efad0c6034dba92bf39228694e9d31f
 - name: github.com/uber/dosa-idl
-  version: e7fe34df70b95afe485bd49b73541ecaf9fc454a
+  version: c4ffaff994ddbcacef9a7088085f19edd0a98213
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
   - .gen/dosa/dosatest
 - name: github.com/uber/tchannel-go
-  version: 7bcb33f4bb908c21374f8bfdc9d4b1ebcbb8dab0
+  version: acd4eb54c11531814d9cd0344fdc53bebe86ab12
   subpackages:
   - internal/argreader
   - relay
@@ -170,7 +170,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: 0ed95abb35c445290478a5348a7b38bb154135fd
+  version: cbe0f9307d0156177f9dd5dc85da1a31abc5f2fb
   subpackages:
   - bpf
   - context
@@ -181,7 +181,7 @@ imports:
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/yaml.v2
-  version: d670f9405373e636a5a2765eea47fac0c9bc91a4
+  version: 7f97868eec74b32b0982dd158a51a446d1da7eb5
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -190,19 +190,19 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 346938d642f2ec3594ed81d874461961cd0faa76
+  version: 8991bc29aa16c548c550c7ff78260e27b9ab7c73
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
-  version: b472d5a5b9424bffa8444021b47d1b7b4c894b23
+  version: 22ec1a223b7c9a2e56355bd500b539cba3784238
 - name: github.com/golang/lint
-  version: e14d9b0f1d332b1420c1ffa32562ad2dc84d645d
+  version: 3ea3fa98a8104b2c8f8a7bffaebc7e54dddf99e1
   subpackages:
   - golint
 - name: github.com/kisielk/errcheck
-  version: b1445a9dd8285a50c6d1661d16f0a9ceb08125f7
+  version: 4e7984f0ef4db28669ee8ddd1bc9d25fd32f4dd6
 - name: github.com/kisielk/gotool
-  version: d6ce6262d87e3a4e153e86023ff56ae771554a41
+  version: 80517062f582ea3340cd4baf70e86d539ae7d84d
 - name: github.com/matm/gocov-html
   version: f6dd0fd0ebc7c8cff8b24c0a585caeef250627a3
 - name: github.com/mattn/goveralls
@@ -212,18 +212,18 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/russross/blackfriday
-  version: 187c33ff049bddf24fc5c5b82facfdd62813a552
+  version: cfdcce51965fe68951a5fa45454aa6278c3f9614
 - name: github.com/sectioneight/md-to-godoc
   version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 86672fcb3f950f35f2e675df2240550f2a50762f
 - name: github.com/stretchr/testify
-  version: b91bfb9ebec76498946beb6af7c0230c7cc7ba6c
+  version: 12b6f73e6084dad08a7c6e575284b177ecafbc71
   subpackages:
   - assert
 - name: github.com/yookoala/realpath
   version: d19ef9c409d9817c1e685775e53d361b03eabbc8
 - name: golang.org/x/tools
-  version: 25101aadb97aa42907eee6a238d6d26a6cb3c756
+  version: 10db2d12cfa8602d0ffa73c5c2270ce47ba56b30
   subpackages:
   - cover

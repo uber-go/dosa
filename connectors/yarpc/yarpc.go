@@ -615,11 +615,12 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 }
 
 // CreateScope creates the scope specified
-func (c *Connector) CreateScope(ctx context.Context, scope, owner string) error {
+func (c *Connector) CreateScope(ctx context.Context, scope string, md *dosa.ScopeMetadata) error {
 	request := &dosarpc.CreateScopeRequest{
 		Name:      &scope,
-		Requester: dosa.GetUsername(),
-		Owner:     &owner,
+		Requester: &(md.Creator),
+		Owner:     &(md.Owner),
+		Type:      &(md.Type),
 	}
 
 	if err := c.Client.CreateScope(ctx, request, VersionHeader()); err != nil {
