@@ -176,11 +176,23 @@ func TestParseType(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, dosa.Development, int(typ))
 
+	typ, err = parseType("dEv")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Development, int(typ))
+
 	typ, err = parseType("development")
 	assert.Nil(t, err)
 	assert.Equal(t, dosa.Development, int(typ))
 
 	typ, err = parseType("prod")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Production, int(typ))
+
+	typ, err = parseType("Prod")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Production, int(typ))
+
+	typ, err = parseType("PROD")
 	assert.Nil(t, err)
 	assert.Equal(t, dosa.Production, int(typ))
 
@@ -191,7 +203,10 @@ func TestParseType(t *testing.T) {
 	typ, err = parseType("int")
 	assert.NotNil(t, err)
 
-	// A typo
+	// Typos
 	typ, err = parseType("probuction")
+	assert.NotNil(t, err)
+
+	typ, err = parseType("deve1opment")
 	assert.NotNil(t, err)
 }
