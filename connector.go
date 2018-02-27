@@ -89,6 +89,7 @@ type ScopeMetadata struct {
 	ExpiresOn   *time.Time
 	ExtendCount int32
 	NotifyCount int32
+	Prefixes    map[string]struct{} `dosa:"-"` // PrefixStr decoded into a set for convenience
 }
 
 // MetadataSchemaVersion is the version of the schema of the scope metadata
@@ -221,4 +222,22 @@ func (t ScopeType) String() string {
 		return "development"
 	}
 	return fmt.Sprintf("unknown scope type %d", t)
+}
+
+func (md *ScopeMetadata) String() string {
+	s := fmt.Sprintf("<Scope %q (%s): owner:%q creator:%q created:%v", md.Name, ScopeType(md.Type),
+		md.Owner, md.Creator, md.CreatedOn)
+	if md.ExpiresOn != nil {
+		s += fmt.Sprintf(" expires:%v", *md.ExpiresOn)
+	}
+	if len(md.Prefixes) > 0 {
+		s += fmt.Sprintf(" prefixes:%v", md.Prefixes)
+	}
+	if md.ExtendCount > 0 {
+		s += fmt.Sprintf(" extended:%d", md.ExtendCount)
+	}
+	if md.NotifyCount > 0 {
+		s += fmt.Sprintf(" notified:%d", md.ExtendCount)
+	}
+	return s + ">"
 }
