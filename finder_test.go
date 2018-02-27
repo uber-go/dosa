@@ -75,7 +75,6 @@ func TestParser(t *testing.T) {
 		"singleindexnoparen":            &SingleIndexNoParen{},
 		"multipleindexes":               &MultipleIndexes{},
 		"complexindexes":                &ComplexIndexes{},
-		"scopemetadata":                 &ScopeMetadata{},
 	}
 	entitiesExcludedForTest := map[string]interface{}{
 		"clienttestentity1":      struct{}{}, // skip, see https://jira.uberinternal.com/browse/DOSA-788
@@ -104,9 +103,7 @@ func TestParser(t *testing.T) {
 
 func TestExclusion(t *testing.T) {
 	entities, errs, err := FindEntities([]string{"."}, []string{"*_test.go"})
-	// We expect to find only ScopeMetadata
-	assert.Equal(t, 1, len(entities))
-	assert.Equal(t, "ScopeMetadata", entities[0].StructName)
+	assert.Equal(t, 0, len(entities))
 	assert.Equal(t, 0, len(errs))
 	assert.Nil(t, err)
 }

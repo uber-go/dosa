@@ -78,7 +78,6 @@ type EntityInfo struct {
 
 // ScopeMetadata is metadata about a scope.
 type ScopeMetadata struct {
-	Entity      `dosa:"primaryKey=(Name)"`
 	Name        string
 	Owner       string // group name, or the same as Creator
 	Type        int32  // Production, Staging, or Development
