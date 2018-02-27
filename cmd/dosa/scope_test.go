@@ -166,3 +166,32 @@ func TestScopeTruncate_Execute(t *testing.T) {
 	main()
 	assert.Contains(t, c.stop(true), "\"one_fish\"")
 }
+
+func TestParseType(t *testing.T) {
+	// Prefixes are OK
+	var typ dosa.ScopeType
+	var err error
+
+	typ, err = parseType("dev")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Development, int(typ))
+
+	typ, err = parseType("development")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Development, int(typ))
+
+	typ, err = parseType("prod")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Production, int(typ))
+
+	typ, err = parseType("production")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Production, int(typ))
+
+	typ, err = parseType("int")
+	assert.NotNil(t, err)
+
+	// A typo
+	typ, err = parseType("probuction")
+	assert.NotNil(t, err)
+}

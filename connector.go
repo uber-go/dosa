@@ -89,7 +89,6 @@ type ScopeMetadata struct {
 	ExpiresOn   *time.Time
 	ExtendCount int32
 	NotifyCount int32
-	Prefixes    map[string]struct{} `dosa:"-"` // PrefixStr decoded into a set for convenience
 }
 
 // MetadataSchemaVersion is the version of the schema of the scope metadata
