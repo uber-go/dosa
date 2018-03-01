@@ -110,6 +110,9 @@ func (c *ScopeTruncate) Execute(args []string) error {
 }
 
 func parseType(t string) (dosa.ScopeType, error) {
+	if len(t) == 0 {
+		return dosa.Development, nil
+	}
 	lt := strings.ToLower(t)
 	if strings.HasPrefix("production", lt) {
 		return dosa.Production, nil
