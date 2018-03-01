@@ -100,12 +100,12 @@ type ScopeType int32
 
 // Scope types
 const (
-	// Production scope
-	Production = iota
+	// Development scope (also the default, so should be 0)
+	Development = iota
 	// Staging doesn't really exist yet, but may in the future
 	Staging
-	// Development scope
-	Development
+	// Production scope
+	Production
 )
 
 // FieldValue holds a field value. It's just a marker.
