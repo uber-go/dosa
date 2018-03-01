@@ -225,19 +225,19 @@ func (t ScopeType) String() string {
 }
 
 func (md *ScopeMetadata) String() string {
-	s := fmt.Sprintf("<Scope %q (%s): owner:%q creator:%q created:%v", md.Name, ScopeType(md.Type),
+	s := fmt.Sprintf("<Scope %s (%s): owner=%s, creator=%s, created=%v", md.Name, ScopeType(md.Type),
 		md.Owner, md.Creator, md.CreatedOn)
 	if md.ExpiresOn != nil {
-		s += fmt.Sprintf(" expires:%v", *md.ExpiresOn)
+		s += fmt.Sprintf(", expires=%v", *md.ExpiresOn)
 	}
 	if len(md.Prefixes) > 0 {
-		s += fmt.Sprintf(" prefixes:%v", md.Prefixes)
+		s += fmt.Sprintf(", prefixes=%v", md.Prefixes)
 	}
 	if md.ExtendCount > 0 {
-		s += fmt.Sprintf(" extended:%d", md.ExtendCount)
+		s += fmt.Sprintf(", extended=%d", md.ExtendCount)
 	}
 	if md.NotifyCount > 0 {
-		s += fmt.Sprintf(" notified:%d", md.ExtendCount)
+		s += fmt.Sprintf(", notified=%d", md.ExtendCount)
 	}
 	return s + ">"
 }
