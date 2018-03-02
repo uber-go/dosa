@@ -72,6 +72,9 @@ func (c *ScopeCreate) Execute(args []string) error {
 	if err != nil {
 		return err
 	}
+	if len(c.Owner) == 0 {
+		c.Owner = *dosa.GetUsername()
+	}
 	return c.doScopeOp("create",
 		func(client dosa.AdminClient, ctx context.Context, scope string) error {
 			return dosa.AdminClient.CreateScope(client, ctx, scope, &dosa.ScopeMetadata{
