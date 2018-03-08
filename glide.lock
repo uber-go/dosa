@@ -1,5 +1,5 @@
-hash: 63a0f3bba145ce4cceb71a56d00391a62644cfa79fc6a670d1e155287c7ab1b4
-updated: 2018-03-08T13:43:29.184957-08:00
+hash: 2acf2e13f9bb04fa933ada5d2b87128595bba1a6645b2f446e9c93eb0248a8a2
+updated: 2018-03-08T14:09:57.590208-08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -89,7 +89,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 522328b48efad0c6034dba92bf39228694e9d31f
 - name: github.com/uber/dosa-idl
-  version: 8a062fecd6f0c3e58ca732f51fd761ca7c255bfe
+  version: 075a48d6252b76a677f98a41188fba212e40093e
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
