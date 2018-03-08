@@ -59,9 +59,10 @@ func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Conte
 // ScopeCreate contains data for executing scope create command.
 type ScopeCreate struct {
 	*ScopeCmd
-	Owner string `short:"o" long:"owner" description:"The owning group"`
-	Type  string `short:"t" long:"type" description:"Scope type (default: 'development')"`
-	Args  struct {
+	Owner   string `short:"o" long:"owner" description:"The owning group"`
+	Type    string `short:"t" long:"type" description:"Scope type (default: 'development')"`
+	Cluster string `short:"c" long:"cluster" description:"Hosting cluster for a production scope"`
+	Args    struct {
 		Scopes []string `positional-arg-name:"scopes" required:"1"`
 	} `positional-args:"yes" required:"1"`
 }
@@ -82,6 +83,7 @@ func (c *ScopeCreate) Execute(args []string) error {
 				Owner:   c.Owner,
 				Type:    int32(typ),
 				Creator: *dosa.GetUsername(),
+				Cluster: c.Cluster,
 			})
 		}, c.Args.Scopes)
 }

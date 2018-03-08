@@ -621,6 +621,7 @@ func (c *Connector) CreateScope(ctx context.Context, scope string, md *dosa.Scop
 		Requester: &(md.Creator),
 		Owner:     &(md.Owner),
 		Type:      &(md.Type),
+		Cluster:   &(md.Cluster),
 	}
 
 	if err := c.Client.CreateScope(ctx, request, VersionHeader()); err != nil {
