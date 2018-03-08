@@ -76,19 +76,21 @@ type EntityInfo struct {
 	Def *EntityDefinition
 }
 
-// ScopeMetadata is metadata about a scope.
+// ScopeMetadata is metadata about a scope. (JSON tags to support MD setting CLI tools.)
 type ScopeMetadata struct {
-	Entity      `dosa:"primaryKey=(Name)"`
-	Name        string
-	Owner       string // group name, or the same as Creator
-	Type        int32  // Production, Staging, or Development
-	Version     int32
-	PrefixStr   string // With ":" separators
-	Creator     string
-	CreatedOn   time.Time
-	ExpiresOn   *time.Time
-	ExtendCount int32
-	NotifyCount int32
+	Entity      `dosa:"primaryKey=(Name)" json:"-"`
+	Name        string     `json:"name"`
+	Owner       string     `json:"owner"` // group name, or the same as Creator
+	Type        int32      `json:"type"`  // Production, Staging, or Development
+	Version     int32      `json:"version"`
+	PrefixStr   string     `json:"prefix_str,omitempty"` // With ":" separators
+	Cluster     string     `json:"cluster,omitempty"`    // Host DB cluster
+	Creator     string     `json:"creator"`
+	CreatedOn   time.Time  `json:"created_on"`
+	ExpiresOn   *time.Time `json:"expires_on,omitempty"`
+	ExtendCount int32      `json:"extend_count,omitempty"`
+	NotifyCount int32      `json:"notify_count,omitempty"`
+	// This is for convenience only, not stored in the DB:
 	Prefixes    map[string]struct{} `dosa:"-"` // PrefixStr decoded into a set for convenience
 }
 
@@ -232,6 +234,12 @@ func (md *ScopeMetadata) String() string {
 	}
 	if len(md.Prefixes) > 0 {
 		s += fmt.Sprintf(", prefixes=%v", md.Prefixes)
+	}
+	if len(md.PrefixStr) > 0 {
+		s += fmt.Sprintf(", prefixes=%v", md.PrefixStr)
+	}
+	if len(md.Cluster) > 0 {
+		s += fmt.Sprintf(", cluster=%v", md.Cluster)
 	}
 	if md.ExtendCount > 0 {
 		s += fmt.Sprintf(", extended=%d", md.ExtendCount)
