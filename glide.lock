@@ -1,5 +1,5 @@
-hash: 25710a7554cd6ef0f657e5f96eb5a904e90b70f3b1d0720baa30694e946c7cca
-updated: 2018-02-26T13:04:11.760801-08:00
+hash: 63a0f3bba145ce4cceb71a56d00391a62644cfa79fc6a670d1e155287c7ab1b4
+updated: 2018-03-08T13:43:29.184957-08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -65,13 +65,13 @@ imports:
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: 89604d197083d4781071d3c65855d24ecfb0a563
+  version: 6fb6fce6f8b75884b92e1889c150403fc0872c5e
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
   - model
 - name: github.com/prometheus/procfs
-  version: 282c8707aa210456a825798969cc27edda34992a
+  version: 1c7ff3de94ae006f58cba483a4c9c6d7c61e1d98
   subpackages:
   - internal/util
   - nfs
@@ -89,7 +89,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 522328b48efad0c6034dba92bf39228694e9d31f
 - name: github.com/uber/dosa-idl
-  version: c4ffaff994ddbcacef9a7088085f19edd0a98213
+  version: 8a062fecd6f0c3e58ca732f51fd761ca7c255bfe
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -170,7 +170,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: cbe0f9307d0156177f9dd5dc85da1a31abc5f2fb
+  version: d0aafc73d5cdc42264b0af071c261abac580695e
   subpackages:
   - bpf
   - context
@@ -196,17 +196,17 @@ testImports:
 - name: github.com/go-playground/overalls
   version: 22ec1a223b7c9a2e56355bd500b539cba3784238
 - name: github.com/golang/lint
-  version: 3ea3fa98a8104b2c8f8a7bffaebc7e54dddf99e1
+  version: 837967239b74207656c3f550e9dc6a944866c490
   subpackages:
   - golint
 - name: github.com/kisielk/errcheck
-  version: 4e7984f0ef4db28669ee8ddd1bc9d25fd32f4dd6
+  version: 8050dd7cc11578becd8622667107bb21a7baf451
 - name: github.com/kisielk/gotool
   version: 80517062f582ea3340cd4baf70e86d539ae7d84d
 - name: github.com/matm/gocov-html
   version: f6dd0fd0ebc7c8cff8b24c0a585caeef250627a3
 - name: github.com/mattn/goveralls
-  version: b71a1e4855f87991aff01c2c833a75a07059c61c
+  version: a419d25dbaefa70d50cfbf5fbd2fc2f047bf95d2
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
@@ -224,6 +224,6 @@ testImports:
 - name: github.com/yookoala/realpath
   version: d19ef9c409d9817c1e685775e53d361b03eabbc8
 - name: golang.org/x/tools
-  version: 10db2d12cfa8602d0ffa73c5c2270ce47ba56b30
+  version: 059bec968c61383b574810040ba9410712de36c5
   subpackages:
   - cover
