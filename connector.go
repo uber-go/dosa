@@ -91,7 +91,7 @@ type ScopeMetadata struct {
 	ExtendCount int32      `json:"extend_count,omitempty"`
 	NotifyCount int32      `json:"notify_count,omitempty"`
 	// This is for convenience only, not stored in the DB:
-	Prefixes map[string]struct{} `dosa:"-"` // PrefixStr decoded into a set for convenience
+	Prefixes map[string]struct{} `dosa:"-" json:"-"`
 }
 
 // MetadataSchemaVersion is the version of the schema of the scope metadata
