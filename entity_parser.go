@@ -37,6 +37,7 @@ const (
 	dosaTagKey = "dosa"
 	asc        = "asc"
 	desc       = "desc"
+	NoTTL    = time.Duration(0)
 )
 
 var (
@@ -50,6 +51,8 @@ var (
 	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
 
 	etlPattern0 = regexp.MustCompile(`etl\s*=\s*(\S*)`)
+
+	ttlPattern0 = regexp.MustCompile(`ttl\s*=\s*(\S*)`)
 
 	indexType = reflect.TypeOf((*Index)(nil)).Elem()
 )
@@ -198,7 +201,7 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		name := structField.Name
 		if name == entityName {
 			var err error
-			if t.EntityDefinition.Name, t.ETL, t.Key, err = parseEntityTag(t.StructName, tag); err != nil {
+			if t.EntityDefinition.Name, t.TTL, t.ETL, t.Key, err = parseEntityTag(t.StructName, tag); err != nil {
 				return nil, err
 			}
 		} else {
@@ -305,7 +308,8 @@ func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, error
 	}
 
 	tag = strings.Replace(tag, fullNameTag, "", 1)
-	if strings.TrimSpace(tag) != "" {
+	tag = strings.TrimSpace(tag)
+	if tag != "" {
 		return "", nil, fmt.Errorf("index field %s with an invalid dosa index tag: %s", indexName, tag)
 	}
 
@@ -365,20 +369,43 @@ func parseETLTag(tag string) (string, ETLState, error) {
 	return fullETLTag, etlState, nil
 }
 
+// parseTTLTag functions parses DOSA "ttl" tag
+func parseTTLTag(tag string) (string, time.Duration, error) {
+	fullTTLTag := ""
+	ttlTag := ""
+	matches := ttlPattern0.FindStringSubmatch(tag)
+	if len(matches) == 2 {
+		fullTTLTag = matches[0]
+		ttlTag = matches[1]
+	}
+
+	if len(matches) == 0 {
+		return "", NoTTL, nil
+	}
+
+	// filter out "trailing comma"
+	ttlTag = strings.TrimRight(ttlTag, " ,")
+	ttl, err := time.ParseDuration(ttlTag)
+	if err != nil {
+		return "", NoTTL, err
+	}
+	return fullTTLTag, ttl, nil
+}
+
 // parseEntityTag function parses DOSA tag on the "Entity" field
-func parseEntityTag(structName, dosaAnnotation string) (string, ETLState, *PrimaryKey, error) {
+func parseEntityTag(structName, dosaAnnotation string) (string, time.Duration, ETLState, *PrimaryKey, error) {
 	tag := dosaAnnotation
 
 	// find the primaryKey
 	matchs := primaryKeyPattern0.FindStringSubmatch(tag)
 	if len(matchs) != primaryKeyPattern0.NumSubexp()+1 {
-		return "", EtlOff, nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag %q", structName, tag)
+		return "", time.Duration(0), EtlOff, nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag %q", structName, tag)
 	}
 	pkString := matchs[1]
 
 	key, err := parsePrimaryKey(structName, pkString)
 	if err != nil {
-		return "", EtlOff, nil, errors.Wrapf(err, "struct %s has an invalid primary key %q", structName, pkString)
+		return "", NoTTL, EtlOff, nil, errors.Wrapf(err, "struct %s has an invalid primary key %q", structName, pkString)
 	}
 	toRemove := strings.TrimSuffix(matchs[0], matchs[2])
 	toRemove = strings.TrimSuffix(matchs[0], matchs[3])
@@ -387,21 +414,30 @@ func parseEntityTag(structName, dosaAnnotation string) (string, ETLState, *Prima
 	// find the name
 	fullNameTag, name, err := parseNameTag(tag, structName)
 	if err != nil {
-		return "", EtlOff, nil, errors.Wrapf(err, "invalid name tag: %s", tag)
+		return "", NoTTL, EtlOff, nil, errors.Wrapf(err, "invalid name tag: %s", tag)
 	}
 	tag = strings.Replace(tag, fullNameTag, "", 1)
 
 	// find the ETL flag
 	fullETLTag, etlState, err := parseETLTag(tag)
 	if err != nil {
-		return "", EtlOff, nil, errors.Wrapf(err, "invalid etl tag: %s", tag)
+		return "", NoTTL, EtlOff, nil, errors.Wrapf(err, "invalid etl tag: %s", tag)
 	}
 	tag = strings.Replace(tag, fullETLTag, "", 1)
 
-	if strings.TrimSpace(tag) != "" {
-		return "", EtlOff, nil, fmt.Errorf("struct %s with an invalid dosa struct tag: %s", structName, tag)
+	// find the ttl flag
+	fullTTLTag, ttl, err := parseTTLTag(tag)
+	if err != nil {
+		return "", NoTTL, EtlOff, nil, errors.Wrapf(err, "invalid ttl tag: %s", tag)
 	}
-	return name, etlState, key, nil
+	tag = strings.Replace(tag, fullTTLTag, "", 1)
+
+	tag = strings.TrimSpace(tag)
+	if tag != "" {
+		return "", NoTTL, EtlOff, nil, fmt.Errorf("struct %s with an invalid dosa struct tag: %s", structName, tag)
+	}
+
+	return name, ttl, etlState, key, nil
 }
 
 // parseFieldTag function parses DOSA tag on the fields in the DOSA struct except the "Entity" field

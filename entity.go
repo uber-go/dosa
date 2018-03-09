@@ -27,6 +27,7 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
+	"time"
 )
 
 // Table represents a parsed entity format on the client side
@@ -36,6 +37,7 @@ type Table struct {
 	StructName string
 	ColToField map[string]string // map from column name -> field name
 	FieldToCol map[string]string // map from field name -> column name
+	TTL time.Duration
 }
 
 // ClusteringKey stores name and ordering of a clustering key

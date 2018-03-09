@@ -24,6 +24,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"time"
 )
 
 //go:generate stringer -type=Operator
@@ -72,6 +73,7 @@ type SchemaRef struct {
 type EntityInfo struct {
 	Ref *SchemaRef
 	Def *EntityDefinition
+	TTL time.Duration
 }
 
 // FieldValue holds a field value. It's just a marker.

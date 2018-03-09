@@ -89,7 +89,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 6c4631652c6aab57c64f65c2e0aaec2e9aae3a64
 - name: github.com/uber/dosa-idl
-  version: e7fe34df70b95afe485bd49b73541ecaf9fc454a
+  version: 976f37f45c88b8f711ec412eaba77d0e68a154c9 
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
