@@ -482,6 +482,72 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	}
 }
 
+func TestYaRPCClient_CreateIfNotExistsWithTTL(t *testing.T) {
+	// build a mock RPC client
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockedClient := dosatest.NewMockClient(ctrl)
+
+	// here are the data types to test; the names are random
+	vals := []struct {
+		Name  string
+		Value interface{}
+	}{
+
+		{"c1", int64(1)},
+		{"c2", float64(2.2)},
+		{"c3", "string"},
+		{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
+		{"c5", false},
+		{"c6", int32(2)},
+		{"c7", time.Now()},
+	}
+
+	ei := &dosa.EntityInfo{
+		Ref: &testSchemaRef,
+		Def: &dosa.EntityDefinition{
+			Columns: []*dosa.ColumnDefinition{
+				{Name: "f1", Type: dosa.String},
+				{Name: "c1", Type: dosa.Int64},
+				{Name: "c2", Type: dosa.Double},
+				{Name: "c3", Type: dosa.String},
+				{Name: "c4", Type: dosa.Blob},
+				{Name: "c5", Type: dosa.Bool},
+				{Name: "c6", Type: dosa.Int32},
+				{Name: "c7", Type: dosa.TUUID},
+			},
+			Key: &dosa.PrimaryKey{
+				PartitionKeys: []string{"f1"},
+			},
+			Name: "t1",
+		},
+	}
+
+	ttls := []int64{int64(-1), int64(0), 435}
+	for _, ttl := range ttls {
+		// build up the input field list and the output field list
+		// the layout is quite different; inputs are a simple map but the actual RPC call expects a messier format
+		ei.TTL = time.Duration(ttl)
+		inFields := map[string]dosa.FieldValue{}
+		outFields := drpc.FieldValueMap{}
+		for _, item := range vals {
+			inFields[item.Name] = item.Value
+			rv, _ := yarpc.RawValueFromInterface(item.Value)
+			outFields[item.Name] = &drpc.Value{ElemValue: rv}
+		}
+
+		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields, TTL: &ttl}, gomock.Any())
+
+		// create the YaRPCClient and give it the mocked RPC interface
+		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
+		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
+
+		// and run the test
+		err := sut.CreateIfNotExists(ctx, ei, inFields)
+		assert.Nil(t, err)
+	}
+}
+
 func TestYaRPCClient_Upsert(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
@@ -542,6 +608,74 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
 		assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
+	}
+}
+
+func TestYaRPCClient_UpsertWithTTL(t *testing.T) {
+	// build a mock RPC client
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockedClient := dosatest.NewMockClient(ctrl)
+
+	// here are the data types to test; the names are random
+	vals := []struct {
+		Name  string
+		Value interface{}
+	}{
+		{"c1", testutil.TestInt64Ptr(1)},
+		{"c2", testutil.TestFloat64Ptr(2.2)},
+		{"c3", testutil.TestStringPtr("string")},
+		{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
+		{"c5", testutil.TestBoolPtr(false)},
+		{"c6", testutil.TestInt32Ptr(2)},
+		{"c7", testutil.TestTimePtr(time.Now())},
+	}
+
+	ei := &dosa.EntityInfo{
+		Ref: &testSchemaRef,
+		Def: &dosa.EntityDefinition{
+			Columns: []*dosa.ColumnDefinition{
+				{Name: "f1", Type: dosa.String},
+				{Name: "c1", Type: dosa.Int64},
+				{Name: "c2", Type: dosa.Double},
+				{Name: "c3", Type: dosa.String},
+				{Name: "c4", Type: dosa.Blob},
+				{Name: "c5", Type: dosa.Bool},
+				{Name: "c6", Type: dosa.Int32},
+				{Name: "c7", Type: dosa.TUUID},
+			},
+			Key: &dosa.PrimaryKey{
+				PartitionKeys: []string{"f1"},
+			},
+			Name: "t1",
+		},
+	}
+
+	ttls := []int64{int64(-1), int64(0), 435}
+	for _, ttl := range ttls {
+		// build up the input field list and the output field list
+		// the layout is quite different; inputs are a simple map but the actual RPC call expects a messier format
+		inFields := map[string]dosa.FieldValue{}
+		outFields := map[string]*drpc.Value{}
+		for _, item := range vals {
+			inFields[item.Name] = item.Value
+			rv, _ := yarpc.RawValueFromInterface(item.Value)
+			outFields[item.Name] = &drpc.Value{ElemValue: rv}
+		}
+		ei.TTL = time.Duration(ttl)
+		mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
+			Ref:          &testRPCSchemaRef,
+			EntityValues: outFields,
+			TTL:          &ttl,
+		}, gomock.Any())
+
+		// create the YaRPCClient and give it the mocked RPC interface
+		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
+		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
+
+		// and run the test, first with a nil FieldsToUpdate, then with a specific list
+		err := sut.Upsert(ctx, ei, inFields)
+		assert.Nil(t, err)
 	}
 }
 

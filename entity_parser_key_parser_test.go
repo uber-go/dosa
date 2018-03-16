@@ -412,7 +412,7 @@ func TestEntityParse(t *testing.T) {
 		TableName  string
 		PrimaryKey *PrimaryKey
 		ETL        ETLState
-		TTL time.Duration
+		TTL        time.Duration
 		Error      error
 	}{
 		{
@@ -423,7 +423,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 			Error: nil,
 		},
 		{
@@ -434,7 +434,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 			Error: nil,
 		},
 		{
@@ -445,7 +445,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 			Error: nil,
 		},
 		{
@@ -456,7 +456,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 			Error: nil,
 		},
 		{
@@ -467,7 +467,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 			Error: nil,
 		},
 		{
@@ -478,7 +478,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 			Error: nil,
 		},
 		{
@@ -489,7 +489,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 			Error: nil,
 		},
 		{
@@ -500,7 +500,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 			Error: nil,
 		},
 		{
@@ -524,7 +524,7 @@ func TestEntityParse(t *testing.T) {
 				},
 			},
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 			Error: nil,
 		},
 		{
@@ -548,7 +548,7 @@ func TestEntityParse(t *testing.T) {
 				},
 			},
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 			Error: nil,
 		},
 		{
@@ -560,7 +560,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: nil,
 			ETL:   EtlOn,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 		},
 		{
 			Tag:       "name=jj primaryKey=ok, etl=ON, ttl=90s",
@@ -571,7 +571,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: nil,
 			ETL:   EtlOn,
-			TTL: time.Second * 90,
+			TTL:   time.Second * 90,
 		},
 		{
 			Tag:       "name=jj primaryKey=ok, etl=On, ttl=80m",
@@ -582,7 +582,18 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: nil,
 			ETL:   EtlOn,
-			TTL: time.Minute * 80,
+			TTL:   time.Minute * 80,
+		},
+		{
+			Tag:       "name=jj primaryKey=ok, etl=On, ttl=-80m",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error: nil,
+			ETL:   EtlOn,
+			TTL:   NoTTL,
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl=off",
@@ -593,7 +604,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: nil,
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl=OFF, ttl = 90h",
@@ -604,7 +615,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: nil,
 			ETL:   EtlOff,
-			TTL: time.Hour * 90,
+			TTL:   time.Hour * 90,
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl=Off, ttl = 912ms",
@@ -615,7 +626,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: nil,
 			ETL:   EtlOff,
-			TTL: time.Millisecond * 912,
+			TTL:   time.Millisecond * 912,
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl=Off, ttl=912d",
@@ -626,7 +637,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: errors.New("unknown unit d in duration"),
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl=Off, ttl",
@@ -637,7 +648,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: errors.New("struct testStruct with an invalid dosa struct tag: ttl"),
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl=Off, ttl=",
@@ -648,7 +659,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: errors.New("invalid ttl tag:    ttl=: time: invalid duration"),
 			ETL:   EtlOff,
-			TTL: NoTTL,
+			TTL:   NoTTL,
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl=",

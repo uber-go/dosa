@@ -37,7 +37,7 @@ const (
 	dosaTagKey = "dosa"
 	asc        = "asc"
 	desc       = "desc"
-	NoTTL    = time.Duration(0)
+	NoTTL      = time.Duration(-1)
 )
 
 var (
@@ -389,6 +389,11 @@ func parseTTLTag(tag string) (string, time.Duration, error) {
 	if err != nil {
 		return "", NoTTL, err
 	}
+
+	if ttl < 0 {
+		return fullTTLTag, NoTTL, nil
+	}
+
 	return fullTTLTag, ttl, nil
 }
 

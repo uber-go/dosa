@@ -30,12 +30,12 @@ import (
 // performing operations on an entity as well as helper methods for accessing
 // type data so that reflection can be minimized.
 type RegisteredEntity struct {
-	scope  string
-	prefix string
-	table  *Table
-	version int32
+	scope     string
+	prefix    string
+	table     *Table
+	version   int32
 	schemaRef *SchemaRef
-	typ    reflect.Type // optimization to avoid doing repetitive reflect.TypeOf
+	typ       reflect.Type // optimization to avoid doing repetitive reflect.TypeOf
 }
 
 // NewRegisteredEntity is a constructor for creating a RegisteredEntity
