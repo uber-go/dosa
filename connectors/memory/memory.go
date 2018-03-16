@@ -334,6 +334,28 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values [
 	return fvoes, nil
 }
 
+// MultiUpsert upserts a series of values at once.
+func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue) ([]error, error) {
+	// Note we do not lock here. This is representative of the behavior one would see in a deployed environment
+	var errs []error
+	for _, v := range values {
+		errs = append(errs, c.Upsert(ctx, ei, v))
+	}
+
+	return errs, nil
+}
+
+// MultiRemove removes a series of values at once.
+func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
+	// Note we do not lock here. This is representative of the behavior one would see in a deployed environment
+	var errs []error
+	for _, v := range multiValues {
+		errs = append(errs, c.Remove(ctx, ei, v))
+	}
+
+	return errs, nil
+}
+
 func overwriteValuesFunc(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
 	for k, v := range from {
 		into[k] = v
