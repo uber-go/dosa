@@ -385,25 +385,46 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 	return results, nil
 }
 
-// MultiUpsert is not yet implemented
+// MultiUpsert upserts multiple entities at one time
 func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
-	panic("not implemented")
+	values, err := fieldValueMapsFromClientMaps(multiValues)
+	if err != nil {
+		return nil, err
+	}
+
+	// perform the multi read request
+	request := &dosarpc.MultiUpsertRequest{
+		Ref:      entityInfoToSchemaRef(ei),
+		Entities: values,
+	}
+
+	response, err := c.Client.MultiUpsert(ctx, request, VersionHeader())
+	if err != nil {
+		if !dosarpc.Dosa_MultiUpsert_Helper.IsException(err) {
+			return nil, errors.Wrap(err, "failed to MultiUpsert due to network issue")
+		}
+
+		return nil, errors.Wrap(err, "failed to MultiUpsert")
+	}
+
+	rpcErrors := response.Errors
+	results := make([]error, len(rpcErrors))
+	for i, rpcError := range rpcErrors {
+		if rpcError != nil {
+			// TODO check other fields in the thrift error object such as ShouldRetry
+			results[i] = errors.New(*rpcError.Msg)
+		}
+	}
+
+	return results, nil
 }
 
 // Remove marshals a request to the YARPC remove call
 func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue) error {
 	// convert the key values from interface{} to RPC's Value
-	rpcFields := make(dosarpc.FieldValueMap)
-	for key, value := range keys {
-		rv, err := RawValueFromInterface(value)
-		if err != nil {
-			return errors.Wrapf(err, "Key field %q", key)
-		}
-		if rv == nil {
-			continue
-		}
-		rpcValue := &dosarpc.Value{ElemValue: rv}
-		rpcFields[key] = rpcValue
+	rpcFields, err := keyValuesToRPCValues(keys)
+	if err != nil {
+		return err
 	}
 
 	// perform the remove request
@@ -412,7 +433,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		KeyValues: rpcFields,
 	}
 
-	err := c.Client.Remove(ctx, removeRequest, VersionHeader())
+	err = c.Client.Remove(ctx, removeRequest, VersionHeader())
 	if err != nil {
 		if !dosarpc.Dosa_Remove_Helper.IsException(err) {
 			return errors.Wrap(err, "failed to Remove due to network issue")
@@ -446,7 +467,36 @@ func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, column
 
 // MultiRemove is not yet implemented
 func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiKeys []map[string]dosa.FieldValue) ([]error, error) {
-	panic("not implemented")
+	keyValues, err := multiKeyValuesToRPCValues(multiKeys)
+	if err != nil {
+		return nil, err
+	}
+
+	// perform the multi read request
+	request := &dosarpc.MultiRemoveRequest{
+		Ref:       entityInfoToSchemaRef(ei),
+		KeyValues: keyValues,
+	}
+
+	response, err := c.Client.MultiRemove(ctx, request, VersionHeader())
+	if err != nil {
+		if !dosarpc.Dosa_MultiRemove_Helper.IsException(err) {
+			return nil, errors.Wrap(err, "failed to MultiRemove due to network issue")
+		}
+
+		return nil, errors.Wrap(err, "failed to MultiRemove")
+	}
+
+	rpcErrors := response.Errors
+	results := make([]error, len(rpcErrors))
+	for i, rpcError := range rpcErrors {
+		if rpcError != nil {
+			// TODO check other fields in the thrift error object such as ShouldRetry
+			results[i] = errors.New(*rpcError.Msg)
+		}
+	}
+
+	return results, nil
 }
 
 // Range does a scan across a range
