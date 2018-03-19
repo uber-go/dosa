@@ -37,7 +37,9 @@ const (
 	dosaTagKey = "dosa"
 	asc        = "asc"
 	desc       = "desc"
-	NoTTL      = time.Duration(-1)
+
+	// NoTTL means do not set TTL
+	NoTTL = time.Duration(-1)
 )
 
 var (

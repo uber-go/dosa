@@ -26,8 +26,9 @@ import (
 
 	"reflect"
 
-	"github.com/pkg/errors"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 // Table represents a parsed entity format on the client side

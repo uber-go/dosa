@@ -63,7 +63,7 @@ func (e *RegisteredEntity) EntityInfo() *EntityInfo {
 	return &EntityInfo{
 		Ref: e.schemaRef,
 		Def: &e.table.EntityDefinition,
-		TTL: e.table.TTL,
+		TTL: &e.table.TTL,
 	}
 }
 

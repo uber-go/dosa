@@ -40,46 +40,50 @@ import (
 	yarpc2 "go.uber.org/yarpc"
 )
 
-var testEi = &dosa.EntityInfo{
-	Ref: &testSchemaRef,
-	Def: &dosa.EntityDefinition{
-		Columns: []*dosa.ColumnDefinition{
-			{Name: "f1", Type: dosa.String},
-			{Name: "c1", Type: dosa.Int64},
-			{Name: "c2", Type: dosa.Double},
-			{Name: "c3", Type: dosa.String},
-			{Name: "c4", Type: dosa.Blob},
-			{Name: "c5", Type: dosa.Bool},
-			{Name: "c6", Type: dosa.Int32},
-			{Name: "c7", Type: dosa.TUUID},
+var (
+	nt = dosa.NoTTL.Nanoseconds()
+
+	testEi = &dosa.EntityInfo{
+		Ref: &testSchemaRef,
+		Def: &dosa.EntityDefinition{
+			Columns: []*dosa.ColumnDefinition{
+				{Name: "f1", Type: dosa.String},
+				{Name: "c1", Type: dosa.Int64},
+				{Name: "c2", Type: dosa.Double},
+				{Name: "c3", Type: dosa.String},
+				{Name: "c4", Type: dosa.Blob},
+				{Name: "c5", Type: dosa.Bool},
+				{Name: "c6", Type: dosa.Int32},
+				{Name: "c7", Type: dosa.TUUID},
+			},
+			Key: &dosa.PrimaryKey{
+				PartitionKeys: []string{"f1"},
+			},
+			Name: "t1",
 		},
-		Key: &dosa.PrimaryKey{
-			PartitionKeys: []string{"f1"},
-		},
-		Name: "t1",
-	},
-}
+	}
 
-var testSchemaRef = dosa.SchemaRef{
-	Scope:      "scope1",
-	NamePrefix: "namePrefix",
-	EntityName: "eName",
-	Version:    12345,
-}
+	testSchemaRef = dosa.SchemaRef{
+		Scope:      "scope1",
+		NamePrefix: "namePrefix",
+		EntityName: "eName",
+		Version:    12345,
+	}
 
-var testRPCSchemaRef = drpc.SchemaRef{
-	Scope:      testutil.TestStringPtr("scope1"),
-	NamePrefix: testutil.TestStringPtr("namePrefix"),
-	EntityName: testutil.TestStringPtr("eName"),
-	Version:    testutil.TestInt32Ptr(12345),
-}
+	testRPCSchemaRef = drpc.SchemaRef{
+		Scope:      testutil.TestStringPtr("scope1"),
+		NamePrefix: testutil.TestStringPtr("namePrefix"),
+		EntityName: testutil.TestStringPtr("eName"),
+		Version:    testutil.TestInt32Ptr(12345),
+	}
 
-var testCfg = &yarpc.Config{
-	CallerName:  "test",
-	ServiceName: "test",
-}
+	testCfg = &yarpc.Config{
+		CallerName:  "test",
+		ServiceName: "test",
+	}
 
-var ctx = context.Background()
+	ctx = context.Background()
+)
 
 func testAssert(t *testing.T) testutil.TestAssertFn {
 	return func(a, b interface{}) {
@@ -455,7 +459,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 			outFields[item.Name] = &drpc.Value{ElemValue: rv}
 		}
 
-		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields}, gomock.Any())
+		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields, TTL: &nt}, gomock.Any())
 
 		// create the YaRPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
@@ -466,7 +470,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 		assert.Nil(t, err)
 
 		errCode := int32(409)
-		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields}, gomock.Any()).Return(
+		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields, TTL: &nt}, gomock.Any()).Return(
 			&drpc.BadRequestError{ErrorCode: &errCode},
 		)
 
@@ -527,7 +531,8 @@ func TestYaRPCClient_CreateIfNotExistsWithTTL(t *testing.T) {
 	for _, ttl := range ttls {
 		// build up the input field list and the output field list
 		// the layout is quite different; inputs are a simple map but the actual RPC call expects a messier format
-		ei.TTL = time.Duration(ttl)
+		tl := time.Duration(ttl)
+		ei.TTL = &tl
 		inFields := map[string]dosa.FieldValue{}
 		outFields := drpc.FieldValueMap{}
 		for _, item := range vals {
@@ -593,6 +598,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 		mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
 			Ref:          &testRPCSchemaRef,
 			EntityValues: outFields,
+			TTL:          &nt,
 		}, gomock.Any())
 
 		// create the YaRPCClient and give it the mocked RPC interface
@@ -662,7 +668,9 @@ func TestYaRPCClient_UpsertWithTTL(t *testing.T) {
 			rv, _ := yarpc.RawValueFromInterface(item.Value)
 			outFields[item.Name] = &drpc.Value{ElemValue: rv}
 		}
-		ei.TTL = time.Duration(ttl)
+
+		tl := time.Duration(ttl)
+		ei.TTL = &tl
 		mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
 			Ref:          &testRPCSchemaRef,
 			EntityValues: outFields,

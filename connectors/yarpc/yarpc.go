@@ -217,7 +217,11 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 		return err
 	}
 
-	ttl := ei.TTL.Nanoseconds()
+	ttl := dosa.NoTTL.Nanoseconds()
+	if ei.TTL != nil {
+		ttl = ei.TTL.Nanoseconds()
+	}
+
 	createRequest := dosarpc.CreateRequest{
 		Ref:          entityInfoToSchemaRef(ei),
 		EntityValues: ev,
@@ -246,7 +250,11 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		return err
 	}
 
-	ttl := ei.TTL.Nanoseconds()
+	ttl := dosa.NoTTL.Nanoseconds()
+	if ei.TTL != nil {
+		ttl = ei.TTL.Nanoseconds()
+	}
+
 	upsertRequest := dosarpc.UpsertRequest{
 		Ref:          entityInfoToSchemaRef(ei),
 		EntityValues: ev,
