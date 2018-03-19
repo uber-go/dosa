@@ -424,7 +424,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 			Error: nil,
 		},
 		{
@@ -435,7 +435,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 			Error: nil,
 		},
 		{
@@ -446,7 +446,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 			Error: nil,
 		},
 		{
@@ -457,7 +457,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 			Error: nil,
 		},
 		{
@@ -468,7 +468,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 			Error: nil,
 		},
 		{
@@ -479,7 +479,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 			Error: nil,
 		},
 		{
@@ -490,7 +490,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 			Error: nil,
 		},
 		{
@@ -501,7 +501,7 @@ func TestEntityParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 			Error: nil,
 		},
 		{
@@ -525,7 +525,7 @@ func TestEntityParse(t *testing.T) {
 				},
 			},
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 			Error: nil,
 		},
 		{
@@ -549,7 +549,7 @@ func TestEntityParse(t *testing.T) {
 				},
 			},
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 			Error: nil,
 		},
 		{
@@ -561,7 +561,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: nil,
 			ETL:   EtlOn,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 		},
 		{
 			Tag:       "name=jj primaryKey=ok, etl=ON, ttl=90s",
@@ -594,7 +594,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: nil,
 			ETL:   EtlOn,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl=off",
@@ -605,7 +605,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: nil,
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl=OFF, ttl = 90h",
@@ -638,7 +638,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: errors.New("unknown unit d in duration"),
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl=Off, ttl",
@@ -649,7 +649,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: errors.New("struct testStruct with an invalid dosa struct tag: ttl"),
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl=Off, ttl=",
@@ -660,7 +660,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			Error: errors.New("invalid ttl tag:    ttl=: time: invalid duration"),
 			ETL:   EtlOff,
-			TTL:   NoTTL,
+			TTL:   NoTTL(),
 		},
 		{
 			Tag:       "name=jj primaryKey=ok etl=",

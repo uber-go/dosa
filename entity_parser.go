@@ -37,9 +37,6 @@ const (
 	dosaTagKey = "dosa"
 	asc        = "asc"
 	desc       = "desc"
-
-	// NoTTL means do not set TTL
-	NoTTL = time.Duration(-1)
 )
 
 var (
@@ -382,18 +379,18 @@ func parseTTLTag(tag string) (string, time.Duration, error) {
 	}
 
 	if len(matches) == 0 {
-		return "", NoTTL, nil
+		return "", NoTTL(), nil
 	}
 
 	// filter out "trailing comma"
 	ttlTag = strings.TrimRight(ttlTag, " ,")
 	ttl, err := time.ParseDuration(ttlTag)
 	if err != nil {
-		return "", NoTTL, err
+		return "", NoTTL(), err
 	}
 
 	if ttl < 0 {
-		return fullTTLTag, NoTTL, nil
+		return fullTTLTag, NoTTL(), nil
 	}
 
 	return fullTTLTag, ttl, nil
@@ -412,7 +409,7 @@ func parseEntityTag(structName, dosaAnnotation string) (string, time.Duration, E
 
 	key, err := parsePrimaryKey(structName, pkString)
 	if err != nil {
-		return "", NoTTL, EtlOff, nil, errors.Wrapf(err, "struct %s has an invalid primary key %q", structName, pkString)
+		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "struct %s has an invalid primary key %q", structName, pkString)
 	}
 	toRemove := strings.TrimSuffix(matchs[0], matchs[2])
 	toRemove = strings.TrimSuffix(matchs[0], matchs[3])
@@ -421,27 +418,27 @@ func parseEntityTag(structName, dosaAnnotation string) (string, time.Duration, E
 	// find the name
 	fullNameTag, name, err := parseNameTag(tag, structName)
 	if err != nil {
-		return "", NoTTL, EtlOff, nil, errors.Wrapf(err, "invalid name tag: %s", tag)
+		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "invalid name tag: %s", tag)
 	}
 	tag = strings.Replace(tag, fullNameTag, "", 1)
 
 	// find the ETL flag
 	fullETLTag, etlState, err := parseETLTag(tag)
 	if err != nil {
-		return "", NoTTL, EtlOff, nil, errors.Wrapf(err, "invalid etl tag: %s", tag)
+		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "invalid etl tag: %s", tag)
 	}
 	tag = strings.Replace(tag, fullETLTag, "", 1)
 
 	// find the ttl flag
 	fullTTLTag, ttl, err := parseTTLTag(tag)
 	if err != nil {
-		return "", NoTTL, EtlOff, nil, errors.Wrapf(err, "invalid ttl tag: %s", tag)
+		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "invalid ttl tag: %s", tag)
 	}
 	tag = strings.Replace(tag, fullTTLTag, "", 1)
 
 	tag = strings.TrimSpace(tag)
 	if tag != "" {
-		return "", NoTTL, EtlOff, nil, fmt.Errorf("struct %s with an invalid dosa struct tag: %s", structName, tag)
+		return "", NoTTL(), EtlOff, nil, fmt.Errorf("struct %s with an invalid dosa struct tag: %s", structName, tag)
 	}
 
 	return name, ttl, etlState, key, nil

@@ -41,7 +41,7 @@ import (
 )
 
 var (
-	nt = dosa.NoTTL.Nanoseconds()
+	nt = dosa.NoTTL().Nanoseconds()
 
 	testEi = &dosa.EntityInfo{
 		Ref: &testSchemaRef,
