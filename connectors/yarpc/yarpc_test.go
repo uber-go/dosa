@@ -331,7 +331,45 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 						Error: nil,
 					},
 					{
-						Error: &drpc.Error{Msg: testutil.TestStringPtr("not found")},
+						Error: &drpc.Error{Msg: testutil.TestStringPtr("error fetching entity")},
+					},
+				},
+			},
+			ResponseErr: nil,
+		},
+		{
+			Request: &drpc.MultiReadRequest{
+				Ref: &testRPCSchemaRef,
+				KeyValues: []drpc.FieldValueMap{
+					{
+						"f1": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
+					},
+					{
+						"f2": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(6)}},
+					},
+				},
+				FieldsToRead: map[string]struct{}{"f1": {}},
+			},
+			Response: &drpc.MultiReadResponse{
+				Results: []*drpc.EntityOrError{
+					{
+						EntityValues: drpc.FieldValueMap{
+							"c1":               {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
+							"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
+							"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
+							"c3":               {ElemValue: &drpc.RawValue{StringValue: testutil.TestStringPtr("f3value")}},
+							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
+							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testutil.TestBoolPtr(false)}},
+							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testutil.TestInt32Ptr(1)}},
+						},
+						Error: nil,
+					},
+					{
+						Error: &drpc.Error{
+							Msg:         testutil.TestStringPtr("entity not found"),
+							ShouldRetry: testutil.TestBoolPtr(false),
+							ErrCode:     testutil.TestInt32Ptr(404),
+						},
 					},
 				},
 			},
@@ -348,7 +386,12 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 			assert.NotNil(t, values) // found some values
 			for i, v := range values {
 				if v.Error != nil {
-					assert.Contains(t, v.Error.Error(), *d.Response.Results[i].Error.Msg)
+					if d.Response.Results[i].Error.ErrCode != nil &&
+						*d.Response.Results[i].Error.ErrCode == 404 {
+						assert.True(t, dosa.ErrorIsNotFound(v.Error))
+					} else {
+						assert.Contains(t, v.Error.Error(), *d.Response.Results[i].Error.Msg)
+					}
 					continue
 				}
 				testutil.AssertEqForPointer(testAssert(t), *d.Response.Results[i].EntityValues["c1"].ElemValue.Int64Value, v.Values["c1"])

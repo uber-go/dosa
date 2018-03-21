@@ -359,8 +359,12 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 			}
 		}
 		if rpcResult.Error != nil {
-			// TODO check other fields in the thrift error object such as ShouldRetry
-			results[i].Error = errors.New(*rpcResult.Error.Msg)
+			if rpcResult.Error.ErrCode != nil && *rpcResult.Error.ErrCode == errCodeNotFound {
+				results[i].Error = errors.Wrap(&dosa.ErrNotFound{}, "read failed: not found")
+			} else {
+				// TODO check other fields in the thrift error object such as ShouldRetry
+				results[i].Error = errors.New(*rpcResult.Error.Msg)
+			}
 		}
 	}
 
