@@ -94,7 +94,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		cacheKey := createCacheKey(ei, values, c.encoder)
 		adaptedEi := adaptToKeyValue(ei)
 		newValues := map[string]dosa.FieldValue{
-			key:   cacheKey,
+			key: cacheKey,
 		}
 		return c.fallback.Remove(newCtx, adaptedEi, newValues)
 	}

@@ -159,7 +159,7 @@ func TestUpsertCases(t *testing.T) {
 				}},
 			fallbackUpsert: &expectArgs{
 				values: map[string]dosa.FieldValue{
-					"key":   encodedValue,
+					"key": encodedValue,
 				},
 			},
 			encoder: testEncoder{},
@@ -174,7 +174,7 @@ func TestUpsertCases(t *testing.T) {
 				}},
 			fallbackUpsert: &expectArgs{
 				values: map[string]dosa.FieldValue{
-					"key":   []byte{},
+					"key": []byte{},
 				},
 			},
 			encoder: testEncoder{encodeErr: assert.AnError},
