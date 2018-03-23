@@ -373,13 +373,14 @@ func parseTTLTag(tag string) (string, time.Duration, error) {
 	fullTTLTag := ""
 	ttlTag := ""
 	matches := ttlPattern0.FindStringSubmatch(tag)
-	if len(matches) == 2 {
-		fullTTLTag = matches[0]
-		ttlTag = matches[1]
-	}
 
 	if len(matches) == 0 {
 		return "", NoTTL(), nil
+	}
+
+	if len(matches) == 2 {
+		fullTTLTag = matches[0]
+		ttlTag = matches[1]
 	}
 
 	// filter out "trailing comma"
@@ -403,7 +404,7 @@ func parseEntityTag(structName, dosaAnnotation string) (string, time.Duration, E
 	// find the primaryKey
 	matchs := primaryKeyPattern0.FindStringSubmatch(tag)
 	if len(matchs) != primaryKeyPattern0.NumSubexp()+1 {
-		return "", time.Duration(0), EtlOff, nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag %q", structName, tag)
+		return "", NoTTL(), EtlOff, nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag %q", structName, tag)
 	}
 	pkString := matchs[1]
 
