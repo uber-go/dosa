@@ -390,8 +390,8 @@ func parseTTLTag(tag string) (string, time.Duration, error) {
 		return "", NoTTL(), err
 	}
 
-	if ttl < 0 {
-		return fullTTLTag, NoTTL(), nil
+	if err = ValidateTTL(ttl); err != nil {
+		return "", NoTTL(), err
 	}
 
 	return fullTTLTag, ttl, nil
