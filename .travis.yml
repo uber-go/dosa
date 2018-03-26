@@ -25,6 +25,7 @@ install:
   - pushd ccm
   - ./setup.py install --user
   - popd
+  - go get github.com/golang/mock/mockgen
 
 script:
   - make lint
