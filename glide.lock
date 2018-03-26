@@ -1,5 +1,5 @@
 hash: a7c49629e90f48bc1f5fd857429c11c0ebb3848edb34a6d74821c9f2e25b43f2
-updated: 2018-01-30T00:35:10.000297-08:00
+updated: 2018-03-26T13:25:31.75324-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -31,7 +31,7 @@ imports:
   - internal/murmur
   - internal/streams
 - name: github.com/golang/mock
-  version: b3e60bcdc577185fce3cf625fc96b62857ce5574
+  version: 58cd061d09382b6011f84c1291ebe50ef2e25bab
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
@@ -87,15 +87,15 @@ imports:
   subpackages:
   - internal/mapstructure
 - name: github.com/uber-go/tally
-  version: 6c4631652c6aab57c64f65c2e0aaec2e9aae3a64
+  version: 522328b48efad0c6034dba92bf39228694e9d31f
 - name: github.com/uber/dosa-idl
-  version: 976f37f45c88b8f711ec412eaba77d0e68a154c9 
+  version: d2e1771166878b37955444109576d36be250f864
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
   - .gen/dosa/dosatest
 - name: github.com/uber/tchannel-go
-  version: 7bcb33f4bb908c21374f8bfdc9d4b1ebcbb8dab0
+  version: acd4eb54c11531814d9cd0344fdc53bebe86ab12
   subpackages:
   - internal/argreader
   - relay
@@ -124,7 +124,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 112080bb21323a681a9b269fa7b5a1489558aab0
+  version: 74cd4e7d2dee21702c2131968b04367850011d5d
   subpackages:
   - api/backoff
   - api/encoding
@@ -170,7 +170,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: 0ed95abb35c445290478a5348a7b38bb154135fd
+  version: d25186b37f34ebdbbea8f488ef055638dfab272d
   subpackages:
   - bpf
   - context
@@ -212,13 +212,13 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/russross/blackfriday
-  version: 187c33ff049bddf24fc5c5b82facfdd62813a552
+  version: c455fd41c6baf2f78fd7ff0aadc4e4b4d52698b0
 - name: github.com/sectioneight/md-to-godoc
   version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 86672fcb3f950f35f2e675df2240550f2a50762f
 - name: github.com/stretchr/testify
-  version: b91bfb9ebec76498946beb6af7c0230c7cc7ba6c
+  version: 12b6f73e6084dad08a7c6e575284b177ecafbc71
   subpackages:
   - assert
 - name: github.com/yookoala/realpath
