@@ -25,7 +25,7 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gocql/gocql
-  version: 33a5f3c1bcc2c421b3221c5858312afb141bf605
+  version: 56a164ee9f3135e9cfe725a6d25939f24cb2d044 
   subpackages:
   - internal/lru
   - internal/murmur
