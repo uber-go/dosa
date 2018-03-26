@@ -458,7 +458,7 @@ func (c *client) RemoveRange(ctx context.Context, r *RemoveRangeOp) error {
 		return errors.Wrap(err, "RemoveRange")
 	}
 
-	return errors.Wrap(c.connector.RemoveRange(ctx, re.info, columnConditions), "RemoveRange")
+	return errors.Wrap(c.connector.RemoveRange(ctx, re.EntityInfo(), columnConditions), "RemoveRange")
 }
 
 // MultiRemove deletes several entities by primary key, The entities provided
@@ -492,7 +492,7 @@ func (c *client) Range(ctx context.Context, r *RangeOp) ([]DomainObject, string,
 	}
 
 	// call the server side method
-	values, token, err := c.connector.Range(ctx, re.info, columnConditions, fieldsToRead, r.token, r.limit)
+	values, token, err := c.connector.Range(ctx, re.EntityInfo(), columnConditions, fieldsToRead, r.token, r.limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Range")
 	}
@@ -553,7 +553,7 @@ func (c *client) ScanEverything(ctx context.Context, sop *ScanOp) ([]DomainObjec
 	}
 
 	// call the server side method
-	values, token, err := c.connector.Scan(ctx, re.info, fieldsToRead, sop.token, sop.limit)
+	values, token, err := c.connector.Scan(ctx, re.EntityInfo(), fieldsToRead, sop.token, sop.limit)
 	if err != nil {
 		return nil, "", err
 	}

@@ -26,6 +26,8 @@ import (
 
 	"reflect"
 
+	"time"
+
 	"github.com/pkg/errors"
 )
 
@@ -36,6 +38,7 @@ type Table struct {
 	StructName string
 	ColToField map[string]string // map from column name -> field name
 	FieldToCol map[string]string // map from field name -> column name
+	TTL        time.Duration
 }
 
 // ClusteringKey stores name and ordering of a clustering key

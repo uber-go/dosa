@@ -10,7 +10,7 @@ env:
     - JAVA_HOME=/usr/lib/jvm/java-8-oracle
 
 go:
-  - 1.8
+  - 1.9
 
 go_import_path: github.com/uber-go/dosa
 
@@ -25,6 +25,7 @@ install:
   - pushd ccm
   - ./setup.py install --user
   - popd
+  - go get github.com/golang/mock/mockgen
 
 script:
   - make lint

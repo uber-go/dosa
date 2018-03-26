@@ -21,44 +21,21 @@
 package dosa
 
 import (
-	"fmt"
-	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/pkg/errors"
 )
 
-func TestETLState(t *testing.T) {
+// NoTTL returns predefined identifier for not setting TTL
+func NoTTL() time.Duration {
+	return time.Duration(-1)
+}
 
-	testCases := []struct {
-		name     string
-		etl      string
-		expected ETLState
-		err      error
-	}{
-		{
-			name:     "ETL On",
-			etl:      "on",
-			expected: EtlOn,
-			err:      nil,
-		},
-		{
-			name:     "ETL Off",
-			etl:      "off",
-			expected: EtlOff,
-			err:      nil,
-		},
-		{
-			name:     "ETL invalid",
-			etl:      "boom",
-			expected: EtlOff,
-			err:      fmt.Errorf("%s: boom", errUnrecognizedETLState),
-		},
+// ValidateTTL returns whether the TTL is validated or not
+func ValidateTTL(ttl time.Duration) error {
+	if ttl < 1*time.Second {
+		return errors.New("TTL is not allowed to set less than 1 second")
 	}
 
-	for _, tc := range testCases {
-		t.Log(tc.name)
-		s, err := ToETLState(tc.etl)
-		assert.Equal(t, tc.err, err)
-		assert.Equal(t, tc.expected, s)
-	}
+	return nil
 }

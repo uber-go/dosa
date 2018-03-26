@@ -30,54 +30,53 @@ import (
 // performing operations on an entity as well as helper methods for accessing
 // type data so that reflection can be minimized.
 type RegisteredEntity struct {
-	scope  string
-	prefix string
-	table  *Table
-	info   *EntityInfo
-	typ    reflect.Type // optimization to avoid doing repetitive reflect.TypeOf
+	scope     string
+	prefix    string
+	table     *Table
+	version   int32
+	schemaRef *SchemaRef
+	typ       reflect.Type // optimization to avoid doing repetitive reflect.TypeOf
 }
 
 // NewRegisteredEntity is a constructor for creating a RegisteredEntity
 func NewRegisteredEntity(scope, prefix string, table *Table) *RegisteredEntity {
-	// build entity info up-front since version will need to be set soon after
-	// the registry is initialized
-	info := &EntityInfo{
-		Ref: &SchemaRef{
-			Scope:      scope,
-			NamePrefix: prefix,
-			EntityName: table.Name,
-		},
-		Def: &table.EntityDefinition,
-	}
 	return &RegisteredEntity{
 		scope:  scope,
 		prefix: prefix,
 		table:  table,
-		info:   info,
+		schemaRef: &SchemaRef{
+			Scope:      scope,
+			NamePrefix: prefix,
+			EntityName: table.Name,
+		},
 	}
 }
 
 // SetVersion sets the current schema version on the registered entity.
 func (e *RegisteredEntity) SetVersion(v int32) {
-	e.info.Ref.Version = v
+	e.schemaRef.Version = v
 }
 
 // EntityInfo is a helper for accessing the registered entity's EntityInfo
 // instance which is required by clients to call connector methods.
 func (e *RegisteredEntity) EntityInfo() *EntityInfo {
-	return e.info
+	return &EntityInfo{
+		Ref: e.schemaRef,
+		Def: &e.table.EntityDefinition,
+		TTL: &e.table.TTL,
+	}
 }
 
 // SchemaRef is a helper for accessing the registered entity's
 // SchemaRef instance.
 func (e *RegisteredEntity) SchemaRef() *SchemaRef {
-	return e.info.Ref
+	return e.schemaRef
 }
 
 // EntityDefinition is a helper for accessing the registered entity's
 // EntityDefinition instance.
 func (e *RegisteredEntity) EntityDefinition() *EntityDefinition {
-	return e.info.Def
+	return &e.table.EntityDefinition
 }
 
 // KeyFieldValues is a helper for generating a map of field values to be used in a query.

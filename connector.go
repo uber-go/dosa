@@ -23,6 +23,8 @@ package dosa
 import (
 	"context"
 
+	"time"
+
 	"github.com/pkg/errors"
 )
 
@@ -72,6 +74,7 @@ type SchemaRef struct {
 type EntityInfo struct {
 	Ref *SchemaRef
 	Def *EntityDefinition
+	TTL *time.Duration
 }
 
 // FieldValue holds a field value. It's just a marker.
