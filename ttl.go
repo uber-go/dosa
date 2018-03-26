@@ -22,6 +22,7 @@ package dosa
 
 import (
 	"time"
+
 	"github.com/pkg/errors"
 )
 
@@ -32,7 +33,7 @@ func NoTTL() time.Duration {
 
 // ValidateTTL returns whether the TTL is validated or not
 func ValidateTTL(ttl time.Duration) error {
-	if ttl < 1 * time.Second {
+	if ttl < 1*time.Second {
 		return errors.New("TTL is not allowed to set less than 1 second")
 	}
 
