@@ -23,6 +23,8 @@ package dosa
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -76,12 +78,17 @@ type EntityInfo struct {
 	Def *EntityDefinition
 }
 
-// ScopeMetadata is metadata about a scope. (JSON tags to support MD setting CLI tools.)
+// StringSet is a set of strings.
+type StringSet map[string]struct{}
+
+// ScopeMetadata is metadata about a scope. (JSON tags to support MD setting CLI tools.) The scope
+// may be qualified by a prefix, as in "production.vsoffers".
 type ScopeMetadata struct {
 	Entity      `dosa:"primaryKey=(Name)" json:"-"`
 	Name        string     `json:"name"`
-	Owner       string     `json:"owner"` // group name, or the same as Creator
+	Owner       string     `json:"owner"` // Owning group name (or the same as Creator)
 	Type        int32      `json:"type"`  // Production, Staging, or Development
+	Flags       int64      `json:"flags"`
 	Version     int32      `json:"version"`
 	PrefixStr   string     `json:"prefix_str,omitempty"` // With ":" separators
 	Cluster     string     `json:"cluster,omitempty"`    // Host DB cluster
@@ -91,7 +98,7 @@ type ScopeMetadata struct {
 	ExtendCount int32      `json:"extend_count,omitempty"`
 	NotifyCount int32      `json:"notify_count,omitempty"`
 	// This is for convenience only, not stored in the DB:
-	Prefixes map[string]struct{} `dosa:"-" json:"-"`
+	Prefixes StringSet `dosa:"-" json:"-"`
 }
 
 // MetadataSchemaVersion is the version of the schema of the scope metadata
@@ -108,6 +115,15 @@ const (
 	Staging
 	// Production scope
 	Production
+)
+
+// ScopeFlagType is a set of scope flags
+type ScopeFlagType int64
+
+// Scope flags (remember to update ScopeFlagType.String)
+const (
+	// AccessFromProd means access is allowed from production (only relevant for Dev scopes).
+	AccessFromProd ScopeFlagType = 1 << iota
 )
 
 // FieldValue holds a field value. It's just a marker.
@@ -233,7 +249,7 @@ func (md *ScopeMetadata) String() string {
 		s += fmt.Sprintf(", expires=%v", *md.ExpiresOn)
 	}
 	if len(md.Prefixes) > 0 {
-		s += fmt.Sprintf(", prefixes=%v", md.Prefixes)
+		s += fmt.Sprintf(", prefixes=%s", md.Prefixes)
 	}
 	if len(md.PrefixStr) > 0 {
 		s += fmt.Sprintf(", prefixes=%v", md.PrefixStr)
@@ -248,4 +264,23 @@ func (md *ScopeMetadata) String() string {
 		s += fmt.Sprintf(", notified=%d", md.ExtendCount)
 	}
 	return s + ">"
+}
+
+func (s StringSet) String() string {
+	ss := make([]string, len(s))
+	i := 0
+	for k := range s {
+		ss[i] = k
+		i++
+	}
+	sort.Strings(ss)
+	return "{" + strings.Join(ss, ", ") + "}"
+}
+
+func (f ScopeFlagType) String() string {
+	fs := make([]string, 1)
+	if f&AccessFromProd != 0 {
+		fs = append(fs, "AccessFromProd")
+	}
+	return "{" + strings.Join(fs, ", ") + "}"
 }
