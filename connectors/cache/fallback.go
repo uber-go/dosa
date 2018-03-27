@@ -99,11 +99,10 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		return c.fallback.Remove(newCtx, adaptedEi, newValues)
 	}
 
-	originalErr := c.Next.Upsert(ctx, ei, values)
-	if originalErr == nil && c.isCacheable(ei) {
-		_ = c.cacheWrite(w)
+	if c.isCacheable(ei) {
+		defer c.cacheWrite(w)
 	}
-	return originalErr
+	return  c.Next.Upsert(ctx, ei, values)
 }
 
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, minimumFields []string) (values map[string]dosa.FieldValue, err error) {
@@ -237,11 +236,11 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		return c.fallback.Remove(newCtx, adaptedEi, map[string]dosa.FieldValue{key: cacheKey})
 	}
 
-	originalErr := c.Next.Remove(ctx, ei, keys)
-	if originalErr == nil && c.isCacheable(ei) {
-		_ = c.cacheWrite(w)
+	if c.isCacheable(ei) {
+		defer c.cacheWrite(w)
 	}
-	return originalErr
+
+	return c.Next.Remove(ctx, ei, keys)
 }
 
 func (c *Connector) getValueFromFallback(ctx context.Context, ei *dosa.EntityInfo, keyValue []byte) ([]byte, error) {
