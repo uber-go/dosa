@@ -1,8 +1,8 @@
-hash: 408edbb5158f9ca7f947f54041e960744a0a0a957244e1c03d4b3fa88ac5d67c
-updated: 2018-03-27T13:09:21.897955-07:00
+hash: a7c49629e90f48bc1f5fd857429c11c0ebb3848edb34a6d74821c9f2e25b43f2
+updated: 2018-03-26T13:25:31.75324-07:00
 imports:
 - name: github.com/beorn7/perks
-  version: 3a771d992973f24aa725d07868b467d1ddfceafb
+  version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
   subpackages:
   - quantile
 - name: github.com/elodina/go-avro
@@ -15,7 +15,7 @@ imports:
   - internal
   - redis
 - name: github.com/gobwas/glob
-  version: 19c076cdf202b3d1c0489bdfa2f2f289f634474b
+  version: 51eb1ee00b6d931c66d229ceeb7c31b985563420
   subpackages:
   - compiler
   - match
@@ -25,7 +25,7 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gocql/gocql
-  version: 33a5f3c1bcc2c421b3221c5858312afb141bf605
+  version: 56a164ee9f3135e9cfe725a6d25939f24cb2d044 
   subpackages:
   - internal/lru
   - internal/murmur
@@ -35,7 +35,7 @@ imports:
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: bbd03ef6da3a115852eaf24c8a1c46aeb39aa175
+  version: 925541529c1fa6821df4e44ce2723319eb2be768
   subpackages:
   - proto
 - name: github.com/golang/snappy
@@ -65,13 +65,13 @@ imports:
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: 38c53a9f4bfcd932d1b00bfc65e256a7fba6b37a
+  version: 2f17f4a9d485bf34b4bfaccc273805040e4f86c8
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
   - model
 - name: github.com/prometheus/procfs
-  version: 780932d4fbbe0e69b84c34c20f5c8d0981e109ea
+  version: cb4147076ac75738c9a7d279075a253c0cc5acbd
   subpackages:
   - internal/util
   - nfs
@@ -114,7 +114,7 @@ imports:
   - push
   - tallypush
 - name: go.uber.org/thriftrw
-  version: 43dfafd7bb1c99f0460d645a1959b73f6dfa536f
+  version: 6216e5bb19132c14e979cf9c62abae6f022a0c0d
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -170,7 +170,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: 6078986fec03a1dcc236c34816c71b0e05018fda
+  version: d25186b37f34ebdbbea8f488ef055638dfab272d
   subpackages:
   - bpf
   - context
@@ -179,9 +179,9 @@ imports:
   - ipv4
   - ipv6
 - name: gopkg.in/inf.v0
-  version: d2d2541c53f18d2a059457998ce2876cc8e67cbf
+  version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/yaml.v2
-  version: 86f5ed62f8a0ee96bd888d2efdfd6d4fb100a4eb
+  version: d670f9405373e636a5a2765eea47fac0c9bc91a4
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -190,23 +190,23 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 8991bc29aa16c548c550c7ff78260e27b9ab7c73
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
-  version: 22ec1a223b7c9a2e56355bd500b539cba3784238
+  version: b472d5a5b9424bffa8444021b47d1b7b4c894b23
 - name: github.com/golang/lint
-  version: 85993ffd0a6cd043291f3f63d45d656d97b165bd
+  version: e14d9b0f1d332b1420c1ffa32562ad2dc84d645d
   subpackages:
   - golint
 - name: github.com/kisielk/errcheck
-  version: 8050dd7cc11578becd8622667107bb21a7baf451
+  version: b1445a9dd8285a50c6d1661d16f0a9ceb08125f7
 - name: github.com/kisielk/gotool
-  version: 80517062f582ea3340cd4baf70e86d539ae7d84d
+  version: d6ce6262d87e3a4e153e86023ff56ae771554a41
 - name: github.com/matm/gocov-html
   version: f6dd0fd0ebc7c8cff8b24c0a585caeef250627a3
 - name: github.com/mattn/goveralls
-  version: 1c14a4061c1cb86f0310cc0d4c0b5bc743879bc5
+  version: b71a1e4855f87991aff01c2c833a75a07059c61c
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
@@ -224,6 +224,6 @@ testImports:
 - name: github.com/yookoala/realpath
   version: d19ef9c409d9817c1e685775e53d361b03eabbc8
 - name: golang.org/x/tools
-  version: 77106db15f689a60e7d4e085d967ac557b918fb2
+  version: 25101aadb97aa42907eee6a238d6d26a6cb3c756
   subpackages:
   - cover
