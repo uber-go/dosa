@@ -27,6 +27,8 @@ import (
 	"strings"
 	"time"
 
+	"time"
+
 	"github.com/pkg/errors"
 )
 
@@ -76,6 +78,7 @@ type SchemaRef struct {
 type EntityInfo struct {
 	Ref *SchemaRef
 	Def *EntityDefinition
+	TTL *time.Duration
 }
 
 // StringSet is a set of strings.

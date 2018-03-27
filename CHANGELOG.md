@@ -6,7 +6,10 @@
 ## v2.6.0 (unreleased)
 - Add encoding package which contains basic implementations of json and gob encoding
 - Fallback connector fixes, including always return all results as pointers and only writing to fallback when origin succeeds
+
+## v2.5.3 (unreleased)
 - Invalidate fallback cache on upsert (#285)
+- Properly Interpret NotFound errors for MultiRead in the YARPC connector (#287)
 
 ## v2.5.2 (2018-02-05)
 - Fix memory connector bug with compound partition keys (#281)
