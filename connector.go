@@ -123,7 +123,7 @@ type ScopeFlagType int64
 
 // Scope flags (remember to update ScopeFlagType.String)
 const (
-	// AccessFromProd means access is allowed from production (only relevant for Dev scopes).
+	// AccessFromProd means access is allowed from production (only relevant for Dev scopes)
 	AccessFromProd ScopeFlagType = 1 << iota
 )
 
