@@ -195,8 +195,8 @@ func TestUpsertCases(t *testing.T) {
 					"key": encodedValue,
 				},
 			},
-			encoder: testEncoder{},
-			expectedErr:  assert.AnError,
+			encoder:     testEncoder{},
+			expectedErr: assert.AnError,
 		},
 	}
 	for _, t := range testCases {

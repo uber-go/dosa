@@ -100,9 +100,9 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 	}
 
 	if c.isCacheable(ei) {
-		defer c.cacheWrite(w)
+		_ = c.cacheWrite(w)
 	}
-	return  c.Next.Upsert(ctx, ei, values)
+	return c.Next.Upsert(ctx, ei, values)
 }
 
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, minimumFields []string) (values map[string]dosa.FieldValue, err error) {
@@ -237,7 +237,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 	}
 
 	if c.isCacheable(ei) {
-		defer c.cacheWrite(w)
+		_ = c.cacheWrite(w)
 	}
 
 	return c.Next.Remove(ctx, ei, keys)
