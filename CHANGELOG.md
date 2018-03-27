@@ -1,11 +1,7 @@
 # Changelog
 
 ## v3.0.0 (unreleased)
-- Scope metadata handling, and rudimentary auth* support. The Connector interface has changed.
-
-## v2.6.0 (unreleased)
-- Add encoding package which contains basic implementations of json and gob encoding
-- Fallback connector fixes, including always return all results as pointers and only writing to fallback when origin succeeds
+- Scope metadata handling, and rudimentary auth* support. The Connector interface (Admin API) has changed.
 
 ## v2.5.3 (unreleased)
 - Invalidate fallback cache on upsert (#285)
