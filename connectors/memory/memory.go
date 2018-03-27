@@ -49,6 +49,8 @@ import (
 // A read-write mutex lock is used to control concurrency, making reads work in parallel but
 // writes are not. There is no attempt to improve the concurrency of the read or write path by
 // adding more granular locks.
+//
+// NOTE: The memory connector doesn't support TTL. All the data is stored in memory until a manual delete.
 type Connector struct {
 	base.Connector
 	data map[string]map[string][]map[string]dosa.FieldValue
