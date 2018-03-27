@@ -237,11 +237,11 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		return c.fallback.Remove(newCtx, adaptedEi, map[string]dosa.FieldValue{key: cacheKey})
 	}
 
-	if c.isCacheable(ei) {
+	originalErr := c.Next.Remove(ctx, ei, keys)
+	if originalErr == nil && c.isCacheable(ei) {
 		_ = c.cacheWrite(w)
 	}
-
-	return c.Next.Remove(ctx, ei, keys)
+	return originalErr
 }
 
 func (c *Connector) getValueFromFallback(ctx context.Context, ei *dosa.EntityInfo, keyValue []byte) ([]byte, error) {

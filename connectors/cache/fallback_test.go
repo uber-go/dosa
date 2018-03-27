@@ -715,7 +715,7 @@ func TestScan(t *testing.T) {
 	assert.EqualValues(t, rangeTok, tok)
 }
 
-// Test remove from origin also removes from fallback. Does not matter if origin has an error or not
+// Test remove from origin also removes from fallback if origin has no error
 func TestRemove(t *testing.T) {
 	originCtrl := gomock.NewController(t)
 	defer originCtrl.Finish()
