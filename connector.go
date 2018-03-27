@@ -27,8 +27,6 @@ import (
 	"strings"
 	"time"
 
-	"time"
-
 	"github.com/pkg/errors"
 )
 

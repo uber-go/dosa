@@ -100,8 +100,8 @@ func (_m *MockConnector) CreateScope(_param0 context.Context, _param1 string, _p
 	return ret0
 }
 
-func (_mr *MockConnectorMockRecorder) CreateScope(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "CreateScope", reflect.TypeOf((*MockConnector)(nil).CreateScope), arg0, arg1, arg2)
+func (_mr *_MockConnectorRecorder) CreateScope(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateScope", arg0, arg1, arg2)
 }
 
 func (_m *MockConnector) DropScope(_param0 context.Context, _param1 string) error {
