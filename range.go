@@ -30,6 +30,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	AdaptiveRangeLimit = -1
+)
+
 // RangeOp is used to specify constraints to Range calls
 type RangeOp struct {
 	pager

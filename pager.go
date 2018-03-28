@@ -32,7 +32,7 @@ type pager struct {
 }
 
 func addLimitTokenString(w io.Writer, limit int, token string) {
-	if limit > 0 {
+	if limit == -1 || limit > 0 {
 		fmt.Fprintf(w, " limit %d", limit)
 	}
 	if token != "" {
