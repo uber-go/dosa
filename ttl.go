@@ -35,7 +35,7 @@ func NoTTL() time.Duration {
 // Any TTL with value of TTL less than 1 second is not allowed except value 0.
 // The TTL (0) means to clear previous TTL associated with the data record and make the record stay permanently.
 func ValidateTTL(ttl time.Duration) error {
-	if ttl < 1*time.Second && ttl != 0 {
+	if ttl < 1*time.Second && ttl != 0 && ttl != NoTTL() {
 		return errors.New("TTL is not allowed to set less than 1 second")
 	}
 
