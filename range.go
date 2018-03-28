@@ -31,6 +31,10 @@ import (
 )
 
 const (
+	// AdaptiveRangeLimit is a sentinel value that is used to indicate an intent
+	// to range over data in a partition as fast as possible. The server will
+	// determine an appropriate limit to use to range over the partition as fast
+	// as possible while ensuring the server remains healthy.
 	AdaptiveRangeLimit = -1
 )
 
