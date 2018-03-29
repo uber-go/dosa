@@ -74,7 +74,7 @@ func (c *ScopeCreate) Execute(args []string) error {
 		return err
 	}
 	if len(c.Owner) == 0 {
-		return errors.New("The owning ublame-group must be specified.")
+		return errors.New("the owning ublame-group must be specified")
 	}
 	return c.doScopeOp("create",
 		func(client dosa.AdminClient, ctx context.Context, scope string) error {

@@ -50,14 +50,14 @@ func TestScope_ServiceDefault(t *testing.T) {
 		for _, cmd := range []string{"create", "drop", "truncate"} {
 			os.Args = []string{
 				"dosa",
-				"--service", tc.serviceName,
 				"--connector", "devnull",
-				"scope",
-				cmd,
-				"scope",
 			}
+			if len(tc.serviceName) > 0 {
+				os.Args = append(os.Args, "--service", tc.serviceName)
+			}
+			os.Args = append(os.Args, "scope", cmd, "scope")
 			main()
-			assert.Equal(t, options.ServiceName, tc.expected)
+			assert.Equal(t, tc.expected, options.ServiceName)
 		}
 	}
 }
@@ -79,7 +79,7 @@ func TestScope_Create(t *testing.T) {
 		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "scope", "create", "one_scope", "two_scope", "three_scope", "four"}
+	os.Args = []string{"dosa", "--connector", "mock", "scope", "create", "-o", "foo", "one_scope", "two_scope", "three_scope", "four"}
 	c := StartCapture()
 	main()
 	assert.Contains(t, c.stop(false), "\"three_scope\"")
