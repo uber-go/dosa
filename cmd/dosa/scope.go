@@ -59,7 +59,7 @@ func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Conte
 // ScopeCreate contains data for executing scope create command.
 type ScopeCreate struct {
 	*ScopeCmd
-	Owner   string `short:"o" long:"owner" description:"The owning group"`
+	Owner   string `short:"o" long:"owner" description:"The owning group (ublame name)"`
 	Type    string `short:"t" long:"type" description:"Scope type (default: 'development')"`
 	Cluster string `short:"c" long:"cluster" description:"Hosting cluster for a production scope"`
 	Args    struct {
@@ -74,7 +74,7 @@ func (c *ScopeCreate) Execute(args []string) error {
 		return err
 	}
 	if len(c.Owner) == 0 {
-		c.Owner = *dosa.GetUsername()
+		return errors.New("The owning ublame-group must be specified.")
 	}
 	return c.doScopeOp("create",
 		func(client dosa.AdminClient, ctx context.Context, scope string) error {
