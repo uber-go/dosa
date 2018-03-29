@@ -111,7 +111,7 @@ type ScopeType int32
 // Scope types
 const (
 	// Development scope (also the default, so should be 0)
-	Development = iota
+	Development ScopeType = iota
 	// Staging doesn't really exist yet, but may in the future
 	Staging
 	// Production scope
