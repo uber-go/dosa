@@ -99,11 +99,10 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		return c.fallback.Remove(newCtx, adaptedEi, newValues)
 	}
 
-	originalErr := c.Next.Upsert(ctx, ei, values)
-	if originalErr == nil && c.isCacheable(ei) {
+	if c.isCacheable(ei) {
 		_ = c.cacheWrite(w)
 	}
-	return originalErr
+	return c.Next.Upsert(ctx, ei, values)
 }
 
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, minimumFields []string) (values map[string]dosa.FieldValue, err error) {

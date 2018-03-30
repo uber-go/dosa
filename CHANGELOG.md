@@ -2,7 +2,10 @@
 
 ## v2.6.0 (unreleased)
 
-## v2.5.3 (unreleased)
+## v2.5.4 (unreleased)
+- Fix bug in invalidating fallback cache on upsert (#292)
+
+## v2.5.3 (2018-03-22)
 - Invalidate fallback cache on upsert (#285)
 - Properly Interpret NotFound errors for MultiRead in the YARPC connector (#287)
 

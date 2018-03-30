@@ -180,9 +180,23 @@ func TestUpsertCases(t *testing.T) {
 			encoder: testEncoder{encodeErr: assert.AnError},
 		},
 		{
-			description:  "Unsuccessful origin upsert does not invalidate fallback",
-			originUpsert: &expectArgs{err: assert.AnError},
-			expectedErr:  assert.AnError,
+			description: "Unsuccessful origin upsert still invalidates fallback",
+			originUpsert: &expectArgs{
+				values: map[string]dosa.FieldValue{
+					"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
+					"strkey":      "test key string",
+					"StrV":        "test value string",
+					"BoolVP":      &testBool,
+				},
+				err: assert.AnError,
+			},
+			fallbackUpsert: &expectArgs{
+				values: map[string]dosa.FieldValue{
+					"key": encodedValue,
+				},
+			},
+			encoder:     testEncoder{},
+			expectedErr: assert.AnError,
 		},
 	}
 	for _, t := range testCases {
@@ -727,13 +741,13 @@ func TestRemove(t *testing.T) {
 
 	keys := map[string]dosa.FieldValue{}
 	transformedKeys := map[string]dosa.FieldValue{key: []byte{}}
-	mockOrigin.EXPECT().Remove(context.TODO(), testEi, keys).Return(nil)
+	mockOrigin.EXPECT().Remove(context.TODO(), testEi, keys).Return(assert.AnError)
 	mockFallback.EXPECT().Remove(gomock.Not(context.TODO()), adaptedEi, transformedKeys).Return(nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	err := connector.Remove(context.TODO(), testEi, keys)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }
 
 // Test that if a Connector interface method is not defined in fallback.Connector, revert to
