@@ -1077,7 +1077,7 @@ func TestSettingCachedEntities(t *testing.T) {
 func TestWriteKeyValueToFallback(t *testing.T) {
 	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), nil)
 	err := connector.writeKeyValueToFallback(context.TODO(), testEi, "a", nil)
-	// Should error on being unable to encode value
+	// Should error on being unable to encode nil value
 	assert.Error(t, err)
 }
 
