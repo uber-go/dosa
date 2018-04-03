@@ -215,13 +215,13 @@ func TestUpsertCases(t *testing.T) {
 // Test dosa multi upsert and the various behaviors of the fallback
 func TestMultiUpsertCases(t *testing.T) {
 	type testCase struct {
-		encoder encoding.Encoder
-		cachedEntities   []dosa.DomainObject
+		encoder        encoding.Encoder
+		cachedEntities []dosa.DomainObject
 		originArgs     []map[string]dosa.FieldValue
-		originResp      []error
-		originErr error
-		fallbackArgs []expectArgs
-		description      string
+		originResp     []error
+		originErr      error
+		fallbackArgs   []expectArgs
+		description    string
 	}
 
 	runTestCase := func(tc testCase) {
@@ -264,13 +264,13 @@ func TestMultiUpsertCases(t *testing.T) {
 				{values: map[string]dosa.FieldValue{"key": encodedValue}},
 			},
 			cachedEntities: cacheableEntities,
-			encoder: staticEncoder{},
+			encoder:        staticEncoder{},
 		},
 		{
-			description: "Do not call fallback if there is an encoding error while creating cache key",
-			originArgs: multiupsertArgs,
+			description:    "Do not call fallback if there is an encoding error while creating cache key",
+			originArgs:     multiupsertArgs,
 			cachedEntities: cacheableEntities,
-			encoder: staticEncoder{encodeErr: assert.AnError},
+			encoder:        staticEncoder{encodeErr: assert.AnError},
 		},
 		{
 			description: "Do not call fallback for uncached dosa objects",
@@ -287,7 +287,7 @@ func TestMultiUpsertCases(t *testing.T) {
 				{values: map[string]dosa.FieldValue{"key": encodedValue}},
 			},
 			cachedEntities: cacheableEntities,
-			encoder: staticEncoder{},
+			encoder:        staticEncoder{},
 		},
 	}
 	for _, t := range testCases {
@@ -298,13 +298,13 @@ func TestMultiUpsertCases(t *testing.T) {
 // Test dosa multi remove and the various behaviors of the fallback
 func TestMultiRemoveCases(t *testing.T) {
 	type testCase struct {
-		encoder encoding.Encoder
-		cachedEntities   []dosa.DomainObject
+		encoder        encoding.Encoder
+		cachedEntities []dosa.DomainObject
 		originArgs     []map[string]dosa.FieldValue
-		originResp      []error
-		originErr error
-		fallbackArgs []expectArgs
-		description      string
+		originResp     []error
+		originErr      error
+		fallbackArgs   []expectArgs
+		description    string
 	}
 
 	runTestCase := func(tc testCase) {
@@ -334,36 +334,36 @@ func TestMultiRemoveCases(t *testing.T) {
 	testCases := []testCase{
 		{
 			description: "Successful origin multiremove removes all the entries in fallback",
-			originArgs: []map[string]dosa.FieldValue{{"a": "b"}, {"c": "d"}},
-			originResp: []error{},
+			originArgs:  []map[string]dosa.FieldValue{{"a": "b"}, {"c": "d"}},
+			originResp:  []error{},
 			fallbackArgs: []expectArgs{
 				{values: map[string]dosa.FieldValue{"key": encodedValue}},
 				{values: map[string]dosa.FieldValue{"key": encodedValue}},
 			},
 			cachedEntities: cacheableEntities,
-			encoder: staticEncoder{},
+			encoder:        staticEncoder{},
 		},
 		{
-			description: "Do not remove from fallback if there is an encoding error while creating cache key",
-			originArgs: []map[string]dosa.FieldValue{{"a": "b"}},
+			description:    "Do not remove from fallback if there is an encoding error while creating cache key",
+			originArgs:     []map[string]dosa.FieldValue{{"a": "b"}},
 			cachedEntities: cacheableEntities,
-			encoder: staticEncoder{encodeErr: assert.AnError},
+			encoder:        staticEncoder{encodeErr: assert.AnError},
 		},
 		{
 			description: "Do not remove from fallback uncached dosa objects",
-			originArgs: []map[string]dosa.FieldValue{{"a": "b"}},
-			originResp: []error{},
+			originArgs:  []map[string]dosa.FieldValue{{"a": "b"}},
+			originResp:  []error{},
 		},
 		{
 			description: "Unsuccessful origin multiremove still removes from fallback",
-			originArgs: []map[string]dosa.FieldValue{{"a": "b"}},
-			originResp: []error{},
-			originErr: assert.AnError,
+			originArgs:  []map[string]dosa.FieldValue{{"a": "b"}},
+			originResp:  []error{},
+			originErr:   assert.AnError,
 			fallbackArgs: []expectArgs{
 				{values: map[string]dosa.FieldValue{"key": encodedValue}},
 			},
 			cachedEntities: cacheableEntities,
-			encoder: staticEncoder{},
+			encoder:        staticEncoder{},
 		},
 	}
 	for _, t := range testCases {

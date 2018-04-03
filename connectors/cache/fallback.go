@@ -233,7 +233,6 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 	return c.Next.Remove(ctx, ei, keys)
 }
 
-
 // MultiUpsert deletes the entries getting upserted from the fallback
 func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) (result []error, err error) {
 	if c.isCacheable(ei) {
