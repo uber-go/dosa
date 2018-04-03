@@ -238,7 +238,7 @@ func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiV
 	if c.isCacheable(ei) {
 		w := func() error {
 			for _, values := range multiValues {
-				c.removeValueFromFallback(ctx, ei, createCacheKey(ei, values))
+				_ = c.removeValueFromFallback(ctx, ei, createCacheKey(ei, values))
 			}
 			return nil
 		}
@@ -252,7 +252,7 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiK
 	if c.isCacheable(ei) {
 		w := func() error {
 			for _, keys := range multiKeys {
-				c.removeValueFromFallback(ctx, ei, createCacheKey(ei, keys))
+				_ = c.removeValueFromFallback(ctx, ei, createCacheKey(ei, keys))
 			}
 			return nil
 		}
