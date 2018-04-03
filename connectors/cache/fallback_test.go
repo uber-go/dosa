@@ -212,6 +212,165 @@ func TestUpsertCases(t *testing.T) {
 	}
 }
 
+// Test dosa multi upsert and the various behaviors of the fallback
+func TestMultiUpsertCases(t *testing.T) {
+	type testCase struct {
+		encoder encoding.Encoder
+		cachedEntities   []dosa.DomainObject
+		originArgs     []map[string]dosa.FieldValue
+		originResp      []error
+		originErr error
+		fallbackArgs []expectArgs
+		description      string
+	}
+
+	runTestCase := func(tc testCase) {
+		t.Run(tc.description, func(t *testing.T) {
+			originCtrl := gomock.NewController(t)
+			defer originCtrl.Finish()
+			mockOrigin := mocks.NewMockConnector(originCtrl)
+
+			fallbackCtrl := gomock.NewController(t)
+			defer fallbackCtrl.Finish()
+			mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+			mockOrigin.EXPECT().MultiUpsert(context.TODO(), testEi, tc.originArgs).Return(tc.originResp, tc.originErr)
+
+			for _, args := range tc.fallbackArgs {
+				mockFallback.EXPECT().Remove(gomock.Not(context.TODO()), adaptedEi, args.values).Return(nil)
+			}
+
+			connector := newConnector(mockOrigin, mockFallback, nil, tc.encoder, tc.cachedEntities...)
+			connector.setSynchronousMode(true)
+			resp, err := connector.MultiUpsert(context.TODO(), testEi, tc.originArgs)
+			assert.Equal(t, tc.originResp, resp)
+			assert.Equal(t, tc.originErr, err)
+		})
+	}
+
+	multiupsertArgs := []map[string]dosa.FieldValue{
+		{"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9"},
+		{"strkey": "test key string"},
+	}
+	multiupsertResp := make([]error, 2)
+
+	testCases := []testCase{
+		{
+			description: "Successful origin multiupsert invalidates all the entries in fallback",
+			originArgs:  multiupsertArgs,
+			originResp:  multiupsertResp,
+			fallbackArgs: []expectArgs{
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+			},
+			cachedEntities: cacheableEntities,
+			encoder: staticEncoder{},
+		},
+		{
+			description: "Do not call fallback if there is an encoding error while creating cache key",
+			originArgs: multiupsertArgs,
+			cachedEntities: cacheableEntities,
+			encoder: staticEncoder{encodeErr: assert.AnError},
+		},
+		{
+			description: "Do not call fallback for uncached dosa objects",
+			originArgs:  multiupsertArgs,
+			originResp:  multiupsertResp,
+		},
+		{
+			description: "Unsuccessful origin multiupsert still invalidates fallback",
+			originArgs:  multiupsertArgs,
+			originResp:  multiupsertResp,
+			originErr:   assert.AnError,
+			fallbackArgs: []expectArgs{
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+			},
+			cachedEntities: cacheableEntities,
+			encoder: staticEncoder{},
+		},
+	}
+	for _, t := range testCases {
+		runTestCase(t)
+	}
+}
+
+// Test dosa multi remove and the various behaviors of the fallback
+func TestMultiRemoveCases(t *testing.T) {
+	type testCase struct {
+		encoder encoding.Encoder
+		cachedEntities   []dosa.DomainObject
+		originArgs     []map[string]dosa.FieldValue
+		originResp      []error
+		originErr error
+		fallbackArgs []expectArgs
+		description      string
+	}
+
+	runTestCase := func(tc testCase) {
+		t.Run(tc.description, func(t *testing.T) {
+			originCtrl := gomock.NewController(t)
+			defer originCtrl.Finish()
+			mockOrigin := mocks.NewMockConnector(originCtrl)
+
+			fallbackCtrl := gomock.NewController(t)
+			defer fallbackCtrl.Finish()
+			mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+			mockOrigin.EXPECT().MultiRemove(context.TODO(), testEi, tc.originArgs).Return(tc.originResp, tc.originErr)
+
+			for _, args := range tc.fallbackArgs {
+				mockFallback.EXPECT().Remove(gomock.Not(context.TODO()), adaptedEi, args.values).Return(nil)
+			}
+
+			connector := newConnector(mockOrigin, mockFallback, nil, tc.encoder, tc.cachedEntities...)
+			connector.setSynchronousMode(true)
+			resp, err := connector.MultiRemove(context.TODO(), testEi, tc.originArgs)
+			assert.Equal(t, tc.originResp, resp)
+			assert.Equal(t, tc.originErr, err)
+		})
+	}
+
+	testCases := []testCase{
+		{
+			description: "Successful origin multiremove removes all the entries in fallback",
+			originArgs: []map[string]dosa.FieldValue{{"a": "b"}, {"c": "d"}},
+			originResp: []error{},
+			fallbackArgs: []expectArgs{
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+			},
+			cachedEntities: cacheableEntities,
+			encoder: staticEncoder{},
+		},
+		{
+			description: "Do not remove from fallback if there is an encoding error while creating cache key",
+			originArgs: []map[string]dosa.FieldValue{{"a": "b"}},
+			cachedEntities: cacheableEntities,
+			encoder: staticEncoder{encodeErr: assert.AnError},
+		},
+		{
+			description: "Do not remove from fallback uncached dosa objects",
+			originArgs: []map[string]dosa.FieldValue{{"a": "b"}},
+			originResp: []error{},
+		},
+		{
+			description: "Unsuccessful origin multiremove still removes from fallback",
+			originArgs: []map[string]dosa.FieldValue{{"a": "b"}},
+			originResp: []error{},
+			originErr: assert.AnError,
+			fallbackArgs: []expectArgs{
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+			},
+			cachedEntities: cacheableEntities,
+			encoder: staticEncoder{},
+		},
+	}
+	for _, t := range testCases {
+		runTestCase(t)
+	}
+}
+
 // Run the upsert to fallback in the goroutine. Should not affect the main path.
 func TestAsyncUpsert(t *testing.T) {
 	values := map[string]dosa.FieldValue{
@@ -913,13 +1072,6 @@ func TestSettingCachedEntities(t *testing.T) {
 	assert.Contains(t, connector.cacheableEntities, "e2")
 	connector.SetCachedEntities(nil)
 	assert.Empty(t, connector.cacheableEntities)
-}
-
-func TestWriteKeyValueToFallback(t *testing.T) {
-	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), nil)
-	err := connector.writeKeyValueToFallback(context.TODO(), testEi, "a", nil)
-	// Should error on being unable to encode nil value
-	assert.Error(t, err)
 }
 
 func TestRawRowAsPointers(t *testing.T) {
