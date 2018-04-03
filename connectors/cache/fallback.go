@@ -122,7 +122,13 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 }
 
 // if source of truth fails, try the fallback. If the fallback fails, return the original error
-func (c *Connector) read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, source map[string]dosa.FieldValue, sourceErr error, methodName string) (values map[string]dosa.FieldValue, err error) {
+func (c *Connector) read(
+	ctx context.Context,
+	ei *dosa.EntityInfo,
+	keys map[string]dosa.FieldValue,
+	source map[string]dosa.FieldValue,
+	sourceErr error, methodName string,
+) (values map[string]dosa.FieldValue, err error) {
 	if dosa.ErrorIsNotFound(sourceErr) {
 		return source, sourceErr
 	}
@@ -204,8 +210,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 		}
 	}
 
-	// If we are not caching for this entity, just return
-	if !c.isCacheable(ei) {
+	if dosa.ErrorIsNotFound(sourceErr) || !c.isCacheable(ei) {
 		return source, sourceErr
 	}
 
@@ -222,19 +227,21 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 		_ = c.cacheWrite(w)
 	}
 
-	if dosa.ErrorIsNotFound(sourceErr) {
-		return source, sourceErr
-	}
-
-	// Since this is MultiRead, even if there is no error, it might still have returned only partial results.
-	// Try to fetch the remaining keys from cache
+	// When error, try to read from cache.
+	// But since this is MultiRead, even if there is no error,
+	// it might still have returned only partial results.
+	// Try to fetch the remaining missing results from cache
 	multiResult := make([]*dosa.FieldValuesOrError, len(keys))
 	var useCacheResult bool
 	var wg sync.WaitGroup
 	wg.Add(len(keys))
-	for idx, result := range source {
-		// Default to the original result
-		multiResult[idx] = source[idx]
+	for idx := range multiResult {
+		result := &dosa.FieldValuesOrError{Error: sourceErr}
+		if len(source) != 0 {
+			result = source[idx]
+		}
+		// Default to the original result and then overwrite with results from cache
+		multiResult[idx] = result
 
 		go func(idx int, keys map[string]dosa.FieldValue, source *dosa.FieldValuesOrError) {
 			defer wg.Done()
