@@ -96,20 +96,6 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 	return c.Next.Upsert(ctx, ei, values)
 }
 
-// MultiUpsert deletes the entries getting upserted from the fallback
-func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) (result []error, err error) {
-	if c.isCacheable(ei) {
-		w := func() error {
-			for _, values := range multiValues {
-				c.removeValueFromFallback(ctx, ei, createCacheKey(ei, values))
-			}
-			return nil
-		}
-		_ = c.cacheWrite(w)
-	}
-	return c.Next.MultiUpsert(ctx, ei, multiValues)
-}
-
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, minimumFields []string) (values map[string]dosa.FieldValue, err error) {
 	// Read from source of truth first
 	source, sourceErr := c.Next.Read(ctx, ei, keys, dosa.All())
@@ -245,6 +231,21 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 	}
 
 	return c.Next.Remove(ctx, ei, keys)
+}
+
+
+// MultiUpsert deletes the entries getting upserted from the fallback
+func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) (result []error, err error) {
+	if c.isCacheable(ei) {
+		w := func() error {
+			for _, values := range multiValues {
+				c.removeValueFromFallback(ctx, ei, createCacheKey(ei, values))
+			}
+			return nil
+		}
+		_ = c.cacheWrite(w)
+	}
+	return c.Next.MultiUpsert(ctx, ei, multiValues)
 }
 
 // MultiRemove deletes multiple entries from the fallback
