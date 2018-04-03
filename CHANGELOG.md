@@ -4,6 +4,7 @@
 
 ## v2.5.4 (unreleased)
 - Fix bug in invalidating fallback cache on upsert (#292)
+- Refactor fallback connector (#297)
 
 ## v2.5.3 (2018-03-22)
 - Invalidate fallback cache on upsert (#285)
