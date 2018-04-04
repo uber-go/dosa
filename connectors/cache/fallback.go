@@ -200,6 +200,7 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 	return c.Range(ctx, ei, nil, minimumFields, token, limit)
 }
 
+// MultiRead reads from fallback for the keys that failed
 func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, minimumFields []string) (results []*dosa.FieldValuesOrError, err error) {
 	// Read from source of truth first
 	source, sourceErr := c.Next.MultiRead(ctx, ei, keys, dosa.All())
@@ -219,7 +220,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 		w := func() error {
 			for idx, result := range source {
 				if result.Error == nil {
-					c.write(ctx, ei, keys[idx], result.Values)
+					_ = c.write(ctx, ei, keys[idx], result.Values)
 				}
 			}
 			return nil
