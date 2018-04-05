@@ -135,7 +135,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	if err != nil {
 		return source, sourceErr
 	}
-	return rawRowAsPointers(ei, result), err}
+	return rawRowAsPointers(ei, result), err
 }
 
 func (c *Connector) write(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, source map[string]dosa.FieldValue) (err error) {
