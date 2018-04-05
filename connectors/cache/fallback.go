@@ -124,8 +124,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	// if source of truth fails, try the fallback. If the fallback fails,
 	// return the original error
 	ckey := createCacheKey(ei, keys)
-	adaptedEi := adaptToKeyValue(ei)
-	value, err := c.getValueFromFallback(ctx, adaptedEi, ckey)
+	value, err := c.getValueFromFallback(ctx, ei, ckey)
 	c.logFallback("READ", ei.Def.Name, err)
 	if err != nil {
 		return source, sourceErr
