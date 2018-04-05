@@ -33,6 +33,7 @@ import (
 const (
 	maxBlobSize   = 32
 	maxStringSize = 64
+	defaultRangeLimit = 200
 )
 
 // Connector is a connector implementation for testing
@@ -149,6 +150,9 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiV
 
 // Range returns a random set of data, and a random continuation token
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+	if limit == dosa.AdaptiveRangeLimit {
+		limit = defaultRangeLimit
+	}
 	vals := make([]map[string]dosa.FieldValue, limit)
 	for inx := range vals {
 		vals[inx] = Data(ei, minimumFields)

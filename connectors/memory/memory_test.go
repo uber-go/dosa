@@ -665,6 +665,13 @@ func TestConnector_Range(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, data)
 	assert.Empty(t, token)
+
+	// Test with adaptive limits
+	data, _, _ = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
+	}, dosa.All(), "", 200)
+	assert.Len(t, data, idcount)
 }
 
 func TestConnector_TUUIDs(t *testing.T) {
