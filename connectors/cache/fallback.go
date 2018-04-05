@@ -201,6 +201,14 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 }
 
 // MultiRead reads from fallback for the keys that failed
+// There are a few scenarios for the fallback:
+// 1. The original multiread call fails overall with an error XYZ. The fallback will try to read as many keys as possible.
+// - If none of the keys are in the fallback, the original XYZ error is returned.
+// - If there are partial successes, the fallback will return an array of dosa.FieldValuesOrError.
+//   The keys that are not found will have the original overall failure XYZ set as the error
+// 2. The original multiread does not have an error but some of the results have errors. The fallback will try to read
+// the keys that have an error and replace the failed result with the result from fallback. If the key is not in fallback,
+// do not modify the original result
 func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []map[string]dosa.FieldValue, minimumFields []string) (results []*dosa.FieldValuesOrError, err error) {
 	// Read from source of truth first
 	source, sourceErr := c.Next.MultiRead(ctx, ei, keys, dosa.All())
