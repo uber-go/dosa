@@ -31,8 +31,8 @@ import (
 )
 
 const (
-	maxBlobSize   = 32
-	maxStringSize = 64
+	maxBlobSize       = 32
+	maxStringSize     = 64
 	defaultRangeLimit = 200
 )
 
