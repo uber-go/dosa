@@ -155,7 +155,7 @@ func (c *Connector) write(ctx context.Context, ei *dosa.EntityInfo, keys map[str
 // Range returns range from origin, reverts to fallback if origin fails
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	sourceRows, sourceToken, sourceErr := c.Next.Range(ctx, ei, columnConditions, dosa.All(), token, limit)
-	if !c.isCacheable(ei) {
+	if !c.isCacheable(ei) || dosa.ErrorIsNotFound(sourceErr) {
 		return sourceRows, sourceToken, sourceErr
 	}
 	cacheKey := rangeQuery{
@@ -174,9 +174,6 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 		}
 		_ = c.cacheWrite(w)
 
-		return sourceRows, sourceToken, sourceErr
-	}
-	if dosa.ErrorIsNotFound(sourceErr) {
 		return sourceRows, sourceToken, sourceErr
 	}
 
@@ -244,13 +241,13 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 	var useCacheResult bool
 	var wg sync.WaitGroup
 	wg.Add(len(keys))
-	for idx := range multiResult {
-		result := &dosa.FieldValuesOrError{Error: sourceErr}
+	for idx, primaryKey := range keys {
+		singleResult := &dosa.FieldValuesOrError{Error: sourceErr}
 		if len(source) != 0 {
-			result = source[idx]
+			singleResult = source[idx]
 		}
-		// Default to the original result and then overwrite with results from cache
-		multiResult[idx] = result
+		// Default to the original singleResult and then overwrite with results from cache
+		multiResult[idx] = singleResult
 
 		go func(idx int, keys map[string]dosa.FieldValue, source *dosa.FieldValuesOrError) {
 			defer wg.Done()
@@ -267,7 +264,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 				Values: result,
 				Error:  err,
 			}
-		}(idx, keys[idx], result)
+		}(idx, primaryKey, singleResult)
 	}
 	wg.Wait()
 	if useCacheResult {
