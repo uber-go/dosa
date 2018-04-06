@@ -138,10 +138,12 @@ type Client interface {
 	// to update in fieldsToUpdate (or all the fields if you use dosa.All())
 	Upsert(ctx context.Context, fieldsToUpdate []string, objectToUpdate DomainObject) error
 
-	// TODO: Coming in v2.1
 	// MultiUpsert creates or updates multiple rows. A list of fields to
-	// update can be specified. Use All() or nil for all fields.
-	// MultiUpsert(context.Context, []string, ...DomainObject) (MultiResult, error)
+	// update can be specified. Use All() or nil for all fields. Partial
+	// successes are possible, so it is critical to inspect the MultiResult response
+	// to check for failures.
+	// NOTE: This API only upserts objects of same entity type from same scope.
+	MultiUpsert(context.Context, []string, ...DomainObject) (MultiResult, error)
 
 	// Remove removes a row by primary key. The passed-in entity should contain
 	// the primary key field values, all other fields are ignored.
@@ -151,7 +153,7 @@ type Client interface {
 	// given RemoveRangeOp.
 	RemoveRange(ctx context.Context, removeRangeOp *RemoveRangeOp) error
 
-	// TODO: Coming in v2.1
+	// TODO: Coming in v2.2
 	// MultiRemove removes multiple rows by primary key. The passed-in entity should
 	// contain the primary key field values.
 	// MultiRemove(context.Context, ...DomainObject) (MultiResult, error)
@@ -410,12 +412,69 @@ func (c *client) createOrUpsert(ctx context.Context, fieldsToUpdate []string, en
 	return fn(ctx, re.EntityInfo(), fieldValues)
 }
 
-// MultiUpsert updates several entities by primary key, The entities provided
-// must contain values for all components of its primary key for the operation
-// to succeed. If `fieldsToUpdate` is provided, only a subset of fields will be
-// updated.
-func (c *client) MultiUpsert(context.Context, []string, ...DomainObject) (MultiResult, error) {
-	panic("not implemented")
+// MultiUpsert updates several entities of the same type by primary key, The
+// entities provided must contain values for all components of its primary key
+// for the operation to succeed. If `fieldsToUpdate` is provided, only a subset
+// of fields will be updated. Moreover, all entities being upserted must be part
+// of the same partition otherwise the request will be rejected.
+func (c *client) MultiUpsert(ctx context.Context, fieldsToUpdate []string, entities ...DomainObject) (MultiResult, error) {
+	if !c.initialized {
+		return nil, &ErrNotInitialized{}
+	}
+
+	if len(entities) == 0 {
+		return nil, fmt.Errorf("the number of entities to upsert is zero")
+	}
+
+	// lookup registered entity, registry will return error if registration
+	// is not found
+	var re *RegisteredEntity
+	var listMultiValues []map[string]FieldValue
+	for _, entity := range entities {
+		ere, err := c.registrar.Find(entity)
+		if err != nil {
+			return nil, err
+		}
+
+		if re == nil {
+			re = ere
+		} else if re != ere {
+			return nil, fmt.Errorf("inconsistent entity type for multi upsert: %v vs %v", re, ere)
+		}
+
+		// translate entity field values to a map of primary key name/values pairs
+		keyFieldValues := re.KeyFieldValues(entity)
+
+		// translate remaining entity fields values to map of column name/value pairs
+		fieldValues, err := re.OnlyFieldValues(entity, fieldsToUpdate)
+		if err != nil {
+			return nil, err
+		}
+
+		// merge key and remaining values
+		for k, v := range keyFieldValues {
+			fieldValues[k] = v
+		}
+
+		// translate entity field values to a map of primary key name/values pairs
+		// required to perform a read
+		listMultiValues = append(listMultiValues, fieldValues)
+	}
+
+	results, err := c.connector.MultiUpsert(ctx, re.EntityInfo(), listMultiValues)
+	if err != nil {
+		return nil, err
+	}
+
+	multiResult := MultiResult{}
+	// map results to entity fields
+	for i, entity := range entities {
+		if results[i] != nil {
+			multiResult[entity] = results[i]
+		}
+	}
+
+	return multiResult, nil
 }
 
 // Remove deletes an entity by primary key, The entity provided must contain
