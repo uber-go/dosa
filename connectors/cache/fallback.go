@@ -127,7 +127,8 @@ func (c *Connector) read(
 	ei *dosa.EntityInfo,
 	keys map[string]dosa.FieldValue,
 	source map[string]dosa.FieldValue,
-	sourceErr error, methodName string,
+	sourceErr error,
+	methodName string,
 ) (values map[string]dosa.FieldValue, err error) {
 	if dosa.ErrorIsNotFound(sourceErr) {
 		return source, sourceErr
