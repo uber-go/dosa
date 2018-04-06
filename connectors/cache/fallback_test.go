@@ -458,7 +458,6 @@ func TestReadCases(t *testing.T) {
 		createReadFailTestCase(),
 		createReadNotFoundTestCase(),
 		createFallbackWriteKeyEncodeErrorTestCase(),
-		createFallbackWriteValueEncodeErrorTestCase(),
 		createFallbackReadEncodeErrorTestCase(),
 		createReadDecodeErrorTestCase(),
 		createReadFallbackFailTestCase(),
@@ -553,20 +552,6 @@ func createFallbackWriteKeyEncodeErrorTestCase() testCase {
 	}
 }
 
-func createFallbackWriteValueEncodeErrorTestCase() testCase {
-	return testCase{
-		description:    "If an encoding error occurs while creating encoded value for the fallback, do not upsert into fallback",
-		cachedEntities: cacheableEntities,
-		originRead: &expectArgs{
-			values: map[string]dosa.FieldValue{"strkey": "primaryValue"},
-			resp:   nil,
-		},
-		expectedResp: nil,
-		expectedErr:  nil,
-		encoder:      &staticEncoder{},
-	}
-}
-
 func createFallbackReadEncodeErrorTestCase() testCase {
 	originResponse := map[string]dosa.FieldValue{"a": "b"}
 
@@ -575,12 +560,12 @@ func createFallbackReadEncodeErrorTestCase() testCase {
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
 			values: map[string]dosa.FieldValue{"strkey": "primaryValue"},
-			resp:   nil,
+			resp:   originResponse,
 			err:    assert.AnError,
 		},
 		expectedResp: originResponse,
 		expectedErr:  assert.AnError,
-		encoder:      staticEncoder{encodeErr: assert.AnError},}
+		encoder:      staticEncoder{encodeErr: assert.AnError}}
 }
 
 func createReadDecodeErrorTestCase() testCase {
