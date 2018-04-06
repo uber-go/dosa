@@ -1074,6 +1074,13 @@ func TestSettingCachedEntities(t *testing.T) {
 	assert.Empty(t, connector.cacheableEntities)
 }
 
+func TestWriteKeyValueToFallback(t *testing.T) {
+	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), nil)
+	err := connector.writeKeyValueToFallback(context.TODO(), testEi, "a", nil)
+	// Should error on being unable to encode nil value
+	assert.Error(t, err)
+}
+
 func TestRawRowAsPointers(t *testing.T) {
 	e1 := struct {
 		dosa.Entity `dosa:"name=e1, primaryKey=(Hello)"`
