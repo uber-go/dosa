@@ -121,11 +121,6 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	return c.read(ctx, ei, keys, source, sourceErr, "READ")
 }
 
-func (c *Connector) write(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, source map[string]dosa.FieldValue) (err error) {
-	cacheKey := createCacheKey(ei, keys)
-	return c.writeKeyValueToFallback(ctx, ei, cacheKey, source)
-}
-
 // If source had an error, try the fallback. If the fallback fails, return the original error
 func (c *Connector) read(
 	ctx context.Context,
@@ -150,6 +145,11 @@ func (c *Connector) read(
 		return source, sourceErr
 	}
 	return rawRowAsPointers(ei, result), err
+}
+
+func (c *Connector) write(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, source map[string]dosa.FieldValue) (err error) {
+	cacheKey := createCacheKey(ei, keys)
+	return c.writeKeyValueToFallback(ctx, ei, cacheKey, source)
 }
 
 // Range returns range from origin, reverts to fallback if origin fails
