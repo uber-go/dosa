@@ -43,25 +43,7 @@ import (
 var (
 	nt = dosa.NoTTL().Nanoseconds()
 
-	testEi = &dosa.EntityInfo{
-		Ref: &testSchemaRef,
-		Def: &dosa.EntityDefinition{
-			Columns: []*dosa.ColumnDefinition{
-				{Name: "f1", Type: dosa.String},
-				{Name: "c1", Type: dosa.Int64},
-				{Name: "c2", Type: dosa.Double},
-				{Name: "c3", Type: dosa.String},
-				{Name: "c4", Type: dosa.Blob},
-				{Name: "c5", Type: dosa.Bool},
-				{Name: "c6", Type: dosa.Int32},
-				{Name: "c7", Type: dosa.TUUID},
-			},
-			Key: &dosa.PrimaryKey{
-				PartitionKeys: []string{"f1"},
-			},
-			Name: "t1",
-		},
-	}
+	testEi = newTestEi()
 
 	testSchemaRef = dosa.SchemaRef{
 		Scope:      "scope1",
@@ -84,6 +66,28 @@ var (
 
 	ctx = context.Background()
 )
+
+func newTestEi() *dosa.EntityInfo {
+	return &dosa.EntityInfo{
+		Ref: &testSchemaRef,
+		Def: &dosa.EntityDefinition{
+			Columns: []*dosa.ColumnDefinition{
+				{Name: "f1", Type: dosa.String},
+				{Name: "c1", Type: dosa.Int64},
+				{Name: "c2", Type: dosa.Double},
+				{Name: "c3", Type: dosa.String},
+				{Name: "c4", Type: dosa.Blob},
+				{Name: "c5", Type: dosa.Bool},
+				{Name: "c6", Type: dosa.Int32},
+				{Name: "c7", Type: dosa.TUUID},
+			},
+			Key: &dosa.PrimaryKey{
+				PartitionKeys: []string{"f1"},
+			},
+			Name: "t1",
+		},
+	}
+}
 
 func testAssert(t *testing.T) testutil.TestAssertFn {
 	return func(a, b interface{}) {
@@ -484,25 +488,7 @@ func TestYaRPCClient_CreateIfNotExistsWithTTL(t *testing.T) {
 		{"c7", time.Now()},
 	}
 
-	ei := &dosa.EntityInfo{
-		Ref: &testSchemaRef,
-		Def: &dosa.EntityDefinition{
-			Columns: []*dosa.ColumnDefinition{
-				{Name: "f1", Type: dosa.String},
-				{Name: "c1", Type: dosa.Int64},
-				{Name: "c2", Type: dosa.Double},
-				{Name: "c3", Type: dosa.String},
-				{Name: "c4", Type: dosa.Blob},
-				{Name: "c5", Type: dosa.Bool},
-				{Name: "c6", Type: dosa.Int32},
-				{Name: "c7", Type: dosa.TUUID},
-			},
-			Key: &dosa.PrimaryKey{
-				PartitionKeys: []string{"f1"},
-			},
-			Name: "t1",
-		},
-	}
+	ei := newTestEi()
 
 	ttls := []int64{int64(-1), int64(0), 435}
 	for _, ttl := range ttls {
@@ -591,25 +577,7 @@ func TestYaRPCClient_UpsertWithTTL(t *testing.T) {
 		{"c7", testutil.TestTimePtr(time.Now())},
 	}
 
-	ei := &dosa.EntityInfo{
-		Ref: &testSchemaRef,
-		Def: &dosa.EntityDefinition{
-			Columns: []*dosa.ColumnDefinition{
-				{Name: "f1", Type: dosa.String},
-				{Name: "c1", Type: dosa.Int64},
-				{Name: "c2", Type: dosa.Double},
-				{Name: "c3", Type: dosa.String},
-				{Name: "c4", Type: dosa.Blob},
-				{Name: "c5", Type: dosa.Bool},
-				{Name: "c6", Type: dosa.Int32},
-				{Name: "c7", Type: dosa.TUUID},
-			},
-			Key: &dosa.PrimaryKey{
-				PartitionKeys: []string{"f1"},
-			},
-			Name: "t1",
-		},
-	}
+	ei := newTestEi()
 
 	ttls := []int64{int64(-1), int64(0), 435}
 	for _, ttl := range ttls {
@@ -649,6 +617,8 @@ func TestYaRPCClient_MultiUpsert(t *testing.T) {
 
 	testErrMsg := "response error"
 
+	ttlVal := int64(1)
+
 	testCases := []struct {
 		NetworkError  error
 		ResponseError *drpc.Error
@@ -656,21 +626,25 @@ func TestYaRPCClient_MultiUpsert(t *testing.T) {
 			Name  string
 			Value interface{}
 		}
+		TTL *int64
 	}{
 		{
 			nil,
 			nil,
 			getStubbedUpsertRequests()[0],
+			&ttlVal,
 		},
 		{
 			nil,
 			nil,
 			getStubbedUpsertRequests()[1],
+			nil,
 		},
 		{
 			errors.New("an error"),
 			nil,
 			getStubbedUpsertRequests()[0],
+			nil,
 		},
 		{
 			nil,
@@ -678,6 +652,7 @@ func TestYaRPCClient_MultiUpsert(t *testing.T) {
 				Msg: &testErrMsg,
 			},
 			getStubbedUpsertRequests()[0],
+			nil,
 		},
 	}
 
@@ -692,16 +667,28 @@ func TestYaRPCClient_MultiUpsert(t *testing.T) {
 			outFields[item.Name] = &drpc.Value{ElemValue: rv}
 		}
 
+		ei := newTestEi()
+
+		expectedTTL := testCase.TTL
+		if expectedTTL == nil {
+			noTTL := dosa.NoTTL().Nanoseconds()
+			expectedTTL = &noTTL
+		}
+
+		durationTTL := time.Duration(*expectedTTL)
+		ei.TTL = &durationTTL
+
 		mockedClient.EXPECT().MultiUpsert(ctx, &drpc.MultiUpsertRequest{
 			Ref:      &testRPCSchemaRef,
 			Entities: []drpc.FieldValueMap{outFields},
+			TTL:      expectedTTL,
 		}, gomock.Any()).Return(&drpc.MultiUpsertResponse{Errors: []*drpc.Error{testCase.ResponseError}}, testCase.NetworkError).Times(1)
 
 		// create the YaRPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
 		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 
-		retErrors, err := sut.MultiUpsert(ctx, testEi, []map[string]dosa.FieldValue{inFields})
+		retErrors, err := sut.MultiUpsert(ctx, ei , []map[string]dosa.FieldValue{inFields})
 		if testCase.NetworkError != nil {
 			assert.Error(t, err)
 		} else if testCase.ResponseError != nil {
@@ -712,7 +699,7 @@ func TestYaRPCClient_MultiUpsert(t *testing.T) {
 		}
 
 		// cover the conversion error case
-		retErrors, err = sut.MultiUpsert(ctx, testEi, []map[string]dosa.FieldValue{{"c7": dosa.UUID("")}})
+		retErrors, err = sut.MultiUpsert(ctx, ei , []map[string]dosa.FieldValue{{"c7": dosa.UUID("")}})
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
 		assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
