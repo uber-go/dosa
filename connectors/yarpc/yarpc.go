@@ -39,12 +39,12 @@ import (
 )
 
 const (
-	_version                    = "version"
-	_defaultServiceName         = "dosa-gateway"
-	errCodeNotFound      int32  = 404
-	errCodeAlreadyExists int32  = 409
-	errInvalidHandler     = "no handler for service"
-	errConnectionRefused  = "getsockopt: connection refused"
+	_version                   = "version"
+	_defaultServiceName        = "dosa-gateway"
+	errCodeNotFound      int32 = 404
+	errCodeAlreadyExists int32 = 409
+	errInvalidHandler          = "no handler for service"
+	errConnectionRefused       = "getsockopt: connection refused"
 )
 
 // ErrInvalidHandler is used to help deliver a better error message when
@@ -759,10 +759,9 @@ func wrapError(err error, message, scope, service string) error {
 func wrapIDLError(err *dosarpc.Error) error {
 	if err.ErrCode != nil && *err.ErrCode == errCodeNotFound {
 		return errors.Wrap(&dosa.ErrNotFound{}, "read failed: not found")
-	} else {
-		// TODO check other fields in the thrift error object such as ShouldRetry
-		return errors.New(*err.Msg)
 	}
+	// TODO check other fields in the thrift error object such as ShouldRetry
+	return errors.New(*err.Msg)
 }
 
 func getWithDefault(args map[string]interface{}, elem string, def string) string {

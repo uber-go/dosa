@@ -688,7 +688,7 @@ func TestYaRPCClient_MultiUpsert(t *testing.T) {
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
 		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 
-		retErrors, err := sut.MultiUpsert(ctx, ei , []map[string]dosa.FieldValue{inFields})
+		retErrors, err := sut.MultiUpsert(ctx, ei, []map[string]dosa.FieldValue{inFields})
 		if testCase.NetworkError != nil {
 			assert.Error(t, err)
 		} else if testCase.ResponseError != nil {
@@ -699,7 +699,7 @@ func TestYaRPCClient_MultiUpsert(t *testing.T) {
 		}
 
 		// cover the conversion error case
-		retErrors, err = sut.MultiUpsert(ctx, ei , []map[string]dosa.FieldValue{{"c7": dosa.UUID("")}})
+		retErrors, err = sut.MultiUpsert(ctx, ei, []map[string]dosa.FieldValue{{"c7": dosa.UUID("")}})
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
 		assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
