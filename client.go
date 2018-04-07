@@ -153,7 +153,7 @@ type Client interface {
 	// given RemoveRangeOp.
 	RemoveRange(ctx context.Context, removeRangeOp *RemoveRangeOp) error
 
-	// TODO: Coming in v2.2
+	// TODO: Coming in v2.7
 	// MultiRemove removes multiple rows by primary key. The passed-in entity should
 	// contain the primary key field values.
 	// MultiRemove(context.Context, ...DomainObject) (MultiResult, error)
