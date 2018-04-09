@@ -417,6 +417,8 @@ func (c *client) createOrUpsert(ctx context.Context, fieldsToUpdate []string, en
 // for the operation to succeed. If `fieldsToUpdate` is provided, only a subset
 // of fields will be updated. Moreover, all entities being upserted must be part
 // of the same partition otherwise the request will be rejected.
+// NOTE: This endpoint is not officially released. No guarantees about correctness
+// or performance of this API will be guaranteed until v2.6 is released.
 func (c *client) MultiUpsert(ctx context.Context, fieldsToUpdate []string, entities ...DomainObject) (MultiResult, error) {
 	if !c.initialized {
 		return nil, &ErrNotInitialized{}
