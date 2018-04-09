@@ -1,6 +1,7 @@
 # Changelog
 
 ## v2.6.0 (unreleased)
+- Implement MultiUpsert method in client and expose it via the Client interface (#304)
 
 ## v2.5.4 (unreleased)
 - Fix bug in invalidating fallback cache on upsert (#292)
