@@ -456,8 +456,6 @@ func (c *client) MultiUpsert(ctx context.Context, fieldsToUpdate []string, entit
 			fieldValues[k] = v
 		}
 
-		// translate entity field values to a map of primary key name/values pairs
-		// required to perform a read
 		listMultiValues = append(listMultiValues, fieldValues)
 	}
 
