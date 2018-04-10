@@ -43,25 +43,7 @@ import (
 var (
 	nt = dosa.NoTTL().Nanoseconds()
 
-	testEi = &dosa.EntityInfo{
-		Ref: &testSchemaRef,
-		Def: &dosa.EntityDefinition{
-			Columns: []*dosa.ColumnDefinition{
-				{Name: "f1", Type: dosa.String},
-				{Name: "c1", Type: dosa.Int64},
-				{Name: "c2", Type: dosa.Double},
-				{Name: "c3", Type: dosa.String},
-				{Name: "c4", Type: dosa.Blob},
-				{Name: "c5", Type: dosa.Bool},
-				{Name: "c6", Type: dosa.Int32},
-				{Name: "c7", Type: dosa.TUUID},
-			},
-			Key: &dosa.PrimaryKey{
-				PartitionKeys: []string{"f1"},
-			},
-			Name: "t1",
-		},
-	}
+	testEi = newTestEi()
 
 	testSchemaRef = dosa.SchemaRef{
 		Scope:      "scope1",
@@ -85,13 +67,35 @@ var (
 	ctx = context.Background()
 )
 
+func newTestEi() *dosa.EntityInfo {
+	return &dosa.EntityInfo{
+		Ref: &testSchemaRef,
+		Def: &dosa.EntityDefinition{
+			Columns: []*dosa.ColumnDefinition{
+				{Name: "f1", Type: dosa.String},
+				{Name: "c1", Type: dosa.Int64},
+				{Name: "c2", Type: dosa.Double},
+				{Name: "c3", Type: dosa.String},
+				{Name: "c4", Type: dosa.Blob},
+				{Name: "c5", Type: dosa.Bool},
+				{Name: "c6", Type: dosa.Int32},
+				{Name: "c7", Type: dosa.TUUID},
+			},
+			Key: &dosa.PrimaryKey{
+				PartitionKeys: []string{"f1"},
+			},
+			Name: "t1",
+		},
+	}
+}
+
 func testAssert(t *testing.T) testutil.TestAssertFn {
 	return func(a, b interface{}) {
 		assert.Equal(t, a, b)
 	}
 }
 
-func TestYaRPCClient_NewConnectorWithTransport(t *testing.T) {
+func TestYARPCClient_NewConnectorWithTransport(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	cc := transporttest.NewMockClientConfig(ctrl)
 	cc.EXPECT().Caller().Return("test")
@@ -100,7 +104,7 @@ func TestYaRPCClient_NewConnectorWithTransport(t *testing.T) {
 	ctrl.Finish()
 }
 
-func TestYaRPCClient_NewConnectorWithChannel(t *testing.T) {
+func TestYARPCClient_NewConnectorWithChannel(t *testing.T) {
 	// if we can call this with a real tchannel instance, only errors can occur
 	// when trying to initialize the dispatcher, which also shouldn't return
 	// an error since we're providing a known, compatible configuration.
@@ -114,7 +118,7 @@ func TestYaRPCClient_NewConnectorWithChannel(t *testing.T) {
 	assert.NotNil(t, conn)
 }
 
-func TestYaRPCClient_NewConnector(t *testing.T) {
+func TestYARPCClient_NewConnector(t *testing.T) {
 	cases := []struct {
 		cfg     yarpc.Config
 		isErr   bool
@@ -188,7 +192,7 @@ func TestYaRPCClient_NewConnector(t *testing.T) {
 }
 
 // Test a happy path read of one column and specify the primary key
-func TestYaRPCClient_Read(t *testing.T) {
+func TestYARPCClient_Read(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
@@ -235,7 +239,7 @@ func TestYaRPCClient_Read(t *testing.T) {
 	ctrl.Finish()
 }
 
-func TestYaRPCClient_MultiRead(t *testing.T) {
+func TestYARPCClient_MultiRead(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
@@ -417,36 +421,13 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 	ctrl.Finish()
 }
 
-func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
+func TestYARPCClient_CreateIfNotExists(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockedClient := dosatest.NewMockClient(ctrl)
 
-	// here are the data types to test; the names are random
-	valss := [][]struct {
-		Name  string
-		Value interface{}
-	}{
-		{
-			{"c1", int64(1)},
-			{"c2", float64(2.2)},
-			{"c3", "string"},
-			{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
-			{"c5", false},
-			{"c6", int32(2)},
-			{"c7", time.Now()},
-		},
-		{
-			{"c1", testutil.TestInt64Ptr(1)},
-			{"c2", testutil.TestFloat64Ptr(2.2)},
-			{"c3", testutil.TestStringPtr("string")},
-			{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
-			{"c5", testutil.TestBoolPtr(false)},
-			{"c6", testutil.TestInt32Ptr(2)},
-			{"c7", testutil.TestTimePtr(time.Now())},
-		},
-	}
+	valss := getStubbedUpsertRequests()
 
 	for _, vals := range valss {
 		// build up the input field list and the output field list
@@ -461,7 +442,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 
 		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields, TTL: &nt}, gomock.Any())
 
-		// create the YaRPCClient and give it the mocked RPC interface
+		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
 		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 
@@ -486,7 +467,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	}
 }
 
-func TestYaRPCClient_CreateIfNotExistsWithTTL(t *testing.T) {
+func TestYARPCClient_CreateIfNotExistsWithTTL(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -507,25 +488,7 @@ func TestYaRPCClient_CreateIfNotExistsWithTTL(t *testing.T) {
 		{"c7", time.Now()},
 	}
 
-	ei := &dosa.EntityInfo{
-		Ref: &testSchemaRef,
-		Def: &dosa.EntityDefinition{
-			Columns: []*dosa.ColumnDefinition{
-				{Name: "f1", Type: dosa.String},
-				{Name: "c1", Type: dosa.Int64},
-				{Name: "c2", Type: dosa.Double},
-				{Name: "c3", Type: dosa.String},
-				{Name: "c4", Type: dosa.Blob},
-				{Name: "c5", Type: dosa.Bool},
-				{Name: "c6", Type: dosa.Int32},
-				{Name: "c7", Type: dosa.TUUID},
-			},
-			Key: &dosa.PrimaryKey{
-				PartitionKeys: []string{"f1"},
-			},
-			Name: "t1",
-		},
-	}
+	ei := newTestEi()
 
 	ttls := []int64{int64(-1), int64(0), 435}
 	for _, ttl := range ttls {
@@ -543,7 +506,7 @@ func TestYaRPCClient_CreateIfNotExistsWithTTL(t *testing.T) {
 
 		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields, TTL: &ttl}, gomock.Any())
 
-		// create the YaRPCClient and give it the mocked RPC interface
+		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
 		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 
@@ -553,36 +516,13 @@ func TestYaRPCClient_CreateIfNotExistsWithTTL(t *testing.T) {
 	}
 }
 
-func TestYaRPCClient_Upsert(t *testing.T) {
+func TestYARPCClient_Upsert(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockedClient := dosatest.NewMockClient(ctrl)
 
-	// here are the data types to test; the names are random
-	valss := [][]struct {
-		Name  string
-		Value interface{}
-	}{
-		{
-			{"c1", int64(1)},
-			{"c2", float64(2.2)},
-			{"c3", "string"},
-			{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
-			{"c5", false},
-			{"c6", int32(2)},
-			{"c7", time.Now()},
-		},
-		{
-			{"c1", testutil.TestInt64Ptr(1)},
-			{"c2", testutil.TestFloat64Ptr(2.2)},
-			{"c3", testutil.TestStringPtr("string")},
-			{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
-			{"c5", testutil.TestBoolPtr(false)},
-			{"c6", testutil.TestInt32Ptr(2)},
-			{"c7", testutil.TestTimePtr(time.Now())},
-		},
-	}
+	valss := getStubbedUpsertRequests()
 
 	for _, vals := range valss {
 		// build up the input field list and the output field list
@@ -601,7 +541,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 			TTL:          &nt,
 		}, gomock.Any())
 
-		// create the YaRPCClient and give it the mocked RPC interface
+		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
 		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 
@@ -617,7 +557,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 	}
 }
 
-func TestYaRPCClient_UpsertWithTTL(t *testing.T) {
+func TestYARPCClient_UpsertWithTTL(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -637,25 +577,7 @@ func TestYaRPCClient_UpsertWithTTL(t *testing.T) {
 		{"c7", testutil.TestTimePtr(time.Now())},
 	}
 
-	ei := &dosa.EntityInfo{
-		Ref: &testSchemaRef,
-		Def: &dosa.EntityDefinition{
-			Columns: []*dosa.ColumnDefinition{
-				{Name: "f1", Type: dosa.String},
-				{Name: "c1", Type: dosa.Int64},
-				{Name: "c2", Type: dosa.Double},
-				{Name: "c3", Type: dosa.String},
-				{Name: "c4", Type: dosa.Blob},
-				{Name: "c5", Type: dosa.Bool},
-				{Name: "c6", Type: dosa.Int32},
-				{Name: "c7", Type: dosa.TUUID},
-			},
-			Key: &dosa.PrimaryKey{
-				PartitionKeys: []string{"f1"},
-			},
-			Name: "t1",
-		},
-	}
+	ei := newTestEi()
 
 	ttls := []int64{int64(-1), int64(0), 435}
 	for _, ttl := range ttls {
@@ -677,7 +599,7 @@ func TestYaRPCClient_UpsertWithTTL(t *testing.T) {
 			TTL:          &ttl,
 		}, gomock.Any())
 
-		// create the YaRPCClient and give it the mocked RPC interface
+		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
 		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 
@@ -685,6 +607,169 @@ func TestYaRPCClient_UpsertWithTTL(t *testing.T) {
 		err := sut.Upsert(ctx, ei, inFields)
 		assert.Nil(t, err)
 	}
+}
+
+func TestYARPCClient_MultiUpsert(t *testing.T) {
+	// build a mock RPC client
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockedClient := dosatest.NewMockClient(ctrl)
+
+	testErrMsg := "response error"
+
+	ttlVal := int64(1)
+
+	testCases := []struct {
+		NetworkError  error
+		ResponseError *drpc.Error
+		UpsertRequest []struct {
+			Name  string
+			Value interface{}
+		}
+		TTL *int64
+	}{
+		{
+			nil,
+			nil,
+			getStubbedUpsertRequests()[0],
+			&ttlVal,
+		},
+		{
+			nil,
+			nil,
+			getStubbedUpsertRequests()[1],
+			nil,
+		},
+		{
+			errors.New("an error"),
+			nil,
+			getStubbedUpsertRequests()[0],
+			nil,
+		},
+		{
+			nil,
+			&drpc.Error{
+				Msg: &testErrMsg,
+			},
+			getStubbedUpsertRequests()[0],
+			nil,
+		},
+	}
+
+	for _, testCase := range testCases {
+		// build up the input field list and the output field list
+		// the layout is quite different; inputs are a simple map but the actual RPC call expects a messier format
+		inFields := map[string]dosa.FieldValue{}
+		outFields := map[string]*drpc.Value{}
+		for _, item := range testCase.UpsertRequest {
+			inFields[item.Name] = item.Value
+			rv, _ := yarpc.RawValueFromInterface(item.Value)
+			outFields[item.Name] = &drpc.Value{ElemValue: rv}
+		}
+
+		ei := newTestEi()
+
+		expectedTTL := testCase.TTL
+		if expectedTTL == nil {
+			noTTL := dosa.NoTTL().Nanoseconds()
+			expectedTTL = &noTTL
+		}
+
+		durationTTL := time.Duration(*expectedTTL)
+		ei.TTL = &durationTTL
+
+		mockedClient.EXPECT().MultiUpsert(ctx, &drpc.MultiUpsertRequest{
+			Ref:      &testRPCSchemaRef,
+			Entities: []drpc.FieldValueMap{outFields},
+			TTL:      expectedTTL,
+		}, gomock.Any()).Return(&drpc.MultiUpsertResponse{Errors: []*drpc.Error{testCase.ResponseError}}, testCase.NetworkError).Times(1)
+
+		// create the YARPCClient and give it the mocked RPC interface
+		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
+		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
+
+		retErrors, err := sut.MultiUpsert(ctx, ei, []map[string]dosa.FieldValue{inFields})
+		if testCase.NetworkError != nil {
+			assert.Error(t, err)
+		} else if testCase.ResponseError != nil {
+			assert.NotNil(t, retErrors[0])
+		} else {
+			assert.Nil(t, err)
+			assert.Len(t, retErrors, 1)
+		}
+	}
+}
+
+func TestYARPCClient_MultiUpsertInvalidDataType(t *testing.T) {
+	sut := yarpc.Connector{Client: nil, Config: testCfg}
+
+	_, err := sut.MultiUpsert(ctx, testEi, []map[string]dosa.FieldValue{{"c7": dosa.UUID("")}})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
+	assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
+}
+
+func TestYARPCClient_MultiRemove(t *testing.T) {
+	// build a mock RPC client
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockedClient := dosatest.NewMockClient(ctrl)
+
+	testErrMsg := "response error"
+
+	testCases := []struct {
+		NetworkError  error
+		ResponseError *drpc.Error
+		RemoveRequest map[string]dosa.FieldValue
+	}{
+		{
+			nil,
+			nil,
+			getStubbedRemoveRequest(),
+		},
+		{
+			errors.New("an error"),
+			nil,
+			getStubbedRemoveRequest(),
+		},
+		{
+			nil,
+			&drpc.Error{
+				Msg: &testErrMsg,
+			},
+			getStubbedRemoveRequest(),
+		},
+	}
+
+	for _, testCase := range testCases {
+		mockedClient.EXPECT().MultiRemove(ctx, &drpc.MultiRemoveRequest{
+			Ref:       &testRPCSchemaRef,
+			KeyValues: []drpc.FieldValueMap{getStubbedRemoveDOSARequest()},
+		}, gomock.Any()).Return(&drpc.MultiRemoveResponse{Errors: []*drpc.Error{testCase.ResponseError}}, testCase.NetworkError).Times(1)
+
+		// create the YARPCClient and give it the mocked RPC interface
+		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
+		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
+
+		retErrors, err := sut.MultiRemove(ctx, testEi, []map[string]dosa.FieldValue{testCase.RemoveRequest})
+		if testCase.NetworkError != nil {
+			assert.Error(t, err)
+		} else if testCase.ResponseError != nil {
+			assert.NotNil(t, retErrors[0])
+		} else {
+			assert.Nil(t, err)
+			assert.Len(t, retErrors, 1)
+		}
+	}
+}
+
+func TestYARPCClient_MultiRemoveInvalidDataType(t *testing.T) {
+	sut := yarpc.Connector{Client: nil, Config: testCfg}
+
+	_, err := sut.MultiRemove(ctx, testEi, []map[string]dosa.FieldValue{{"c7": dosa.UUID("")}})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
+	assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
 }
 
 type TestDosaObject struct {
@@ -1069,7 +1154,7 @@ func TestConnector_Remove(t *testing.T) {
 	// set up the parameters
 	removeRequest := &drpc.RemoveRequest{
 		Ref:       &testRPCSchemaRef,
-		KeyValues: map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}}},
+		KeyValues: getStubbedRemoveDOSARequest(),
 	}
 
 	// we expect a single call to Read, and we return back two fields, f1 which is in the typemap and another field that is not
@@ -1079,7 +1164,7 @@ func TestConnector_Remove(t *testing.T) {
 	sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 
 	// perform the read
-	err := sut.Remove(ctx, testEi, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))})
+	err := sut.Remove(ctx, testEi, getStubbedRemoveRequest())
 	assert.Nil(t, err) // not an error
 
 	// cover the conversion error case
@@ -1092,20 +1177,49 @@ func TestConnector_Remove(t *testing.T) {
 	ctrl.Finish()
 }
 
+func getStubbedUpsertRequests() [][]struct {
+	Name  string
+	Value interface{}
+} {
+	return [][]struct {
+		Name  string
+		Value interface{}
+	}{
+		{
+			{"c1", int64(1)},
+			{"c2", float64(2.2)},
+			{"c3", "string"},
+			{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
+			{"c5", false},
+			{"c6", int32(2)},
+			{"c7", time.Now()},
+		},
+		{
+			{"c1", testutil.TestInt64Ptr(1)},
+			{"c2", testutil.TestFloat64Ptr(2.2)},
+			{"c3", testutil.TestStringPtr("string")},
+			{"c4", []byte{'b', 'i', 'n', 'a', 'r', 'y'}},
+			{"c5", testutil.TestBoolPtr(false)},
+			{"c6", testutil.TestInt32Ptr(2)},
+			{"c7", testutil.TestTimePtr(time.Now())},
+		},
+	}
+}
+
+func getStubbedRemoveDOSARequest() map[string]*drpc.Value {
+	return map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}}}
+}
+
+func getStubbedRemoveRequest() map[string]dosa.FieldValue {
+	return map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))}
+}
+
 // TestPanic is an unimplemented method test for coverage, remove these as they are implemented
 func TestPanic(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
-
-	assert.Panics(t, func() {
-		sut.MultiUpsert(ctx, testEi, nil)
-	})
-
-	assert.Panics(t, func() {
-		sut.MultiRemove(ctx, testEi, nil)
-	})
 
 	assert.Panics(t, func() {
 		sut.ScopeExists(ctx, "")

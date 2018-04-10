@@ -1,5 +1,5 @@
-hash: a7c49629e90f48bc1f5fd857429c11c0ebb3848edb34a6d74821c9f2e25b43f2
-updated: 2018-03-26T13:25:31.75324-07:00
+hash: 8b504c7412567ab097019fc80fff8dc43647b3247180549699dcadd3d57244e8
+updated: 2018-04-06T14:54:41.617824-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -25,13 +25,13 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gocql/gocql
-  version: 56a164ee9f3135e9cfe725a6d25939f24cb2d044 
+  version: 33a5f3c1bcc2c421b3221c5858312afb141bf605
   subpackages:
   - internal/lru
   - internal/murmur
   - internal/streams
 - name: github.com/golang/mock
-  version: 58cd061d09382b6011f84c1291ebe50ef2e25bab
+  version: 8b2eeeb0ca5f56c78bec5efde9c4a21d9201126c
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
@@ -43,7 +43,7 @@ imports:
 - name: github.com/hailocab/go-hostpool
   version: e80d13ce29ede4452c43dea11e79b9bc8a15b478
 - name: github.com/jessevdk/go-flags
-  version: 96dc06278ce32a0e9d957d590bb987c81ee66407
+  version: c6ca198ec95c841fdb89fc0de7496fed11ab854e
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
@@ -89,13 +89,13 @@ imports:
 - name: github.com/uber-go/tally
   version: 522328b48efad0c6034dba92bf39228694e9d31f
 - name: github.com/uber/dosa-idl
-  version: d2e1771166878b37955444109576d36be250f864
+  version: e60480c0ff8c7cc4ff987ff3da29ae5215611441
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
   - .gen/dosa/dosatest
 - name: github.com/uber/tchannel-go
-  version: acd4eb54c11531814d9cd0344fdc53bebe86ab12
+  version: cc0c40929b0dbdb755b727a8c253de2b5d4af46b
   subpackages:
   - internal/argreader
   - relay
@@ -114,7 +114,7 @@ imports:
   - push
   - tallypush
 - name: go.uber.org/thriftrw
-  version: 6216e5bb19132c14e979cf9c62abae6f022a0c0d
+  version: 43dfafd7bb1c99f0460d645a1959b73f6dfa536f
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -124,7 +124,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 74cd4e7d2dee21702c2131968b04367850011d5d
+  version: 4ac8938c1046d4db2dc26a1436699935a8c5bb35
   subpackages:
   - api/backoff
   - api/encoding
@@ -170,7 +170,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: d25186b37f34ebdbbea8f488ef055638dfab272d
+  version: b3c676e531a6dc479fa1b35ac961c13f5e2b4d2e
   subpackages:
   - bpf
   - context

@@ -7,6 +7,8 @@
 - Implement MultiRemove and MultiUpsert in fallback connector (#298)
 - Refactor fallback connector (#299)
 - Implement MultiRead in fallback connector (#296)
+- Implement multi upsert and multi remove methods in memory connector (#301)
+- Implement multi upsert and multi remove in YARPC connector (#303)
 
 ## v2.5.3 (2018-03-22)
 - Invalidate fallback cache on upsert (#285)

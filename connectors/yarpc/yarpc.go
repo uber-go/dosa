@@ -39,12 +39,12 @@ import (
 )
 
 const (
-	_version                    = "version"
-	_defaultServiceName         = "dosa-gateway"
-	errCodeNotFound      int32  = 404
-	errCodeAlreadyExists int32  = 409
-	errInvalidHandler    string = "no handler for service"
-	errConnectionRefused string = "getsockopt: connection refused"
+	_version                   = "version"
+	_defaultServiceName        = "dosa-gateway"
+	errCodeNotFound      int32 = 404
+	errCodeAlreadyExists int32 = 409
+	errInvalidHandler          = "no handler for service"
+	errConnectionRefused       = "getsockopt: connection refused"
 )
 
 // ErrInvalidHandler is used to help deliver a better error message when
@@ -270,6 +270,45 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 	return errors.Wrap(err, "failed to Upsert")
 }
 
+// MultiUpsert upserts multiple entities at one time
+func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
+	values, err := fieldValueMapsFromClientMaps(multiValues)
+	if err != nil {
+		return nil, err
+	}
+
+	ttl := dosa.NoTTL().Nanoseconds()
+	if ei.TTL != nil {
+		ttl = ei.TTL.Nanoseconds()
+	}
+
+	// perform the multi upsert request
+	request := &dosarpc.MultiUpsertRequest{
+		Ref:      entityInfoToSchemaRef(ei),
+		Entities: values,
+		TTL:      &ttl,
+	}
+
+	response, err := c.Client.MultiUpsert(ctx, request, VersionHeader())
+	if err != nil {
+		if !dosarpc.Dosa_MultiUpsert_Helper.IsException(err) {
+			return nil, errors.Wrap(err, "failed to MultiUpsert due to network issue")
+		}
+
+		return nil, errors.Wrap(err, "failed to MultiUpsert")
+	}
+
+	rpcErrors := response.Errors
+	results := make([]error, len(rpcErrors))
+	for i, rpcError := range rpcErrors {
+		if rpcError != nil {
+			results[i] = wrapIDLError(rpcError)
+		}
+	}
+
+	return results, nil
+}
+
 // Read reads a single entity
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, minimumFields []string) (map[string]dosa.FieldValue, error) {
 	// Convert the fields from the client's map to a set of fields to read
@@ -373,37 +412,19 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 			}
 		}
 		if rpcResult.Error != nil {
-			if rpcResult.Error.ErrCode != nil && *rpcResult.Error.ErrCode == errCodeNotFound {
-				results[i].Error = errors.Wrap(&dosa.ErrNotFound{}, "read failed: not found")
-			} else {
-				// TODO check other fields in the thrift error object such as ShouldRetry
-				results[i].Error = errors.New(*rpcResult.Error.Msg)
-			}
+			results[i].Error = wrapIDLError(rpcResult.Error)
 		}
 	}
 
 	return results, nil
 }
 
-// MultiUpsert is not yet implemented
-func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
-	panic("not implemented")
-}
-
 // Remove marshals a request to the YARPC remove call
 func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue) error {
 	// convert the key values from interface{} to RPC's Value
-	rpcFields := make(dosarpc.FieldValueMap)
-	for key, value := range keys {
-		rv, err := RawValueFromInterface(value)
-		if err != nil {
-			return errors.Wrapf(err, "Key field %q", key)
-		}
-		if rv == nil {
-			continue
-		}
-		rpcValue := &dosarpc.Value{ElemValue: rv}
-		rpcFields[key] = rpcValue
+	rpcFields, err := keyValuesToRPCValues(keys)
+	if err != nil {
+		return err
 	}
 
 	// perform the remove request
@@ -412,7 +433,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		KeyValues: rpcFields,
 	}
 
-	err := c.Client.Remove(ctx, removeRequest, VersionHeader())
+	err = c.Client.Remove(ctx, removeRequest, VersionHeader())
 	if err != nil {
 		if !dosarpc.Dosa_Remove_Helper.IsException(err) {
 			return errors.Wrap(err, "failed to Remove due to network issue")
@@ -421,6 +442,39 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		return errors.Wrap(err, "failed to Remove")
 	}
 	return nil
+}
+
+// MultiRemove is not yet implemented
+func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiKeys []map[string]dosa.FieldValue) ([]error, error) {
+	keyValues, err := multiKeyValuesToRPCValues(multiKeys)
+	if err != nil {
+		return nil, err
+	}
+
+	// perform the multi remove request
+	request := &dosarpc.MultiRemoveRequest{
+		Ref:       entityInfoToSchemaRef(ei),
+		KeyValues: keyValues,
+	}
+
+	response, err := c.Client.MultiRemove(ctx, request, VersionHeader())
+	if err != nil {
+		if !dosarpc.Dosa_MultiRemove_Helper.IsException(err) {
+			return nil, errors.Wrap(err, "failed to MultiRemove due to network issue")
+		}
+
+		return nil, errors.Wrap(err, "failed to MultiRemove")
+	}
+
+	rpcErrors := response.Errors
+	results := make([]error, len(rpcErrors))
+	for i, rpcError := range rpcErrors {
+		if rpcError != nil {
+			results[i] = wrapIDLError(rpcError)
+		}
+	}
+
+	return results, nil
 }
 
 // RemoveRange removes all entities within the range specified by the columnConditions.
@@ -442,11 +496,6 @@ func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, column
 		return errors.Wrap(err, "failed to RemoveRange")
 	}
 	return nil
-}
-
-// MultiRemove is not yet implemented
-func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiKeys []map[string]dosa.FieldValue) ([]error, error) {
-	panic("not implemented")
 }
 
 // Range does a scan across a range
@@ -472,9 +521,9 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 
 		return nil, "", errors.Wrap(err, "failed to Range")
 	}
-	results := []map[string]dosa.FieldValue{}
-	for _, entity := range response.Entities {
-		results = append(results, decodeResults(ei, entity))
+	results := make([]map[string]dosa.FieldValue, len(response.Entities))
+	for idx, entity := range response.Entities {
+		results[idx] = decodeResults(ei, entity)
 	}
 	return results, *response.NextToken, nil
 }
@@ -521,9 +570,9 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 
 		return nil, "", errors.Wrap(err, "failed to Scan")
 	}
-	results := []map[string]dosa.FieldValue{}
-	for _, entity := range response.Entities {
-		results = append(results, decodeResults(ei, entity))
+	results := make([]map[string]dosa.FieldValue, len(response.Entities))
+	for idx, entity := range response.Entities {
+		results[idx] = decodeResults(ei, entity)
 	}
 	return results, *response.NextToken, nil
 }
@@ -705,6 +754,14 @@ func wrapError(err error, message, scope, service string) error {
 		err = &ErrConnectionRefused{err}
 	}
 	return errors.Wrap(err, message)
+}
+
+func wrapIDLError(err *dosarpc.Error) error {
+	if err.ErrCode != nil && *err.ErrCode == errCodeNotFound {
+		return errors.Wrap(&dosa.ErrNotFound{}, "read failed: not found")
+	}
+	// TODO check other fields in the thrift error object such as ShouldRetry
+	return errors.New(*err.Msg)
 }
 
 func getWithDefault(args map[string]interface{}, elem string, def string) string {
