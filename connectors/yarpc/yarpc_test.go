@@ -697,13 +697,16 @@ func TestYARPCClient_MultiUpsert(t *testing.T) {
 			assert.Nil(t, err)
 			assert.Len(t, retErrors, 1)
 		}
-
-		// cover the conversion error case
-		retErrors, err = sut.MultiUpsert(ctx, ei, []map[string]dosa.FieldValue{{"c7": dosa.UUID("")}})
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
-		assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
 	}
+}
+
+func TestYARPCClient_MultiUpsertInvalidDataType(t *testing.T) {
+	sut := yarpc.Connector{Client: nil, Config: testCfg}
+
+	_, err := sut.MultiUpsert(ctx, testEi, []map[string]dosa.FieldValue{{"c7": dosa.UUID("")}})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
+	assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
 }
 
 func TestYARPCClient_MultiRemove(t *testing.T) {
@@ -757,13 +760,16 @@ func TestYARPCClient_MultiRemove(t *testing.T) {
 			assert.Nil(t, err)
 			assert.Len(t, retErrors, 1)
 		}
-
-		// cover the conversion error case
-		retErrors, err = sut.MultiRemove(ctx, testEi, []map[string]dosa.FieldValue{{"c7": dosa.UUID("")}})
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
-		assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
 	}
+}
+
+func TestYARPCClient_MultiRemoveInvalidDataType(t *testing.T) {
+	sut := yarpc.Connector{Client: nil, Config: testCfg}
+
+	_, err := sut.MultiRemove(ctx, testEi, []map[string]dosa.FieldValue{{"c7": dosa.UUID("")}})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
+	assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
 }
 
 type TestDosaObject struct {
