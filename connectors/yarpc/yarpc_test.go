@@ -95,7 +95,7 @@ func testAssert(t *testing.T) testutil.TestAssertFn {
 	}
 }
 
-func TestYaRPCClient_NewConnectorWithTransport(t *testing.T) {
+func TestYARPCClient_NewConnectorWithTransport(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	cc := transporttest.NewMockClientConfig(ctrl)
 	cc.EXPECT().Caller().Return("test")
@@ -104,7 +104,7 @@ func TestYaRPCClient_NewConnectorWithTransport(t *testing.T) {
 	ctrl.Finish()
 }
 
-func TestYaRPCClient_NewConnectorWithChannel(t *testing.T) {
+func TestYARPCClient_NewConnectorWithChannel(t *testing.T) {
 	// if we can call this with a real tchannel instance, only errors can occur
 	// when trying to initialize the dispatcher, which also shouldn't return
 	// an error since we're providing a known, compatible configuration.
@@ -118,7 +118,7 @@ func TestYaRPCClient_NewConnectorWithChannel(t *testing.T) {
 	assert.NotNil(t, conn)
 }
 
-func TestYaRPCClient_NewConnector(t *testing.T) {
+func TestYARPCClient_NewConnector(t *testing.T) {
 	cases := []struct {
 		cfg     yarpc.Config
 		isErr   bool
@@ -192,7 +192,7 @@ func TestYaRPCClient_NewConnector(t *testing.T) {
 }
 
 // Test a happy path read of one column and specify the primary key
-func TestYaRPCClient_Read(t *testing.T) {
+func TestYARPCClient_Read(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
@@ -239,7 +239,7 @@ func TestYaRPCClient_Read(t *testing.T) {
 	ctrl.Finish()
 }
 
-func TestYaRPCClient_MultiRead(t *testing.T) {
+func TestYARPCClient_MultiRead(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	mockedClient := dosatest.NewMockClient(ctrl)
@@ -421,7 +421,7 @@ func TestYaRPCClient_MultiRead(t *testing.T) {
 	ctrl.Finish()
 }
 
-func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
+func TestYARPCClient_CreateIfNotExists(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -442,7 +442,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 
 		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields, TTL: &nt}, gomock.Any())
 
-		// create the YaRPCClient and give it the mocked RPC interface
+		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
 		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 
@@ -467,7 +467,7 @@ func TestYaRPCClient_CreateIfNotExists(t *testing.T) {
 	}
 }
 
-func TestYaRPCClient_CreateIfNotExistsWithTTL(t *testing.T) {
+func TestYARPCClient_CreateIfNotExistsWithTTL(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -506,7 +506,7 @@ func TestYaRPCClient_CreateIfNotExistsWithTTL(t *testing.T) {
 
 		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields, TTL: &ttl}, gomock.Any())
 
-		// create the YaRPCClient and give it the mocked RPC interface
+		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
 		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 
@@ -516,7 +516,7 @@ func TestYaRPCClient_CreateIfNotExistsWithTTL(t *testing.T) {
 	}
 }
 
-func TestYaRPCClient_Upsert(t *testing.T) {
+func TestYARPCClient_Upsert(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -541,7 +541,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 			TTL:          &nt,
 		}, gomock.Any())
 
-		// create the YaRPCClient and give it the mocked RPC interface
+		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
 		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 
@@ -557,7 +557,7 @@ func TestYaRPCClient_Upsert(t *testing.T) {
 	}
 }
 
-func TestYaRPCClient_UpsertWithTTL(t *testing.T) {
+func TestYARPCClient_UpsertWithTTL(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -599,7 +599,7 @@ func TestYaRPCClient_UpsertWithTTL(t *testing.T) {
 			TTL:          &ttl,
 		}, gomock.Any())
 
-		// create the YaRPCClient and give it the mocked RPC interface
+		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
 		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 
@@ -609,7 +609,7 @@ func TestYaRPCClient_UpsertWithTTL(t *testing.T) {
 	}
 }
 
-func TestYaRPCClient_MultiUpsert(t *testing.T) {
+func TestYARPCClient_MultiUpsert(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -684,7 +684,7 @@ func TestYaRPCClient_MultiUpsert(t *testing.T) {
 			TTL:      expectedTTL,
 		}, gomock.Any()).Return(&drpc.MultiUpsertResponse{Errors: []*drpc.Error{testCase.ResponseError}}, testCase.NetworkError).Times(1)
 
-		// create the YaRPCClient and give it the mocked RPC interface
+		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
 		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 
@@ -706,7 +706,7 @@ func TestYaRPCClient_MultiUpsert(t *testing.T) {
 	}
 }
 
-func TestYaRPCClient_MultiRemove(t *testing.T) {
+func TestYARPCClient_MultiRemove(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -744,7 +744,7 @@ func TestYaRPCClient_MultiRemove(t *testing.T) {
 			KeyValues: []drpc.FieldValueMap{getStubbedRemoveDOSARequest()},
 		}, gomock.Any()).Return(&drpc.MultiRemoveResponse{Errors: []*drpc.Error{testCase.ResponseError}}, testCase.NetworkError).Times(1)
 
-		// create the YaRPCClient and give it the mocked RPC interface
+		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
 		sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 
