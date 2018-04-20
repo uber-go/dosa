@@ -384,7 +384,7 @@ func (e *EntityDefinition) KeySet() map[string]struct{} {
 	return m
 }
 
-// IsCompatible checks upsertability: Can entity e2 be upserted? In other words, is e2 a SUPERRSET of e?
+// IsCompatible checks upsertability: Can entity e2 be upserted? In other words, is e2 a SUPERSET of e?
 // "IsCompatible" is a terrible name: compatibility is a symmetric relation, but superset is not.
 func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
 	// Better names: e1 is the original, e2 is the new.
