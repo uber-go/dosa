@@ -384,11 +384,10 @@ func (e *EntityDefinition) KeySet() map[string]struct{} {
 	return m
 }
 
-// IsCompatible checks if two entity definitions are compatible or not.
-// e1.g. edA.IsCompatible(edB) return true, means edA is compatible with edB.
-// edA is the one to compare and edB is the one to be compared.
+// IsCompatible checks upsertability: Can entity e2 be upserted? In other words, is e2 a SUPERRSET of e?
+// "IsCompatible" is a terrible name: compatibility is a symmetric relation, but superset is not.
 func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
-	// for better naming
+	// Better names: e1 is the original, e2 is the new.
 	e1 := e
 
 	// entity name should be the same
