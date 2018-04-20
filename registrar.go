@@ -219,6 +219,10 @@ type prefixedRegistrar struct {
 // and prefix to uniquely identify where entities should live but the
 // registrar itself is only responsible for basic accounting of entities.
 func NewRegistrar(scope, prefix string, entities ...DomainObject) (Registrar, error) {
+	_, err := ToFQN(prefix)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to construct Registrar")
+	}
 	typeIndex := make(map[reflect.Type]*RegisteredEntity)
 
 	for _, e := range entities {
