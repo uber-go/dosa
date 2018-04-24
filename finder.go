@@ -66,14 +66,16 @@ func FindEntities(paths, excludes []string) ([]*Table, []error, error) {
 		for _, pkg := range packages {
 			fmt.Printf("Package %v\n", pkg.Name)
 			for _, file := range pkg.Files {
-				fmt.Printf("  File %v\n", file.Name)
+				fmt.Printf("  File %v\n", fileSet.Position(file.Package).Filename)
 				tags := findAllPackages(file)
-				if _, ok := tags[dosaPackagePath]; ok { // File uses DOSA.
+				if _, hasDosa := tags[dosaPackagePath]; hasDosa {
 					erv.dosaTag = tags[dosaPackagePath]
 					erv.uuidTag = tags[uuidPackagePath]
-					for _, decl := range file.Decls { // go through all the declarations
+					for _, decl := range file.Decls {
 						ast.Walk(erv, decl)
 					}
+				} else {
+					fmt.Printf("    skipping %v\n", fileSet.Position(file.Package).Filename)
 				}
 			}
 		}
@@ -107,6 +109,11 @@ func findAllPackages(file *ast.File) map[string]string {
 		}
 		path := strings.Trim(imp.Path.Value, `"`)
 		tags[path] = name
+	}
+	// This hack looks extremely shady if not incorrect....
+	if file.Name.Name == "dosa" {
+		// special case: our package is 'dosa' so no prefix is required
+		tags[dosaPackagePath] = ""
 	}
 	return tags
 }
