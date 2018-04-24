@@ -43,14 +43,6 @@ func sortFieldValue(obj map[string]dosa.FieldValue) ([]string, []interface{}, er
 	values := make([]interface{}, len(obj))
 	for pos, c := range columns {
 		values[pos] = obj[c]
-		var err error
-		// specially handling for uuid is needed
-		if u, ok := obj[c].(dosa.UUID); ok {
-			values[pos], err = gocql.ParseUUID(string(u))
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "invalid uuid %s", u)
-			}
-		}
 	}
 
 	return columns, values, nil
@@ -223,9 +215,6 @@ func convertToDOSATypes(ei *dosa.EntityInfo, row map[string]interface{}) map[str
 		raw := v
 		// special handling
 		switch dosaType {
-		case dosa.TUUID:
-			uuid := raw.(gocql.UUID).String()
-			raw = dosa.UUID(uuid)
 		// for whatever reason, gocql returns int for int32 field
 		// TODO: decide whether to store timestamp as int64 for better resolution; see
 		// https://code.uberinternal.com/T733022

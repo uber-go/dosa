@@ -35,6 +35,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	dosaPackagePath = "github.com/uber-go/dosa"
+	uuidPackagePath = "github.com/satori/go.uuid"
+)
+
 // FindEntities finds all entities in the given file paths. An error is
 // returned if there are naming collisions, otherwise, return a slice of
 // warnings (or nil).
@@ -58,12 +63,14 @@ func FindEntities(paths, excludes []string) ([]*Table, []error, error) {
 			return nil, nil, err
 		}
 		erv := new(EntityRecordingVisitor)
-		for _, pkg := range packages { // go through all the packages
-			for _, file := range pkg.Files { // go through all the files
-				packagePrefix, hasDosa := findDosaPackage(file)
-				//if erv.PackageName != "" { // skip packages that don't import 'dosa'
-				if hasDosa {
-					erv.PackagePrefix = packagePrefix
+		for _, pkg := range packages {
+			fmt.Printf("Package %v\n", pkg.Name)
+			for _, file := range pkg.Files {
+				fmt.Printf("  File %v\n", file.Name)
+				tags := findAllPackages(file)
+				if _, ok := tags[dosaPackagePath]; ok { // File uses DOSA.
+					erv.dosaTag = tags[dosaPackagePath]
+					erv.uuidTag = tags[uuidPackagePath]
 					for _, decl := range file.Decls { // go through all the declarations
 						ast.Walk(erv, decl)
 					}
@@ -77,37 +84,41 @@ func FindEntities(paths, excludes []string) ([]*Table, []error, error) {
 	return entities, warnings, nil
 }
 
-// DosaPackageName is the name of the dosa package, fully qualified and quoted
-const DosaPackageName = `"github.com/uber-go/dosa"`
-
-func findDosaPackage(file *ast.File) (string, bool) {
-	// look for the case where we import dosa
-	for _, impspec := range file.Imports {
-		if impspec.Path.Value == DosaPackageName {
-			// impspec.Name is nil when not renamed,
-			// so we use the default "dosa"
-			if impspec.Name == nil {
-				return "dosa", true
-			}
-			// renamed case
-			return impspec.Name.Name, true
+// findAllPackages returns maps of all imports in the file.
+// With these imports:
+//	satori "github.com/satori/go.uuid"
+//	"github.com/uber-go/dosa"
+// Two maps are returned:
+//	{"satori": "github.com/satori/go.uuid", "dosa": "github.com/uber-go/dosa"}
+// and
+//	{"github.com/satori/go.uuid": "satori", "github.com/uber-go/dosa": "dosa"}
+func findAllPackages(file *ast.File) map[string]string {
+	tags := map[string]string{}
+	for _, imp := range file.Imports {
+		idx := strings.LastIndexAny(imp.Path.Value, "./")
+		if idx < 0 {
+			// should never happen
+			continue
 		}
+		name := strings.Trim(imp.Path.Value[idx:], `"./`)
+		if imp.Name != nil {
+			// The import has a short name
+			name = imp.Name.Name
+		}
+		path := strings.Trim(imp.Path.Value, `"`)
+		tags[path] = name
 	}
-	if file.Name.Name == "dosa" {
-		// special case: our package is 'dosa' so no prefix is required
-		return "", true
-	}
-	// this file doesn't have any references to dosa, so skip it
-	return "", false
+	return tags
 }
 
 // EntityRecordingVisitor is a visitor that records entities it finds
 // It also keeps track of all failed entities that pass the basic "looks like a DOSA object" test
 // (see isDosaEntity to understand that test)
 type EntityRecordingVisitor struct {
-	Entities      []*Table
-	Warnings      []error
-	PackagePrefix string
+	Entities []*Table
+	Warnings []error
+	dosaTag  string // either "dosa" or whatever the import was renamed to
+	uuidTag  string // either "uuid" or whatever the satori import was renamed as
 }
 
 // Visit records all the entities seen into the EntityRecordingVisitor structure
@@ -117,14 +128,17 @@ func (f *EntityRecordingVisitor) Visit(n ast.Node) ast.Visitor {
 		return f
 	case *ast.TypeSpec:
 		if structType, ok := n.Type.(*ast.StructType); ok {
-			// look for a Entity with a dosa annotation
+			// look for an Entity with a dosa annotation
 			if isDosaEntity(structType) {
-				table, err := tableFromStructType(n.Name.Name, structType, f.PackagePrefix)
+				fmt.Printf("    Struct %q\n", n.Name.Name)
+				table, err := tableFromStructType(n.Name.Name, structType, f.dosaTag, f.uuidTag)
 				if err == nil {
 					f.Entities = append(f.Entities, table)
 				} else {
 					f.Warnings = append(f.Warnings, err)
 				}
+			} else {
+				fmt.Printf("    Not DOSA: %q\n", n.Name.Name)
 			}
 		}
 	}
@@ -195,7 +209,7 @@ func parseASTType(expr ast.Expr) (string, error) {
 }
 
 // tableFromStructType takes an ast StructType and converts it into a Table object
-func tableFromStructType(structName string, structType *ast.StructType, packagePrefix string) (*Table, error) {
+func tableFromStructType(structName string, structType *ast.StructType, dosaImp, uuidImp string) (*Table, error) {
 	normalizedName, err := NormalizeName(structName)
 	if err != nil {
 		// TODO: This isn't correct, someone could override the name later
@@ -227,7 +241,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 			return nil, err
 		}
 
-		if kind == packagePrefix+"."+entityName || (packagePrefix == "" && kind == entityName) {
+		if kind == dosaImp+"."+entityName || (dosaImp == "" && kind == entityName) {
 			var err error
 			if t.EntityDefinition.Name, t.TTL, t.ETL, t.Key, err = parseEntityTag(structName, dosaTag); err != nil {
 				return nil, err
@@ -235,7 +249,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 		} else {
 			for _, fieldName := range field.Names {
 				name := fieldName.Name
-				if kind == packagePrefix+"."+indexName || (packagePrefix == "" && kind == indexName) {
+				if kind == dosaImp+"."+indexName || (dosaImp == "" && kind == indexName) {
 					indexName, indexKey, err := parseIndexTag(name, dosaTag)
 					if err != nil {
 						return nil, err
@@ -250,7 +264,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 						// skip unexported fields
 						continue
 					}
-					typ, isPointer := stringToDosaType(kind, packagePrefix)
+					typ, isPointer := stringToDosaType(kind, uuidImp)
 					if typ == Invalid {
 						return nil, fmt.Errorf("Column %q has invalid type %q", name, kind)
 					}
@@ -265,7 +279,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 			}
 
 			if len(field.Names) == 0 {
-				if kind == packagePrefix+"."+indexName || (packagePrefix == "" && kind == indexName) {
+				if kind == dosaImp+"."+indexName || (dosaImp == "" && kind == indexName) {
 					indexName, indexKey, err := parseIndexTag("", dosaTag)
 					if err != nil {
 						return nil, err
@@ -291,6 +305,7 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 }
 
 func stringToDosaType(inType, pkg string) (Type, bool) {
+	fmt.Printf("      CHECK TYPE %q\n", inType)
 
 	// Append a dot if the package suffix doesn't already have one.
 	if pkg != "" && !strings.HasSuffix(pkg, ".") {
@@ -312,7 +327,7 @@ func stringToDosaType(inType, pkg string) (Type, bool) {
 		return Double, false
 	case "time.Time":
 		return Timestamp, false
-	case "UUID", pkg + "UUID":
+	case pkg + "UUID":
 		return TUUID, false
 	case "*string":
 		return String, true
@@ -326,9 +341,10 @@ func stringToDosaType(inType, pkg string) (Type, bool) {
 		return Double, true
 	case "*time.Time":
 		return Timestamp, true
-	case "*UUID", "*" + pkg + "UUID":
+	case "*" + pkg + "UUID":
 		return TUUID, true
 	default:
+		fmt.Printf("    BOGUS!\n")
 		return Invalid, false
 	}
 }

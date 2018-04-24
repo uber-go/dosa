@@ -26,8 +26,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
+
+func UUID(s string) uuid.UUID {
+	return uuid.Must(uuid.FromString(s))
+}
 
 // White box tests for unexported, stateless helper methods
 

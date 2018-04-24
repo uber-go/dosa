@@ -255,9 +255,9 @@ func TestConnector_CreateIfNotExists2(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
-	testUUIDs := make([]dosa.UUID, 10)
+	testUUIDs := make([]uuid.UUID, 10)
 	for x := 0; x < 10; x++ {
-		testUUIDs[x] = dosa.NewUUID()
+		testUUIDs[x] = uuid.NewV4()
 	}
 
 	// first, insert 10 random UUID values into same partition key
@@ -274,7 +274,7 @@ func TestConnector_CreateIfNotExists2(t *testing.T) {
 			"f1": dosa.FieldValue("data"),
 			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
-		assert.Error(t, err, string(testUUIDs[x]))
+		assert.Error(t, err, testUUIDs[x].String())
 		assert.True(t, dosa.ErrorIsAlreadyExists(err))
 	}
 	// now, insert them again, but this time with a different secondary key
@@ -356,7 +356,7 @@ func TestConnector_Read(t *testing.T) {
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
 	// insert into clustered entity
-	id := dosa.NewUUID()
+	id := uuid.NewV4()
 
 	err = rc.CreateIfNotExists(ctx, clusteredEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("key"),
@@ -431,9 +431,9 @@ func TestConnector_Upsert(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `partition key "p1"`)
 
-	testUUIDs := make([]dosa.UUID, 10)
+	testUUIDs := make([]uuid.UUID, 10)
 	for x := 0; x < 10; x++ {
-		testUUIDs[x] = dosa.NewUUID()
+		testUUIDs[x] = uuid.NewV4()
 	}
 
 	// first, insert 10 random UUID values into same partition key
@@ -538,7 +538,7 @@ func TestConnector_Remove(t *testing.T) {
 	assert.NoError(t, err)
 
 	// insert into clustered entity
-	id := dosa.NewUUID()
+	id := uuid.NewV4()
 	err = rc.CreateIfNotExists(ctx, clusteredEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("key"),
 		"c1": dosa.FieldValue(int64(1)),
@@ -550,7 +550,7 @@ func TestConnector_Remove(t *testing.T) {
 	err = rc.Remove(ctx, clusteredEi, map[string]dosa.FieldValue{
 		"f1": dosa.FieldValue("key"),
 		"c1": dosa.FieldValue(int64(1)),
-		"c7": dosa.FieldValue(dosa.NewUUID())})
+		"c7": dosa.FieldValue(uuid.NewV4())})
 	assert.NoError(t, err)
 
 	// and remove the partitioned value
@@ -592,7 +592,7 @@ func TestConnector_RemoveRange(t *testing.T) {
 		err := rc.CreateIfNotExists(ctx, clusteredEi, map[string]dosa.FieldValue{
 			"f1": dosa.FieldValue("data"),
 			"c1": dosa.FieldValue(int64(x)),
-			"c7": dosa.FieldValue(dosa.NewUUID())})
+			"c7": dosa.FieldValue(uuid.NewV4())})
 		assert.NoError(t, err)
 	}
 
@@ -695,11 +695,11 @@ func TestConnector_MultiRemove(t *testing.T) {
 	assert.Contains(t, err.Error(), "dummy errors")
 }
 
-type ByUUID []dosa.UUID
+type ByUUID []uuid.UUID
 
 func (u ByUUID) Len() int           { return len(u) }
 func (u ByUUID) Swap(i, j int)      { u[i], u[j] = u[j], u[i] }
-func (u ByUUID) Less(i, j int) bool { return string(u[i]) < string(u[j]) }
+func (u ByUUID) Less(i, j int) bool { return u[i].String() < u[j].String() }
 
 func TestConnector_Range(t *testing.T) {
 	connectorMap := getConnectorMap()
@@ -715,9 +715,9 @@ func TestConnector_Range(t *testing.T) {
 
 	// insert some data into data/1/uuid with a random set of uuids
 	// we insert them in a random order
-	testUUIDs := make([]dosa.UUID, idcount)
+	testUUIDs := make([]uuid.UUID, idcount)
 	for x := 0; x < idcount; x++ {
-		testUUIDs[x] = dosa.NewUUID()
+		testUUIDs[x] = uuid.NewV4()
 	}
 	for x := 0; x < idcount; x++ {
 		err := rc.CreateIfNotExists(ctx, clusteredEi, map[string]dosa.FieldValue{
@@ -834,9 +834,9 @@ func TestConnector_Scan(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
-	testUUIDs := make([]dosa.UUID, idcount)
+	testUUIDs := make([]uuid.UUID, idcount)
 	for x := 0; x < idcount; x++ {
-		testUUIDs[x] = dosa.NewUUID()
+		testUUIDs[x] = uuid.NewV4()
 	}
 	// scan with nothing there yet
 	_, token, err := rc.Scan(ctx, clusteredEi, dosa.All(), "", 100)
@@ -891,9 +891,9 @@ func TestConnector_TUUIDs(t *testing.T) {
 	connectorMap := getConnectorMap()
 	rc := NewConnector(cfg, connectorMap, nil)
 
-	testUUIDs := make([]dosa.UUID, idcount)
+	testUUIDs := make([]uuid.UUID, idcount)
 	for x := 0; x < idcount; x++ {
-		testUUIDs[x] = dosa.NewUUID()
+		testUUIDs[x] = uuid.NewV4()
 	}
 
 	// insert a bunch of values with V1 timestamps as clustering keys
@@ -919,7 +919,7 @@ func TestConnector_TUUIDs(t *testing.T) {
 	}
 
 	for x := 0; x < idcount; x++ {
-		testUUIDs = append(testUUIDs, dosa.NewUUID())
+		testUUIDs = append(testUUIDs, uuid.NewV4())
 	}
 
 	// now mix in a few V4 UUIDs
@@ -1135,7 +1135,7 @@ func createTestData(t *testing.T, rc *Connector, keyGenFunc func(int) string, id
 			"f1": dosa.FieldValue(keyGenFunc(x)),
 			"c1": dosa.FieldValue(int64(1)),
 			"c6": dosa.FieldValue(int32(x)),
-			"c7": dosa.FieldValue(dosa.UUID(uuid.NewV1().String()))})
+			"c7": dosa.FieldValue(uuid.NewV1())})
 		assert.NoError(t, err)
 	}
 }

@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	gouuid "github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 )
@@ -38,7 +38,7 @@ var (
 
 func TestReadNotFound(t *testing.T) {
 	sut := GetTestConnector(t)
-	id := constructKeys(dosa.UUID(gouuid.NewV4().String()))
+	id := constructKeys(uuid.NewV4())
 	_, err := sut.Read(context.TODO(), testEntityInfo, id, []string{int32Field})
 	assert.Error(t, err)
 	assert.IsType(t, &dosa.ErrNotFound{}, errors.Cause(err), err.Error())
@@ -46,7 +46,7 @@ func TestReadNotFound(t *testing.T) {
 
 func TestReadTimeout(t *testing.T) {
 	sut := GetTestConnector(t)
-	id := constructKeys(dosa.UUID(gouuid.NewV4().String()))
+	id := constructKeys(uuid.NewV4())
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Microsecond)
 	defer cancel()
 	_, err := sut.Read(ctx, testEntityInfo, id, []string{int32Field})
@@ -56,12 +56,12 @@ func TestReadTimeout(t *testing.T) {
 
 func TestUpsertAndRead(t *testing.T) {
 	sut := GetTestConnector(t)
-	uuid := dosa.UUID(gouuid.NewV4().String())
-	values := constructFullValues(uuid)
+	uuid1 := uuid.NewV4()
+	values := constructFullValues(uuid1)
 	err := sut.Upsert(context.TODO(), testEntityInfo, values)
 	assert.NoError(t, err)
 
-	id := constructKeys(uuid)
+	id := constructKeys(uuid1)
 	allValueFields := []string{int32Field, doubleField, blobField, boolField, timestampField, int64Field, stringField, uuidField}
 	readRes, err := sut.Read(context.TODO(), testEntityInfo, id, allValueFields)
 	assert.NoError(t, err)
@@ -72,14 +72,14 @@ func TestUpsertAndRead(t *testing.T) {
 
 	// partial update first object
 	pu := map[string]dosa.FieldValue{
-		uuidKeyField:   uuid,
+		uuidKeyField:   uuid1,
 		stringKeyField: defaultStringKeyValue,
 		int64KeyField:  defaultInt64KeyValue,
 		int32Field:     int32(-100), // update to -100
 	}
 
 	// partial create second object
-	uuid2 := dosa.UUID(gouuid.NewV4().String())
+	uuid2 := uuid.NewV4()
 	pc2 := map[string]dosa.FieldValue{
 		uuidKeyField:   uuid2,
 		stringKeyField: defaultStringKeyValue,
@@ -112,14 +112,14 @@ func TestUpsertAndRead(t *testing.T) {
 		boolField:      false,
 		timestampField: time.Time{},
 		stringField:    "",
-		uuidField:      dosa.UUID("00000000-0000-0000-0000-000000000000"),
+		uuidField:      uuid.UUID{},
 	}
 	assert.Equal(t, expectedPartialValues, res)
 }
 
 func TestCreateIfNotExists(t *testing.T) {
 	sut := GetTestConnector(t)
-	uuid := dosa.UUID(gouuid.NewV4().String())
+	uuid := uuid.NewV4()
 	values := constructFullValues(uuid)
 	err := sut.CreateIfNotExists(context.TODO(), testEntityInfo, values)
 	assert.NoError(t, err)
@@ -141,7 +141,7 @@ func TestCreateIfNotExists(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	sut := GetTestConnector(t)
-	uuid1 := dosa.UUID(gouuid.NewV4().String())
+	uuid1 := uuid.NewV4()
 	id1 := constructKeys(uuid1)
 	v1 := constructFullValues(uuid1)
 
@@ -165,7 +165,7 @@ func TestDelete(t *testing.T) {
 
 func TestRemoveRange(t *testing.T) {
 	sut := GetTestConnector(t)
-	uuid1 := dosa.UUID(gouuid.NewV4().String())
+	uuid1 := uuid.NewV4()
 	v1 := constructFullValues(uuid1)
 	v1[int64KeyField] = 1
 	v2 := constructFullValues(uuid1)
@@ -232,9 +232,9 @@ func TestRemoveRange(t *testing.T) {
 	assert.Equal(t, int64(2), res[0][int64KeyField])
 }
 
-func constructFullValues(uuid dosa.UUID) map[string]dosa.FieldValue {
+func constructFullValues(u1 uuid.UUID) map[string]dosa.FieldValue {
 	return map[string]dosa.FieldValue{
-		uuidKeyField:   uuid,
+		uuidKeyField:   u1,
 		stringKeyField: defaultStringKeyValue,
 		int64KeyField:  defaultInt64KeyValue,
 		int32Field:     int32(100),
@@ -246,11 +246,11 @@ func constructFullValues(uuid dosa.UUID) map[string]dosa.FieldValue {
 		// Anything smaller than ms is lost.
 		timestampField: time.Unix(100, 111000000).UTC(),
 		stringField:    "appleV",
-		uuidField:      dosa.UUID(gouuid.NewV4().String()),
+		uuidField:      uuid.NewV4(),
 	}
 }
 
-func constructKeys(uuid dosa.UUID) map[string]dosa.FieldValue {
+func constructKeys(uuid uuid.UUID) map[string]dosa.FieldValue {
 	return map[string]dosa.FieldValue{
 		uuidKeyField:   uuid,
 		int64KeyField:  defaultInt64KeyValue,

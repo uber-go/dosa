@@ -28,6 +28,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 	examples "github.com/uber-go/dosa/examples/testing"
 	"github.com/uber-go/dosa/mocks"
@@ -35,18 +36,18 @@ import (
 
 var (
 	ctx       = context.TODO()
-	uuid      = dosa.NewUUID()
-	user      = &examples.User{UUID: uuid}
-	menuUUID  = dosa.NewUUID()
+	uid0      = uuid.NewV4()
+	user      = &examples.User{UUID: uid0}
+	menuUUID  = uuid.NewV4()
 	menuItem1 = &examples.MenuItem{
 		MenuUUID:     menuUUID,
-		MenuItemUUID: dosa.NewUUID(),
+		MenuItemUUID: uuid.NewV4(),
 		Name:         "Burrito",
 		Description:  "A large wheat flour tortilla with a filling",
 	}
 	menuItem2 = &examples.MenuItem{
 		MenuUUID:     menuUUID,
-		MenuItemUUID: dosa.NewUUID(),
+		MenuItemUUID: uuid.NewV4(),
 		Name:         "Waffel",
 		Description:  "Cooked batter in a circular grid pattern",
 	}
@@ -83,7 +84,7 @@ func TestGetUser(t *testing.T) {
 	c1.EXPECT().Read(gomock.Any(), nil, user).Return(errors.New("Read Error")).Times(1)
 	ds1, _ := examples.NewDatastore(c1)
 
-	u1, err1 := ds1.GetUser(ctx, uuid)
+	u1, err1 := ds1.GetUser(ctx, uid0)
 	assert.Error(t, err1)
 	assert.Nil(t, u1)
 
@@ -93,7 +94,7 @@ func TestGetUser(t *testing.T) {
 	c2.EXPECT().Read(gomock.Any(), nil, user).Return(nil).Times(1)
 	ds2, _ := examples.NewDatastore(c2)
 
-	u2, err2 := ds2.GetUser(ctx, uuid)
+	u2, err2 := ds2.GetUser(ctx, uid0)
 	assert.NoError(t, err2)
 	assert.Equal(t, u2, user)
 }

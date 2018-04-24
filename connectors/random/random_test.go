@@ -26,6 +26,7 @@ import (
 
 	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/random"
@@ -42,7 +43,7 @@ type AllTypes struct {
 	StringType  string
 	BlobType    []byte
 	TimeType    time.Time
-	UUIDType    dosa.UUID
+	UUIDType    uuid.UUID
 }
 
 var (

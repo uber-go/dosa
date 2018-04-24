@@ -25,7 +25,6 @@ import (
 	"encoding/base64"
 	"sort"
 
-	"github.com/gocql/gocql"
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 )
@@ -35,14 +34,6 @@ func prepareConditions(columnConditions map[string][]*dosa.Condition) ([]*dosa.C
 	values := make([]interface{}, len(cc))
 	for i, c := range cc {
 		values[i] = c.Condition.Value
-		var err error
-		// specially handling for uuid is needed
-		if u, ok := c.Condition.Value.(dosa.UUID); ok {
-			values[i], err = gocql.ParseUUID(string(u))
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "invalid uuid %s", u)
-			}
-		}
 	}
 	return cc, values, nil
 }

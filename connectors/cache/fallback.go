@@ -27,6 +27,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
 	"github.com/uber-go/dosa/encoding"
@@ -471,7 +472,7 @@ func rawRowAsPointers(ei *dosa.EntityInfo, values map[string]dosa.FieldValue) ma
 				// do nothing with byte arrays
 				convertedValues[colName] = val
 			case dosa.TUUID:
-				if u, ok := val.(dosa.UUID); ok {
+				if u, ok := val.(uuid.UUID); ok {
 					convertedValues[colName] = &u
 				}
 			case dosa.String:

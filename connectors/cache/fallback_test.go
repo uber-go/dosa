@@ -30,6 +30,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/memory"
@@ -1000,7 +1001,7 @@ func TestFallbackEndToEnd(t *testing.T) {
 	}
 	redisC := redis.NewConnector(testRedisConfig, nil)
 
-	testUUID := dosa.UUID("d1449c93-25b8-4032-920b-60471d91acc9")
+	testUUID, _ := uuid.FromString("d1449c93-25b8-4032-920b-60471d91acc9")
 	testStr := "test string"
 	testStr2 := "another test string"
 	testInt64 := int64(29385235)

@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/encoding"
@@ -57,10 +58,10 @@ func TestGobEncoder_Encode(t *testing.T) {
 }
 
 func TestGobEncoder_Register(t *testing.T) {
-	u := dosa.UUID("uuid-pointer")
+	u := uuid.NewV4()
 	ts := time.Now()
 	bytes, err := g.Encode(map[string]dosa.FieldValue{
-		"uuidField":    dosa.UUID("some-uuid"),
+		"uuidField":    uuid.NewV4(),
 		"timeField":    ts,
 		"uuidFieldPtr": &u,
 		"timeFieldPtr": &ts,

@@ -24,7 +24,7 @@ import (
 	"context"
 	"testing"
 
-	gouuid "github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 )
@@ -37,7 +37,7 @@ var (
 
 func TestRangeQuery(t *testing.T) {
 	sut := GetTestConnector(t)
-	partitionKey := dosa.UUID(gouuid.NewV4().String())
+	partitionKey := uuid.NewV4()
 	populateEntityRange(t, partitionKey)
 
 	var (
@@ -102,7 +102,7 @@ func TestRangeQuery(t *testing.T) {
 func TestRangeQueryInvalidToken(t *testing.T) {
 	sut := GetTestConnector(t)
 	_, _, err := sut.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
-		uuidKeyField: {{Op: dosa.Eq, Value: dosa.UUID(gouuid.NewV4().String())}},
+		uuidKeyField: {{Op: dosa.Eq, Value: uuid.NewV4()}},
 	}, []string{int32Field}, "西瓜", pageSize)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "bad token")
@@ -110,7 +110,7 @@ func TestRangeQueryInvalidToken(t *testing.T) {
 
 func TestRangeQueryFieldsToRead(t *testing.T) {
 	sut := GetTestConnector(t)
-	partitionKey := dosa.UUID(gouuid.NewV4().String())
+	partitionKey := uuid.NewV4()
 	populateEntityRange(t, partitionKey)
 
 	res, token, err := sut.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
@@ -135,7 +135,7 @@ func TestScan(t *testing.T) {
 	sp := "datastore_scan_test"
 	entityInfo := newTestEntityInfo(sp)
 
-	expectedUUIDSet := make(map[dosa.UUID]struct{})
+	expectedUUIDSet := make(map[uuid.UUID]struct{})
 	expectedIntValueSet := make(map[int]struct{})
 
 	// remove any entities from any previous test
@@ -150,7 +150,7 @@ func TestScan(t *testing.T) {
 	}
 
 	for i := 0; i < 100; i++ {
-		id := dosa.UUID(gouuid.NewV4().String())
+		id := uuid.NewV4()
 		expectedUUIDSet[id] = struct{}{}
 		expectedIntValueSet[i] = struct{}{}
 		err := sut.Upsert(context.TODO(), entityInfo, map[string]dosa.FieldValue{
@@ -164,7 +164,7 @@ func TestScan(t *testing.T) {
 		}
 	}
 
-	actualUUIDSet := make(map[dosa.UUID]struct{})
+	actualUUIDSet := make(map[uuid.UUID]struct{})
 	actualIntValueSet := make(map[int]struct{})
 	var (
 		res   []map[string]dosa.FieldValue
@@ -175,7 +175,7 @@ func TestScan(t *testing.T) {
 		res, token, err = sut.Scan(context.TODO(), entityInfo, []string{uuidKeyField, int32Field}, token, 39)
 		assert.NoError(t, err)
 		for _, row := range res {
-			actualUUIDSet[row[uuidKeyField].(dosa.UUID)] = struct{}{}
+			actualUUIDSet[row[uuidKeyField].(uuid.UUID)] = struct{}{}
 			actualIntValueSet[int(row[int32Field].(int32))] = struct{}{}
 		}
 		if len(token) == 0 {
@@ -187,12 +187,12 @@ func TestScan(t *testing.T) {
 	assert.Equal(t, expectedIntValueSet, actualIntValueSet)
 }
 
-func populateEntityRange(t *testing.T, uuid dosa.UUID) {
+func populateEntityRange(t *testing.T, u0 uuid.UUID) {
 	sut := GetTestConnector(t)
 	for _, strKey := range strKeys {
 		for i := 0; i < pageSize; i++ {
 			err := sut.Upsert(context.TODO(), testEntityInfo, map[string]dosa.FieldValue{
-				uuidKeyField:   uuid,
+				uuidKeyField:   u0,
 				stringKeyField: strKey,
 				int64KeyField:  int64(i),
 				int32Field:     int32(i),

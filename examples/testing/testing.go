@@ -24,13 +24,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 )
 
 // User is a user record
 type User struct {
 	dosa.Entity `dosa:"primaryKey=UUID"`
-	UUID        dosa.UUID
+	UUID        uuid.UUID
 	Name        string
 	Email       string
 	CreatedOn   time.Time
@@ -39,8 +40,8 @@ type User struct {
 // MenuItem represents a single item on a Menu.
 type MenuItem struct {
 	dosa.Entity  `dosa:"primaryKey=((MenuUUID), MenuItemUUID)"`
-	MenuUUID     dosa.UUID
-	MenuItemUUID dosa.UUID
+	MenuUUID     uuid.UUID
+	MenuItemUUID uuid.UUID
 	Name         string
 	Description  string
 }
@@ -61,7 +62,7 @@ func NewDatastore(c dosa.Client) (*Datastore, error) {
 }
 
 // GetUser fetches a user from the datastore by uuid
-func (d *Datastore) GetUser(ctx context.Context, uuid dosa.UUID) (*User, error) {
+func (d *Datastore) GetUser(ctx context.Context, uuid uuid.UUID) (*User, error) {
 	user := &User{UUID: uuid}
 	readCtx, readCancelFn := context.WithTimeout(ctx, 1*time.Second)
 	defer readCancelFn()
@@ -74,7 +75,7 @@ func (d *Datastore) GetUser(ctx context.Context, uuid dosa.UUID) (*User, error) 
 }
 
 // GetMenu fetches all of the MenuItems for the menu specified by menuUUID.
-func (d *Datastore) GetMenu(ctx context.Context, menuUUID dosa.UUID) ([]*MenuItem, error) {
+func (d *Datastore) GetMenu(ctx context.Context, menuUUID uuid.UUID) ([]*MenuItem, error) {
 	op := dosa.NewRangeOp(&MenuItem{}).Eq("MenuUUID", menuUUID).Limit(50)
 	rangeCtx, rangeCancelFn := context.WithTimeout(ctx, 1*time.Second)
 	defer rangeCancelFn()

@@ -23,38 +23,8 @@ package dosa
 import (
 	"testing"
 
-	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestNewUUID(t *testing.T) {
-	id := NewUUID()
-	assert.NotNil(t, id)
-	assert.NotEqual(t, string(id), "")
-}
-
-func TestUUIDToBytes(t *testing.T) {
-	id := UUID(uuid.NewV4().String())
-	bs, err := id.Bytes()
-	assert.NoError(t, err)
-	assert.Len(t, bs, 16)
-
-	invalidUUID := UUID("xyz-1827380-kdwi-4829")
-	_, err = invalidUUID.Bytes()
-	assert.Error(t, err)
-}
-
-func TestBytesToUUID(t *testing.T) {
-	id := uuid.NewV4()
-	bs := id.Bytes()
-	uid, err := BytesToUUID(bs)
-	assert.NoError(t, err)
-	assert.EqualValues(t, id.String(), uid)
-
-	invalidBs := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-	_, err = BytesToUUID(invalidBs)
-	assert.Error(t, err)
-}
 
 func TestFromString(t *testing.T) {
 	tt := []struct {

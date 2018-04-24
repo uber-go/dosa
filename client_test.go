@@ -29,6 +29,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	"fmt"
@@ -278,14 +279,14 @@ type AllFieldTypes struct {
 	StringType         string
 	BlobType           []byte
 	TimeType           time.Time
-	UUIDType           dosaRenamed.UUID
+	UUIDType           uuid.UUID
 	NullBoolType       *bool
 	NullInt32Type      *int32
 	NullInt64Type      *int64
 	NullDoubleType     *float64
 	NullStringType     *string
 	NullTimeType       *time.Time
-	NullUUIDType       *dosaRenamed.UUID
+	NullUUIDType       *uuid.UUID
 }
 
 func TestClient_Read_pointer(t *testing.T) {
@@ -301,14 +302,14 @@ func TestClient_Read_pointer(t *testing.T) {
 		"stringtype":     "faa@email.com",
 		"blobtype":       []byte("hello world"),
 		"timetype":       time.Now(),
-		"uuidtype":       dosaRenamed.NewUUID(),
+		"uuidtype":       uuid.NewV4(),
 		"nullbooltype":   testutil.TestBoolPtr(true),
 		"nullint32type":  testutil.TestInt32Ptr(int32(123)),
 		"nullint64type":  testutil.TestInt64Ptr(int64(2)),
 		"nulldoubletype": testutil.TestFloat64Ptr(float64(8.9)),
 		"nullstringtype": testutil.TestStringPtr("bar@email.com"),
 		"nulltimetype":   testutil.TestTimePtr(time.Now()),
-		"nulluuidtype":   testutil.TestUUIDPtr(dosaRenamed.NewUUID()),
+		"nulluuidtype":   testutil.TestUUIDPtr(uuid.NewV4()),
 	}
 
 	// uninitialized
