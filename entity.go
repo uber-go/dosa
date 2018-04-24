@@ -384,68 +384,67 @@ func (e *EntityDefinition) KeySet() map[string]struct{} {
 	return m
 }
 
-// IsCompatible checks upsertability: Can entity e2 be upserted? In other words, is e2 a SUPERSET of e?
-// "IsCompatible" is a terrible name: compatibility is a symmetric relation, but superset is not.
-func (e *EntityDefinition) IsCompatible(e2 *EntityDefinition) error {
-	// Better names: e1 is the original, e2 is the new.
-	e1 := e
+// CanBeUpsertedOn checks upsertability: Can I be upserted on top of the prior definition?
+func (e *EntityDefinition) CanBeUpsertedOn(older *EntityDefinition) error {
+	// Better name
+	newer := e
 
 	// entity name should be the same
-	if e1.Name != e2.Name {
-		return errors.Errorf("entity name mismatch: (%s vs %s)", e1.Name, e2.Name)
+	if newer.Name != older.Name {
+		return errors.Errorf("entity name mismatch: (%s vs %s)", newer.Name, older.Name)
 	}
 
 	// primary key should be exactly same
-	pks1 := e1.Key.PartitionKeys
-	pks2 := e2.Key.PartitionKeys
+	pksNewer := newer.Key.PartitionKeys
+	pksOlder := older.Key.PartitionKeys
 
-	b := reflect.DeepEqual(pks1, pks2)
+	b := reflect.DeepEqual(pksNewer, pksOlder)
 	if !b {
-		return errors.Errorf("partition key mismatch: (%v vs %v)", pks1, pks2)
+		return errors.Errorf("partition key mismatch: (%v vs %v)", pksNewer, pksOlder)
 	}
 
-	cks1 := e1.Key.ClusteringKeys
-	cks2 := e2.Key.ClusteringKeys
-	if len(cks2) != 0 || len(cks1) != 0 {
-		if !reflect.DeepEqual(cks1, cks2) {
-			return errors.Errorf("clustering key mismatch: (%v vs %v)", cks1, cks2)
+	cksNewer := newer.Key.ClusteringKeys
+	cksOlder := older.Key.ClusteringKeys
+	if len(cksOlder) != 0 || len(cksNewer) != 0 {
+		if !reflect.DeepEqual(cksNewer, cksOlder) {
+			return errors.Errorf("clustering key mismatch: (%v vs %v)", cksNewer, cksOlder)
 		}
 	}
 	// only allow to add new columns
-	colsMap1 := e1.ColumnTypes()
-	colsMap2 := e2.ColumnTypes()
+	colsMapNewer := newer.ColumnTypes()
+	colsMapOlder := older.ColumnTypes()
 
-	for name, colType2 := range colsMap2 {
-		colType1, ok := colsMap1[name]
+	for name, colTypeOlder := range colsMapOlder {
+		colTypeNewer, ok := colsMapNewer[name]
 		if !ok {
-			return errors.Errorf("the column %s in old entity %s but not in new entity", name, e2.Name)
+			return errors.Errorf("the column %s in old entity %s but not in new entity", name, older.Name)
 		}
-		if colType1 != colType2 {
-			return errors.Errorf("the type for column %s mismatch: (%v vs %v)", name, colType1, colType2)
+		if colTypeNewer != colTypeOlder {
+			return errors.Errorf("the type for column %s mismatch: (%v vs %v)", name, colTypeNewer, colTypeOlder)
 		}
 	}
 
 	// Index can only be added, not mutated
-	if len(e2.Indexes) > len(e1.Indexes) {
-		return errors.Errorf("Old entity %s has %d indexes but new entity has %d indexes", e2.Name, len(e2.Indexes), len(e1.Indexes))
+	if len(older.Indexes) > len(newer.Indexes) {
+		return errors.Errorf("Old entity %s has %d indexes but new entity has %d indexes", older.Name, len(older.Indexes), len(newer.Indexes))
 	}
 
-	if e2.Indexes != nil {
-		for name, index2 := range e2.Indexes {
-			index1, ok := e1.Indexes[name]
+	if older.Indexes != nil {
+		for name, indexOlder := range older.Indexes {
+			indexNewer, ok := newer.Indexes[name]
 			if !ok {
-				return errors.Errorf("Index %s in the old entity %s are missing in the new entity", name, e2.Name)
+				return errors.Errorf("Index %s in the old entity %s are missing in the new entity", name, older.Name)
 			}
 
-			if !reflect.DeepEqual(index1, index2) {
-				return errors.Errorf("index %q mismatch: (%v vs %v)", name, index1, index2)
+			if !reflect.DeepEqual(indexNewer, indexOlder) {
+				return errors.Errorf("index %q mismatch: (%v vs %v)", name, indexNewer, indexOlder)
 			}
 		}
 	}
 	// TODO Handle tags in the future
 
 	// ETL tag cannot be disabled
-	if e1.ETL != EtlOn && e2.ETL == EtlOn {
+	if newer.ETL != EtlOn && older.ETL == EtlOn {
 		return errors.Errorf("ETL tag cannot be disabled once it's on")
 	}
 
