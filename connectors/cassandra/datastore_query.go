@@ -35,6 +35,7 @@ func prepareConditions(columnConditions map[string][]*dosa.Condition) ([]*dosa.C
 	cc := dosa.NormalizeConditions(columnConditions)
 	values := make([]interface{}, len(cc))
 	for i, c := range cc {
+		values[i] = c.Condition.Value
 		// UUIDs must be converted from satori to gocql via string.
 		var err error
 		if u, ok := c.Condition.Value.(uuid.UUID); ok {
@@ -42,8 +43,6 @@ func prepareConditions(columnConditions map[string][]*dosa.Condition) ([]*dosa.C
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "invalid uuid %s", u)
 			}
-		} else {
-			values[i] = c.Condition.Value
 		}
 	}
 	return cc, values, nil
