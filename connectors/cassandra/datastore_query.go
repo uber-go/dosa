@@ -36,8 +36,8 @@ func prepareConditions(columnConditions map[string][]*dosa.Condition) ([]*dosa.C
 	values := make([]interface{}, len(cc))
 	for i, c := range cc {
 		values[i] = c.Condition.Value
-		// UUIDs must be converted from satori to gocql via string.
 		var err error
+		// UUIDs must be converted from satori to gocql via string.
 		if u, ok := c.Condition.Value.(uuid.UUID); ok {
 			values[i], err = gocql.ParseUUID(u.String())
 			if err != nil {
