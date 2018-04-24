@@ -40,7 +40,7 @@ func prepareConditions(columnConditions map[string][]*dosa.Condition) ([]*dosa.C
 		if u, ok := c.Condition.Value.(uuid.UUID); ok {
 			values[i], err = gocql.ParseUUID(u.String())
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, errors.Wrapf(err, "invalid uuid %s", u)
 			}
 		} else {
 			values[i] = c.Condition.Value
