@@ -26,6 +26,7 @@ import (
 
 	"github.com/gocql/gocql"
 	"github.com/pkg/errors"
+	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 )
 
@@ -43,6 +44,14 @@ func sortFieldValue(obj map[string]dosa.FieldValue) ([]string, []interface{}, er
 	values := make([]interface{}, len(obj))
 	for pos, c := range columns {
 		values[pos] = obj[c]
+		var err error
+		// UUIDs are converted between satori and gocql via string; errors are not expected.
+		if u, ok := obj[c].(uuid.UUID); ok {
+			values[pos], err = gocql.ParseUUID(u.String())
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "invalid uuid %s", u)
+			}
+		}
 	}
 
 	return columns, values, nil
@@ -134,7 +143,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 		return nil, errors.Wrapf(err, "failed to execute read query in Cassandra: %s", stmt)
 	}
 
-	return convertToDOSATypes(ei, result), nil
+	return convertToDOSATypes(ei, result)
 }
 
 // Upsert means update an existing object or create a new object
@@ -207,7 +216,8 @@ func (c *Connector) remove(ctx context.Context, ei *dosa.EntityInfo, conds []*do
 	return nil
 }
 
-func convertToDOSATypes(ei *dosa.EntityInfo, row map[string]interface{}) map[string]dosa.FieldValue {
+func convertToDOSATypes(ei *dosa.EntityInfo, row map[string]interface{}) (map[string]dosa.FieldValue, error) {
+	var err error
 	res := make(map[string]dosa.FieldValue)
 	ct := extractColumnTypes(ei)
 	for k, v := range row {
@@ -215,6 +225,11 @@ func convertToDOSATypes(ei *dosa.EntityInfo, row map[string]interface{}) map[str
 		raw := v
 		// special handling
 		switch dosaType {
+		case dosa.TUUID:
+			uuidStr := raw.(gocql.UUID).String()
+			if raw, err = uuid.FromString(uuidStr); err != nil {
+				return nil, errors.Wrapf(err, "incompatible UUID %s", uuidStr)
+			}
 		// for whatever reason, gocql returns int for int32 field
 		// TODO: decide whether to store timestamp as int64 for better resolution; see
 		// https://code.uberinternal.com/T733022
@@ -223,7 +238,7 @@ func convertToDOSATypes(ei *dosa.EntityInfo, row map[string]interface{}) map[str
 		}
 		res[k] = raw
 	}
-	return res
+	return res, nil
 }
 
 func extractColumnTypes(ei *dosa.EntityInfo) map[string]dosa.Type {
