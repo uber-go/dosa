@@ -30,20 +30,20 @@ import (
 // performing operations on an entity as well as helper methods for accessing
 // type data so that reflection can be minimized.
 type RegisteredEntity struct {
-	scope     string
-	prefix    string
-	table     *Table
-	version   int32
-	schemaRef *SchemaRef
-	typ       reflect.Type // optimization to avoid doing repetitive reflect.TypeOf
+	scope      string
+	namePrefix string
+	table      *Table
+	version    int32
+	schemaRef  *SchemaRef
+	typ        reflect.Type // optimization to avoid doing repetitive reflect.TypeOf
 }
 
 // NewRegisteredEntity is a constructor for creating a RegisteredEntity
 func NewRegisteredEntity(scope, prefix string, table *Table) *RegisteredEntity {
 	return &RegisteredEntity{
-		scope:  scope,
-		prefix: prefix,
-		table:  table,
+		scope:      scope,
+		namePrefix: prefix,
+		table:      table,
 		schemaRef: &SchemaRef{
 			Scope:      scope,
 			NamePrefix: prefix,
@@ -204,15 +204,15 @@ type Registrar interface {
 	FindAll() []*RegisteredEntity
 }
 
-// prefixedRegistrar puts every entity under a prefix.
+// prefixedRegistrar puts every entity under a name prefix.
 // This registrar is not threadsafe. However, Register step is done in
 // bootstrap/client-init phase (usually with a single thread),
 // and after this phase, multiple goroutines can safely read from this registrar
 type prefixedRegistrar struct {
-	scope     string
-	prefix    string
-	fqnIndex  map[FQN]*RegisteredEntity
-	typeIndex map[reflect.Type]*RegisteredEntity
+	scope      string
+	namePrefix string
+	fqnIndex   map[FQN]*RegisteredEntity
+	typeIndex  map[reflect.Type]*RegisteredEntity
 }
 
 // NewRegistrar returns a new Registrar for the scope, name prefix and
@@ -254,10 +254,10 @@ func NewRegistrar(scope, prefix string, entities ...DomainObject) (Registrar, er
 	}
 
 	return &prefixedRegistrar{
-		scope:     scope,
-		prefix:    prefix,
-		fqnIndex:  fqnIndex,
-		typeIndex: typeIndex,
+		scope:      scope,
+		namePrefix: prefix,
+		fqnIndex:   fqnIndex,
+		typeIndex:  typeIndex,
 	}, nil
 }
 
@@ -268,7 +268,7 @@ func (r *prefixedRegistrar) Scope() string {
 
 // NamePrefix returns the registrar's prefix.
 func (r *prefixedRegistrar) NamePrefix() string {
-	return r.prefix
+	return r.namePrefix
 }
 
 // Find looks at its internal index to find a registration that matches the
