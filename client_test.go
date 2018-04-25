@@ -172,7 +172,7 @@ func TestClient_Initialize(t *testing.T) {
 	emptyReg, _ := dosaRenamed.NewRegistrar("test", "team.service")
 	reg, _ := dosaRenamed.NewRegistrar("test", "team.service", cte1)
 
-	// not return error if no entries
+	// find error
 	c1 := dosaRenamed.NewClient(emptyReg, nullConnector)
 	assert.Error(t, c1.Initialize(ctx))
 
