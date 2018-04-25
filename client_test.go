@@ -174,7 +174,7 @@ func TestClient_Initialize(t *testing.T) {
 
 	// not return error if no entries
 	c1 := dosaRenamed.NewClient(emptyReg, nullConnector)
-	assert.NoError(t, c1.Initialize(ctx))
+	assert.Error(t, c1.Initialize(ctx))
 
 	// CheckSchema error
 	errConn := mocks.NewMockConnector(ctrl)
