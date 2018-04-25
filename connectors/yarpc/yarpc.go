@@ -287,7 +287,7 @@ func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiV
 	request := &dosarpc.MultiUpsertRequest{
 		Ref:      entityInfoToSchemaRef(ei),
 		Entities: values,
-		TTL:      &ttl,
+		// TTL:      &ttl, mgode@ has not yet committed origin/ttl-for-multi-upsert
 	}
 
 	response, err := c.Client.MultiUpsert(ctx, request, VersionHeader())
