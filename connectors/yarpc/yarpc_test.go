@@ -681,7 +681,7 @@ func TestYARPCClient_MultiUpsert(t *testing.T) {
 		mockedClient.EXPECT().MultiUpsert(ctx, &drpc.MultiUpsertRequest{
 			Ref:      &testRPCSchemaRef,
 			Entities: []drpc.FieldValueMap{outFields},
-			TTL:      expectedTTL,
+			// TTL:      expectedTTL,
 		}, gomock.Any()).Return(&drpc.MultiUpsertResponse{Errors: []*drpc.Error{testCase.ResponseError}}, testCase.NetworkError).Times(1)
 
 		// create the YARPCClient and give it the mocked RPC interface

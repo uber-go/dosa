@@ -278,10 +278,10 @@ func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiV
 		return nil, err
 	}
 
-	ttl := dosa.NoTTL().Nanoseconds()
-	if ei.TTL != nil {
-		ttl = ei.TTL.Nanoseconds()
-	}
+	// ttl := dosa.NoTTL().Nanoseconds()
+	// if ei.TTL != nil {
+	// 	ttl = ei.TTL.Nanoseconds()
+	// }
 
 	// perform the multi upsert request
 	request := &dosarpc.MultiUpsertRequest{
