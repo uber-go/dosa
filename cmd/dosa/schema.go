@@ -69,7 +69,7 @@ type SchemaOptions struct {
 type SchemaCmd struct {
 	*SchemaOptions
 	Scope      scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
-	NamePrefix string    `long:"prefix" description:"Name prefix for schema types." required:"true"`
+	NamePrefix string    `short:"p" long:"namePrefix" description:"Name prefix for schema types." required:"true"`
 }
 
 func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) (*dosa.SchemaStatus, error), args []string) error {
