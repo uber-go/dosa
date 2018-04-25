@@ -70,6 +70,12 @@ var rangeTestCases = []struct {
 		converted: "<empty> limit 10",
 	},
 	{
+		descript:  "empty with adaptive limit",
+		rop:       NewRangeOp(&AllTypes{}).Limit(AdaptiveRangeLimit),
+		stringer:  "<empty> limit -1",
+		converted: "<empty> limit -1",
+	},
+	{
 		descript:  "empty with token",
 		rop:       NewRangeOp(&AllTypes{}).Offset("toketoketoke"),
 		stringer:  "<empty> token \"toketoketoke\"",
