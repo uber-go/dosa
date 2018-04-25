@@ -227,8 +227,6 @@ func TestRegistrar(t *testing.T) {
 	_, err = r.Find(invalidEntities[0])
 	assert.Error(t, err)
 
-	var registered []*dosa.RegisteredEntity
-	registered, err = r.FindAll()
-	assert.NoError(t, err)
+	registered := r.FindAll()
 	assert.Equal(t, len(registered), len(validEntities))
 }
