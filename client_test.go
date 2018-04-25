@@ -172,9 +172,9 @@ func TestClient_Initialize(t *testing.T) {
 	emptyReg, _ := dosaRenamed.NewRegistrar("test", "team.service")
 	reg, _ := dosaRenamed.NewRegistrar("test", "team.service", cte1)
 
-	// find error
+	// not return error if no entries
 	c1 := dosaRenamed.NewClient(emptyReg, nullConnector)
-	assert.Error(t, c1.Initialize(ctx))
+	assert.NoError(t, c1.Initialize(ctx))
 
 	// CheckSchema error
 	errConn := mocks.NewMockConnector(ctrl)
