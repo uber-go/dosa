@@ -201,7 +201,7 @@ type Registrar interface {
 	Scope() string
 	NamePrefix() string
 	Find(DomainObject) (*RegisteredEntity, error)
-	FindAll() ([]*RegisteredEntity, error)
+	FindAll() []*RegisteredEntity
 }
 
 // prefixedRegistrar puts every entity under a prefix.
@@ -283,13 +283,10 @@ func (r *prefixedRegistrar) Find(entity DomainObject) (*RegisteredEntity, error)
 }
 
 // FindAll returns all registered entities from its internal index.
-func (r *prefixedRegistrar) FindAll() ([]*RegisteredEntity, error) {
+func (r *prefixedRegistrar) FindAll() []*RegisteredEntity {
 	res := []*RegisteredEntity{}
 	for _, re := range r.fqnIndex {
 		res = append(res, re)
 	}
-	if len(res) == 0 {
-		return nil, errors.Errorf("registry.FindAll returned empty")
-	}
-	return res, nil
+	return res
 }
