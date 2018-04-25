@@ -22,6 +22,9 @@ package cache
 
 import (
 	"context"
+	"fmt"
+	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -56,10 +59,19 @@ var (
 		&testentity.TestEntity{},
 	}
 	encodedValue = []byte("Test encoding")
+
+	i            = int32(7)
+	s            = "test decode"
+	b            = true
 	decodedValue = map[string]dosa.FieldValue{
-		"int32v": int32(7),
-		"strv":   "test decode",
-		"boolvp": true,
+		"int32v": i,
+		"strv":   s,
+		"boolvp": b,
+	}
+	decodedValueAsPointers = map[string]dosa.FieldValue{
+		"int32v": &i,
+		"strv":   &s,
+		"boolvp": &b,
 	}
 )
 
@@ -99,16 +111,16 @@ type rangeArgs struct {
 	err              error
 }
 
-type testEncoder struct {
+type staticEncoder struct {
 	encodeErr error
 	decodeErr error
 }
 
-func (e testEncoder) Encode(interface{}) ([]byte, error) {
+func (e staticEncoder) Encode(interface{}) ([]byte, error) {
 	return encodedValue, e.encodeErr
 }
 
-func (e testEncoder) Decode(byt []byte, int interface{}) error {
+func (e staticEncoder) Decode(byt []byte, int interface{}) error {
 	if m, ok := int.(*map[string]dosa.FieldValue); ok {
 		*m = decodedValue
 		return e.decodeErr
@@ -119,6 +131,42 @@ func (e testEncoder) Decode(byt []byte, int interface{}) error {
 		return e.decodeErr
 	}
 	return e.decodeErr
+}
+
+type argsEncoder struct{}
+
+func (e *argsEncoder) Encode(int interface{}) ([]byte, error) {
+	if ckey, ok := int.([]map[string]dosa.FieldValue); ok {
+		var keyAsString []string
+		for _, m := range ckey {
+			for k, v := range m {
+				keyAsString = append(keyAsString, k, fmt.Sprintf("%v", v))
+			}
+		}
+		return []byte(strings.Join(keyAsString, "|")), nil
+	}
+	if ckey, ok := int.(map[string]dosa.FieldValue); ok {
+		var keys []string
+		for k := range ckey {
+			keys = append(keys, k)
+		}
+		// sort the keys so that we encode in a deterministic order
+		sort.Strings(keys)
+
+		var keyAsString []string
+		for _, k := range keys {
+			keyAsString = append(keyAsString, k, fmt.Sprintf("%v", ckey[k]))
+		}
+		return []byte(strings.Join(keyAsString, "|")), nil
+	}
+	return nil, nil
+}
+
+func (e *argsEncoder) Decode(byt []byte, int interface{}) error {
+	if m, ok := int.(*map[string]dosa.FieldValue); ok {
+		*m = decodedValue
+	}
+	return nil
 }
 
 // Test dosa upsert and the various behaviors of the fallback
@@ -162,7 +210,7 @@ func TestUpsertCases(t *testing.T) {
 					"key": encodedValue,
 				},
 			},
-			encoder: testEncoder{},
+			encoder: staticEncoder{},
 		},
 		{
 			description: "Encoding error while creating cache key means we use empty key when calling fallback",
@@ -177,12 +225,185 @@ func TestUpsertCases(t *testing.T) {
 					"key": []byte{},
 				},
 			},
-			encoder: testEncoder{encodeErr: assert.AnError},
+			encoder: staticEncoder{encodeErr: assert.AnError},
 		},
 		{
-			description:  "Unsuccessful origin upsert does not invalidate fallback",
-			originUpsert: &expectArgs{err: assert.AnError},
-			expectedErr:  assert.AnError,
+			description: "Unsuccessful origin upsert still invalidates fallback",
+			originUpsert: &expectArgs{
+				values: map[string]dosa.FieldValue{
+					"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9",
+					"strkey":      "test key string",
+					"StrV":        "test value string",
+					"BoolVP":      &testBool,
+				},
+				err: assert.AnError,
+			},
+			fallbackUpsert: &expectArgs{
+				values: map[string]dosa.FieldValue{
+					"key": encodedValue,
+				},
+			},
+			encoder:     staticEncoder{},
+			expectedErr: assert.AnError,
+		},
+	}
+	for _, t := range testCases {
+		runTestCase(t)
+	}
+}
+
+// Test dosa multi upsert and the various behaviors of the fallback
+func TestMultiUpsertCases(t *testing.T) {
+	type testCase struct {
+		encoder        encoding.Encoder
+		cachedEntities []dosa.DomainObject
+		originArgs     []map[string]dosa.FieldValue
+		originResp     []error
+		originErr      error
+		fallbackArgs   []expectArgs
+		description    string
+	}
+
+	runTestCase := func(tc testCase) {
+		t.Run(tc.description, func(t *testing.T) {
+			originCtrl := gomock.NewController(t)
+			defer originCtrl.Finish()
+			mockOrigin := mocks.NewMockConnector(originCtrl)
+
+			fallbackCtrl := gomock.NewController(t)
+			defer fallbackCtrl.Finish()
+			mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+			mockOrigin.EXPECT().MultiUpsert(context.TODO(), testEi, tc.originArgs).Return(tc.originResp, tc.originErr)
+
+			for _, args := range tc.fallbackArgs {
+				mockFallback.EXPECT().Remove(gomock.Not(context.TODO()), adaptedEi, args.values).Return(nil)
+			}
+
+			connector := newConnector(mockOrigin, mockFallback, nil, tc.encoder, tc.cachedEntities...)
+			connector.setSynchronousMode(true)
+			resp, err := connector.MultiUpsert(context.TODO(), testEi, tc.originArgs)
+			assert.Equal(t, tc.originResp, resp)
+			assert.Equal(t, tc.originErr, err)
+		})
+	}
+
+	multiupsertArgs := []map[string]dosa.FieldValue{
+		{"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9"},
+		{"strkey": "test key string"},
+	}
+	multiupsertResp := make([]error, 2)
+
+	testCases := []testCase{
+		{
+			description: "Successful origin multiupsert invalidates all the entries in fallback",
+			originArgs:  multiupsertArgs,
+			originResp:  multiupsertResp,
+			fallbackArgs: []expectArgs{
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+			},
+			cachedEntities: cacheableEntities,
+			encoder:        staticEncoder{},
+		},
+		{
+			description:    "Do not call fallback if there is an encoding error while creating cache key",
+			originArgs:     multiupsertArgs,
+			cachedEntities: cacheableEntities,
+			encoder:        staticEncoder{encodeErr: assert.AnError},
+		},
+		{
+			description: "Do not call fallback for uncached dosa objects",
+			originArgs:  multiupsertArgs,
+			originResp:  multiupsertResp,
+		},
+		{
+			description: "Unsuccessful origin multiupsert still invalidates fallback",
+			originArgs:  multiupsertArgs,
+			originResp:  multiupsertResp,
+			originErr:   assert.AnError,
+			fallbackArgs: []expectArgs{
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+			},
+			cachedEntities: cacheableEntities,
+			encoder:        staticEncoder{},
+		},
+	}
+	for _, t := range testCases {
+		runTestCase(t)
+	}
+}
+
+// Test dosa multi remove and the various behaviors of the fallback
+func TestMultiRemoveCases(t *testing.T) {
+	type testCase struct {
+		encoder        encoding.Encoder
+		cachedEntities []dosa.DomainObject
+		originArgs     []map[string]dosa.FieldValue
+		originResp     []error
+		originErr      error
+		fallbackArgs   []expectArgs
+		description    string
+	}
+
+	runTestCase := func(tc testCase) {
+		t.Run(tc.description, func(t *testing.T) {
+			originCtrl := gomock.NewController(t)
+			defer originCtrl.Finish()
+			mockOrigin := mocks.NewMockConnector(originCtrl)
+
+			fallbackCtrl := gomock.NewController(t)
+			defer fallbackCtrl.Finish()
+			mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+			mockOrigin.EXPECT().MultiRemove(context.TODO(), testEi, tc.originArgs).Return(tc.originResp, tc.originErr)
+
+			for _, args := range tc.fallbackArgs {
+				mockFallback.EXPECT().Remove(gomock.Not(context.TODO()), adaptedEi, args.values).Return(nil)
+			}
+
+			connector := newConnector(mockOrigin, mockFallback, nil, tc.encoder, tc.cachedEntities...)
+			connector.setSynchronousMode(true)
+			resp, err := connector.MultiRemove(context.TODO(), testEi, tc.originArgs)
+			assert.Equal(t, tc.originResp, resp)
+			assert.Equal(t, tc.originErr, err)
+		})
+	}
+
+	testCases := []testCase{
+		{
+			description: "Successful origin multiremove removes all the entries in fallback",
+			originArgs:  []map[string]dosa.FieldValue{{"a": "b"}, {"c": "d"}},
+			originResp:  []error{},
+			fallbackArgs: []expectArgs{
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+			},
+			cachedEntities: cacheableEntities,
+			encoder:        staticEncoder{},
+		},
+		{
+			description:    "Do not remove from fallback if there is an encoding error while creating cache key",
+			originArgs:     []map[string]dosa.FieldValue{{"a": "b"}},
+			cachedEntities: cacheableEntities,
+			encoder:        staticEncoder{encodeErr: assert.AnError},
+		},
+		{
+			description: "Do not remove from fallback uncached dosa objects",
+			originArgs:  []map[string]dosa.FieldValue{{"a": "b"}},
+			originResp:  []error{},
+		},
+		{
+			description: "Unsuccessful origin multiremove still removes from fallback",
+			originArgs:  []map[string]dosa.FieldValue{{"a": "b"}},
+			originResp:  []error{},
+			originErr:   assert.AnError,
+			fallbackArgs: []expectArgs{
+				{values: map[string]dosa.FieldValue{"key": encodedValue}},
+			},
+			cachedEntities: cacheableEntities,
+			encoder:        staticEncoder{},
 		},
 	}
 	for _, t := range testCases {
@@ -236,7 +457,8 @@ func TestReadCases(t *testing.T) {
 		createReadUncachedEntityTestCase(),
 		createReadFailTestCase(),
 		createReadNotFoundTestCase(),
-		createReadEncodeErrorTestCase(),
+		createFallbackWriteKeyEncodeErrorTestCase(),
+		createFallbackReadEncodeErrorTestCase(),
 		createReadDecodeErrorTestCase(),
 		createReadFallbackFailTestCase(),
 		createReadFallbackBadValueTestCase(),
@@ -262,7 +484,7 @@ func createReadSuccessTestCase() testCase {
 		},
 		expectedResp: map[string]dosa.FieldValue{"a": "b", "strkey": "primaryValue"},
 		expectedErr:  nil,
-		encoder:      testEncoder{},
+		encoder:      staticEncoder{},
 	}
 }
 
@@ -281,10 +503,6 @@ func createReadUncachedEntityTestCase() testCase {
 }
 
 func createReadFailTestCase() testCase {
-	resp := int32(7)
-	resp2 := "test decode"
-	resp3 := true
-
 	return testCase{
 		description:    "Test when read origin has error, we return from the fallback",
 		cachedEntities: cacheableEntities,
@@ -296,13 +514,9 @@ func createReadFailTestCase() testCase {
 			values: map[string]dosa.FieldValue{key: encodedValue},
 			resp:   map[string]dosa.FieldValue{"value": []byte("some response")},
 		},
-		expectedResp: map[string]dosa.FieldValue{
-			"int32v": &resp,
-			"strv":   &resp2,
-			"boolvp": &resp3,
-		},
-		expectedErr: nil,
-		encoder:     testEncoder{},
+		expectedResp: decodedValueAsPointers,
+		expectedErr:  nil,
+		encoder:      staticEncoder{},
 	}
 }
 
@@ -321,20 +535,37 @@ func createReadNotFoundTestCase() testCase {
 	}
 }
 
-func createReadEncodeErrorTestCase() testCase {
+func createFallbackWriteKeyEncodeErrorTestCase() testCase {
 	originResponse := map[string]dosa.FieldValue{"a": "b"}
 
 	return testCase{
-		description:    "If an encoding error occurs while creating encoded values for the fallback, do not upsert into fallback",
+		description:    "If an encoding error occurs while creating encoded key for the fallback, do not upsert into fallback",
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
 			values: map[string]dosa.FieldValue{"strkey": "primaryValue"},
 			resp:   originResponse,
+			err:    nil,
 		},
 		expectedResp: originResponse,
 		expectedErr:  nil,
-		encoder:      testEncoder{encodeErr: assert.AnError},
+		encoder:      staticEncoder{encodeErr: assert.AnError},
 	}
+}
+
+func createFallbackReadEncodeErrorTestCase() testCase {
+	originResponse := map[string]dosa.FieldValue{"a": "b"}
+
+	return testCase{
+		description:    "If an encoding error occurs while creating encoded values for the fallback, do not read from fallback",
+		cachedEntities: cacheableEntities,
+		originRead: &expectArgs{
+			values: map[string]dosa.FieldValue{"strkey": "primaryValue"},
+			resp:   originResponse,
+			err:    assert.AnError,
+		},
+		expectedResp: originResponse,
+		expectedErr:  assert.AnError,
+		encoder:      staticEncoder{encodeErr: assert.AnError}}
 }
 
 func createReadDecodeErrorTestCase() testCase {
@@ -355,7 +586,7 @@ func createReadDecodeErrorTestCase() testCase {
 		},
 		expectedResp: originResponse,
 		expectedErr:  originErr,
-		encoder:      testEncoder{decodeErr: assert.AnError},
+		encoder:      staticEncoder{decodeErr: assert.AnError},
 	}
 }
 
@@ -366,15 +597,17 @@ func createReadFallbackFailTestCase() testCase {
 	return testCase{
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
-			resp: originResponse,
-			err:  originErr,
+			values: map[string]dosa.FieldValue{"strkey": "primaryValue"},
+			resp:   originResponse,
+			err:    originErr,
 		},
 		fallbackRead: &expectArgs{
-			values: map[string]dosa.FieldValue{key: []byte{}},
+			values: map[string]dosa.FieldValue{key: encodedValue},
 			err:    errors.New("fallback error"),
 		},
 		expectedResp: originResponse,
 		expectedErr:  originErr,
+		encoder:      staticEncoder{},
 		description:  "Test read origin has error and fallback also fails. Should return the origin error",
 	}
 }
@@ -385,13 +618,15 @@ func createReadFallbackBadValueTestCase() testCase {
 
 	return testCase{
 		description:    "When fallback response is empty/corrupted, return the response from origin",
+		encoder:        staticEncoder{},
 		cachedEntities: cacheableEntities,
 		originRead: &expectArgs{
-			resp: originResponse,
-			err:  originErr,
+			values: map[string]dosa.FieldValue{"strkey": "primaryValue"},
+			resp:   originResponse,
+			err:    originErr,
 		},
 		fallbackRead: &expectArgs{
-			values: map[string]dosa.FieldValue{key: []byte{}},
+			values: map[string]dosa.FieldValue{key: encodedValue},
 			// fallback returns a response with no value field
 			resp: nil,
 		},
@@ -518,7 +753,7 @@ func createRangeSuccessTestCase() testCase {
 		expectedErr:      nil,
 		expectedManyResp: rangeResponse,
 		expectedTok:      rangeTok,
-		encoder:          testEncoder{},
+		encoder:          staticEncoder{},
 	}
 }
 
@@ -545,9 +780,6 @@ func createRangeUncachedEntityTestCase() testCase {
 
 func createRangeFailTestCase() testCase {
 	conditions := map[string][]*dosa.Condition{"column": {{Op: dosa.GtOrEq, Value: "columnVal"}}}
-	resp := int32(7)
-	resp2 := "test decode"
-	resp3 := true
 
 	return testCase{
 		description:    "Test range from origin has error and fallback succeeds",
@@ -562,14 +794,10 @@ func createRangeFailTestCase() testCase {
 			values: map[string]dosa.FieldValue{key: encodedValue},
 			resp:   map[string]dosa.FieldValue{"value": []byte("b")},
 		},
-		expectedErr: nil,
-		expectedManyResp: []map[string]dosa.FieldValue{{
-			"int32v": &resp,
-			"strv":   &resp2,
-			"boolvp": &resp3,
-		}},
-		expectedTok: "hardcodedDecodedToken",
-		encoder:     testEncoder{},
+		expectedErr:      nil,
+		expectedManyResp: []map[string]dosa.FieldValue{decodedValueAsPointers},
+		expectedTok:      "hardcodedDecodedToken",
+		encoder:          staticEncoder{},
 	}
 }
 
@@ -593,7 +821,7 @@ func createRangeNotFoundTestCase() testCase {
 		expectedErr:      rangeErr,
 		expectedManyResp: rangeResponse,
 		expectedTok:      rangeTok,
-		encoder:          testEncoder{},
+		encoder:          staticEncoder{},
 	}
 }
 
@@ -615,7 +843,7 @@ func createRangeEncodeErrorTestCase() testCase {
 		expectedErr:      nil,
 		expectedManyResp: rangeResponse,
 		expectedTok:      rangeTok,
-		encoder:          testEncoder{encodeErr: assert.AnError},
+		encoder:          staticEncoder{encodeErr: assert.AnError},
 	}
 }
 
@@ -644,7 +872,7 @@ func createRangeDecodeErrorTestCase() testCase {
 		expectedErr:      rangeErr,
 		expectedManyResp: rangeResponse,
 		expectedTok:      rangeTok,
-		encoder:          testEncoder{decodeErr: assert.AnError},
+		encoder:          staticEncoder{decodeErr: assert.AnError},
 	}
 }
 
@@ -669,7 +897,7 @@ func createRangeFallbackFailTestCase() testCase {
 		expectedErr:      rangeErr,
 		expectedManyResp: rangeResponse,
 		expectedTok:      rangeTok,
-		encoder:          testEncoder{},
+		encoder:          staticEncoder{},
 	}
 }
 
@@ -694,7 +922,7 @@ func createRangeFallbackBadValueTestCase() testCase {
 		expectedErr:      rangeErr,
 		expectedManyResp: rangeResponse,
 		expectedTok:      rangeTok,
-		encoder:          testEncoder{},
+		encoder:          staticEncoder{},
 	}
 }
 
@@ -726,14 +954,13 @@ func TestRemove(t *testing.T) {
 	mockFallback := mocks.NewMockConnector(fallbackCtrl)
 
 	keys := map[string]dosa.FieldValue{}
-	transformedKeys := map[string]dosa.FieldValue{key: []byte{}}
-	mockOrigin.EXPECT().Remove(context.TODO(), testEi, keys).Return(nil)
-	mockFallback.EXPECT().Remove(gomock.Not(context.TODO()), adaptedEi, transformedKeys).Return(nil)
+	mockOrigin.EXPECT().Remove(context.TODO(), testEi, keys).Return(assert.AnError)
+	mockFallback.EXPECT().Remove(gomock.Not(context.TODO()), adaptedEi, gomock.Any()).Return(nil)
 
 	connector := NewConnector(mockOrigin, mockFallback, nil, cacheableEntities...)
 	connector.setSynchronousMode(true)
 	err := connector.Remove(context.TODO(), testEi, keys)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }
 
 // Test that if a Connector interface method is not defined in fallback.Connector, revert to
@@ -862,8 +1089,8 @@ func TestCreateCacheKey(t *testing.T) {
 		"blobv":       []byte("test value byte array"),
 		"strkey":      "test key string",
 	}
-	key := createCacheKey(testEi, values, encoding.NewJSONEncoder())
-	assert.Equal(t, []byte(`[{"an_uuid_key":"d1449c93-25b8-4032-920b-60471d91acc9"},{"int64key":2932},{"strkey":"test key string"}]`), key)
+	key := createCacheKey(testEi, values)
+	assert.Equal(t, key, []map[string]dosa.FieldValue{{"an_uuid_key": "d1449c93-25b8-4032-920b-60471d91acc9"}, {"int64key": 2932}, {"strkey": "test key string"}})
 }
 
 // Test that creating cacheable entities set ignores entities in the list that are invalid
@@ -888,4 +1115,222 @@ func TestSettingCachedEntities(t *testing.T) {
 	assert.Contains(t, connector.cacheableEntities, "e2")
 	connector.SetCachedEntities(nil)
 	assert.Empty(t, connector.cacheableEntities)
+}
+
+func TestWriteKeyValueToFallback(t *testing.T) {
+	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), nil)
+	err := connector.writeKeyValueToFallback(context.TODO(), testEi, "a", nil)
+	// Should error on being unable to encode nil value
+	assert.Error(t, err)
+}
+
+func TestRawRowAsPointers(t *testing.T) {
+	e1 := struct {
+		dosa.Entity `dosa:"name=e1, primaryKey=(Hello)"`
+		Hello       string
+	}{}
+	table, _ := dosa.TableFromInstance(&e1)
+	ei := &dosa.EntityInfo{Ref: &schemaRef, Def: &table.EntityDefinition}
+	// Change the column's type to unknown type
+	ei.Def.Columns[0].Type = dosa.Invalid
+
+	world := dosa.FieldValue("world")
+	resp := rawRowAsPointers(ei, map[string]dosa.FieldValue{"hello": world})
+	assert.Equal(t, map[string]dosa.FieldValue{"hello": &world}, resp)
+}
+
+// Test dosa multiread and the various behaviors of the fallback
+func TestMultiReadCases(t *testing.T) {
+	type testCase struct {
+		description        string
+		cachedEntities     []dosa.DomainObject
+		encoder            encoding.Encoder
+		keys               []map[string]dosa.FieldValue
+		originResp         []*dosa.FieldValuesOrError
+		originErr          error
+		fallbackUpsertArgs []expectArgs
+		fallbackReadArgs   []expectArgs
+		expectedResp       []*dosa.FieldValuesOrError
+		expectedErr        error
+	}
+	runTestCase := func(tc testCase) {
+		t.Run(tc.description, func(t *testing.T) {
+			originCtrl := gomock.NewController(t)
+			defer originCtrl.Finish()
+			mockOrigin := mocks.NewMockConnector(originCtrl)
+
+			fallbackCtrl := gomock.NewController(t)
+			defer fallbackCtrl.Finish()
+			mockFallback := mocks.NewMockConnector(fallbackCtrl)
+
+			mockOrigin.EXPECT().MultiRead(context.TODO(), testEi, tc.keys, dosa.All()).Return(tc.originResp, tc.originErr)
+			for _, args := range tc.fallbackReadArgs {
+				mockFallback.EXPECT().Read(context.TODO(), adaptedEi, args.values, dosa.All()).Return(args.resp, args.err)
+			}
+			for _, args := range tc.fallbackUpsertArgs {
+				mockFallback.EXPECT().Upsert(gomock.Not(context.TODO()), adaptedEi, args.values).Return(args.err)
+			}
+
+			connector := newConnector(mockOrigin, mockFallback, nil, tc.encoder, tc.cachedEntities...)
+			connector.setSynchronousMode(true)
+			resp, err := connector.MultiRead(context.TODO(), testEi, tc.keys, []string{})
+			assert.Equal(t, tc.expectedErr, err, tc.description)
+			assert.Equal(t, tc.expectedResp, resp, tc.description)
+		})
+	}
+	originalResponse := []*dosa.FieldValuesOrError{{Values: map[string]dosa.FieldValue{"c": "d"}}}
+	partialResponse := []*dosa.FieldValuesOrError{{Values: map[string]dosa.FieldValue{"c": "d"}}, {Error: assert.AnError}, {Error: assert.AnError}}
+	testCases := []testCase{
+		{
+			description:    "Non-cached dosa objects should never read from fallback and just return original response.",
+			cachedEntities: nil,
+			originResp:     []*dosa.FieldValuesOrError{},
+			originErr:      nil,
+			expectedResp:   []*dosa.FieldValuesOrError{},
+			expectedErr:    nil,
+		},
+		{
+			description:    "Not found errors should never read from fallback and just return the not found error.",
+			cachedEntities: nil,
+			originErr:      &dosa.ErrNotFound{},
+			expectedErr:    &dosa.ErrNotFound{},
+		},
+		{
+			description:    "Errors from both origin and from fallback should return origin response",
+			cachedEntities: cacheableEntities,
+			encoder:        staticEncoder{},
+			keys:           []map[string]dosa.FieldValue{{"an_uuid_key": "b"}},
+			originResp:     nil,
+			originErr:      assert.AnError,
+			fallbackReadArgs: []expectArgs{
+				{
+					values: map[string]dosa.FieldValue{"key": encodedValue},
+					err:    fmt.Errorf("Fallback error"),
+				},
+			},
+			expectedResp: nil,
+			expectedErr:  assert.AnError,
+		},
+		{
+			description:    "Origin success, write results to fallback",
+			cachedEntities: cacheableEntities,
+			encoder:        staticEncoder{},
+			keys:           []map[string]dosa.FieldValue{{"an_uuid_key": "b"}},
+			originResp:     originalResponse,
+			originErr:      nil,
+			fallbackUpsertArgs: []expectArgs{
+				{
+					values: map[string]dosa.FieldValue{"key": encodedValue, "value": encodedValue},
+					err:    nil,
+				},
+			},
+			expectedResp: originalResponse,
+			expectedErr:  nil,
+		},
+		{
+			description:    "Origin fails, fallback contains no values, return origin error",
+			cachedEntities: cacheableEntities,
+			encoder:        staticEncoder{},
+			keys:           []map[string]dosa.FieldValue{{"an_uuid_key": "b"}},
+			originResp:     nil,
+			originErr:      assert.AnError,
+			fallbackReadArgs: []expectArgs{
+				{
+					values: map[string]dosa.FieldValue{"key": encodedValue},
+					resp:   nil,
+					err:    nil,
+				},
+			},
+			expectedResp: nil,
+			expectedErr:  assert.AnError,
+		},
+		{
+			description:    "Origin fails, fallback contains values, return fallback response",
+			cachedEntities: cacheableEntities,
+			encoder:        staticEncoder{},
+			keys:           []map[string]dosa.FieldValue{{"an_uuid_key": "b"}},
+			originResp:     nil,
+			originErr:      assert.AnError,
+			fallbackReadArgs: []expectArgs{
+				{
+					values: map[string]dosa.FieldValue{"key": encodedValue},
+					resp:   map[string]dosa.FieldValue{"value": []byte("some response")},
+					err:    nil,
+				},
+			},
+			expectedResp: []*dosa.FieldValuesOrError{{Values: decodedValueAsPointers}},
+			expectedErr:  nil,
+		},
+		{
+			description:    "Origin returns partial result, write partial to fallback. Fallback contains some remaining results, return fallback response",
+			cachedEntities: cacheableEntities,
+			encoder:        &argsEncoder{},
+			// Querying for three entities, one succeeds, two have errors
+			keys:       []map[string]dosa.FieldValue{{"strkey": "primaryValue"}, {"int64key": 20}, {"strkey": "anotherKeyValue"}},
+			originResp: partialResponse,
+			originErr:  nil,
+			// Try to read two entries from cache, one succeeds, one has error
+			fallbackReadArgs: []expectArgs{
+				{
+					values: map[string]dosa.FieldValue{"key": []byte("int64key|20")},
+					resp:   map[string]dosa.FieldValue{"value": []byte("some response")},
+					err:    nil,
+				},
+				{
+					values: map[string]dosa.FieldValue{"key": []byte("strkey|anotherKeyValue")},
+					resp:   nil,
+					err:    assert.AnError,
+				},
+			},
+			// Should try to write one entry to cache
+			fallbackUpsertArgs: []expectArgs{
+				{
+					values: map[string]dosa.FieldValue{"key": []byte("strkey|primaryValue"), "value": []byte("c|d|strkey|primaryValue")},
+					err:    nil,
+				},
+			},
+			// Return the fallback response
+			expectedResp: []*dosa.FieldValuesOrError{
+				{Values: map[string]dosa.FieldValue{"strkey": "primaryValue", "c": "d"}},
+				{Values: decodedValueAsPointers},
+				{Error: assert.AnError},
+			},
+			expectedErr: nil,
+		},
+		{
+			description:    "Origin returns partial result, write partial to fallback. Fallback does not contain remaining results, return origin response",
+			cachedEntities: cacheableEntities,
+			encoder:        &argsEncoder{},
+			// Querying for three entities
+			keys: []map[string]dosa.FieldValue{{"strkey": "primaryValue"}, {"int64key": 20}, {"strkey": "anotherKeyValue"}},
+			// One entity returns correctly, other two have errors
+			originResp: partialResponse,
+			originErr:  nil,
+			// Should try to read two entries from cache, but cache has no value or errors
+			fallbackReadArgs: []expectArgs{
+				{
+					values: map[string]dosa.FieldValue{"key": []byte("int64key|20")},
+					resp:   nil,
+					err:    nil,
+				},
+				{
+					values: map[string]dosa.FieldValue{"key": []byte("strkey|anotherKeyValue")},
+					resp:   nil,
+					err:    assert.AnError,
+				},
+			},
+			// Should try to write one entry to cache
+			fallbackUpsertArgs: []expectArgs{
+				{
+					values: map[string]dosa.FieldValue{"key": []byte("strkey|primaryValue"), "value": []byte("c|d|strkey|primaryValue")},
+					err:    nil,
+				},
+			},
+			expectedResp: partialResponse,
+			expectedErr:  nil,
+		},
+	}
+	for _, tc := range testCases {
+		runTestCase(tc)
+	}
 }

@@ -3,7 +3,16 @@
 ## v3.0.0 (unreleased)
 - Scope metadata handling, and rudimentary auth* support. The Connector interface (Admin API) has changed.
 
-## v2.5.3 (unreleased)
+## v2.6.0 (2018-04-16)
+- Fix bug in invalidating fallback cache on upsert (#292)
+- Implement MultiRemove and MultiUpsert in fallback connector (#298)
+- Refactor fallback connector (#299)
+- Implement MultiRead in fallback connector (#296)
+- Implement multi upsert and multi remove methods in memory connector (#301)
+- Implement multi upsert and multi remove in YARPC connector (#303)
+- Added TTL support (#286)
+
+## v2.5.3 (2018-03-22)
 - Invalidate fallback cache on upsert (#285)
 - Properly Interpret NotFound errors for MultiRead in the YARPC connector (#287)
 

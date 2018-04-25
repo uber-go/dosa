@@ -287,6 +287,72 @@ func TestConnector_MultiRead(t *testing.T) {
 
 }
 
+func TestConnector_MultiUpsert(t *testing.T) {
+	sut := NewConnector()
+
+	// insert into clustered entity
+	id := dosa.NewUUID()
+	errs, err := sut.MultiUpsert(context.TODO(), clusteredEi, []map[string]dosa.FieldValue{{
+		"f1": dosa.FieldValue("key"),
+		"c1": dosa.FieldValue(int64(1)),
+		"c2": dosa.FieldValue(float64(1.2)),
+		"c7": dosa.FieldValue(id)}})
+	assert.NoError(t, err)
+	assert.Len(t, errs, 1)
+	assert.Nil(t, errs[0])
+
+	// verify we can read that row
+	vals, err := sut.MultiRead(context.TODO(), clusteredEi, []map[string]dosa.FieldValue{
+		{
+			"f1": dosa.FieldValue("key"),
+			"c1": dosa.FieldValue(int64(1)),
+			"c7": dosa.FieldValue(id)},
+	}, dosa.All())
+	assert.NoError(t, err)
+	assert.Len(t, vals, 1)
+	assert.Equal(t, dosa.FieldValue(float64(1.2)), vals[0].Values["c2"])
+}
+
+func TestConnector_MultiRemove(t *testing.T) {
+	sut := NewConnector()
+
+	// insert into clustered entity
+	id := dosa.NewUUID()
+	err := sut.Upsert(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
+		"f1": dosa.FieldValue("key"),
+		"c1": dosa.FieldValue(int64(1)),
+		"c2": dosa.FieldValue(float64(1.2)),
+		"c7": dosa.FieldValue(id)})
+	assert.NoError(t, err)
+
+	// verify we can read that row
+	vals, err := sut.Read(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
+		"f1": dosa.FieldValue("key"),
+		"c1": dosa.FieldValue(int64(1)),
+		"c7": dosa.FieldValue(id),
+	}, dosa.All())
+	assert.NoError(t, err)
+	assert.Len(t, vals, 4)
+	assert.Equal(t, dosa.FieldValue(float64(1.2)), vals["c2"])
+
+	errs, err := sut.MultiRemove(context.TODO(), clusteredEi, []map[string]dosa.FieldValue{{
+		"f1": dosa.FieldValue("key"),
+		"c1": dosa.FieldValue(int64(1)),
+		"c7": dosa.FieldValue(id)},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, errs, 1)
+	assert.Nil(t, errs[0])
+
+	// verify the row is removed
+	_, err = sut.Read(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
+		"f1": dosa.FieldValue("key"),
+		"c1": dosa.FieldValue(int64(1)),
+		"c7": dosa.FieldValue(id),
+	}, dosa.All())
+	assert.True(t, dosa.ErrorIsNotFound(err))
+}
+
 func TestConnector_Remove(t *testing.T) {
 	sut := NewConnector()
 

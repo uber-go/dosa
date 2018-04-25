@@ -49,6 +49,8 @@ import (
 // A read-write mutex lock is used to control concurrency, making reads work in parallel but
 // writes are not. There is no attempt to improve the concurrency of the read or write path by
 // adding more granular locks.
+//
+// NOTE: The memory connector doesn't support TTL. All the data is stored in memory until a manual delete.
 type Connector struct {
 	base.Connector
 	data map[string]map[string][]map[string]dosa.FieldValue
@@ -330,6 +332,28 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values [
 	}
 
 	return fvoes, nil
+}
+
+// MultiUpsert upserts a series of values at once.
+func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue) ([]error, error) {
+	// Note we do not lock here. This is representative of the behavior one would see in a deployed environment
+	var errs []error
+	for _, v := range values {
+		errs = append(errs, c.Upsert(ctx, ei, v))
+	}
+
+	return errs, nil
+}
+
+// MultiRemove removes a series of values at once.
+func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
+	// Note we do not lock here. This is representative of the behavior one would see in a deployed environment
+	var errs []error
+	for _, v := range multiValues {
+		errs = append(errs, c.Remove(ctx, ei, v))
+	}
+
+	return errs, nil
 }
 
 func overwriteValuesFunc(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {

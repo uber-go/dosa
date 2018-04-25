@@ -359,6 +359,18 @@ func entityInfoToSchemaRef(ei *dosa.EntityInfo) *dosarpc.SchemaRef {
 	return &sr
 }
 
+func fieldValueMapsFromClientMaps(valuesSlice []map[string]dosa.FieldValue) ([]dosarpc.FieldValueMap, error) {
+	fieldValues := make([]dosarpc.FieldValueMap, len(valuesSlice))
+	for idx, values := range valuesSlice {
+		fieldValue, err := fieldValueMapFromClientMap(values)
+		if err != nil {
+			return nil, err
+		}
+		fieldValues[idx] = fieldValue
+	}
+	return fieldValues, nil
+}
+
 func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) (dosarpc.FieldValueMap, error) {
 	fields := dosarpc.FieldValueMap{}
 	for name, value := range values {
@@ -373,6 +385,34 @@ func fieldValueMapFromClientMap(values map[string]dosa.FieldValue) (dosarpc.Fiel
 		fields[name] = rpcValue
 	}
 	return fields, nil
+}
+
+func keyValuesToRPCValues(keys map[string]dosa.FieldValue) (dosarpc.FieldValueMap, error) {
+	rpcFields := make(dosarpc.FieldValueMap, len(keys))
+	for key, value := range keys {
+		rv, err := RawValueFromInterface(value)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Key field %q", key)
+		}
+		if rv == nil {
+			continue
+		}
+		rpcValue := &dosarpc.Value{ElemValue: rv}
+		rpcFields[key] = rpcValue
+	}
+	return rpcFields, nil
+}
+
+func multiKeyValuesToRPCValues(keysSlice []map[string]dosa.FieldValue) ([]dosarpc.FieldValueMap, error) {
+	rpcFieldsSlice := make([]dosarpc.FieldValueMap, len(keysSlice))
+	for idx, keys := range keysSlice {
+		rpcFields, err := keyValuesToRPCValues(keys)
+		if err != nil {
+			return nil, err
+		}
+		rpcFieldsSlice[idx] = rpcFields
+	}
+	return rpcFieldsSlice, nil
 }
 
 // VersionHeader returns the rpc style version header
