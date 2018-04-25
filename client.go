@@ -211,7 +211,7 @@ type AdminClient interface {
 	// GetSchema finds entity definitions
 	GetSchema() ([]*EntityDefinition, error)
 	// CreateScope creates a new scope
-	CreateScope(ctx context.Context, s string, md *ScopeMetadata) error
+	CreateScope(ctx context.Context, md *ScopeMetadata) error
 	// TruncateScope keeps the scope and the schemas, but drops the data associated with the scope
 	TruncateScope(ctx context.Context, s string) error
 	// DropScope drops the scope and the data and schemas in the scope
@@ -708,8 +708,8 @@ func (ee *EntityErrors) Error() string {
 }
 
 // CreateScope creates a new scope
-func (c *adminClient) CreateScope(ctx context.Context, s string, md *ScopeMetadata) error {
-	return c.connector.CreateScope(ctx, s, md)
+func (c *adminClient) CreateScope(ctx context.Context, md *ScopeMetadata) error {
+	return c.connector.CreateScope(ctx, md)
 }
 
 // TruncateScope keeps the scope and the schemas, but drops the data associated with the scope

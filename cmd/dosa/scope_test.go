@@ -76,7 +76,7 @@ func TestScope_Create(t *testing.T) {
 	}
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(nil)
+		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "scope", "create", "-o", "foo", "one_scope", "two_scope", "three_scope", "four"}
@@ -86,7 +86,7 @@ func TestScope_Create(t *testing.T) {
 
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().CreateScope(gomock.Any(), "fred_dev", gomock.Any()).Times(1).Return(nil)
+		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "scope", "create", "--owner", "fred", "fred_dev"}
@@ -96,7 +96,7 @@ func TestScope_Create(t *testing.T) {
 
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("oops"))
+		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("oops"))
 		return mc, nil
 	})
 	c = StartCapture()

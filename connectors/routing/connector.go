@@ -212,13 +212,13 @@ func (rc *Connector) CheckSchemaStatus(ctx context.Context, scope string, namePr
 }
 
 // CreateScope calls selected connector
-func (rc *Connector) CreateScope(ctx context.Context, scope string, md *dosa.ScopeMetadata) error {
+func (rc *Connector) CreateScope(ctx context.Context, md *dosa.ScopeMetadata) error {
 	// will fall to default connector
-	connector, err := rc.getConnector(scope, "", "CreateScope")
+	connector, err := rc.getConnector(md.Name, "", "CreateScope")
 	if err != nil {
 		return err
 	}
-	return connector.CreateScope(ctx, scope, md)
+	return connector.CreateScope(ctx, md)
 }
 
 // TruncateScope calls selected connector

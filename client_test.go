@@ -780,7 +780,7 @@ func TestAdminClient_CreateScope(t *testing.T) {
 	c := dosaRenamed.NewAdminClient(nullConnector)
 	assert.NotNil(t, c)
 
-	err := c.CreateScope(context.TODO(), scope, &dosaRenamed.ScopeMetadata{})
+	err := c.CreateScope(context.TODO(), &dosaRenamed.ScopeMetadata{Name: scope})
 	assert.NoError(t, err)
 }
 

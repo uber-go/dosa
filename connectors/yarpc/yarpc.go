@@ -22,6 +22,7 @@ package yarpc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -633,16 +634,20 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 }
 
 // CreateScope creates the scope specified
-func (c *Connector) CreateScope(ctx context.Context, scope string, md *dosa.ScopeMetadata) error {
+func (c *Connector) CreateScope(ctx context.Context, md *dosa.ScopeMetadata) error {
+	bytes, err := json.Marshal(*md)
+	if err != nil {
+		return errors.Wrap(err, "could not encode metadata into JSON")
+	}
+	mds := string(bytes)
+
 	request := &dosarpc.CreateScopeRequest{
-		Name:      &scope,
+		Name:      &(md.Name),
 		Requester: &(md.Creator),
-		Owner:     &(md.Owner),
-		Type:      &(md.Type),
-		Cluster:   &(md.Cluster),
+		Metadata:  &mds,
 	}
 
-	if err := c.Client.CreateScope(ctx, request, VersionHeader()); err != nil {
+	if err = c.Client.CreateScope(ctx, request, VersionHeader()); err != nil {
 		if !dosarpc.Dosa_CreateScope_Helper.IsException(err) {
 			return errors.Wrap(err, "failed to CreateScope due to network issue")
 		}

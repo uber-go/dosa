@@ -59,10 +59,12 @@ func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Conte
 // ScopeCreate contains data for executing scope create command.
 type ScopeCreate struct {
 	*ScopeCmd
-	Owner   string `short:"o" long:"owner" description:"The owning group (ublame name)"`
-	Type    string `short:"t" long:"type" description:"Scope type (default: 'development')"`
-	Cluster string `short:"c" long:"cluster" description:"Hosting cluster for a production scope"`
-	Args    struct {
+	Owner    string `short:"o" long:"owner" description:"The owning group (ublame name)"`
+	Type     string `short:"t" long:"type" description:"Scope type (default: 'development')"`
+	Cluster  string `short:"c" long:"cluster" description:"Hosting cluster for a production scope"`
+	ReadRPS  int32  `short:"r" long:"read-rate" description:"Max read rate for a production scope"`
+	WriteRPS int32  `short:"w" long:"write-rate" description:"Max write rate for a production scope"`
+	Args     struct {
 		Scopes []string `positional-arg-name:"scopes" required:"1"`
 	} `positional-args:"yes" required:"1"`
 }
@@ -78,12 +80,14 @@ func (c *ScopeCreate) Execute(args []string) error {
 	}
 	return c.doScopeOp("create",
 		func(client dosa.AdminClient, ctx context.Context, scope string) error {
-			return dosa.AdminClient.CreateScope(client, ctx, scope, &dosa.ScopeMetadata{
-				Name:    scope,
-				Owner:   c.Owner,
-				Type:    int32(typ),
-				Creator: *dosa.GetUsername(),
-				Cluster: c.Cluster,
+			return dosa.AdminClient.CreateScope(client, ctx, &dosa.ScopeMetadata{
+				Name:        scope,
+				Owner:       c.Owner,
+				Type:        int32(typ),
+				Creator:     *dosa.GetUsername(),
+				Cluster:     c.Cluster,
+				ReadMaxRPS:  c.ReadRPS,
+				WriteMaxRPS: c.WriteRPS,
 			})
 		}, c.Args.Scopes)
 }

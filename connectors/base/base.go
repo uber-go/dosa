@@ -168,11 +168,11 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope string, namePre
 }
 
 // CreateScope calls Next
-func (c *Connector) CreateScope(ctx context.Context, scope string, md *dosa.ScopeMetadata) error {
+func (c *Connector) CreateScope(ctx context.Context, md *dosa.ScopeMetadata) error {
 	if c.Next == nil {
 		return NewErrNoMoreConnector()
 	}
-	return c.Next.CreateScope(ctx, scope, md)
+	return c.Next.CreateScope(ctx, md)
 }
 
 // TruncateScope calls Next

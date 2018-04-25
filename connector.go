@@ -98,6 +98,8 @@ type ScopeMetadata struct {
 	ExpiresOn   *time.Time `json:"expires_on,omitempty"`
 	ExtendCount int32      `json:"extend_count,omitempty"`
 	NotifyCount int32      `json:"notify_count,omitempty"`
+	ReadMaxRPS  int32      `json:"read_max_rps"`
+	WriteMaxRPS int32      `json:"write_max_rps"`
 	// This is for convenience only, not stored in the DB:
 	Prefixes StringSet `dosa:"-" json:"-"`
 }
@@ -193,7 +195,7 @@ type Connector interface {
 	// Datastore management
 	// CreateScope creates a scope for storage of data, usually implemented by a keyspace for this data
 	// This is usually followed by UpsertSchema
-	CreateScope(ctx context.Context, scope string, md *ScopeMetadata) error
+	CreateScope(ctx context.Context, md *ScopeMetadata) error
 	// TruncateScope keeps the scope around, but removes all the data
 	TruncateScope(ctx context.Context, scope string) error
 	// DropScope removes the scope and all of the data
