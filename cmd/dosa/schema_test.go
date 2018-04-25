@@ -134,7 +134,7 @@ func TestSchema_Defaults(t *testing.T) {
 				"--connector", "devnull",
 				"schema",
 				cmd,
-				"--prefix", "foo",
+				"--namePrefix", "foo",
 				"--scope", "bar",
 				"../../testentity",
 			}
@@ -152,7 +152,7 @@ func TestSchema_ScopeRequired(t *testing.T) {
 			"dosa",
 			"schema",
 			cmd,
-			"--prefix", "foo",
+			"--namePrefix", "foo",
 			"../../testentity",
 		}
 		main()
@@ -172,7 +172,7 @@ func TestSchema_PrefixRequired(t *testing.T) {
 			"../../testentity",
 		}
 		main()
-		assert.Contains(t, c.stop(true), "--prefix' was not specified")
+		assert.Contains(t, c.stop(true), "--namePrefix' was not specified")
 	}
 }
 
@@ -192,7 +192,7 @@ func TestSchema_InvalidDirectory(t *testing.T) {
 			cmd,
 		}
 		if hasPrefix {
-			os.Args = append(os.Args, "--scope", "bar", "--prefix", "foo")
+			os.Args = append(os.Args, "--scope", "bar", "--namePrefix", "foo")
 		}
 		os.Args = append(os.Args, []string{
 			"-e", "testentity.go",
@@ -220,7 +220,7 @@ func TestSchema_NoEntitiesFound(t *testing.T) {
 			cmd,
 		}
 		if hasPrefix {
-			os.Args = append(os.Args, "--scope", "bar", "--prefix", "foo")
+			os.Args = append(os.Args, "--scope", "bar", "--namePrefix", "foo")
 		}
 		os.Args = append(os.Args, []string{
 			"-e", "testentity.go",
@@ -261,7 +261,7 @@ func TestSchema_Check_Happy(t *testing.T) {
 			}).Return(int32(1), nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "-p", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
 	main()
 }
 
@@ -283,7 +283,7 @@ func TestSchema_Status_Happy(t *testing.T) {
 			}).Return(&dosa.SchemaStatus{Version: int32(12)}, nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "status", "--prefix", "foo", "-s", "scope", "-v", "--version", "12"}
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "status", "-p", "foo", "-s", "scope", "-v", "--version", "12"}
 	main()
 }
 
@@ -311,7 +311,7 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 			}).Return(&dosa.SchemaStatus{Version: int32(1)}, nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "-p", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
 	main()
 }
 
