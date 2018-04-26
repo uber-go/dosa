@@ -1,5 +1,5 @@
-hash: 9460488878f921a42a216a88ee71d37ba56e6bf16a251b258dd89a0701267c0a
-updated: 2018-04-26T11:56:35.133928-07:00
+hash: d7b9c315ea81c7388a4707ca9a852d8d914b0437e1d7aabbea50cda29c0b3bd2
+updated: 2018-04-26T13:15:16.630472-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -89,7 +89,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 522328b48efad0c6034dba92bf39228694e9d31f
 - name: github.com/uber/dosa-idl
-  version: e60480c0ff8c7cc4ff987ff3da29ae5215611441
+  version: f3fe9986ab26bd2f262f61fdcee60990bd9b6abc
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -224,6 +224,6 @@ testImports:
 - name: github.com/yookoala/realpath
   version: d19ef9c409d9817c1e685775e53d361b03eabbc8
 - name: golang.org/x/tools
-  version: c1def519f03ddf76f16b3e444ee1095d73afa01b
+  version: 6e0e2181b9b7327c20fd9aa37d42a9515169a418
   subpackages:
   - cover
