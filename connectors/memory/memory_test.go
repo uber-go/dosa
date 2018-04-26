@@ -1196,23 +1196,23 @@ func TestCompoundPartSecondaryIndex(t *testing.T) {
 	bucketID := 1
 	now := time.Now()
 
-	repoUUID0 := uuid.NewV4().String()
+	repoUUID0 := dosa.NewUUID()
 	createdAt0 := now.Add(-1 * time.Hour)
 	result0 := 5
 
 	err := sut.Upsert(context.TODO(), compoundPartEi, map[string]dosa.FieldValue{
-		"RepositoryUUID": dosa.FieldValue(dosa.UUID(repoUUID0)),
+		"RepositoryUUID": dosa.FieldValue(repoUUID0),
 		"BucketID":       dosa.FieldValue(int32(bucketID)),
 		"CreatedAt":      dosa.FieldValue(createdAt0),
 		"Result":         dosa.FieldValue(int32(result0)),
 	})
 
-	repoUUID1 := uuid.NewV4().String()
+	repoUUID1 := dosa.NewUUID()
 	createdAt1 := now.Add(-2 * time.Hour)
 	result1 := 4
 
 	err = sut.Upsert(context.TODO(), compoundPartEi, map[string]dosa.FieldValue{
-		"RepositoryUUID": dosa.FieldValue(dosa.UUID(repoUUID1)),
+		"RepositoryUUID": dosa.FieldValue(repoUUID1),
 		"BucketID":       dosa.FieldValue(int32(bucketID)),
 		"CreatedAt":      dosa.FieldValue(createdAt1),
 		"Result":         dosa.FieldValue(int32(result1)),
