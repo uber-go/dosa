@@ -1,5 +1,5 @@
 hash: 9460488878f921a42a216a88ee71d37ba56e6bf16a251b258dd89a0701267c0a
-updated: 2018-04-26T11:11:33.609139-07:00
+updated: 2018-04-26T11:56:35.133928-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -212,7 +212,7 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/russross/blackfriday
-  version: c455fd41c6baf2f78fd7ff0aadc4e4b4d52698b0
+  version: 6aeb241ce2c0d259208d56810fc8831a46df5660
 - name: github.com/sectioneight/md-to-godoc
   version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
 - name: github.com/shurcooL/sanitized_anchor_name
