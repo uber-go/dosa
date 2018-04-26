@@ -49,7 +49,7 @@ func TestBytesToUUID(t *testing.T) {
 	assert.NoError(t, err0)
 	uid, err := BytesToUUID(bs)
 	assert.NoError(t, err)
-	assert.EqualValues(t, string(id), uid)
+	assert.EqualValues(t, id, uid)
 
 	invalidBs := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 	_, err = BytesToUUID(invalidBs)
