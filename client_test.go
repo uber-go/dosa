@@ -89,7 +89,7 @@ func ExampleNewClient() {
 		return
 	}
 
-	// create the client using the registry and connector
+	// create the client using the registrar and connector
 	client := dosaRenamed.NewClient(reg, conn)
 
 	err = client.Initialize(context.Background())
@@ -117,7 +117,7 @@ func ExampleGetConnector() {
 	// when we imported memory in the import list, with an underscore to just get the side effects
 	conn, _ := dosaRenamed.GetConnector("memory", nil)
 
-	// now construct a client from the registry and the connector
+	// now construct a client from the registrar and the connector
 	client := dosaRenamed.NewClient(reg, conn)
 
 	// initialize the client; this should always work for the in-memory connector

@@ -61,16 +61,6 @@ func (_mr *_MockClientRecorder) CreateIfNotExists(arg0, arg1 interface{}) *gomoc
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateIfNotExists", arg0, arg1)
 }
 
-func (_m *MockClient) GetRegistrar() dosa.Registrar {
-	ret := _m.ctrl.Call(_m, "GetRegistrar")
-	ret0, _ := ret[0].(dosa.Registrar)
-	return ret0
-}
-
-func (_mr *_MockClientRecorder) GetRegistrar() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetRegistrar")
-}
-
 func (_m *MockClient) Initialize(_param0 context.Context) error {
 	ret := _m.ctrl.Call(_m, "Initialize", _param0)
 	ret0, _ := ret[0].(error)

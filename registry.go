@@ -289,7 +289,7 @@ func (r *prefixedRegistrar) FindAll() ([]*RegisteredEntity, error) {
 		res = append(res, re)
 	}
 	if len(res) == 0 {
-		return nil, errors.Errorf("registry.FindAll returned empty")
+		return nil, errors.Errorf("registrar.FindAll returned empty")
 	}
 	return res, nil
 }
