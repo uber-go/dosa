@@ -24,7 +24,6 @@ import (
 	"context"
 	"testing"
 
-	gouuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 )
@@ -37,7 +36,7 @@ var (
 
 func TestRangeQuery(t *testing.T) {
 	sut := GetTestConnector(t)
-	partitionKey := dosa.UUID(gouuid.NewV4().String())
+	partitionKey := dosa.NewUUID()
 	populateEntityRange(t, partitionKey)
 
 	var (
@@ -102,7 +101,7 @@ func TestRangeQuery(t *testing.T) {
 func TestRangeQueryInvalidToken(t *testing.T) {
 	sut := GetTestConnector(t)
 	_, _, err := sut.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
-		uuidKeyField: {{Op: dosa.Eq, Value: dosa.UUID(gouuid.NewV4().String())}},
+		uuidKeyField: {{Op: dosa.Eq, Value: dosa.NewUUID()}},
 	}, []string{int32Field}, "西瓜", pageSize)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "bad token")
@@ -110,7 +109,7 @@ func TestRangeQueryInvalidToken(t *testing.T) {
 
 func TestRangeQueryFieldsToRead(t *testing.T) {
 	sut := GetTestConnector(t)
-	partitionKey := dosa.UUID(gouuid.NewV4().String())
+	partitionKey := dosa.NewUUID()
 	populateEntityRange(t, partitionKey)
 
 	res, token, err := sut.Range(context.TODO(), testEntityInfo, map[string][]*dosa.Condition{
@@ -150,7 +149,7 @@ func TestScan(t *testing.T) {
 	}
 
 	for i := 0; i < 100; i++ {
-		id := dosa.UUID(gouuid.NewV4().String())
+		id := dosa.NewUUID()
 		expectedUUIDSet[id] = struct{}{}
 		expectedIntValueSet[i] = struct{}{}
 		err := sut.Upsert(context.TODO(), entityInfo, map[string]dosa.FieldValue{
