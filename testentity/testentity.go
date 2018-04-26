@@ -23,16 +23,17 @@ package testentity
 import (
 	"time"
 
+	satori "github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 )
 
 // TestEntity uses common key types and all types in value fields.
 type TestEntity struct {
 	dosa.Entity `dosa:"name=awesome_test_entity, primaryKey=(UUIDKey, StrKey ASC, Int64Key DESC)"`
-	UUIDKey     dosa.UUID `dosa:"name=an_uuid_key"`
+	UUIDKey     satori.UUID `dosa:"name=an_uuid_key"`
 	StrKey      string
 	Int64Key    int64
-	UUIDV       dosa.UUID
+	UUIDV       satori.UUID
 	StrV        string
 	Int64V      int64 `dosa:"name=an_int64_value"`
 	Int32V      int32
@@ -41,7 +42,7 @@ type TestEntity struct {
 	BlobV       []byte
 	TSV         time.Time
 
-	UUIDVP   *dosa.UUID
+	UUIDVP   *satori.UUID
 	StrVP    *string
 	Int64VP  *int64
 	Int32VP  *int32

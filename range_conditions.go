@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/satori/go.uuid"
 )
 
 // Condition holds an operator and a value for a condition on a field.
@@ -228,8 +229,8 @@ func ensureValidConditions(t Type, conditions []*Condition) error {
 func compare(t Type, a, b interface{}) int {
 	switch t {
 	case TUUID:
-		// TODO: make sure if comparison for UUID like below makes sense.
-		return strings.Compare(string(a.(UUID)), string(b.(UUID)))
+		// Comparing UUIDs (except for equality) really makes no sense, but ....
+		return strings.Compare(a.(uuid.UUID).String(), b.(uuid.UUID).String())
 	case Int64:
 		return int(a.(int64) - b.(int64))
 	case Int32:
@@ -275,7 +276,7 @@ func compare(t Type, a, b interface{}) int {
 func ensureTypeMatch(t Type, v FieldValue) error {
 	switch t {
 	case TUUID:
-		if _, ok := v.(UUID); !ok {
+		if _, ok := v.(uuid.UUID); !ok {
 			return errors.Errorf("invalid value for UUID type: %v", v)
 		}
 	case Int64:

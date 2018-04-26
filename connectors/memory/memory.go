@@ -170,9 +170,9 @@ func timeFromUUID(u uuid.UUID) int64 {
 // of the columns are the same, or it will panic
 func compareType(d1 dosa.FieldValue, d2 dosa.FieldValue) int8 {
 	switch d1 := d1.(type) {
-	case dosa.UUID:
-		u1 := uuid.FromStringOrNil(string(d1))
-		u2 := uuid.FromStringOrNil(string(d2.(dosa.UUID)))
+	case uuid.UUID:
+		u1 := uuid.FromStringOrNil(d1.String())
+		u2 := uuid.FromStringOrNil(d2.(uuid.UUID).String())
 		if u1.Version() != u2.Version() {
 			if u1.Version() < u2.Version() {
 				return -1
@@ -193,10 +193,10 @@ func compareType(d1 dosa.FieldValue, d2 dosa.FieldValue) int8 {
 		}
 
 		// version
-		if string(d1) == string(d2.(dosa.UUID)) {
+		if d1.String() == d2.(uuid.UUID).String() {
 			return 0
 		}
-		if string(d1) < string(d2.(dosa.UUID)) {
+		if d1.String() < d2.(uuid.UUID).String() {
 			return -1
 		}
 		return 1

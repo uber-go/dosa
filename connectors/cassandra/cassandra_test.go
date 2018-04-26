@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/gocql/gocql"
+	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/cassandra"
 	_ "github.com/uber-go/dosa/connectors/cassandra"
@@ -58,8 +59,9 @@ func TestNewConnector(t *testing.T) {
 	}
 	sr := dosa.SchemaRef{Scope: "example", NamePrefix: "example"}
 
+	u1, _ := uuid.FromString("c778ba9e-a241-471c-9b5b-4b4c1ef1c5b7")
 	err = c.Upsert(ctx, &dosa.EntityInfo{Ref: &sr, Def: &ei.EntityDefinition}, map[string]dosa.FieldValue{
-		"an_uuid_key": dosa.UUID("c778ba9e-a241-471c-9b5b-4b4c1ef1c5b7"),
+		"an_uuid_key": u1,
 		"strkey":      "test",
 		"int64key":    int64(11),
 	})

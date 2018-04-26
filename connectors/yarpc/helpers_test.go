@@ -70,28 +70,6 @@ func TestRawValueFromInterfaceNilBlob(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestRawValueConversionError(t *testing.T) {
-	data := []struct {
-		input  interface{}
-		errmsg string
-	}{
-		{dosa.UUID(""), ErrInCorrectUUIDLength}, // empty string
-		{dosa.UUID("1"), ErrInCorrectUUIDLength},
-		{dosa.UUID("this is not a uuid, uuids shouldnt contain something like a t in them"), "incorrect UUID"},
-	}
-
-	for _, test := range data {
-		_, err := RawValueFromInterface(test.input)
-		assert.Error(t, err, "test %+v", test)
-		assert.Contains(t, err.Error(), test.errmsg, "test %+v", test)
-	}
-
-	// happy path
-	v, err := RawValueFromInterface(dosa.UUID("80bccd66-9517-4f54-9dec-0ddb87d0dc2a"))
-	assert.NoError(t, err)
-	assert.NotNil(t, v)
-}
-
 // TODO: add additional happy path unit tests here. The helpers currently get
 // good coverage from the connectors though.
 

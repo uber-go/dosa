@@ -27,6 +27,7 @@ import (
 
 	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 )
 
@@ -39,14 +40,14 @@ type AllTypesScanTestEntity struct {
 	StringType     string
 	BlobType       []byte
 	TimeType       time.Time
-	UUIDType       dosa.UUID
+	UUIDType       uuid.UUID
 	NullBoolType   *bool
 	NullInt32Type  *int32
 	NullInt64Type  *int64
 	NullDoubleType *float64
 	NullStringType *string
 	NullTimeType   *time.Time
-	NullUUIDType   *dosa.UUID
+	NullUUIDType   *uuid.UUID
 }
 
 func TestNewScanOp(t *testing.T) {

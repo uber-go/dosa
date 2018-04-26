@@ -23,7 +23,7 @@ package testutil
 import (
 	"time"
 
-	"github.com/uber-go/dosa"
+	"github.com/satori/go.uuid"
 )
 
 // TestInt64Ptr create pointer for int64
@@ -56,8 +56,8 @@ func TestBoolPtr(b bool) *bool {
 	return &b
 }
 
-// TestUUIDPtr create pointer for dosa.UUID
-func TestUUIDPtr(b dosa.UUID) *dosa.UUID {
+// TestUUIDPtr create pointer for uuid.UUID
+func TestUUIDPtr(b uuid.UUID) *uuid.UUID {
 	return &b
 }
 
@@ -75,7 +75,7 @@ func AssertEqForPointer(fn TestAssertFn, expected interface{}, p interface{}) {
 		fn(*v, expected)
 	case *string:
 		fn(*v, expected)
-	case *dosa.UUID:
+	case *uuid.UUID:
 		fn(*v, expected)
 	case *time.Time:
 		fn(*v, expected)

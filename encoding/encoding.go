@@ -26,7 +26,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/uber-go/dosa"
+	"github.com/satori/go.uuid"
 )
 
 // Encoder serializes and deserializes the data in cache
@@ -56,7 +56,7 @@ func (j *jsonEncoder) Decode(data []byte, v interface{}) error {
 func NewGobEncoder() GobEncoder {
 	// Register non-primitive dosa types
 	gob.Register(time.Time{})
-	gob.Register(dosa.NewUUID())
+	gob.Register(uuid.UUID{})
 	return GobEncoder{}
 }
 

@@ -27,6 +27,7 @@ import (
 
 	"io"
 
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -292,14 +293,14 @@ type AllTypes struct {
 	StringType     string
 	BlobType       []byte
 	TimeType       time.Time
-	UUIDType       UUID
+	UUIDType       uuid.UUID
 	NullBoolType   *bool
 	NullInt32Type  *int32
 	NullInt64Type  *int64
 	NullDoubleType *float64
 	NullStringType *string
 	NullTimeType   *time.Time
-	NullUUIDType   *UUID
+	NullUUIDType   *uuid.UUID
 }
 
 func TestAllTypes(t *testing.T) {
@@ -357,7 +358,7 @@ type NullableType struct {
 	NullDoubleType *float64
 	NullStringType *string
 	NullTimeType   *time.Time
-	NullUUIDType   *UUID
+	NullUUIDType   *uuid.UUID
 }
 
 func TestNullableType(t *testing.T) {
@@ -458,7 +459,7 @@ type NullStringPrimaryKeyType struct {
 
 type NullUUIDPrimaryKeyType struct {
 	Entity       `dosa:"primaryKey=NullUUIDType"`
-	NullUUIDType *UUID
+	NullUUIDType *uuid.UUID
 }
 
 type NullTimePrimaryKeyType struct {

@@ -25,16 +25,17 @@ import (
 
 	// Using a named import is the key change in this file. This is
 	// used to test the entity parser against named dosa imports.
+	"github.com/satori/go.uuid"
 	dosav2 "github.com/uber-go/dosa"
 )
 
 // TestNamedImportEntity uses common key types and all types in value fields.
 type TestNamedImportEntity struct {
 	dosav2.Entity `dosa:"name=named_import_entity, primaryKey=(UUIDKey, StrKey ASC, Int64Key DESC)"`
-	UUIDKey       dosav2.UUID `dosa:"name=an_uuid_key"`
+	UUIDKey       uuid.UUID `dosa:"name=an_uuid_key"`
 	StrKey        string
 	Int64Key      int64
-	UUIDV         dosav2.UUID
+	UUIDV         uuid.UUID
 	StrV          string
 	Int64V        int64 `dosa:"name=an_int64_value"`
 	Int32V        int32

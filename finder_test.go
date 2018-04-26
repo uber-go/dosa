@@ -147,12 +147,12 @@ func TestStringToDosaType(t *testing.T) {
 		{"*UUID", "", TUUID, true},
 
 		// Tests with package name that doesn't end with dot.
-		{"dosa.UUID", "dosa", TUUID, false},
-		{"*dosa.UUID", "dosa", TUUID, true},
+		{"uuid.UUID", "uuid", TUUID, false},
+		{"*uuid.UUID", "uuid", TUUID, true},
 
 		// Tests with package name that ends with dot.
-		{"dosav2.UUID", "dosav2.", TUUID, false},
-		{"*dosav2.UUID", "dosav2.", TUUID, true},
+		{"satori.UUID", "satori.", TUUID, false},
+		{"*satori.UUID", "satori.", TUUID, true},
 
 		{"unknown", "", Invalid, false},
 	}

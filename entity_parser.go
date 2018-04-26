@@ -29,6 +29,7 @@ import (
 	"unicode"
 
 	"github.com/pkg/errors"
+	"github.com/satori/go.uuid"
 )
 
 const (
@@ -490,7 +491,7 @@ func parensBalanced(s string) bool {
 }
 
 var (
-	uuidType       = reflect.TypeOf(UUID(""))
+	uuidType       = reflect.TypeOf(uuid.UUID{})
 	blobType       = reflect.TypeOf([]byte{})
 	timestampType  = reflect.TypeOf(time.Time{})
 	int32Type      = reflect.TypeOf(int32(0))
@@ -503,7 +504,7 @@ var (
 	nullInt64Type  = reflect.TypeOf((*int64)(nil))
 	nullDoubleType = reflect.TypeOf((*float64)(nil))
 	nullStringType = reflect.TypeOf((*string)(nil))
-	nullUUIDType   = reflect.TypeOf((*UUID)(nil))
+	nullUUIDType   = reflect.TypeOf((*uuid.UUID)(nil))
 	nullTimeType   = reflect.TypeOf((*time.Time)(nil))
 )
 

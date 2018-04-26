@@ -20,11 +20,6 @@
 
 package dosa
 
-import (
-	"github.com/pkg/errors"
-	"github.com/satori/go.uuid"
-)
-
 //go:generate stringer -type=Type
 
 // Type defines a data type for an entity field
@@ -34,7 +29,7 @@ const (
 	// Invalid type to be used as zero value for Type
 	Invalid Type = iota
 
-	// TUUID is different from dosa.UUID
+	// TUUID is the UUID type
 	TUUID
 
 	// String represents a string
@@ -58,34 +53,6 @@ const (
 	// Bool is a bool type
 	Bool
 )
-
-// UUID stores a string format of uuid.
-// Validation is done before saving to datastore.
-// The format of uuid used in datastore is orthogonal to the string format here.
-type UUID string
-
-// NewUUID is a helper for returning a new dosa.UUID value
-func NewUUID() UUID {
-	return UUID(uuid.NewV4().String())
-}
-
-// Bytes gets the bytes from a UUID
-func (u UUID) Bytes() ([]byte, error) {
-	id, err := uuid.FromString(string(u))
-	if err != nil {
-		return nil, errors.Wrap(err, "invalid uuid string")
-	}
-	return id.Bytes(), nil
-}
-
-// BytesToUUID creates a UUID from a byte slice
-func BytesToUUID(bs []byte) (UUID, error) {
-	id, err := uuid.FromBytes(bs)
-	if err != nil {
-		return "", errors.Wrap(err, "invalid uuid bytes")
-	}
-	return UUID(id.String()), nil
-}
 
 // FromString converts string to dosa Type
 func FromString(s string) Type {

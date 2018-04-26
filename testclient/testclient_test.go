@@ -24,8 +24,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/testentity"
 )
 
@@ -36,7 +36,7 @@ func TestTestClient(t *testing.T) {
 	err = client.Initialize(context.Background())
 	assert.NoError(t, err)
 
-	uuid := dosa.NewUUID()
+	uuid := uuid.NewV4()
 	testEnt := testentity.TestEntity{
 		UUIDKey:  uuid,
 		StrKey:   "key",

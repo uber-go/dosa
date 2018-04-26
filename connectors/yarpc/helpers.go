@@ -25,22 +25,23 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 	rpc "go.uber.org/yarpc"
 )
 
 // RawValueAsInterface converts a value from the wire to an object implementing the interface
-// based on the dosa type. For example, a TUUID type will get a dosa.UUID object
+// based on the dosa type. For example, a TUUID type will get a uuid.UUID object
 func RawValueAsInterface(val dosarpc.RawValue, typ dosa.Type) interface{} {
 	switch typ {
 	case dosa.Blob:
 		return val.BinaryValue
 	case dosa.TUUID:
 		if len(val.BinaryValue) == 0 {
-			return (*dosa.UUID)(nil)
+			return (*uuid.UUID)(nil)
 		}
-		uuid, _ := dosa.BytesToUUID(val.BinaryValue) // TODO: should we handle this error?
+		uuid, _ := uuid.FromBytes(val.BinaryValue) // TODO: should we handle this error?
 		return &uuid
 	case dosa.String:
 		return val.StringValue
@@ -89,21 +90,13 @@ func RawValueFromInterface(i interface{}) (*dosarpc.RawValue, error) {
 	case time.Time:
 		time := v.UnixNano()
 		return &dosarpc.RawValue{Int64Value: &time}, nil
-	case dosa.UUID:
-		bytes, err := v.Bytes()
-		if err != nil {
-			return nil, err
-		}
-		return &dosarpc.RawValue{BinaryValue: bytes}, nil
-	case *dosa.UUID:
+	case uuid.UUID:
+		return &dosarpc.RawValue{BinaryValue: v.Bytes()}, nil
+	case *uuid.UUID:
 		if v == nil {
 			return nil, nil
 		}
-		bytes, err := v.Bytes()
-		if err != nil {
-			return nil, err
-		}
-		return &dosarpc.RawValue{BinaryValue: bytes}, nil
+		return &dosarpc.RawValue{BinaryValue: v.Bytes()}, nil
 	case *string:
 		if v == nil {
 			return nil, nil

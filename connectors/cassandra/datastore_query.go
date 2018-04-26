@@ -27,6 +27,7 @@ import (
 
 	"github.com/gocql/gocql"
 	"github.com/pkg/errors"
+	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 )
 
@@ -36,9 +37,9 @@ func prepareConditions(columnConditions map[string][]*dosa.Condition) ([]*dosa.C
 	for i, c := range cc {
 		values[i] = c.Condition.Value
 		var err error
-		// specially handling for uuid is needed
-		if u, ok := c.Condition.Value.(dosa.UUID); ok {
-			values[i], err = gocql.ParseUUID(string(u))
+		// UUIDs must be converted from satori to gocql via string.
+		if u, ok := c.Condition.Value.(uuid.UUID); ok {
+			values[i], err = gocql.ParseUUID(u.String())
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "invalid uuid %s", u)
 			}
@@ -96,12 +97,15 @@ func (c *Connector) commonQuery(ctx context.Context, ei *dosa.EntityInfo, column
 		pos++
 	}
 	if err := iter.Close(); err != nil {
-		return nil, "", errors.Wrapf(err, "failed execute range query in Cassandra: %s", stmt)
+		return nil, "", errors.Wrapf(err, "failed to execute range query in Cassandra: %s", stmt)
 	}
 
 	res := make([]map[string]dosa.FieldValue, len(resultSet))
 	for i, row := range resultSet {
-		res[i] = convertToDOSATypes(ei, row)
+		res[i], err = convertToDOSATypes(ei, row)
+		if err != nil {
+			return nil, "", errors.Wrapf(err, "could not decode returned row")
+		}
 	}
 
 	nextToken := base64.StdEncoding.EncodeToString(iter.PageState())

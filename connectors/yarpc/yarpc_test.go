@@ -22,7 +22,6 @@ package yarpc_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -458,11 +457,6 @@ func TestYARPCClient_CreateIfNotExists(t *testing.T) {
 		err = sut.CreateIfNotExists(ctx, testEi, inFields)
 		assert.True(t, dosa.ErrorIsAlreadyExists(err))
 
-		// cover the conversion error case
-		err = sut.CreateIfNotExists(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "\"c7\"")                     // must contain name of bad field
-		assert.Contains(t, err.Error(), yarpc.ErrInCorrectUUIDLength) // must mention that the uuid is too short
 		assert.NoError(t, sut.Shutdown())
 	}
 }
@@ -548,12 +542,6 @@ func TestYARPCClient_Upsert(t *testing.T) {
 		// and run the test, first with a nil FieldsToUpdate, then with a specific list
 		err := sut.Upsert(ctx, testEi, inFields)
 		assert.Nil(t, err)
-
-		// cover the conversion error case
-		err = sut.Upsert(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("")})
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
-		assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
 	}
 }
 
@@ -700,15 +688,6 @@ func TestYARPCClient_MultiUpsert(t *testing.T) {
 	}
 }
 
-func TestYARPCClient_MultiUpsertInvalidDataType(t *testing.T) {
-	sut := yarpc.Connector{Client: nil, Config: testCfg}
-
-	_, err := sut.MultiUpsert(ctx, testEi, []map[string]dosa.FieldValue{{"c7": dosa.UUID("")}})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
-	assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
-}
-
 func TestYARPCClient_MultiRemove(t *testing.T) {
 	// build a mock RPC client
 	ctrl := gomock.NewController(t)
@@ -761,15 +740,6 @@ func TestYARPCClient_MultiRemove(t *testing.T) {
 			assert.Len(t, retErrors, 1)
 		}
 	}
-}
-
-func TestYARPCClient_MultiRemoveInvalidDataType(t *testing.T) {
-	sut := yarpc.Connector{Client: nil, Config: testCfg}
-
-	_, err := sut.MultiRemove(ctx, testEi, []map[string]dosa.FieldValue{{"c7": dosa.UUID("")}})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
-	assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
 }
 
 type TestDosaObject struct {
@@ -1005,16 +975,6 @@ func TestConnector_Range(t *testing.T) {
 	assert.Empty(t, token)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
-
-	// perform remove range with a bad field value
-	_, _, err = sut.Range(ctx, testEi, map[string][]*dosa.Condition{
-		"c7": {&dosa.Condition{
-			Value: dosa.UUID("baduuid"),
-			Op:    dosa.Eq,
-		}},
-	}, nil, "", 64)
-	assert.Error(t, err)
-	assert.EqualError(t, errors.Cause(err), fmt.Sprintf("%s: baduuid", yarpc.ErrInCorrectUUIDLength))
 }
 
 func TestConnector_RemoveRange(t *testing.T) {
@@ -1052,16 +1012,6 @@ func TestConnector_RemoveRange(t *testing.T) {
 	}}})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
-
-	// perform remove range with a bad field value
-	err = sut.RemoveRange(ctx, testEi, map[string][]*dosa.Condition{
-		"c7": {&dosa.Condition{
-			Value: dosa.UUID("baduuid"),
-			Op:    dosa.Eq,
-		}},
-	})
-	assert.Error(t, err)
-	assert.EqualError(t, errors.Cause(err), "uuid: incorrect UUID length: baduuid")
 }
 
 func TestConnector_Scan(t *testing.T) {
@@ -1166,12 +1116,6 @@ func TestConnector_Remove(t *testing.T) {
 	// perform the read
 	err := sut.Remove(ctx, testEi, getStubbedRemoveRequest())
 	assert.Nil(t, err) // not an error
-
-	// cover the conversion error case
-	err = sut.Remove(ctx, testEi, map[string]dosa.FieldValue{"c7": dosa.UUID("321")})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "\"c7\"")                     // must contain name of bad field
-	assert.Contains(t, err.Error(), yarpc.ErrInCorrectUUIDLength) // must mention that the uuid is too short
 
 	// make sure we actually called Read on the interface
 	ctrl.Finish()
