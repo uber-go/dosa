@@ -104,7 +104,7 @@ func ExampleNewClient() {
 // your "database" before reading them
 func ExampleGetConnector() {
 	// register your entities so the engine can separate your data based on table names.
-	// Scopes and prefixes are not used by the in-memory connector, and are ignored, but
+	// Scopes and name prefixes are not used by the in-memory connector, and are ignored, but
 	// your list of entities is important. In this case, we only have one, our ClientTestEntity1
 	reg, err := dosaRenamed.NewRegistrar("test", "myteam.myservice", &ClientTestEntity1{})
 	if err != nil {
@@ -850,7 +850,7 @@ type TestEntityB struct {
 		},
 	}
 
-	// calls with "error" prefix will fail, rest succeed
+	// calls with "error" name prefix will fail, rest succeed
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
@@ -891,7 +891,7 @@ func TestAdminClient_CheckSchemaStatus(t *testing.T) {
 		},
 	}
 
-	// calls with "error" prefix will fail, rest succeed
+	// calls with "error" name prefix will fail, rest succeed
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
@@ -960,7 +960,7 @@ type TestEntityB struct {
 		},
 	}
 
-	// calls with "error" prefix will fail, rest succeed
+	// calls with "error" name prefix will fail, rest succeed
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)

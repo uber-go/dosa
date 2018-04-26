@@ -368,12 +368,12 @@ func getValidEntityDefinition() *dosa.EntityDefinition {
 	}
 }
 
-func TestEntityDefinitionIsCompatible(t *testing.T) {
+func TestEntityDefinitionCanBeUpsertedOn(t *testing.T) {
 	validEd := getValidEntityDefinition()
 	// entity name not match
 	errEd := getValidEntityDefinition()
 	errEd.Name = errEd.Name + "error"
-	err := validEd.IsCompatible(errEd)
+	err := validEd.CanBeUpsertedOn(errEd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "entity name")
 
@@ -381,21 +381,21 @@ func TestEntityDefinitionIsCompatible(t *testing.T) {
 	// less
 	errEd = getValidEntityDefinition()
 	errEd.Key.PartitionKeys = []string{}
-	err = validEd.IsCompatible(errEd)
+	err = validEd.CanBeUpsertedOn(errEd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "partition")
 
 	// more
 	errEd = getValidEntityDefinition()
 	errEd.Key.PartitionKeys = append(errEd.Key.PartitionKeys, "bar")
-	err = validEd.IsCompatible(errEd)
+	err = validEd.CanBeUpsertedOn(errEd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "partition")
 
 	// not same partition key
 	errEd = getValidEntityDefinition()
 	errEd.Key.PartitionKeys = []string{"bar"}
-	err = validEd.IsCompatible(errEd)
+	err = validEd.CanBeUpsertedOn(errEd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "partition")
 
@@ -403,14 +403,14 @@ func TestEntityDefinitionIsCompatible(t *testing.T) {
 	// less
 	errEd = getValidEntityDefinition()
 	errEd.Key.ClusteringKeys = nil
-	err = validEd.IsCompatible(errEd)
+	err = validEd.CanBeUpsertedOn(errEd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "clustering")
 
 	// more
 	errEd = getValidEntityDefinition()
 	errEd.Key.ClusteringKeys = append(errEd.Key.ClusteringKeys, &dosa.ClusteringKey{Name: "qux", Descending: false})
-	err = validEd.IsCompatible(errEd)
+	err = validEd.CanBeUpsertedOn(errEd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "clustering")
 
@@ -420,28 +420,28 @@ func TestEntityDefinitionIsCompatible(t *testing.T) {
 
 	errEd1 := getValidEntityDefinition()
 	errEd1.Key.ClusteringKeys = make([]*dosa.ClusteringKey, 0)
-	err = errEd.IsCompatible(errEd1)
+	err = errEd.CanBeUpsertedOn(errEd1)
 	assert.NoError(t, err)
 
 	// not same clustering key
 	// name not match
 	errEd = getValidEntityDefinition()
 	errEd.Key.ClusteringKeys[0].Name = "qux"
-	err = validEd.IsCompatible(errEd)
+	err = validEd.CanBeUpsertedOn(errEd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "clustering")
 
 	// descending not match
 	errEd = getValidEntityDefinition()
 	errEd.Key.ClusteringKeys[0].Descending = !errEd.Key.ClusteringKeys[0].Descending
-	err = validEd.IsCompatible(errEd)
+	err = validEd.CanBeUpsertedOn(errEd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "clustering")
 
 	// column size is less
 	errEd = getValidEntityDefinition()
 	errEd.Columns = append(errEd.Columns, &dosa.ColumnDefinition{Name: "abc", Type: dosa.Bool})
-	err = validEd.IsCompatible(errEd)
+	err = validEd.CanBeUpsertedOn(errEd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "column")
 
@@ -449,14 +449,14 @@ func TestEntityDefinitionIsCompatible(t *testing.T) {
 	// name not match
 	errEd = getValidEntityDefinition()
 	errEd.Columns[0].Name = errEd.Columns[0].Name + "error"
-	err = validEd.IsCompatible(errEd)
+	err = validEd.CanBeUpsertedOn(errEd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "column")
 
 	// type not match
 	errEd = getValidEntityDefinition()
 	errEd.Columns[0].Type = dosa.Invalid
-	err = validEd.IsCompatible(errEd)
+	err = validEd.CanBeUpsertedOn(errEd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "type")
 
@@ -467,27 +467,27 @@ func TestEntityDefinitionIsCompatible(t *testing.T) {
 			PartitionKeys: []string{"bar, qux"},
 		},
 	}
-	err = validEd.IsCompatible(errEd)
+	err = validEd.CanBeUpsertedOn(errEd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "index")
 
 	// same entity
 	// name not match
 	aEd := getValidEntityDefinition()
-	err = validEd.IsCompatible(aEd)
+	err = validEd.CanBeUpsertedOn(aEd)
 	assert.NoError(t, err)
 	// reverse
-	err = aEd.IsCompatible(validEd)
+	err = aEd.CanBeUpsertedOn(validEd)
 	assert.NoError(t, err)
 
 	// add new column
 	aEd = getValidEntityDefinition()
 	aEd.Columns = append(aEd.Columns, &dosa.ColumnDefinition{Name: "col", Type: dosa.Bool})
-	err = aEd.IsCompatible(validEd)
+	err = aEd.CanBeUpsertedOn(validEd)
 	assert.NoError(t, err)
 
 	// reverse
-	err = validEd.IsCompatible(aEd)
+	err = validEd.CanBeUpsertedOn(aEd)
 	assert.Error(t, err)
 
 	// add new index
@@ -498,25 +498,25 @@ func TestEntityDefinitionIsCompatible(t *testing.T) {
 		},
 	}
 
-	err = aEd.IsCompatible(validEd)
+	err = aEd.CanBeUpsertedOn(validEd)
 	assert.NoError(t, err)
 
 	// test ETL tag change
 	validEd.ETL = dosa.EtlOff
 	aEd = getValidEntityDefinition()
 	aEd.ETL = dosa.EtlOff
-	err = aEd.IsCompatible(validEd)
+	err = aEd.CanBeUpsertedOn(validEd)
 	assert.NoError(t, err)
 
 	// test turn ETL on
 	aEd.ETL = dosa.EtlOn
-	err = aEd.IsCompatible(validEd)
+	err = aEd.CanBeUpsertedOn(validEd)
 	assert.NoError(t, err)
 
 	// test turn ETL off
 	bEd := getValidEntityDefinition()
 	bEd.ETL = dosa.EtlOff
-	err = bEd.IsCompatible(aEd)
+	err = bEd.CanBeUpsertedOn(aEd)
 	assert.Error(t, err)
 }
 

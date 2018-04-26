@@ -1,5 +1,5 @@
-hash: fcb29d89ddff2d5f1c2980e2f04be6b1b3258444ce94ab25932484144052e686
-updated: 2018-04-25T13:47:25.102777-07:00
+hash: 9460488878f921a42a216a88ee71d37ba56e6bf16a251b258dd89a0701267c0a
+updated: 2018-04-26T11:56:35.133928-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -65,7 +65,7 @@ imports:
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: e5b036cc37a466a0af27d604d1ee500211d16d6a
+  version: d811d2e9bf898806ecfb6ef6296774b13ffc314c
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
@@ -89,7 +89,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 522328b48efad0c6034dba92bf39228694e9d31f
 - name: github.com/uber/dosa-idl
-  version: f3fe9986ab26bd2f262f61fdcee60990bd9b6abc
+  version: e60480c0ff8c7cc4ff987ff3da29ae5215611441
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -212,7 +212,7 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/russross/blackfriday
-  version: c455fd41c6baf2f78fd7ff0aadc4e4b4d52698b0
+  version: 6aeb241ce2c0d259208d56810fc8831a46df5660
 - name: github.com/sectioneight/md-to-godoc
   version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
 - name: github.com/shurcooL/sanitized_anchor_name
