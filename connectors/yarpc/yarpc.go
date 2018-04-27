@@ -22,6 +22,7 @@ package yarpc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -277,16 +278,16 @@ func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiV
 		return nil, err
 	}
 
-	ttl := dosa.NoTTL().Nanoseconds()
-	if ei.TTL != nil {
-		ttl = ei.TTL.Nanoseconds()
-	}
+	// ttl := dosa.NoTTL().Nanoseconds()
+	// if ei.TTL != nil {
+	// 	ttl = ei.TTL.Nanoseconds()
+	// }
 
 	// perform the multi upsert request
 	request := &dosarpc.MultiUpsertRequest{
 		Ref:      entityInfoToSchemaRef(ei),
 		Entities: values,
-		TTL:      &ttl,
+		// TTL:      &ttl, mgode@ has not yet committed origin/ttl-for-multi-upsert
 	}
 
 	response, err := c.Client.MultiUpsert(ctx, request, VersionHeader())
@@ -682,12 +683,20 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 }
 
 // CreateScope creates the scope specified
-func (c *Connector) CreateScope(ctx context.Context, scope string) error {
+func (c *Connector) CreateScope(ctx context.Context, md *dosa.ScopeMetadata) error {
+	bytes, err := json.Marshal(*md)
+	if err != nil {
+		return errors.Wrap(err, "could not encode metadata into JSON")
+	}
+	mds := string(bytes)
+
 	request := &dosarpc.CreateScopeRequest{
-		Name: &scope,
+		Name:      &(md.Name),
+		Requester: &(md.Creator),
+		Metadata:  &mds,
 	}
 
-	if err := c.Client.CreateScope(ctx, request, VersionHeader()); err != nil {
+	if err = c.Client.CreateScope(ctx, request, VersionHeader()); err != nil {
 		if !dosarpc.Dosa_CreateScope_Helper.IsException(err) {
 			return errors.Wrap(err, "failed to CreateScope due to network issue")
 		}
@@ -700,8 +709,11 @@ func (c *Connector) CreateScope(ctx context.Context, scope string) error {
 
 // TruncateScope truncates all data in the scope specified
 func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
+	// A better authn story is needed -- an evildoer could just craft a request with a
+	// bogus owner name and send it directly, bypassing this client.
 	request := &dosarpc.TruncateScopeRequest{
-		Name: &scope,
+		Name:      &scope,
+		Requester: dosa.GetUsername(),
 	}
 
 	if err := c.Client.TruncateScope(ctx, request, VersionHeader()); err != nil {
@@ -717,8 +729,11 @@ func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
 
 // DropScope removes the scope specified
 func (c *Connector) DropScope(ctx context.Context, scope string) error {
+	// A better authn story is needed -- an evildoer could just craft a request with a
+	// bogus owner name and send it directly, bypassing this client.
 	request := &dosarpc.DropScopeRequest{
-		Name: &scope,
+		Name:      &scope,
+		Requester: dosa.GetUsername(),
 	}
 
 	if err := c.Client.DropScope(ctx, request, VersionHeader()); err != nil {

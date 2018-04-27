@@ -1,6 +1,7 @@
 # Changelog
 
 ## v3.0.0 (unreleased)
+- Scope metadata handling, and rudimentary auth* support. The Connector interface (Admin API) has changed.
 
 ## v2.6.0 (2018-04-16)
 - Fix bug in invalidating fallback cache on upsert (#292)

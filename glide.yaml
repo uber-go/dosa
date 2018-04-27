@@ -12,7 +12,7 @@ import:
 - package: github.com/satori/go.uuid
   version: ^1.2
 - package: github.com/uber/dosa-idl
-  version: ttl-for-multi-upsert
+  version: f3fe9986ab26bd2f262f61fdcee60990bd9b6abc
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
