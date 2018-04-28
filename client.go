@@ -245,10 +245,11 @@ func (c *client) Initialize(ctx context.Context) error {
 	}
 
 	// check schema for all registered entities
-	registered, err := c.registrar.FindAll()
-	if err != nil {
-		return err
+	registered := c.registrar.FindAll()
+	if len(registered) == 0 {
+		return errors.Errorf("No registered entities found")
 	}
+
 	eds := []*EntityDefinition{}
 	for _, re := range registered {
 		eds = append(eds, re.EntityDefinition())
