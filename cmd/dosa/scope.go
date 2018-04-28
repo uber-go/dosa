@@ -23,6 +23,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
@@ -31,7 +32,7 @@ import (
 // ScopeOptions contains configuration for scope command flags
 type ScopeOptions struct{}
 
-// ScopeCmd is a placeholder for all scope commands
+// ScopeCmd are options for all scope commands
 type ScopeCmd struct{}
 
 func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Context, string) error, scopes []string) error {
@@ -58,14 +59,37 @@ func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Conte
 // ScopeCreate contains data for executing scope create command.
 type ScopeCreate struct {
 	*ScopeCmd
-	Args struct {
+	Owner    string `short:"o" long:"owner" description:"The owning group (ublame name)"`
+	Type     string `short:"t" long:"type" description:"Scope type (default: 'development')"`
+	Cluster  string `short:"c" long:"cluster" description:"Hosting cluster for a production scope"`
+	ReadRPS  int32  `short:"r" long:"read-rate" description:"Max read rate for a production scope"`
+	WriteRPS int32  `short:"w" long:"write-rate" description:"Max write rate for a production scope"`
+	Args     struct {
 		Scopes []string `positional-arg-name:"scopes" required:"1"`
 	} `positional-args:"yes" required:"1"`
 }
 
 // Execute executes a scope create command
 func (c *ScopeCreate) Execute(args []string) error {
-	return c.doScopeOp("create", dosa.AdminClient.CreateScope, c.Args.Scopes)
+	typ, err := parseType(c.Type)
+	if err != nil {
+		return err
+	}
+	if len(c.Owner) == 0 {
+		return errors.New("the owning ublame-group must be specified")
+	}
+	return c.doScopeOp("create",
+		func(client dosa.AdminClient, ctx context.Context, scope string) error {
+			return dosa.AdminClient.CreateScope(client, ctx, &dosa.ScopeMetadata{
+				Name:        scope,
+				Owner:       c.Owner,
+				Type:        int32(typ),
+				Creator:     *dosa.GetUsername(),
+				Cluster:     c.Cluster,
+				ReadMaxRPS:  c.ReadRPS,
+				WriteMaxRPS: c.WriteRPS,
+			})
+		}, c.Args.Scopes)
 }
 
 // ScopeDrop contains data for executing scope drop command.
@@ -92,4 +116,21 @@ type ScopeTruncate struct {
 // Execute executes a scope truncate command
 func (c *ScopeTruncate) Execute(args []string) error {
 	return c.doScopeOp("truncate", dosa.AdminClient.TruncateScope, c.Args.Scopes)
+}
+
+func parseType(t string) (dosa.ScopeType, error) {
+	if len(t) == 0 {
+		return dosa.Development, nil
+	}
+	lt := strings.ToLower(t)
+	if strings.HasPrefix("production", lt) {
+		return dosa.Production, nil
+	}
+	if strings.HasPrefix("staging", lt) {
+		return dosa.Staging, nil
+	}
+	if strings.HasPrefix("development", lt) {
+		return dosa.Development, nil
+	}
+	return dosa.Development, fmt.Errorf("unknown scope type %q", t)
 }

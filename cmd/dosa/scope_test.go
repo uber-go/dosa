@@ -50,14 +50,14 @@ func TestScope_ServiceDefault(t *testing.T) {
 		for _, cmd := range []string{"create", "drop", "truncate"} {
 			os.Args = []string{
 				"dosa",
-				"--service", tc.serviceName,
 				"--connector", "devnull",
-				"scope",
-				cmd,
-				"scope",
 			}
+			if len(tc.serviceName) > 0 {
+				os.Args = append(os.Args, "--service", tc.serviceName)
+			}
+			os.Args = append(os.Args, "scope", cmd, "scope")
 			main()
-			assert.Equal(t, options.ServiceName, tc.expected)
+			assert.Equal(t, tc.expected, options.ServiceName)
 		}
 	}
 }
@@ -79,10 +79,20 @@ func TestScope_Create(t *testing.T) {
 		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "scope", "create", "one_scope", "two_scope", "three_scope", "four"}
+	os.Args = []string{"dosa", "--connector", "mock", "scope", "create", "-o", "foo", "one_scope", "two_scope", "three_scope", "four"}
 	c := StartCapture()
 	main()
 	assert.Contains(t, c.stop(false), "\"three_scope\"")
+
+	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
+		mc := mocks.NewMockConnector(ctrl)
+		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+		return mc, nil
+	})
+	os.Args = []string{"dosa", "--connector", "mock", "scope", "create", "--owner", "fred", "fred_dev"}
+	c = StartCapture()
+	main()
+	assert.Contains(t, c.stop(false), "\"fred_dev\"")
 
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
@@ -155,4 +165,48 @@ func TestScopeTruncate_Execute(t *testing.T) {
 	os.Args = []string{"dosa", "--connector", "mock", "scope", "truncate", "one_fish", "two_fish", "three_fish", "four"}
 	main()
 	assert.Contains(t, c.stop(true), "\"one_fish\"")
+}
+
+func TestParseType(t *testing.T) {
+	// Prefixes are OK
+	var typ dosa.ScopeType
+	var err error
+
+	typ, err = parseType("dev")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Development, typ)
+
+	typ, err = parseType("dEv")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Development, typ)
+
+	typ, err = parseType("development")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Development, typ)
+
+	typ, err = parseType("prod")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Production, typ)
+
+	typ, err = parseType("Prod")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Production, typ)
+
+	typ, err = parseType("PROD")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Production, typ)
+
+	typ, err = parseType("production")
+	assert.Nil(t, err)
+	assert.Equal(t, dosa.Production, typ)
+
+	typ, err = parseType("int")
+	assert.NotNil(t, err)
+
+	// Typos
+	typ, err = parseType("probuction")
+	assert.NotNil(t, err)
+
+	typ, err = parseType("deve1opment")
+	assert.NotNil(t, err)
 }

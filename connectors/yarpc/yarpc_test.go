@@ -681,7 +681,7 @@ func TestYARPCClient_MultiUpsert(t *testing.T) {
 		mockedClient.EXPECT().MultiUpsert(ctx, &drpc.MultiUpsertRequest{
 			Ref:      &testRPCSchemaRef,
 			Entities: []drpc.FieldValueMap{outFields},
-			TTL:      expectedTTL,
+			// TTL:      expectedTTL,
 		}, gomock.Any()).Return(&drpc.MultiUpsertResponse{Errors: []*drpc.Error{testCase.ResponseError}}, testCase.NetworkError).Times(1)
 
 		// create the YARPCClient and give it the mocked RPC interface
@@ -880,11 +880,11 @@ func TestClient_CreateScope(t *testing.T) {
 
 	sut := yarpc.Connector{Client: mockedClient, Config: testCfg}
 	mockedClient.EXPECT().CreateScope(ctx, gomock.Any(), gomock.Any()).Return(nil)
-	err := sut.CreateScope(ctx, "scope")
+	err := sut.CreateScope(ctx, &dosa.ScopeMetadata{Name: "scope"})
 	assert.NoError(t, err)
 
 	mockedClient.EXPECT().CreateScope(ctx, gomock.Any(), gomock.Any()).Return(errors.New("test error"))
-	err = sut.CreateScope(ctx, "scope")
+	err = sut.CreateScope(ctx, &dosa.ScopeMetadata{Name: "scope"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "test error")
 }

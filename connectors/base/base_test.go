@@ -172,8 +172,8 @@ func TestBase_UpsertSchema(t *testing.T) {
 }
 
 func TestBase_CreateScope(t *testing.T) {
-	assert.Error(t, bc.CreateScope(ctx, ""))
-	assert.NoError(t, bcWNext.CreateScope(ctx, ""))
+	assert.Error(t, bc.CreateScope(ctx, &dosa.ScopeMetadata{}))
+	assert.NoError(t, bcWNext.CreateScope(ctx, &dosa.ScopeMetadata{}))
 }
 
 func TestBase_TruncateScope(t *testing.T) {

@@ -94,7 +94,7 @@ func (_mr *_MockConnectorRecorder) CreateIfNotExists(arg0, arg1, arg2 interface{
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateIfNotExists", arg0, arg1, arg2)
 }
 
-func (_m *MockConnector) CreateScope(_param0 context.Context, _param1 string) error {
+func (_m *MockConnector) CreateScope(_param0 context.Context, _param1 *dosa.ScopeMetadata) error {
 	ret := _m.ctrl.Call(_m, "CreateScope", _param0, _param1)
 	ret0, _ := ret[0].(error)
 	return ret0
