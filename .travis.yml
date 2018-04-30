@@ -19,7 +19,6 @@ cache:
     - vendor
 
 install:
-  - go get golang.org/x/lint
   - make vendor
   - pip install --user cql PyYAML six
   - git clone --depth 1 https://github.com/pcmanus/ccm.git
