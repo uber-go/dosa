@@ -224,9 +224,8 @@ type client struct {
 	connector   Connector
 }
 
-// NewClient returns a new DOSA client for the registry and connector
-// provided. This is currently only a partial implementation to demonstrate
-// basic CRUD functionality.
+// NewClient returns a new DOSA client for the registrar and connector provided.
+// This is currently only a partial implementation to demonstrate basic CRUD functionality.
 func NewClient(reg Registrar, conn Connector) Client {
 	return &client{
 		registrar: reg,
@@ -286,8 +285,7 @@ func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainO
 		return &ErrNotInitialized{}
 	}
 
-	// lookup registered entity, registry will return error if registration
-	// is not found
+	// lookup registered entity, the registrar will return error if it is not found
 	re, err := c.registrar.Find(entity)
 	if err != nil {
 		return err
@@ -327,8 +325,7 @@ func (c *client) MultiRead(ctx context.Context, fieldsToRead []string, entities 
 		return nil, fmt.Errorf("the number of entities to read is zero")
 	}
 
-	// lookup registered entity, registry will return error if registration
-	// is not found
+	// lookup registered entity, the registrar will return error if it is not found
 	var re *RegisteredEntity
 	var listFieldValues []map[string]FieldValue
 	for _, entity := range entities {
@@ -387,8 +384,7 @@ func (c *client) createOrUpsert(ctx context.Context, fieldsToUpdate []string, en
 		return &ErrNotInitialized{}
 	}
 
-	// lookup registered entity, registry will return error if registration
-	// is not found
+	// lookup registered entity, the registrar will return error if it is not found
 	re, err := c.registrar.Find(entity)
 	if err != nil {
 		return err
@@ -426,8 +422,7 @@ func (c *client) Remove(ctx context.Context, entity DomainObject) error {
 		return &ErrNotInitialized{}
 	}
 
-	// lookup registered entity, registry will return error if registration
-	// is not found
+	// lookup registered entity, the registrar will return error if it is not found
 	re, err := c.registrar.Find(entity)
 	if err != nil {
 		return err
