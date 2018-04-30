@@ -1,5 +1,5 @@
-hash: 93ecf41ca94a83edfe97516d014de053879b778b80d1c16779de6f6325ba715e
-updated: 2018-04-30T15:34:03.427828-07:00
+hash: b9024db84ba5f6f53cbab20be8c4d1bc384ea5abf7a26effc3fd031034a5f071
+updated: 2018-04-30T16:01:57.675938-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -25,7 +25,7 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gocql/gocql
-  version: 33a5f3c1bcc2c421b3221c5858312afb141bf605
+  version: 4ba1af8a026b230ce3c646e594865c07ce01b541
   subpackages:
   - internal/lru
   - internal/murmur
@@ -35,7 +35,7 @@ imports:
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: e09c5db296004fbe3f74490e84dcd62c3c5ddb1b
+  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
   - proto
 - name: github.com/golang/snappy
@@ -195,6 +195,8 @@ testImports:
   version: 22ec1a223b7c9a2e56355bd500b539cba3784238
 - name: github.com/kisielk/errcheck
   version: 8050dd7cc11578becd8622667107bb21a7baf451
+- name: github.com/kisielk/gotool
+  version: 80517062f582ea3340cd4baf70e86d539ae7d84d
 - name: github.com/matm/gocov-html
   version: f6dd0fd0ebc7c8cff8b24c0a585caeef250627a3
 - name: github.com/mattn/goveralls

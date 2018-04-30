@@ -19,6 +19,7 @@ import:
 - package: github.com/satori/go.uuid
   version: ^1.2.0
 - package: github.com/uber/dosa-idl
+  version: f3fe9986ab26bd2f262f61fdcee60990bd9b6abc
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -51,5 +52,6 @@ testImport:
   subpackages:
     - golint
 - package: github.com/kisielk/errcheck
+- package: github.com/kisielk/gotool
 - package: github.com/sectioneight/md-to-godoc
 - package: github.com/yookoala/realpath
