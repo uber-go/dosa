@@ -727,9 +727,3 @@ func NewConnector() *Connector {
 	c.data = make(map[string]map[string][]map[string]dosa.FieldValue)
 	return &c
 }
-
-func init() {
-	dosa.RegisterConnector("memory", func(dosa.CreationArgs) (dosa.Connector, error) {
-		return NewConnector(), nil
-	})
-}

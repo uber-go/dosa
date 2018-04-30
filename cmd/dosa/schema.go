@@ -68,8 +68,9 @@ type SchemaOptions struct {
 // SchemaCmd is a placeholder for all schema commands
 type SchemaCmd struct {
 	*SchemaOptions
-	Scope      scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
-	NamePrefix string    `short:"p" long:"namePrefix" description:"Name prefix for schema types." required:"true"`
+	Scope         scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
+	NamePrefix    string    `short:"p" long:"namePrefix" description:"Name prefix for schema types." required:"true"`
+	provideClient clientProvider
 }
 
 func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) (*dosa.SchemaStatus, error), args []string) error {
@@ -83,7 +84,9 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	if options.ServiceName == "" {
 		options.ServiceName = _defServiceName
 	}
-	client, err := getAdminClient(options)
+	client, finish, err := c.provideClient(options)
+	defer finish()
+
 	if err != nil {
 		return err
 	}
@@ -164,7 +167,8 @@ func (c *SchemaStatus) Execute(args []string) error {
 		options.ServiceName = _defServiceName
 	}
 
-	client, err := getAdminClient(options)
+	client, finish, err := c.provideClient(options)
+	defer finish()
 	if err != nil {
 		return err
 	}

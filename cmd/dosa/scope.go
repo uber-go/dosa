@@ -33,7 +33,9 @@ import (
 type ScopeOptions struct{}
 
 // ScopeCmd are options for all scope commands
-type ScopeCmd struct{}
+type ScopeCmd struct {
+	provideClient clientProvider
+}
 
 func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Context, string) error, scopes []string) error {
 	// TODO(eculver): use options/configurator pattern to apply defaults
@@ -41,7 +43,8 @@ func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Conte
 		options.ServiceName = _defServiceName
 	}
 
-	client, err := getAdminClient(options)
+	client, finish, err := c.provideClient(options)
+	defer finish()
 	if err != nil {
 		return err
 	}

@@ -1021,16 +1021,6 @@ func TestConnector_ScanWithTokenNoClustering(t *testing.T) {
 
 }
 
-func TestConstruction(t *testing.T) {
-	c, err := dosa.GetConnector("memory", nil)
-	assert.NoError(t, err)
-	assert.IsType(t, NewConnector(), c)
-
-	v, err := c.CheckSchema(context.TODO(), "dummy", "dummy", nil)
-	assert.Equal(t, int32(1), v)
-	assert.NoError(t, err)
-}
-
 func TestPanics(t *testing.T) {
 	assert.Panics(t, func() {
 		passCol(dosa.FieldValue(int64(1)), &dosa.Condition{Op: 0, Value: dosa.FieldValue(int64(1))})

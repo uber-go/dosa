@@ -77,15 +77,6 @@ func TestInvalidPort(t *testing.T) {
 	// versus MacOS's "not known"
 }
 
-func TestInvalidTransport(t *testing.T) {
-	c := StartCapture()
-	exit = func(r int) {}
-	os.Args = []string{"dosa", "--transport", "invalid-transport", "schema", "check", "--scope", "bar", "--namePrefix", "foo", "../../testentity"}
-	main()
-	output := c.stop(true)
-	assert.Contains(t, output, "invalid transport")
-}
-
 func TestVersionFlag(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}

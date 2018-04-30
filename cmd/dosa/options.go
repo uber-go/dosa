@@ -29,6 +29,10 @@ import (
 	"time"
 
 	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/connectors/yarpc"
+	"github.com/uber/dosa-idl/.gen/dosa/dosaclient"
+	rpc "go.uber.org/yarpc"
+	"go.uber.org/yarpc/transport/tchannel"
 )
 
 const _defServiceName = "dosa-gateway"
@@ -83,28 +87,47 @@ func (t *timeFlag) UnmarshalFlag(value string) error {
 	return nil
 }
 
-func getAdminClient(opts GlobalOptions) (dosa.AdminClient, error) {
+func provideYarpcClient(opts GlobalOptions) (dosa.AdminClient, clientFinisher, error) {
 	// from YARPC: "must begin with a letter and consist only of dash-delimited
 	// lower-case ASCII alphanumeric words" -- we do this here because YARPC
 	// will panic if caller name is invalid.
 	if !validNameRegex.MatchString(string(opts.CallerName)) {
-		return nil, fmt.Errorf("invalid caller name: %s, must begin with a letter and consist only of dash-delimited lower-case ASCII alphanumeric words", opts.CallerName)
+		return nil, func() {}, fmt.Errorf("invalid caller name: %s, must begin with a letter and consist only of dash-delimited lower-case ASCII alphanumeric words", opts.CallerName)
 	}
 
-	// create connector
-	conn, err := dosa.GetConnector(opts.Connector, map[string]interface{}{
-		"transport":   opts.Transport,
-		"host":        opts.Host,
-		"port":        opts.Port,
-		"servicename": opts.ServiceName,
-		"callername":  opts.CallerName.String(),
-	})
+	ycfg := rpc.Config{Name: opts.CallerName.String()}
+	hostPort := fmt.Sprintf("%s:%s", opts.Host, opts.Port)
+	// this looks wrong, BUT since it's a uni-directional tchannel
+	// connection, we have to pass CallerName as the tchannel "ServiceName"
+	// for source/destination to be reported correctly by RPC layer.
+	ts, err := tchannel.NewChannelTransport(tchannel.ServiceName(opts.CallerName.String()))
 	if err != nil {
-		return nil, err
+		return nil, func() {}, err
 	}
+	ycfg.Outbounds = rpc.Outbounds{
+		opts.ServiceName: {
+			Unary: ts.NewSingleOutbound(hostPort),
+		},
+	}
+
+	// important to note that this will panic if config contains invalid
+	// values such as service name containing invalid characters
+	dispatcher := rpc.NewDispatcher(ycfg)
+	if err := dispatcher.Start(); err != nil {
+		return nil, func() {}, err
+	}
+
+	conn := yarpc.NewConnector(dosaclient.New(dispatcher.ClientConfig(opts.ServiceName)))
+
 	client := dosa.NewAdminClient(conn)
 
-	return client, nil
+	finisher := func() {
+		if err := dispatcher.Stop(); err != nil {
+			fmt.Fprintln(os.Stderr, "Failed to stop yarpc dispatcher")
+		}
+	}
+
+	return client, finisher, nil
 }
 
 func shutdownAdminClient(client dosa.AdminClient) {
