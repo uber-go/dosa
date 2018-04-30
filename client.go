@@ -153,7 +153,7 @@ type Client interface {
 	// given RemoveRangeOp.
 	RemoveRange(ctx context.Context, removeRangeOp *RemoveRangeOp) error
 
-	// TODO: Coming in v3.0
+	// TODO: Coming in future versions
 	// MultiRemove removes multiple rows by primary key. The passed-in entity should
 	// contain the primary key field values.
 	// MultiRemove(context.Context, ...DomainObject) (MultiResult, error)
@@ -418,7 +418,7 @@ func (c *client) createOrUpsert(ctx context.Context, fieldsToUpdate []string, en
 // of fields will be updated. Moreover, all entities being upserted must be part
 // of the same partition otherwise the request will be rejected.
 // NOTE: This endpoint is not officially released. No guarantees about correctness
-// or performance of this API will be guaranteed until v3.0 is released.
+// or performance of this API will be guaranteed until v2.7 is released.
 func (c *client) MultiUpsert(ctx context.Context, fieldsToUpdate []string, entities ...DomainObject) (MultiResult, error) {
 	if !c.initialized {
 		return nil, &ErrNotInitialized{}
