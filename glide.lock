@@ -1,5 +1,5 @@
-hash: b9024db84ba5f6f53cbab20be8c4d1bc384ea5abf7a26effc3fd031034a5f071
-updated: 2018-04-30T16:01:57.675938-07:00
+hash: cccbedcb0d49497dc1554b060ad36525fc742509d5fe0c0e3bf245b89514cb7c
+updated: 2018-04-30T16:28:57.741954-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -217,3 +217,7 @@ testImports:
   version: 470b6b0bb3005eda157f0275e2e4895055396a81
   subpackages:
   - golint
+- name: golang.org/x/tools
+  version: 165bdd618e6d174c61ee7bd73a28f3e5c6fdced1
+  subpackages:
+  - cover

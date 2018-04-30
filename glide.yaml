@@ -55,3 +55,4 @@ testImport:
 - package: github.com/kisielk/gotool
 - package: github.com/sectioneight/md-to-godoc
 - package: github.com/yookoala/realpath
+- package: golang.org/x/tools/cover
