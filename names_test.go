@@ -130,40 +130,22 @@ func TestNormalizeName(t *testing.T) {
 	}
 }
 
-func TestToFQN(t *testing.T) {
-	f, err := dosa.ToFQN("service.foo")
+func TestIsValidNamePrefix(t *testing.T) {
+	err := dosa.IsValidNamePrefix("service.foo")
 	assert.NoError(t, err)
-	assert.EqualValues(t, "service.foo", f)
 
-	f, err = dosa.ToFQN("MyService.Foo.V2")
+	err = dosa.IsValidNamePrefix("MyService.Foo.V2")
 	assert.NoError(t, err)
-	assert.EqualValues(t, "myservice.foo.v2", f)
 
-	f, err = dosa.ToFQN("")
-	assert.NoError(t, err)
-	assert.EqualValues(t, "", f)
-
-	_, err = dosa.ToFQN("service.an entity")
+	err = dosa.IsValidNamePrefix("")
 	assert.Error(t, err)
 
-	_, err = dosa.ToFQN("germanRush.über")
+	err = dosa.IsValidNamePrefix("service.an entity")
 	assert.Error(t, err)
-}
 
-func TestFQNChild(t *testing.T) {
-	fqn, err := dosa.ToFQN("foo.bar")
-	assert.NoError(t, err)
-
-	c, err := fqn.Child("qux")
-	assert.NoError(t, err)
-	assert.EqualValues(t, "foo.bar.qux", c)
-
-	_, err = fqn.Child("世界")
+	err = dosa.IsValidNamePrefix("germanRush.über")
 	assert.Error(t, err)
-}
 
-func TestFQNStringer(t *testing.T) {
-	fqn, err := dosa.ToFQN("foo.bar")
-	assert.NoError(t, err)
-	assert.Equal(t, "foo.bar", fqn.String())
+	err = dosa.IsValidNamePrefix("this.prefix.has.more.than.thrity.two.characters.in.it")
+	assert.Error(t, err)
 }
