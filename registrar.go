@@ -211,7 +211,6 @@ type Registrar interface {
 type prefixedRegistrar struct {
 	scope      string
 	namePrefix string
-	fqnIndex   map[FQN]*RegisteredEntity
 	typeIndex  map[reflect.Type]*RegisteredEntity
 }
 
@@ -219,44 +218,30 @@ type prefixedRegistrar struct {
 // entities provided. `dosa.Client` implementations are intended to use scope
 // and prefix to uniquely identify where entities should live but the
 // registrar itself is only responsible for basic accounting of entities.
-// DEPRECATED: use (github.com/uber-go/dosa/registry).NewRegistrar instead.
-func NewRegistrar(scope, prefix string, entities ...DomainObject) (Registrar, error) {
-	baseFQN, err := ToFQN(prefix)
+func NewRegistrar(scope, namePrefix string, entities ...DomainObject) (Registrar, error) {
+	_, err := ToFQN(namePrefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to construct Registrar")
 	}
-	fqnIndex := make(map[FQN]*RegisteredEntity)
 	typeIndex := make(map[reflect.Type]*RegisteredEntity)
 
-	// index all entities by "FQN" (it's canonical namespace)
-	// and by type.
-	// TODO: when FQN changes, this will need to be updated
 	for _, e := range entities {
 		table, err := TableFromInstance(e)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to register entity")
 		}
 
-		// use table name (aka FQN) as an internal lookup key
-		fqn, err := baseFQN.Child(table.Name)
-		if err != nil {
-			// shouldn't happen if TableFromInstance behave correctly
-			return nil, errors.Wrap(err, "failed to register entity, this is most likely a bug in DOSA")
-		}
-
 		// use entity type as internal lookup key
 		typ := reflect.TypeOf(e).Elem()
 
 		// create instance and index it
-		re := NewRegisteredEntity(scope, prefix, table)
-		fqnIndex[fqn] = re
+		re := NewRegisteredEntity(scope, namePrefix, table)
 		typeIndex[typ] = re
 	}
 
 	return &prefixedRegistrar{
 		scope:      scope,
-		namePrefix: prefix,
-		fqnIndex:   fqnIndex,
+		namePrefix: namePrefix,
 		typeIndex:  typeIndex,
 	}, nil
 }
@@ -285,7 +270,7 @@ func (r *prefixedRegistrar) Find(entity DomainObject) (*RegisteredEntity, error)
 // FindAll returns all registered entities from its internal index.
 func (r *prefixedRegistrar) FindAll() []*RegisteredEntity {
 	res := []*RegisteredEntity{}
-	for _, re := range r.fqnIndex {
+	for _, re := range r.typeIndex {
 		res = append(res, re)
 	}
 	return res
