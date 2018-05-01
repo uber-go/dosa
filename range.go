@@ -23,10 +23,8 @@ package dosa
 import (
 	"bytes"
 	"fmt"
-	"reflect"
 	"sort"
 
-	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 )
 
@@ -127,59 +125,6 @@ func (r *RangeOp) Lt(fieldName string, value interface{}) *RangeOp {
 func (r *RangeOp) LtOrEq(fieldName string, value interface{}) *RangeOp {
 	r.appendOp(LtOrEq, fieldName, value)
 	return r
-}
-
-type rangeOpMatcher struct {
-	conds map[string]map[Condition]bool
-	p     pager
-	typ   reflect.Type
-}
-
-// EqRangeOp creates a gomock Matcher that will match any RangeOp with the same conditions, limit, token, and fields
-// as those specified in the op argument.
-func EqRangeOp(op *RangeOp) gomock.Matcher {
-	conds := make(map[string]map[Condition]bool)
-	for col, colConds := range op.conditions {
-		conds[col] = make(map[Condition]bool, len(colConds))
-		for _, cond := range colConds {
-			conds[col][*cond] = true
-		}
-	}
-
-	return rangeOpMatcher{
-		conds: conds,
-		p:     op.pager,
-		typ:   reflect.TypeOf(op.object).Elem(),
-	}
-}
-
-// Matches satisfies the gomock.Matcher interface
-func (m rangeOpMatcher) Matches(x interface{}) bool {
-	op, ok := x.(*RangeOp)
-	if !ok {
-		return false
-	}
-
-	for col, conds := range op.conditions {
-		for _, condition := range conds {
-			if !m.conds[col][*condition] {
-				return false
-			}
-		}
-	}
-
-	return m.p.equals(op.pager) && reflect.TypeOf(op.object).Elem() == m.typ
-}
-
-// String satisfies the gomock.Matcher and Stringer interface
-func (m rangeOpMatcher) String() string {
-	return fmt.Sprintf(
-		" is equal to RangeOp with conditions %v, token %s, limit %d, fields %v, and entity type %v",
-		m.conds,
-		m.p.token,
-		m.p.limit,
-		m.p.fieldsToRead,
-		m.typ)
 }
 
 // IndexFromConditions returns the name of the index or the base table to use, along with the key info
