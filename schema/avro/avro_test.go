@@ -93,9 +93,8 @@ func createEntityDefinition() *dosa.EntityDefinition {
 
 func TestToAvroSchema(t *testing.T) {
 	ed := createEntityDefinition()
-	fqn, err := dosa.ToFQN("xxx.tt.yy")
-	assert.NoError(t, err)
-	av, err := ToAvro(fqn, ed)
+	namePrefix := "xxx.tt.yy"
+	av, err := ToAvro(namePrefix, ed)
 	assert.NoError(t, err)
 	ed1, err := FromAvro(string(av))
 	assert.NoError(t, err)
