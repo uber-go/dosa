@@ -1,5 +1,5 @@
-hash: d7b9c315ea81c7388a4707ca9a852d8d914b0437e1d7aabbea50cda29c0b3bd2
-updated: 2018-04-26T13:15:16.630472-07:00
+hash: 74fb1a80e13e9dde3d063c0b1355a20e322fc5ced16a4315a9760500ab9535fe
+updated: 2018-04-30T17:07:54.140953-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -10,12 +10,12 @@ imports:
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
 - name: github.com/garyburd/redigo
-  version: 433969511232c397de61b1442f9fd49ec06ae9ba
+  version: a69d19351219b6dd56f274f96d85a7014a2ec34e
   subpackages:
   - internal
   - redis
 - name: github.com/gobwas/glob
-  version: f00a7392b43971b2fdb562418faab1f18da2067a
+  version: 5ccd90ef52e1e632236f7326478d4faa74f99438
   subpackages:
   - compiler
   - match
@@ -31,11 +31,11 @@ imports:
   - internal/murmur
   - internal/streams
 - name: github.com/golang/mock
-  version: 8b2eeeb0ca5f56c78bec5efde9c4a21d9201126c
+  version: c34cdb4725f4c3844d095133c6e40e448b86589b
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: e09c5db296004fbe3f74490e84dcd62c3c5ddb1b
+  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
   - proto
 - name: github.com/golang/snappy
@@ -183,8 +183,6 @@ imports:
 - name: gopkg.in/yaml.v2
   version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
 testImports:
-- name: github.com/anmitsu/go-shlex
-  version: 648efa622239a2f6ff949fed78ee37b48d499ba4
 - name: github.com/axw/gocov
   version: 3a69a0d2a4ef1f263e2d92b041a69593d6964fe8
   subpackages:
@@ -195,10 +193,6 @@ testImports:
   - spew
 - name: github.com/go-playground/overalls
   version: 22ec1a223b7c9a2e56355bd500b539cba3784238
-- name: github.com/golang/lint
-  version: 1fb4e4796c08a9a18d8796a6aed584bf4b346bc9
-  subpackages:
-  - golint
 - name: github.com/kisielk/errcheck
   version: 8050dd7cc11578becd8622667107bb21a7baf451
 - name: github.com/kisielk/gotool
@@ -211,19 +205,19 @@ testImports:
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
-- name: github.com/russross/blackfriday
-  version: 6aeb241ce2c0d259208d56810fc8831a46df5660
 - name: github.com/sectioneight/md-to-godoc
   version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
-- name: github.com/shurcooL/sanitized_anchor_name
-  version: 86672fcb3f950f35f2e675df2240550f2a50762f
 - name: github.com/stretchr/testify
   version: 12b6f73e6084dad08a7c6e575284b177ecafbc71
   subpackages:
   - assert
 - name: github.com/yookoala/realpath
   version: d19ef9c409d9817c1e685775e53d361b03eabbc8
+- name: golang.org/x/lint
+  version: 470b6b0bb3005eda157f0275e2e4895055396a81
+  subpackages:
+  - golint
 - name: golang.org/x/tools
-  version: 6e0e2181b9b7327c20fd9aa37d42a9515169a418
+  version: 165bdd618e6d174c61ee7bd73a28f3e5c6fdced1
   subpackages:
   - cover
