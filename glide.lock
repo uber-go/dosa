@@ -1,5 +1,5 @@
-hash: cccbedcb0d49497dc1554b060ad36525fc742509d5fe0c0e3bf245b89514cb7c
-updated: 2018-04-30T16:28:57.741954-07:00
+hash: 74fb1a80e13e9dde3d063c0b1355a20e322fc5ced16a4315a9760500ab9535fe
+updated: 2018-04-30T17:07:54.140953-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -25,7 +25,7 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gocql/gocql
-  version: 4ba1af8a026b230ce3c646e594865c07ce01b541
+  version: 33a5f3c1bcc2c421b3221c5858312afb141bf605
   subpackages:
   - internal/lru
   - internal/murmur
