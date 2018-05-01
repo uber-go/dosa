@@ -22,10 +22,6 @@ package dosa
 
 import (
 	"bytes"
-	"fmt"
-	"reflect"
-
-	"github.com/golang/mock/gomock"
 )
 
 // ScanOp represents the scan query
@@ -64,38 +60,4 @@ func (s *ScanOp) String() string {
 	result.WriteString("ScanOp")
 	addLimitTokenString(result, s.limit, s.token)
 	return result.String()
-}
-
-type scanOpMatcher struct {
-	p   pager
-	typ reflect.Type
-}
-
-// EqScanOp provides a gomock Matcher that matches any ScanOp with a limit,
-// token, and fields to read that are the same as those specificed by the op argument.
-func EqScanOp(op *ScanOp) gomock.Matcher {
-	return scanOpMatcher{
-		p:   op.pager,
-		typ: reflect.TypeOf(op.object).Elem(),
-	}
-}
-
-// Matches satisfies the gomock.Matcher interface
-func (m scanOpMatcher) Matches(x interface{}) bool {
-	op, ok := x.(*ScanOp)
-	if !ok {
-		return false
-	}
-
-	return m.p.equals(op.pager) && reflect.TypeOf(op.object).Elem() == m.typ
-}
-
-// String satisfies the gomock.Matcher and Stringer interface
-func (m scanOpMatcher) String() string {
-	return fmt.Sprintf(
-		" is equal to ScanOp with token %s, limit %d, fields %v, and entity type %v",
-		m.p.token,
-		m.p.limit,
-		m.p.fieldsToRead,
-		m.typ)
 }
