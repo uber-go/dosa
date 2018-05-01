@@ -209,17 +209,17 @@ type Registrar interface {
 // bootstrap/client-init phase (usually with a single thread),
 // and after this phase, multiple goroutines can safely read from this registrar
 type prefixedRegistrar struct {
-	scope     string
-	prefix    string
-	typeIndex map[reflect.Type]*RegisteredEntity
+	scope      string
+	namePrefix string
+	typeIndex  map[reflect.Type]*RegisteredEntity
 }
 
 // NewRegistrar returns a new Registrar for the scope, name prefix and
 // entities provided. `dosa.Client` implementations are intended to use scope
 // and prefix to uniquely identify where entities should live but the
 // registrar itself is only responsible for basic accounting of entities.
-func NewRegistrar(scope, prefix string, entities ...DomainObject) (Registrar, error) {
-	_, err := ToFQN(prefix)
+func NewRegistrar(scope, namePrefix string, entities ...DomainObject) (Registrar, error) {
+	_, err := ToFQN(namePrefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to construct Registrar")
 	}
@@ -235,14 +235,14 @@ func NewRegistrar(scope, prefix string, entities ...DomainObject) (Registrar, er
 		typ := reflect.TypeOf(e).Elem()
 
 		// create instance and index it
-		re := NewRegisteredEntity(scope, prefix, table)
+		re := NewRegisteredEntity(scope, namePrefix, table)
 		typeIndex[typ] = re
 	}
 
 	return &prefixedRegistrar{
-		scope:     scope,
-		prefix:    prefix,
-		typeIndex: typeIndex,
+		scope:      scope,
+		namePrefix: namePrefix,
+		typeIndex:  typeIndex,
 	}, nil
 }
 
