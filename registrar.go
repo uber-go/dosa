@@ -30,23 +30,17 @@ import (
 // performing operations on an entity as well as helper methods for accessing
 // type data so that reflection can be minimized.
 type RegisteredEntity struct {
-	scope      string
-	namePrefix string
-	table      *Table
-	version    int32
-	schemaRef  *SchemaRef
-	typ        reflect.Type // optimization to avoid doing repetitive reflect.TypeOf
+	table     *Table
+	schemaRef *SchemaRef
 }
 
 // NewRegisteredEntity is a constructor for creating a RegisteredEntity
-func NewRegisteredEntity(scope, prefix string, table *Table) *RegisteredEntity {
+func NewRegisteredEntity(scope, namePrefix string, table *Table) *RegisteredEntity {
 	return &RegisteredEntity{
-		scope:      scope,
-		namePrefix: prefix,
-		table:      table,
+		table: table,
 		schemaRef: &SchemaRef{
 			Scope:      scope,
-			NamePrefix: prefix,
+			NamePrefix: namePrefix,
 			EntityName: table.Name,
 		},
 	}
