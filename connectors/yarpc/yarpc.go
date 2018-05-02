@@ -801,7 +801,7 @@ func init() {
 		}
 
 		trans := getWithDefault(args, "transport", "tchannel")
-		callername := getWithDefault(args, "callername", os.Getenv("USER"))
+		callername := getWithDefault(args, "callername", strings.ToLower(os.Getenv("USER")))
 		servicename := getWithDefault(args, "servicename", "test")
 		cfg := Config{
 			Transport:   trans,

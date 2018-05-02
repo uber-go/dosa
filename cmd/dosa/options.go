@@ -48,7 +48,7 @@ func (s *callerFlag) String() string {
 
 func (s *callerFlag) UnmarshalFlag(value string) error {
 	if value == "" || value == "dosacli-$USER" {
-		value = fmt.Sprintf("dosacli-%s", os.Getenv("USER"))
+		value = fmt.Sprintf("dosacli-%s", strings.ToLower(os.Getenv("USER")))
 	}
 	s.setString(value)
 	return nil
