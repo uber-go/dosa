@@ -1,5 +1,5 @@
-hash: 74fb1a80e13e9dde3d063c0b1355a20e322fc5ced16a4315a9760500ab9535fe
-updated: 2018-04-30T17:07:54.140953-07:00
+hash: 96125a7d0da3a14581575b9e18dbc48fbabc48740b8a7286a668a3df9bf615b9
+updated: 2018-05-03T14:07:57.440533-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -24,12 +24,6 @@ imports:
   - syntax/lexer
   - util/runes
   - util/strings
-- name: github.com/gocql/gocql
-  version: 33a5f3c1bcc2c421b3221c5858312afb141bf605
-  subpackages:
-  - internal/lru
-  - internal/murmur
-  - internal/streams
 - name: github.com/golang/mock
   version: c34cdb4725f4c3844d095133c6e40e448b86589b
   subpackages:
@@ -38,10 +32,6 @@ imports:
   version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
   - proto
-- name: github.com/golang/snappy
-  version: 553a641470496b2327abcac10b36396bd98e45c9
-- name: github.com/hailocab/go-hostpool
-  version: e80d13ce29ede4452c43dea11e79b9bc8a15b478
 - name: github.com/jessevdk/go-flags
   version: c6ca198ec95c841fdb89fc0de7496fed11ab854e
 - name: github.com/matttproud/golang_protobuf_extensions
@@ -79,7 +69,7 @@ imports:
 - name: github.com/satori/go.uuid
   version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/uber-go/atomic
-  version: 8474b86a5a6f79c443ce4b2992817ff32cf208b8
+  version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
   subpackages:
   - utils
 - name: github.com/uber-go/mapdecode
@@ -104,7 +94,7 @@ imports:
   - trand
   - typed
 - name: go.uber.org/atomic
-  version: 8474b86a5a6f79c443ce4b2992817ff32cf208b8
+  version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - name: go.uber.org/net/metrics
@@ -170,7 +160,8 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: 5f9ae10d9af5b1c89ae6904293b14b064d4ada23
+  version: 640f4622ab692b87c2f3a94265e6f579fe38263d
+  repo: https://github.com/golang/net
   subpackages:
   - bpf
   - context
@@ -178,8 +169,6 @@ imports:
   - internal/socket
   - ipv4
   - ipv6
-- name: gopkg.in/inf.v0
-  version: d2d2541c53f18d2a059457998ce2876cc8e67cbf
 - name: gopkg.in/yaml.v2
   version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
 testImports:
