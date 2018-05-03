@@ -25,6 +25,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -54,7 +55,7 @@ func TestNewRegisteredEntity(t *testing.T) {
 	re := dosa.NewRegisteredEntity(scope, namePrefix, table)
 	assert.NotNil(t, re)
 
-	info := re.EntityInfo()
+	info := re.EntityInfo(nil)
 	assert.NotNil(t, info)
 
 	ref := re.SchemaRef()
@@ -190,6 +191,30 @@ func TestRegisteredEntity_OnlyFieldValues(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestRegisteredEntity_DynTTL(t *testing.T) {
+	table, _ := dosa.TableFromInstance(&RegistryTestValid{})
+	scope := "test"
+	namePrefix := "team.service"
+
+	re := dosa.NewRegisteredEntity(scope, namePrefix, table)
+	assert.NotNil(t, re)
+
+	info := re.EntityInfo(nil)
+	assert.NotNil(t, info)
+	assert.Equal(t, dosa.NoTTL(), *info.TTL)
+
+	staticTTL := time.Duration(50 * time.Minute)
+	table.TTL = staticTTL
+	info = re.EntityInfo(nil)
+	assert.NotNil(t, info)
+	assert.Equal(t, staticTTL, *info.TTL)
+
+	dynTTL := time.Duration(100 * time.Minute)
+	info = re.EntityInfo(&dynTTL)
+	assert.NotNil(t, info)
+	assert.Equal(t, dynTTL, *info.TTL)
+}
+
 func TestNewRegistrar(t *testing.T) {
 	entities := []dosa.DomainObject{&RegistryTestValid{}}
 
@@ -214,7 +239,7 @@ func TestRegistrar(t *testing.T) {
 		assert.NoError(t, err)
 		re.SetVersion(version)
 
-		info := re.EntityInfo()
+		info := re.EntityInfo(nil)
 		assert.Equal(t, info.Ref.Scope, r.Scope())
 		assert.Equal(t, info.Ref.NamePrefix, r.NamePrefix())
 		assert.Equal(t, info.Ref.EntityName, entityName)

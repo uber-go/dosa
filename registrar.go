@@ -22,6 +22,7 @@ package dosa
 
 import (
 	"reflect"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -53,11 +54,15 @@ func (e *RegisteredEntity) SetVersion(v int32) {
 
 // EntityInfo is a helper for accessing the registered entity's EntityInfo
 // instance which is required by clients to call connector methods.
-func (e *RegisteredEntity) EntityInfo() *EntityInfo {
+func (e *RegisteredEntity) EntityInfo(dynTTL *time.Duration) *EntityInfo {
+	ttl := &e.table.TTL
+	if dynTTL != nil {
+		ttl = dynTTL
+	}
 	return &EntityInfo{
 		Ref: e.schemaRef,
 		Def: &e.table.EntityDefinition,
-		TTL: &e.table.TTL,
+		TTL: ttl,
 	}
 }
 
