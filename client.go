@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"time"
 
 	"bytes"
 	"io"
@@ -39,11 +40,19 @@ type DomainObject interface {
 }
 
 // Entity represents any object that can be persisted by DOSA
-type Entity struct{}
+type Entity struct {
+	// dynamic ttl set to an entity by user
+	ttl *time.Duration
+}
 
 // make entity a DomainObject
 func (*Entity) isDomainObject() bool {
 	return true
+}
+
+// TTL sets dynamic ttl to an entity
+func (e *Entity) TTL(t *time.Duration) {
+	e.ttl = t
 }
 
 // DomainIndex is a marker interface method for an Index
@@ -301,7 +310,7 @@ func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainO
 		return err
 	}
 
-	results, err := c.connector.Read(ctx, re.EntityInfo(), fieldValues, columnsToRead)
+	results, err := c.connector.Read(ctx, re.EntityInfo(nil), fieldValues, columnsToRead)
 	if err != nil {
 		return err
 	}
@@ -351,7 +360,7 @@ func (c *client) MultiRead(ctx context.Context, fieldsToRead []string, entities 
 		return nil, err
 	}
 
-	results, err := c.connector.MultiRead(ctx, re.EntityInfo(), listFieldValues, columnsToRead)
+	results, err := c.connector.MultiRead(ctx, re.EntityInfo(nil), listFieldValues, columnsToRead)
 	if err != nil {
 		return nil, err
 	}
@@ -404,7 +413,16 @@ func (c *client) createOrUpsert(ctx context.Context, fieldsToUpdate []string, en
 		fieldValues[k] = v
 	}
 
-	return fn(ctx, re.EntityInfo(), fieldValues)
+	e := reflect.ValueOf(entity).Elem().FieldByName("Entity")
+	ttl := e.Interface().(Entity).ttl
+
+	if ttl != nil {
+		if err = ValidateTTL(*ttl); err != nil {
+			return err
+		}
+	}
+
+	return fn(ctx, re.EntityInfo(ttl), fieldValues)
 }
 
 // MultiUpsert updates several entities by primary key, The entities provided
@@ -431,7 +449,7 @@ func (c *client) Remove(ctx context.Context, entity DomainObject) error {
 	// translate entity field values to a map of primary key name/values pairs
 	keyFieldValues := re.KeyFieldValues(entity)
 
-	err = c.connector.Remove(ctx, re.EntityInfo(), keyFieldValues)
+	err = c.connector.Remove(ctx, re.EntityInfo(nil), keyFieldValues)
 	return err
 }
 
@@ -454,7 +472,7 @@ func (c *client) RemoveRange(ctx context.Context, r *RemoveRangeOp) error {
 		return errors.Wrap(err, "RemoveRange")
 	}
 
-	return errors.Wrap(c.connector.RemoveRange(ctx, re.EntityInfo(), columnConditions), "RemoveRange")
+	return errors.Wrap(c.connector.RemoveRange(ctx, re.EntityInfo(nil), columnConditions), "RemoveRange")
 }
 
 // MultiRemove deletes several entities by primary key, The entities provided
@@ -488,7 +506,7 @@ func (c *client) Range(ctx context.Context, r *RangeOp) ([]DomainObject, string,
 	}
 
 	// call the server side method
-	values, token, err := c.connector.Range(ctx, re.EntityInfo(), columnConditions, fieldsToRead, r.token, r.limit)
+	values, token, err := c.connector.Range(ctx, re.EntityInfo(nil), columnConditions, fieldsToRead, r.token, r.limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Range")
 	}
@@ -549,7 +567,7 @@ func (c *client) ScanEverything(ctx context.Context, sop *ScanOp) ([]DomainObjec
 	}
 
 	// call the server side method
-	values, token, err := c.connector.Scan(ctx, re.EntityInfo(), fieldsToRead, sop.token, sop.limit)
+	values, token, err := c.connector.Scan(ctx, re.EntityInfo(nil), fieldsToRead, sop.token, sop.limit)
 	if err != nil {
 		return nil, "", err
 	}
