@@ -183,8 +183,8 @@ type Client interface {
 	// the string returned as an Offset()
 	ScanEverything(ctx context.Context, scanOp *ScanOp) ([]DomainObject, string, error)
 
-	// Shutdown gracefully shutsdown the client, cleaning up any resources it may have
-	// allocated during it's usage. Shutdown should be called whenever the client
+	// Shutdown gracefully shuts down the client, cleaning up any resources it may have
+	// allocated during its usage. Shutdown should be called whenever the client
 	// is no longer needed. After calling shutdown there should be no further usage
 	// of the client.
 	Shutdown() error
@@ -222,8 +222,8 @@ type AdminClient interface {
 	TruncateScope(ctx context.Context, s string) error
 	// DropScope drops the scope and the data and schemas in the scope
 	DropScope(ctx context.Context, s string) error
-	// Shutdown gracefully shutsdown the client, cleaning up any resources it may have
-	// allocated during it's usage. Shutdown should be called whenever the client
+	// Shutdown gracefully shuts down the client, cleaning up any resources it may have
+	// allocated during its usage. Shutdown should be called whenever the client
 	// is no longer needed. After calling shutdown there should be no further usage
 	// of the client.
 	Shutdown() error
