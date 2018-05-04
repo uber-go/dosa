@@ -33,9 +33,7 @@ type exiter func(int)
 
 var exit = os.Exit
 
-type clientFinisher = func()
-
-type clientProvider = func(opts GlobalOptions) (dosa.AdminClient, clientFinisher, error)
+type clientProvider = func(opts GlobalOptions) (dosa.AdminClient, error)
 
 // these are overridden at build-time w/ the -ldflags -X option
 var (

@@ -43,8 +43,7 @@ func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Conte
 		options.ServiceName = _defServiceName
 	}
 
-	client, finish, err := c.provideClient(options)
-	defer finish()
+	client, err := c.provideClient(options)
 	if err != nil {
 		return err
 	}

@@ -73,8 +73,8 @@ func TestScope_Create(t *testing.T) {
 	mc := mocks.NewMockConnector(ctrl)
 	mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
 	mc.EXPECT().Shutdown().Return(nil)
-	provideClient := func(opts GlobalOptions) (dosa.AdminClient, clientFinisher, error) {
-		return dosa.NewAdminClient(mc), func() {}, nil
+	provideClient := func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
 	}
 
 	scopeCreate := ScopeCreate{
@@ -109,8 +109,8 @@ func TestScope_Create(t *testing.T) {
 	mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("oops"))
 	mc.EXPECT().Shutdown().Return(nil)
 
-	provideClient = func(opts GlobalOptions) (dosa.AdminClient, clientFinisher, error) {
-		return dosa.NewAdminClient(mc), func() {}, nil
+	provideClient = func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
 	}
 	scopeCreate = ScopeCreate{
 		ScopeCmd: &ScopeCmd{
@@ -152,8 +152,8 @@ func TestScopeTruncate_Execute(t *testing.T) {
 	mc := mocks.NewMockConnector(ctrl)
 	mc.EXPECT().TruncateScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
 	mc.EXPECT().Shutdown().Return(nil)
-	provideClient := func(opts GlobalOptions) (dosa.AdminClient, clientFinisher, error) {
-		return dosa.NewAdminClient(mc), func() {}, nil
+	provideClient := func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
 	}
 
 	scopeTruncate := ScopeTruncate{
@@ -171,7 +171,7 @@ func TestScopeTruncate_Execute(t *testing.T) {
 	mc.EXPECT().Shutdown().Return(nil)
 
 	provideClient = func(opts GlobalOptions) (dosa.AdminClient, error) {
-		return dosa.NewAdminClient(mc), func() {}, nil
+		return dosa.NewAdminClient(mc), nil
 	}
 	scopeTruncate = ScopeTruncate{
 		ScopeCmd: &ScopeCmd{

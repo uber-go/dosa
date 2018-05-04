@@ -84,9 +84,8 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	if options.ServiceName == "" {
 		options.ServiceName = _defServiceName
 	}
-	client, finish, err := c.provideClient(options)
-	defer finish()
 
+	client, err := c.provideClient(options)
 	if err != nil {
 		return err
 	}
@@ -167,8 +166,7 @@ func (c *SchemaStatus) Execute(args []string) error {
 		options.ServiceName = _defServiceName
 	}
 
-	client, finish, err := c.provideClient(options)
-	defer finish()
+	client, err := c.provideClient(options)
 	if err != nil {
 		return err
 	}

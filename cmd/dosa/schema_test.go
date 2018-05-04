@@ -254,8 +254,8 @@ func TestSchema_Check_Happy(t *testing.T) {
 		}).Return(int32(1), nil)
 	mc.EXPECT().Shutdown().Return(nil)
 
-	provideClient := func(opts GlobalOptions) (dosa.AdminClient, clientFinisher, error) {
-		return dosa.NewAdminClient(mc), func() {}, nil
+	provideClient := func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
 	}
 
 	schemaCheck := SchemaCheck{
@@ -289,8 +289,8 @@ func TestSchema_Status_Happy(t *testing.T) {
 		}).Return(&dosa.SchemaStatus{Version: int32(12)}, nil)
 	mc.EXPECT().Shutdown().Return(nil)
 
-	provideClient := func(opts GlobalOptions) (dosa.AdminClient, clientFinisher, error) {
-		return dosa.NewAdminClient(mc), func() {}, nil
+	provideClient := func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
 	}
 
 	schemaStatus := SchemaStatus{
@@ -329,8 +329,8 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 		}).Return(&dosa.SchemaStatus{Version: int32(1)}, nil)
 	mc.EXPECT().Shutdown().Return(nil)
 
-	provideClient := func(opts GlobalOptions) (dosa.AdminClient, clientFinisher, error) {
-		return dosa.NewAdminClient(mc), func() {}, nil
+	provideClient := func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
 	}
 
 	schemaUpsert := SchemaUpsert{
