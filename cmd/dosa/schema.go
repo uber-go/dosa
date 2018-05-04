@@ -87,6 +87,8 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	if err != nil {
 		return err
 	}
+	defer shutdownAdminClient(client)
+
 	if len(args) != 0 {
 		dirs, err := expandDirectories(args)
 		if err != nil {
@@ -166,6 +168,7 @@ func (c *SchemaStatus) Execute(args []string) error {
 	if err != nil {
 		return err
 	}
+	defer shutdownAdminClient(client)
 
 	if c.Scope.String() != "" {
 		client.Scope(c.Scope.String())

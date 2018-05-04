@@ -77,6 +77,7 @@ func TestScope_Create(t *testing.T) {
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
+		mc.EXPECT().Shutdown().Return(nil)
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "scope", "create", "-o", "foo", "one_scope", "two_scope", "three_scope", "four"}
@@ -87,6 +88,7 @@ func TestScope_Create(t *testing.T) {
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+		mc.EXPECT().Shutdown().Return(nil)
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "scope", "create", "--owner", "fred", "fred_dev"}
@@ -97,6 +99,7 @@ func TestScope_Create(t *testing.T) {
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("oops"))
+		mc.EXPECT().Shutdown().Return(nil)
 		return mc, nil
 	})
 	c = StartCapture()
@@ -119,6 +122,7 @@ func TestScopeDrop_Execute(t *testing.T) {
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().DropScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
+		mc.EXPECT().Shutdown().Return(nil)
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "scope", "drop", "one_fish", "two_fish", "three_fish", "four"}
@@ -146,6 +150,7 @@ func TestScopeTruncate_Execute(t *testing.T) {
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().TruncateScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
+		mc.EXPECT().Shutdown().Return(nil)
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "scope", "truncate", "one_fish", "two_fish", "three_fish", "four"}
@@ -160,6 +165,7 @@ func TestScopeTruncate_Execute(t *testing.T) {
 	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
 		mc := mocks.NewMockConnector(ctrl)
 		mc.EXPECT().TruncateScope(gomock.Any(), gomock.Any()).Times(1).Return(&dosa.ErrNotFound{})
+		mc.EXPECT().Shutdown().Return(nil)
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "scope", "truncate", "one_fish", "two_fish", "three_fish", "four"}

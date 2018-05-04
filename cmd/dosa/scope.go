@@ -45,6 +45,8 @@ func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Conte
 	if err != nil {
 		return err
 	}
+	defer shutdownAdminClient(client)
+
 	for _, s := range scopes {
 		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 		defer cancel()

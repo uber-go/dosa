@@ -259,6 +259,7 @@ func TestSchema_Check_Happy(t *testing.T) {
 					assert.True(t, nameMap[e.Name])
 				}
 			}).Return(int32(1), nil)
+		mc.EXPECT().Shutdown().Return(nil)
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "-p", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
@@ -281,6 +282,7 @@ func TestSchema_Status_Happy(t *testing.T) {
 				assert.True(t, dl.After(time.Now()))
 				assert.Equal(t, int32(12), version)
 			}).Return(&dosa.SchemaStatus{Version: int32(12)}, nil)
+		mc.EXPECT().Shutdown().Return(nil)
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "schema", "status", "-p", "foo", "-s", "scope", "-v", "--version", "12"}
@@ -309,6 +311,7 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 					assert.True(t, nameMap[e.Name])
 				}
 			}).Return(&dosa.SchemaStatus{Version: int32(1)}, nil)
+		mc.EXPECT().Shutdown().Return(nil)
 		return mc, nil
 	})
 	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "-p", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
