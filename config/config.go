@@ -27,7 +27,6 @@ import (
 	"github.com/uber-go/dosa"
 
 	// import to invoke all connector init methods
-	_ "github.com/uber-go/dosa/connectors/cassandra"
 	_ "github.com/uber-go/dosa/connectors/devnull"
 	_ "github.com/uber-go/dosa/connectors/memory"
 	_ "github.com/uber-go/dosa/connectors/random"
