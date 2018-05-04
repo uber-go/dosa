@@ -97,6 +97,22 @@ func (_mr *_MockClientRecorder) MultiRead(arg0, arg1 interface{}, arg2 ...interf
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "MultiRead", _s...)
 }
 
+func (_m *MockClient) MultiUpsert(_param0 context.Context, _param1 []string, _param2 ...dosa.DomainObject) (dosa.MultiResult, error) {
+	_s := []interface{}{_param0, _param1}
+	for _, _x := range _param2 {
+		_s = append(_s, _x)
+	}
+	ret := _m.ctrl.Call(_m, "MultiUpsert", _s...)
+	ret0, _ := ret[0].(dosa.MultiResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockClientRecorder) MultiUpsert(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	_s := append([]interface{}{arg0, arg1}, arg2...)
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "MultiUpsert", _s...)
+}
+
 func (_m *MockClient) Range(_param0 context.Context, _param1 *dosa.RangeOp) ([]dosa.DomainObject, string, error) {
 	ret := _m.ctrl.Call(_m, "Range", _param0, _param1)
 	ret0, _ := ret[0].([]dosa.DomainObject)

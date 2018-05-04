@@ -400,6 +400,70 @@ func TestClient_Upsert(t *testing.T) {
 	assert.NoError(t, c3.Upsert(ctx, fieldsToUpdate, cte1))
 	assert.Equal(t, cte1.Email, updatedEmail)
 }
+
+func TestClient_MultiUpsert(t *testing.T) {
+	reg1, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1)
+	reg2, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1, cte2)
+	fieldsToUpsert := []string{"Email"}
+
+	e1 := &ClientTestEntity1{ID: int64(1), Email: "bar@email.com"}
+	e2 := &ClientTestEntity1{ID: int64(2), Email: "foo@email.com"}
+
+	// uninitialized
+	c1 := dosaRenamed.NewClient(reg1, nullConnector)
+	_, err := c1.MultiUpsert(ctx, dosaRenamed.All(), cte1)
+	assert.Error(t, err)
+
+	// empty upsert
+	c1.Initialize(ctx)
+	_, err = c1.MultiUpsert(ctx, dosaRenamed.All())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "zero")
+
+	// unregistered object
+	c1.Initialize(ctx)
+	_, err = c1.MultiUpsert(ctx, dosaRenamed.All(), cte2)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity2")
+
+	// multi read different types of object
+	c1.Initialize(ctx)
+	_, err = c1.MultiUpsert(ctx, dosaRenamed.All(), cte2, cte1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ClientTestEntity2")
+
+	// happy path, mock connector
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().MultiUpsert(ctx, gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ *dosaRenamed.EntityInfo, allValues []map[string]dosaRenamed.FieldValue) {
+			assert.Equal(t, allValues[0]["id"], e1.ID)
+			assert.Equal(t, allValues[0]["email"], e1.Email)
+			assert.Equal(t, allValues[1]["id"], e2.ID)
+			assert.Equal(t, allValues[1]["email"], e2.Email)
+
+		}).Return([]error{nil, nil}, nil).Times(1)
+	c2 := dosaRenamed.NewClient(reg2, mockConn)
+	assert.NoError(t, c2.Initialize(ctx))
+	rs, err := c2.MultiUpsert(ctx, fieldsToUpsert, e1, e2)
+	assert.NoError(t, err)
+	assert.Empty(t, rs)
+
+	// system error, mock connector
+	mockConn.EXPECT().MultiUpsert(ctx, gomock.Any(), gomock.Any()).Return([]error{nil, nil}, errors.New("connector error"))
+	rs, err = c2.MultiUpsert(ctx, fieldsToUpsert, e1, e2)
+	assert.Error(t, err)
+	assert.Empty(t, rs)
+
+	// single entity error, mock connector
+	mockConn.EXPECT().MultiUpsert(ctx, gomock.Any(), gomock.Any()).Return([]error{errors.New("single error"), nil}, nil)
+	rs, err = c2.MultiUpsert(ctx, fieldsToUpsert, e1, e2)
+	assert.NoError(t, err)
+	assert.NotNil(t, rs[e1])
+}
+
 func TestClient_CreateIfNotExists(t *testing.T) {
 	reg1, _ := dosaRenamed.NewRegistrar("test", "team.service", cte1)
 	reg2, _ := dosaRenamed.NewRegistrar("test", "team.service", cte1, cte2)
@@ -726,11 +790,12 @@ func TestClient_MultiRead(t *testing.T) {
 
 	// uninitialized
 	c1 := dosaRenamed.NewClient(reg1, nullConnector)
-	assert.Error(t, c1.Read(ctx, fieldsToRead, cte1))
+	_, err := c1.MultiRead(ctx, fieldsToRead, cte1)
+	assert.Error(t, err)
 
 	// unregistered object
 	c1.Initialize(ctx)
-	_, err := c1.MultiRead(ctx, dosaRenamed.All(), cte2)
+	_, err = c1.MultiRead(ctx, dosaRenamed.All(), cte2)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "ClientTestEntity2")
 
@@ -761,20 +826,6 @@ func TestClient_MultiRead(t *testing.T) {
 	assert.Equal(t, "xxx@gmail.com", e1.Email)
 	assert.Equal(t, rs[e2].Error(), "not fonud")
 }
-
-/* TODO: Coming in v2.1
-func TestClient_Unimplemented(t *testing.T) {
-	reg1, _ := dosaRenamed.NewRegistrar(scope, namePrefix, cte1)
-
-	c := dosaRenamed.NewClient(reg1, nullConnector)
-	assert.Panics(t, func() {
-		c.MultiUpsert(ctx, dosaRenamed.All(), &ClientTestEntity1{})
-	})
-	assert.Panics(t, func() {
-		c.MultiRemove(ctx, &ClientTestEntity1{})
-	})
-}
-*/
 
 func TestAdminClient_CreateScope(t *testing.T) {
 	c := dosaRenamed.NewAdminClient(nullConnector)
