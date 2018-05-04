@@ -18,14 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package dosa_test
+package dosa
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/dosa"
 )
 
 func TestIsValidName(t *testing.T) {
@@ -76,7 +75,7 @@ func TestIsValidName(t *testing.T) {
 	}
 
 	for _, testData := range dataProvider {
-		err := dosa.IsValidName(testData.arg)
+		err := isValidName(testData.arg)
 		if testData.allowed {
 			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", testData.arg))
 		} else {
@@ -119,7 +118,7 @@ func TestNormalizeName(t *testing.T) {
 	}
 
 	for _, testData := range dataProvider {
-		name, err := dosa.NormalizeName(testData.arg)
+		name, err := normalizeName(testData.arg)
 		if testData.allowed {
 			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", testData.arg))
 			assert.Equal(t, testData.expected, name,
@@ -131,21 +130,21 @@ func TestNormalizeName(t *testing.T) {
 }
 
 func TestIsValidNamePrefix(t *testing.T) {
-	err := dosa.IsValidNamePrefix("service.foo")
+	err := isValidNamePrefix("service.foo")
 	assert.NoError(t, err)
 
-	err = dosa.IsValidNamePrefix("MyService.Foo.V2")
+	err = isValidNamePrefix("MyService.Foo.V2")
 	assert.NoError(t, err)
 
-	err = dosa.IsValidNamePrefix("")
+	err = isValidNamePrefix("")
 	assert.Error(t, err)
 
-	err = dosa.IsValidNamePrefix("service.an entity")
+	err = isValidNamePrefix("service.an entity")
 	assert.Error(t, err)
 
-	err = dosa.IsValidNamePrefix("germanRush.über")
+	err = isValidNamePrefix("germanRush.über")
 	assert.Error(t, err)
 
-	err = dosa.IsValidNamePrefix("this.prefix.has.more.than.thrity.two.characters.in.it")
+	err = isValidNamePrefix("this.prefix.has.more.than.thrity.two.characters.in.it")
 	assert.Error(t, err)
 }

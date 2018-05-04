@@ -222,7 +222,7 @@ func (e *EntityDefinition) EnsureValid() error {
 		return errors.New("EntityDefinition is nil")
 	}
 
-	if err := IsValidName(e.Name); err != nil {
+	if err := isValidName(e.Name); err != nil {
 		return errors.Wrap(err, "EntityDefinition has invalid name")
 	}
 
@@ -231,7 +231,7 @@ func (e *EntityDefinition) EnsureValid() error {
 		if c == nil {
 			return errors.New("EntityDefinition has nil column")
 		}
-		if err := IsValidName(c.Name); err != nil {
+		if err := isValidName(c.Name); err != nil {
 			return errors.Wrap(err, "EntityDefinition has invalid column name")
 		}
 		if _, ok := columnNamesSeen[c.Name]; ok {
@@ -283,7 +283,7 @@ func (e *EntityDefinition) EnsureValid() error {
 
 	// validate index
 	for indexName, index := range e.Indexes {
-		if err := IsValidName(indexName); err != nil {
+		if err := isValidName(indexName); err != nil {
 			return errors.Wrap(err, "IndexDefinition has invalid name")
 		}
 

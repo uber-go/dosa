@@ -35,8 +35,7 @@ var (
 	namePrefixRegex = regexp.MustCompile("^[a-z_][a-z0-9_.]{0,31}$")
 )
 
-// IsValidNamePrefix ensures the given prefix is ok.
-func IsValidNamePrefix(namePrefix string) error {
+func isValidNamePrefix(namePrefix string) error {
 	normalized := strings.ToLower(strings.TrimSpace(namePrefix))
 	if !namePrefixRegex.MatchString(normalized) {
 		return errors.Errorf("Name Prefix %s is invalid. It was normalized to "+
@@ -57,11 +56,11 @@ func isInvalidOtherRune(r rune) bool {
 	return !(r >= '0' && r <= '9') && isInvalidFirstRune(r)
 }
 
-// IsValidName checks if a name conforms the following rules:
+// isValidName checks if a name conforms the following rules:
 // 1. name starts with [a-z_]
 // 2. the rest of name can contain only [a-z0-9_]
 // 3. the length of name must be greater than 0 and less than or equal to maxNameLen
-func IsValidName(name string) error {
+func isValidName(name string) error {
 	if len(name) == 0 {
 		return errors.Errorf("cannot be empty")
 	}
@@ -77,11 +76,11 @@ func IsValidName(name string) error {
 	return nil
 }
 
-// NormalizeName normalizes names to a canonical representation by lowercase everything.
+// normalizeName normalizes names to a canonical representation by lowercase everything.
 // It returns error if the resultant canonical name is invalid.
-func NormalizeName(name string) (string, error) {
+func normalizeName(name string) (string, error) {
 	lowercaseName := strings.ToLower(strings.TrimSpace(name))
-	if err := IsValidName(lowercaseName); err != nil {
+	if err := isValidName(lowercaseName); err != nil {
 		return "", errors.Wrapf(err, "failed to normalize to a valid name for %s", name)
 	}
 	return lowercaseName, nil
