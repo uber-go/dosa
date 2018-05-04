@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"time"
 
 	"bytes"
 	"io"
@@ -39,11 +40,19 @@ type DomainObject interface {
 }
 
 // Entity represents any object that can be persisted by DOSA
-type Entity struct{}
+type Entity struct {
+	// dynamic ttl set to an entity by user
+	ttl *time.Duration
+}
 
 // make entity a DomainObject
 func (*Entity) isDomainObject() bool {
 	return true
+}
+
+// TTL sets dynamic ttl to an entity
+func (e *Entity) TTL(t *time.Duration) {
+	e.ttl = t
 }
 
 // DomainIndex is a marker interface method for an Index
@@ -404,7 +413,20 @@ func (c *client) createOrUpsert(ctx context.Context, fieldsToUpdate []string, en
 		fieldValues[k] = v
 	}
 
-	return fn(ctx, re.EntityInfo(), fieldValues)
+	// get registered entity's EntityInfo
+	ei := re.EntityInfo()
+
+	// fetch, validate and set the dynamic TTL for current entity
+	e := reflect.ValueOf(entity).Elem().FieldByName("Entity")
+	dynTTL := e.Interface().(Entity).ttl
+	if dynTTL != nil {
+		if err = ValidateTTL(*dynTTL); err != nil {
+			return err
+		}
+		ei.TTL = dynTTL
+	}
+
+	return fn(ctx, ei, fieldValues)
 }
 
 // MultiUpsert updates several entities by primary key, The entities provided

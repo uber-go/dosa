@@ -400,6 +400,45 @@ func TestClient_Upsert(t *testing.T) {
 	assert.NoError(t, c3.Upsert(ctx, fieldsToUpdate, cte1))
 	assert.Equal(t, cte1.Email, updatedEmail)
 }
+
+func TestClient_Upsert_DynTTL(t *testing.T) {
+	cte3 := &ClientTestEntity1{}
+	reg1, _ := dosaRenamed.NewRegistrar("test", "team.service", cte3)
+
+	// valid cases
+	idx := 0
+	ttls := []time.Duration{
+		time.Duration(-1),
+		30 * time.Minute,
+		1 * time.Minute,
+		time.Duration(0),
+	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().Upsert(ctx, gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, ei *dosaRenamed.EntityInfo, _ map[string]dosaRenamed.FieldValue) {
+			assert.Equal(t, ttls[idx], *ei.TTL)
+			idx++
+		}).
+		Return(nil).MinTimes(1)
+	c1 := dosaRenamed.NewClient(reg1, mockConn)
+	assert.NoError(t, c1.Initialize(ctx))
+	for _, ttl := range ttls {
+		if ttl != dosaRenamed.NoTTL() {
+			cte3.TTL(&ttl)
+		}
+		assert.NoError(t, c1.Upsert(ctx, []string{}, cte3))
+	}
+
+	// invalid case
+	c2 := dosaRenamed.NewClient(reg1, nullConnector)
+	invalidTTL := 998 * time.Millisecond
+	cte3.TTL(&invalidTTL)
+	assert.Error(t, c2.Upsert(ctx, []string{}, cte3))
+}
+
 func TestClient_CreateIfNotExists(t *testing.T) {
 	reg1, _ := dosaRenamed.NewRegistrar("test", "team.service", cte1)
 	reg2, _ := dosaRenamed.NewRegistrar("test", "team.service", cte1, cte2)
@@ -430,6 +469,44 @@ func TestClient_CreateIfNotExists(t *testing.T) {
 	assert.NoError(t, c3.Initialize(ctx))
 	assert.NoError(t, c3.CreateIfNotExists(ctx, cte1))
 	assert.Equal(t, cte1.Email, updatedEmail)
+}
+
+func TestClient_CreateIfNotExists_DynTTL(t *testing.T) {
+	cte3 := &ClientTestEntity1{}
+	reg1, _ := dosaRenamed.NewRegistrar("test", "team.service", cte3)
+
+	// valid cases
+	idx := 0
+	ttls := []time.Duration{
+		time.Duration(-1),
+		30 * time.Minute,
+		1 * time.Minute,
+		time.Duration(0),
+	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().CreateIfNotExists(ctx, gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, ei *dosaRenamed.EntityInfo, _ map[string]dosaRenamed.FieldValue) {
+			assert.Equal(t, ttls[idx], *ei.TTL)
+			idx++
+		}).
+		Return(nil).MinTimes(1)
+	c1 := dosaRenamed.NewClient(reg1, mockConn)
+	assert.NoError(t, c1.Initialize(ctx))
+	for _, ttl := range ttls {
+		if ttl != dosaRenamed.NoTTL() {
+			cte3.TTL(&ttl)
+		}
+		assert.NoError(t, c1.CreateIfNotExists(ctx, cte3))
+	}
+
+	// invalid case
+	c2 := dosaRenamed.NewClient(reg1, nullConnector)
+	invalidTTL := 998 * time.Millisecond
+	cte3.TTL(&invalidTTL)
+	assert.Error(t, c2.CreateIfNotExists(ctx, cte3))
 }
 
 func TestClient_Upsert_Errors(t *testing.T) {
