@@ -6,9 +6,10 @@ package mocks
 
 import (
 	context "context"
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	dosa "github.com/uber-go/dosa"
-	reflect "reflect"
 )
 
 // MockClient is a mock of Client interface
