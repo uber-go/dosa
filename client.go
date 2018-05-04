@@ -182,6 +182,12 @@ type Client interface {
 	// To scan the next set of rows, modify the scanOp to provide
 	// the string returned as an Offset()
 	ScanEverything(ctx context.Context, scanOp *ScanOp) ([]DomainObject, string, error)
+
+	// Shutdown gracefully shutsdown the client, cleaning up any resources it may have
+	// allocated during it's usage. Shutdown should be called whenever the client
+	// is no longer needed. After calling shutdown there should be no further usage
+	// of the client.
+	Shutdown() error
 }
 
 // MultiResult contains the result for each entity operation in the case of
@@ -216,6 +222,11 @@ type AdminClient interface {
 	TruncateScope(ctx context.Context, s string) error
 	// DropScope drops the scope and the data and schemas in the scope
 	DropScope(ctx context.Context, s string) error
+	// Shutdown gracefully shutsdown the client, cleaning up any resources it may have
+	// allocated during it's usage. Shutdown should be called whenever the client
+	// is no longer needed. After calling shutdown there should be no further usage
+	// of the client.
+	Shutdown() error
 }
 
 type client struct {
@@ -555,7 +566,10 @@ func (c *client) ScanEverything(ctx context.Context, sop *ScanOp) ([]DomainObjec
 	}
 	objectArray := objectsFromValueArray(sop.object, values, re, nil)
 	return objectArray, token, nil
+}
 
+func (c *client) Shutdown() error {
+	return c.connector.Shutdown()
 }
 
 type adminClient struct {
@@ -716,4 +730,8 @@ func (c *adminClient) TruncateScope(ctx context.Context, s string) error {
 // DropScope drops the scope and the data and schemas in the scope
 func (c *adminClient) DropScope(ctx context.Context, s string) error {
 	return c.connector.DropScope(ctx, s)
+}
+
+func (c *adminClient) Shutdown() error {
+	return c.connector.Shutdown()
 }

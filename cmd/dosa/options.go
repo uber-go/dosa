@@ -106,3 +106,9 @@ func getAdminClient(opts GlobalOptions) (dosa.AdminClient, error) {
 
 	return client, nil
 }
+
+func shutdownAdminClient(client dosa.AdminClient) {
+	if client.Shutdown() != nil {
+		fmt.Fprintf(os.Stderr, "Failed to properly shutdown client")
+	}
+}
