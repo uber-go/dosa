@@ -28,7 +28,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/connectors/base"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 	"github.com/uber/dosa-idl/.gen/dosa/dosaclient"
 	rpc "go.uber.org/yarpc"
@@ -68,7 +67,6 @@ type Config struct {
 
 // Connector holds the client-side RPC interface and some schema information
 type Connector struct {
-	base.Connector
 	client     dosaclient.Interface
 	dispatcher *rpc.Dispatcher
 }
