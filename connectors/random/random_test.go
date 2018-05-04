@@ -121,6 +121,12 @@ func TestRandom_Range(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestRandom_RangeAdaptiveLimits(t *testing.T) {
+	vals, _, err := sut.Range(ctx, testInfo, testConditions, minimumFields, "", dosa.AdaptiveRangeLimit)
+	assert.Len(t, vals, 200)
+	assert.NoError(t, err)
+}
+
 func TestRandom_Scan(t *testing.T) {
 	vals, _, err := sut.Scan(ctx, testInfo, minimumFields, "", 32)
 	assert.NotNil(t, vals)
