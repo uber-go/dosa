@@ -129,6 +129,14 @@ type SchemaCheck struct {
 	} `positional-args:"yes"`
 }
 
+func newSchemaCheck(provideClient clientProvider) *SchemaCheck {
+	return &SchemaCheck{
+		SchemaCmd: &SchemaCmd{
+			provideClient: provideClient,
+		},
+	}
+}
+
 // Execute executes a schema check command
 func (c *SchemaCheck) Execute(args []string) error {
 	return c.doSchemaOp("schema check", dosa.AdminClient.CanUpsertSchema, c.Args.Paths)
@@ -142,6 +150,14 @@ type SchemaUpsert struct {
 	} `positional-args:"yes"`
 }
 
+func newSchemaUpsert(provideClient clientProvider) *SchemaUpsert {
+	return &SchemaUpsert{
+		SchemaCmd: &SchemaCmd{
+			provideClient: provideClient,
+		},
+	}
+}
+
 // Execute executes a schema upsert command
 func (c *SchemaUpsert) Execute(args []string) error {
 	return c.doSchemaOp("schema upsert", dosa.AdminClient.UpsertSchema, c.Args.Paths)
@@ -151,6 +167,14 @@ func (c *SchemaUpsert) Execute(args []string) error {
 type SchemaStatus struct {
 	*SchemaCmd
 	Version int32 `long:"version" description:"Specify schema version."`
+}
+
+func newSchemaStatus(provideClient clientProvider) *SchemaStatus {
+	return &SchemaStatus{
+		SchemaCmd: &SchemaCmd{
+			provideClient: provideClient,
+		},
+	}
 }
 
 // Execute executes a schema status command
