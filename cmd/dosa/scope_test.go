@@ -50,7 +50,6 @@ func TestScope_ServiceDefault(t *testing.T) {
 		for _, cmd := range []string{"create", "drop", "truncate"} {
 			os.Args = []string{
 				"dosa",
-				"--connector", "devnull",
 			}
 			if len(tc.serviceName) > 0 {
 				os.Args = append(os.Args, "--service", tc.serviceName)
@@ -71,71 +70,78 @@ func TestScope_Create(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	exit = func(r int) {
-		assert.Equal(t, 0, r)
+	mc := mocks.NewMockConnector(ctrl)
+	mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
+	mc.EXPECT().Shutdown().Return(nil)
+	provideClient := func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
 	}
-	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
-		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
-		mc.EXPECT().Shutdown().Return(nil)
-		return mc, nil
-	})
-	os.Args = []string{"dosa", "--connector", "mock", "scope", "create", "-o", "foo", "one_scope", "two_scope", "three_scope", "four"}
-	c := StartCapture()
-	main()
-	assert.Contains(t, c.stop(false), "\"three_scope\"")
 
-	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
-		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(1).Return(nil)
-		mc.EXPECT().Shutdown().Return(nil)
-		return mc, nil
-	})
-	os.Args = []string{"dosa", "--connector", "mock", "scope", "create", "--owner", "fred", "fred_dev"}
-	c = StartCapture()
-	main()
-	assert.Contains(t, c.stop(false), "\"fred_dev\"")
-
-	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
-		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("oops"))
-		mc.EXPECT().Shutdown().Return(nil)
-		return mc, nil
-	})
-	c = StartCapture()
-	exit = func(r int) {
-		assert.Equal(t, 1, r)
+	scopeCreate := ScopeCreate{
+		ScopeCmd: &ScopeCmd{
+			provideClient: provideClient,
+		},
+		Owner: "foo",
 	}
-	os.Args = []string{"dosa", "--connector", "oops", "scope", "drop", "five_fish", "six_fish", "seven_fish", "eight"}
-	main()
-	assert.Contains(t, c.stop(true), "oops")
+	scopeCreate.Args.Scopes = []string{"one_scope", "two_scope", "three_scope", "four"}
+	err := scopeCreate.Execute([]string{})
+	assert.NoError(t, err)
+
+	mc = mocks.NewMockConnector(ctrl)
+	mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+	mc.EXPECT().Shutdown().Return(nil)
+
+	provideClient = func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
+	}
+	scopeCreate = ScopeCreate{
+		ScopeCmd: &ScopeCmd{
+			provideClient: provideClient,
+		},
+		Owner: "fred",
+	}
+	scopeCreate.Args.Scopes = []string{"fred_dev"}
+
+	err = scopeCreate.Execute([]string{})
+	assert.NoError(t, err)
+
+	mc = mocks.NewMockConnector(ctrl)
+	mc.EXPECT().CreateScope(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("oops"))
+	mc.EXPECT().Shutdown().Return(nil)
+
+	provideClient = func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
+	}
+	scopeCreate = ScopeCreate{
+		ScopeCmd: &ScopeCmd{
+			provideClient: provideClient,
+		},
+		Owner: "fred",
+	}
+	scopeCreate.Args.Scopes = []string{"fred_dev"}
+
+	err = scopeCreate.Execute([]string{})
+	assert.Error(t, err)
 }
 
 func TestScopeDrop_Execute(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	exit = func(r int) {
-		assert.Equal(t, 0, r)
+	mc := mocks.NewMockConnector(ctrl)
+	mc.EXPECT().DropScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
+	mc.EXPECT().Shutdown().Return(nil)
+	provideClient := func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
 	}
-	c := StartCapture()
-	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
-		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().DropScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
-		mc.EXPECT().Shutdown().Return(nil)
-		return mc, nil
-	})
-	os.Args = []string{"dosa", "--connector", "mock", "scope", "drop", "one_fish", "two_fish", "three_fish", "four"}
-	main()
-	assert.Contains(t, c.stop(false), "\"three_fish\"")
-
-	c = StartCapture()
-	exit = func(r int) {
-		assert.Equal(t, 1, r)
+	scopeDrop := ScopeDrop{
+		ScopeCmd: &ScopeCmd{
+			provideClient: provideClient,
+		},
 	}
-	os.Args = []string{"dosa", "--connector", "oops", "scope", "drop", "five_fish", "six_fish", "seven_fish", "eight"}
-	main()
-	assert.Contains(t, c.stop(true), "oops")
+	scopeDrop.Args.Scopes = []string{"one_fish", "two_fish", "three_fish", "four"}
+	err := scopeDrop.Execute([]string{})
+	assert.NoError(t, err)
 }
 
 func TestScopeTruncate_Execute(t *testing.T) {
@@ -143,34 +149,38 @@ func TestScopeTruncate_Execute(t *testing.T) {
 	defer ctrl.Finish()
 
 	// success case
-	c := StartCapture()
-	exit = func(r int) {
-		assert.Equal(t, 0, r)
+	mc := mocks.NewMockConnector(ctrl)
+	mc.EXPECT().TruncateScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
+	mc.EXPECT().Shutdown().Return(nil)
+	provideClient := func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
 	}
-	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
-		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().TruncateScope(gomock.Any(), gomock.Any()).Times(4).Return(nil)
-		mc.EXPECT().Shutdown().Return(nil)
-		return mc, nil
-	})
-	os.Args = []string{"dosa", "--connector", "mock", "scope", "truncate", "one_fish", "two_fish", "three_fish", "four"}
-	main()
-	assert.Contains(t, c.stop(false), "three_fish")
+
+	scopeTruncate := ScopeTruncate{
+		ScopeCmd: &ScopeCmd{
+			provideClient: provideClient,
+		},
+	}
+	scopeTruncate.Args.Scopes = []string{"one_fish", "two_fish", "three_fish", "four"}
+	err := scopeTruncate.Execute([]string{})
+	assert.NoError(t, err)
 
 	// failure case
-	c = StartCapture()
-	exit = func(r int) {
-		assert.Equal(t, 1, r)
+	mc = mocks.NewMockConnector(ctrl)
+	mc.EXPECT().TruncateScope(gomock.Any(), gomock.Any()).Times(1).Return(&dosa.ErrNotFound{})
+	mc.EXPECT().Shutdown().Return(nil)
+
+	provideClient = func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
 	}
-	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
-		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().TruncateScope(gomock.Any(), gomock.Any()).Times(1).Return(&dosa.ErrNotFound{})
-		mc.EXPECT().Shutdown().Return(nil)
-		return mc, nil
-	})
-	os.Args = []string{"dosa", "--connector", "mock", "scope", "truncate", "one_fish", "two_fish", "three_fish", "four"}
-	main()
-	assert.Contains(t, c.stop(true), "\"one_fish\"")
+	scopeTruncate = ScopeTruncate{
+		ScopeCmd: &ScopeCmd{
+			provideClient: provideClient,
+		},
+	}
+	scopeTruncate.Args.Scopes = []string{"one_fish", "two_fish", "three_fish", "four"}
+	err = scopeTruncate.Execute([]string{})
+	assert.Error(t, err)
 }
 
 func TestParseType(t *testing.T) {

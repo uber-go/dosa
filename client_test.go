@@ -22,21 +22,18 @@ package dosa_test
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-
-	"fmt"
-	"time"
-
 	dosaRenamed "github.com/uber-go/dosa"
-	_ "github.com/uber-go/dosa/connectors/devnull"
-	_ "github.com/uber-go/dosa/connectors/memory"
+	"github.com/uber-go/dosa/connectors/devnull"
 	"github.com/uber-go/dosa/mocks"
 	"github.com/uber-go/dosa/testutil"
 )
@@ -59,17 +56,13 @@ type ClientTestEntity2 struct {
 }
 
 var (
-	cte1          = &ClientTestEntity1{ID: int64(1), Name: "foo", Email: "foo@uber.com"}
-	cte2          = &ClientTestEntity2{UUID: "b1f23fa3-f453-45b4-a5d5-6d73078ac3bd", Color: "blue", IsActive: true}
-	ctx           = context.TODO()
-	scope         = "test"
-	namePrefix    = "team.service"
-	nullConnector dosaRenamed.Connector
+	cte1                                = &ClientTestEntity1{ID: int64(1), Name: "foo", Email: "foo@uber.com"}
+	cte2                                = &ClientTestEntity2{UUID: "b1f23fa3-f453-45b4-a5d5-6d73078ac3bd", Color: "blue", IsActive: true}
+	ctx                                 = context.TODO()
+	scope                               = "test"
+	namePrefix                          = "team.service"
+	nullConnector dosaRenamed.Connector = devnull.NewConnector()
 )
-
-func init() {
-	nullConnector, _ = dosaRenamed.GetConnector("devnull", nil)
-}
 
 // ExampleNewClient initializes a client using the devnull connector, which discards all
 // the data you send it and always returns no rows. It's only useful for testing dosa.
@@ -83,11 +76,7 @@ func ExampleNewClient() {
 	}
 
 	// use a devnull connector for example purposes
-	conn, err := dosaRenamed.GetConnector("devnull", nil)
-	if err != nil {
-		fmt.Printf("GetConnector error: %s", err)
-		return
-	}
+	conn := devnull.NewConnector()
 
 	// create the client using the registrar and connector
 	client := dosaRenamed.NewClient(reg, conn)
@@ -97,55 +86,6 @@ func ExampleNewClient() {
 		fmt.Printf("Initialize error: %s", err)
 		return
 	}
-}
-
-// ExampleGetConnector gets an in-memory connector that can be used for testing your code.
-// The in-memory connector always starts off with no rows, so you'll need to add rows to
-// your "database" before reading them
-func ExampleGetConnector() {
-	// register your entities so the engine can separate your data based on table names.
-	// Scopes and name prefixes are not used by the in-memory connector, and are ignored, but
-	// your list of entities is important. In this case, we only have one, our ClientTestEntity1
-	reg, err := dosaRenamed.NewRegistrar("test", "myteam.myservice", &ClientTestEntity1{})
-	if err != nil {
-		fmt.Printf("NewRegistrar error: %s", err)
-		return
-	}
-
-	// Find the memory connector. There is no configuration information so pass a nil
-	// For this to work, you must force the init method of memory to run first, which happens
-	// when we imported memory in the import list, with an underscore to just get the side effects
-	conn, _ := dosaRenamed.GetConnector("memory", nil)
-
-	// now construct a client from the registrar and the connector
-	client := dosaRenamed.NewClient(reg, conn)
-
-	// initialize the client; this should always work for the in-memory connector
-	if err = client.Initialize(context.Background()); err != nil {
-		fmt.Printf("Initialize error: %s", err)
-		return
-	}
-
-	// now populate an entity and insert it into the memory store
-	if err := client.CreateIfNotExists(context.Background(), &ClientTestEntity1{
-		ID:    int64(1),
-		Name:  "rkuris",
-		Email: "rkuris@uber.com"}); err != nil {
-		fmt.Printf("CreateIfNotExists error: %s", err)
-		return
-	}
-
-	// create an entity to hold the read result, just populate the key
-	e := ClientTestEntity1{ID: int64(1)}
-	// now read the data from the "database", all columns
-	err = client.Read(context.Background(), dosaRenamed.All(), &e)
-	if err != nil {
-		fmt.Printf("Read error: %s", err)
-		return
-	}
-	// great! It worked, so display the information we stored earlier
-	fmt.Printf("id:%d Name:%q Email:%q\n", e.ID, e.Name, e.Email)
-	// Output: id:1 Name:"rkuris" Email:"rkuris@uber.com"
 }
 
 func testAssert(t *testing.T) testutil.TestAssertFn {

@@ -33,7 +33,9 @@ import (
 type ScopeOptions struct{}
 
 // ScopeCmd are options for all scope commands
-type ScopeCmd struct{}
+type ScopeCmd struct {
+	provideClient clientProvider
+}
 
 func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Context, string) error, scopes []string) error {
 	// TODO(eculver): use options/configurator pattern to apply defaults
@@ -41,7 +43,7 @@ func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Conte
 		options.ServiceName = _defServiceName
 	}
 
-	client, err := getAdminClient(options)
+	client, err := c.provideClient(options)
 	if err != nil {
 		return err
 	}
@@ -69,6 +71,14 @@ type ScopeCreate struct {
 	Args     struct {
 		Scopes []string `positional-arg-name:"scopes" required:"1"`
 	} `positional-args:"yes" required:"1"`
+}
+
+func newScopeCreate(provideClient clientProvider) *ScopeCreate {
+	return &ScopeCreate{
+		ScopeCmd: &ScopeCmd{
+			provideClient: provideClient,
+		},
+	}
 }
 
 // Execute executes a scope create command
@@ -102,6 +112,14 @@ type ScopeDrop struct {
 	} `positional-args:"yes" required:"1"`
 }
 
+func newScopeDrop(provideClient clientProvider) *ScopeDrop {
+	return &ScopeDrop{
+		ScopeCmd: &ScopeCmd{
+			provideClient: provideClient,
+		},
+	}
+}
+
 // Execute executes a scope drop command
 func (c *ScopeDrop) Execute(args []string) error {
 	return c.doScopeOp("drop", dosa.AdminClient.DropScope, c.Args.Scopes)
@@ -113,6 +131,14 @@ type ScopeTruncate struct {
 	Args struct {
 		Scopes []string `positional-arg-name:"scopes" required:"1"`
 	} `positional-args:"yes" required:"1"`
+}
+
+func newScopeTruncate(provideClient clientProvider) *ScopeTruncate {
+	return &ScopeTruncate{
+		ScopeCmd: &ScopeCmd{
+			provideClient: provideClient,
+		},
+	}
 }
 
 // Execute executes a scope truncate command
