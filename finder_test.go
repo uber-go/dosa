@@ -38,7 +38,7 @@ func TestUnparseableGoCode(t *testing.T) {
 	if err := ioutil.WriteFile(tmpdir+"/broken.go", []byte("package broken\nfunc broken\n"), 0644); err != nil {
 		t.Fatalf("can't create %s/broken.go: %s", tmpdir, err)
 	}
-	entities, errs, err := FindEntities([]string{tmpdir}, []string{})
+	entities, errs, err := findEntities([]string{tmpdir}, []string{})
 	assert.Nil(t, entities)
 	assert.Nil(t, errs)
 	assert.Contains(t, err.Error(), "expected '('")
@@ -46,14 +46,14 @@ func TestUnparseableGoCode(t *testing.T) {
 
 func TestNonExistentDirectory(t *testing.T) {
 	const nonExistentDirectory = "ThisDirectoryBetterNotExist"
-	entities, errs, err := FindEntities([]string{nonExistentDirectory}, []string{})
+	entities, errs, err := findEntities([]string{nonExistentDirectory}, []string{})
 	assert.Nil(t, entities)
 	assert.Nil(t, errs)
 	assert.Contains(t, err.Error(), nonExistentDirectory)
 }
 
 func TestParser(t *testing.T) {
-	entities, errs, err := FindEntities([]string{"."}, []string{})
+	entities, errs, err := findEntities([]string{"."}, []string{})
 	assert.NoError(t, err)
 	expectedEntities := map[string]DomainObject{
 		"singleprimarykeynoparen":       &SinglePrimaryKeyNoParen{},
@@ -103,7 +103,7 @@ func TestParser(t *testing.T) {
 }
 
 func TestExclusion(t *testing.T) {
-	entities, errs, err := FindEntities([]string{"."}, []string{"*_test.go"})
+	entities, errs, err := findEntities([]string{"."}, []string{"*_test.go"})
 	// We expect to find only ScopeMetadata
 	assert.Equal(t, 1, len(entities))
 	assert.Equal(t, "ScopeMetadata", entities[0].StructName)
@@ -112,7 +112,7 @@ func TestExclusion(t *testing.T) {
 }
 
 func TestFindEntitiesInOtherPkg(t *testing.T) {
-	entities, warnings, err := FindEntities([]string{"testentity"}, []string{})
+	entities, warnings, err := findEntities([]string{"testentity"}, []string{})
 	assert.NoError(t, err)
 	assert.Equal(t, 6, len(entities))
 	assert.Empty(t, warnings)
@@ -120,7 +120,7 @@ func TestFindEntitiesInOtherPkg(t *testing.T) {
 
 func BenchmarkFinder(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		FindEntities([]string{"."}, []string{})
+		findEntities([]string{"."}, []string{})
 	}
 }
 
