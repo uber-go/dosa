@@ -26,9 +26,10 @@ package mocks
 
 import (
 	context "context"
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	dosa "github.com/uber-go/dosa"
-	reflect "reflect"
 )
 
 // MockConnector is a mock of Connector interface

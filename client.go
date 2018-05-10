@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-    "strings"
+	"strings"
 	"time"
 
 	"bytes"
@@ -688,7 +688,7 @@ func (c *adminClient) UpsertSchema(ctx context.Context, namePrefix string) (*Sch
 //   - no entities were found
 func (c *adminClient) GetSchema() ([]*EntityDefinition, error) {
 	// prevent bogus scope names from reaching connectors
-	if err := isValidName(c.scope); err != nil {
+	if err := IsValidName(c.scope); err != nil {
 		return nil, errors.Wrapf(err, "invalid scope name %q", c.scope)
 	}
 	// "warnings" mean entity was found but contained invalid annotations

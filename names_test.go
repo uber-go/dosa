@@ -75,7 +75,7 @@ func TestIsValidName(t *testing.T) {
 	}
 
 	for _, testData := range dataProvider {
-		err := isValidName(testData.arg)
+		err := IsValidName(testData.arg)
 		if testData.allowed {
 			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", testData.arg))
 		} else {
@@ -118,7 +118,7 @@ func TestNormalizeName(t *testing.T) {
 	}
 
 	for _, testData := range dataProvider {
-		name, err := normalizeName(testData.arg)
+		name, err := NormalizeName(testData.arg)
 		if testData.allowed {
 			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", testData.arg))
 			assert.Equal(t, testData.expected, name,

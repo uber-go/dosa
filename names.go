@@ -56,11 +56,11 @@ func isInvalidOtherRune(r rune) bool {
 	return !(r >= '0' && r <= '9') && isInvalidFirstRune(r)
 }
 
-// isValidName checks if a name conforms the following rules:
+// IsValidName checks if a name conforms the following rules:
 // 1. name starts with [a-z_]
 // 2. the rest of name can contain only [a-z0-9_]
 // 3. the length of name must be greater than 0 and less than or equal to maxNameLen
-func isValidName(name string) error {
+func IsValidName(name string) error {
 	if len(name) == 0 {
 		return errors.Errorf("cannot be empty")
 	}
@@ -76,11 +76,11 @@ func isValidName(name string) error {
 	return nil
 }
 
-// normalizeName normalizes names to a canonical representation by lowercase everything.
+// NormalizeName normalizes names to a canonical representation by lowercase everything.
 // It returns error if the resultant canonical name is invalid.
-func normalizeName(name string) (string, error) {
+func NormalizeName(name string) (string, error) {
 	lowercaseName := strings.ToLower(strings.TrimSpace(name))
-	if err := isValidName(lowercaseName); err != nil {
+	if err := IsValidName(lowercaseName); err != nil {
 		return "", errors.Wrapf(err, "failed to normalize to a valid name for %s", name)
 	}
 	return lowercaseName, nil
