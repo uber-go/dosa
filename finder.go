@@ -196,7 +196,7 @@ func parseASTType(expr ast.Expr) (string, error) {
 
 // tableFromStructType takes an ast StructType and converts it into a Table object
 func tableFromStructType(structName string, structType *ast.StructType, packagePrefix string) (*Table, error) {
-	normalizedName, err := normalizeName(structName)
+	normalizedName, err := NormalizeName(structName)
 	if err != nil {
 		// TODO: This isn't correct, someone could override the name later
 		return nil, errors.Wrapf(err, "struct name is invalid")

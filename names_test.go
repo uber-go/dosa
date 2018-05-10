@@ -75,7 +75,7 @@ func TestIsValidName(t *testing.T) {
 	}
 
 	for _, testData := range dataProvider {
-		err := isValidName(testData.arg)
+		err := IsValidName(testData.arg)
 		if testData.allowed {
 			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", testData.arg))
 		} else {
@@ -118,7 +118,7 @@ func TestNormalizeName(t *testing.T) {
 	}
 
 	for _, testData := range dataProvider {
-		name, err := normalizeName(testData.arg)
+		name, err := NormalizeName(testData.arg)
 		if testData.allowed {
 			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", testData.arg))
 			assert.Equal(t, testData.expected, name,
@@ -130,21 +130,21 @@ func TestNormalizeName(t *testing.T) {
 }
 
 func TestIsValidNamePrefix(t *testing.T) {
-	err := isValidNamePrefix("service.foo")
+	err := IsValidNamePrefix("service.foo")
 	assert.NoError(t, err)
 
-	err = isValidNamePrefix("MyService.Foo.V2")
+	err = IsValidNamePrefix("MyService.Foo.V2")
 	assert.NoError(t, err)
 
-	err = isValidNamePrefix("")
+	err = IsValidNamePrefix("")
 	assert.Error(t, err)
 
-	err = isValidNamePrefix("service.an entity")
+	err = IsValidNamePrefix("service.an entity")
 	assert.Error(t, err)
 
-	err = isValidNamePrefix("germanRush.über")
+	err = IsValidNamePrefix("germanRush.über")
 	assert.Error(t, err)
 
-	err = isValidNamePrefix("this.prefix.has.more.than.thrity.two.characters.in.it")
+	err = IsValidNamePrefix("this.prefix.has.more.than.thrity.two.characters.in.it")
 	assert.Error(t, err)
 }

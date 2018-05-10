@@ -330,7 +330,7 @@ func parseNameTag(tag, defaultName string) (string, string, error) {
 	name = strings.TrimRight(name, " ,")
 
 	var err error
-	name, err = normalizeName(name)
+	name, err = NormalizeName(name)
 	if err != nil {
 		return "", "", err
 	}
@@ -356,7 +356,7 @@ func parseETLTag(tag string) (string, ETLState, error) {
 	etlTag = strings.TrimRight(etlTag, " ,")
 
 	var err error
-	etlTag, err = normalizeName(etlTag)
+	etlTag, err = NormalizeName(etlTag)
 	if err != nil {
 		return "", EtlOff, err
 	}
