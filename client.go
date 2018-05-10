@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+    "strings"
 	"time"
 
 	"bytes"
@@ -604,7 +605,7 @@ type adminClient struct {
 // NewAdminClient returns a new DOSA admin client for the connector provided.
 func NewAdminClient(conn Connector) AdminClient {
 	return &adminClient{
-		scope:     os.Getenv("USER"),
+		scope:     strings.ToLower(os.Getenv("USER")),
 		dirs:      []string{"."},
 		excludes:  []string{"_test.go"},
 		connector: conn,
