@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/connectors/yarpc"
 )
 
 const _defServiceName = "dosa-gateway"
@@ -83,7 +84,7 @@ func (t *timeFlag) UnmarshalFlag(value string) error {
 	return nil
 }
 
-func getAdminClient(opts GlobalOptions) (dosa.AdminClient, error) {
+func provideYarpcClient(opts GlobalOptions) (dosa.AdminClient, error) {
 	// from YARPC: "must begin with a letter and consist only of dash-delimited
 	// lower-case ASCII alphanumeric words" -- we do this here because YARPC
 	// will panic if caller name is invalid.
@@ -91,20 +92,19 @@ func getAdminClient(opts GlobalOptions) (dosa.AdminClient, error) {
 		return nil, fmt.Errorf("invalid caller name: %s, must begin with a letter and consist only of dash-delimited lower-case ASCII alphanumeric words", opts.CallerName)
 	}
 
-	// create connector
-	conn, err := dosa.GetConnector(opts.Connector, map[string]interface{}{
-		"transport":   opts.Transport,
-		"host":        opts.Host,
-		"port":        opts.Port,
-		"servicename": opts.ServiceName,
-		"callername":  opts.CallerName.String(),
-	})
+	ycfg := yarpc.Config{
+		Host:        opts.Host,
+		Port:        opts.Port,
+		CallerName:  opts.CallerName.String(),
+		ServiceName: opts.ServiceName,
+	}
+
+	conn, err := yarpc.NewConnector(ycfg)
 	if err != nil {
 		return nil, err
 	}
-	client := dosa.NewAdminClient(conn)
 
-	return client, nil
+	return dosa.NewAdminClient(conn), nil
 }
 
 func shutdownAdminClient(client dosa.AdminClient) {

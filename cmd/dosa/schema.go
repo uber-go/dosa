@@ -68,8 +68,9 @@ type SchemaOptions struct {
 // SchemaCmd is a placeholder for all schema commands
 type SchemaCmd struct {
 	*SchemaOptions
-	Scope      scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
-	NamePrefix string    `short:"p" long:"namePrefix" description:"Name prefix for schema types." required:"true"`
+	Scope         scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
+	NamePrefix    string    `short:"p" long:"namePrefix" description:"Name prefix for schema types." required:"true"`
+	provideClient clientProvider
 }
 
 func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) (*dosa.SchemaStatus, error), args []string) error {
@@ -83,7 +84,8 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	if options.ServiceName == "" {
 		options.ServiceName = _defServiceName
 	}
-	client, err := getAdminClient(options)
+
+	client, err := c.provideClient(options)
 	if err != nil {
 		return err
 	}
@@ -127,6 +129,14 @@ type SchemaCheck struct {
 	} `positional-args:"yes"`
 }
 
+func newSchemaCheck(provideClient clientProvider) *SchemaCheck {
+	return &SchemaCheck{
+		SchemaCmd: &SchemaCmd{
+			provideClient: provideClient,
+		},
+	}
+}
+
 // Execute executes a schema check command
 func (c *SchemaCheck) Execute(args []string) error {
 	return c.doSchemaOp("schema check", dosa.AdminClient.CanUpsertSchema, c.Args.Paths)
@@ -140,6 +150,14 @@ type SchemaUpsert struct {
 	} `positional-args:"yes"`
 }
 
+func newSchemaUpsert(provideClient clientProvider) *SchemaUpsert {
+	return &SchemaUpsert{
+		SchemaCmd: &SchemaCmd{
+			provideClient: provideClient,
+		},
+	}
+}
+
 // Execute executes a schema upsert command
 func (c *SchemaUpsert) Execute(args []string) error {
 	return c.doSchemaOp("schema upsert", dosa.AdminClient.UpsertSchema, c.Args.Paths)
@@ -149,6 +167,14 @@ func (c *SchemaUpsert) Execute(args []string) error {
 type SchemaStatus struct {
 	*SchemaCmd
 	Version int32 `long:"version" description:"Specify schema version."`
+}
+
+func newSchemaStatus(provideClient clientProvider) *SchemaStatus {
+	return &SchemaStatus{
+		SchemaCmd: &SchemaCmd{
+			provideClient: provideClient,
+		},
+	}
 }
 
 // Execute executes a schema status command
@@ -164,7 +190,7 @@ func (c *SchemaStatus) Execute(args []string) error {
 		options.ServiceName = _defServiceName
 	}
 
-	client, err := getAdminClient(options)
+	client, err := c.provideClient(options)
 	if err != nil {
 		return err
 	}

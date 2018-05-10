@@ -18,7 +18,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package examples is the Runnable examples.
-//
-//
-package examples
+package yarpc
+
+import (
+	"github.com/uber-go/dosa"
+)
+
+// ClientConfig represents the settings for the dosa client
+// based on a yarpc connector.
+type ClientConfig struct {
+	Scope      string `yaml:"scope"`
+	NamePrefix string `yaml:"namePrefix"`
+	Yarpc      Config `yaml:"yarpc"`
+}
+
+// NewClient creates a DOSA client based on a ClientConfig
+func (c ClientConfig) NewClient(entities ...dosa.DomainObject) (dosa.Client, error) {
+	reg, err := dosa.NewRegistrar(c.Scope, c.NamePrefix, entities...)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := NewConnector(c.Yarpc)
+	if err != nil {
+		return nil, err
+	}
+
+	return dosa.NewClient(reg, conn), nil
+}

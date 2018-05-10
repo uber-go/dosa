@@ -35,10 +35,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-// FindEntities finds all entities in the given file paths. An error is
+// findEntities finds all entities in the given file paths. An error is
 // returned if there are naming collisions, otherwise, return a slice of
 // warnings (or nil).
-func FindEntities(paths, excludes []string) ([]*Table, []error, error) {
+func findEntities(paths, excludes []string) ([]*Table, []error, error) {
 	var entities []*Table
 	var warnings []error
 	for _, path := range paths {
@@ -57,33 +57,33 @@ func FindEntities(paths, excludes []string) ([]*Table, []error, error) {
 		if err != nil {
 			return nil, nil, err
 		}
-		erv := new(EntityRecordingVisitor)
+		erv := new(entityRecordingVisitor)
 		for _, pkg := range packages { // go through all the packages
 			for _, file := range pkg.Files { // go through all the files
 				packagePrefix, hasDosa := findDosaPackage(file)
 				//if erv.PackageName != "" { // skip packages that don't import 'dosa'
 				if hasDosa {
-					erv.PackagePrefix = packagePrefix
+					erv.packagePrefix = packagePrefix
 					for _, decl := range file.Decls { // go through all the declarations
 						ast.Walk(erv, decl)
 					}
 				}
 			}
 		}
-		entities = append(entities, erv.Entities...)
-		warnings = append(warnings, erv.Warnings...)
+		entities = append(entities, erv.entities...)
+		warnings = append(warnings, erv.warnings...)
 	}
 
 	return entities, warnings, nil
 }
 
-// DosaPackageName is the name of the dosa package, fully qualified and quoted
-const DosaPackageName = `"github.com/uber-go/dosa"`
+// dosaPackageName is the name of the dosa package, fully qualified and quoted
+const dosaPackageName = `"github.com/uber-go/dosa"`
 
 func findDosaPackage(file *ast.File) (string, bool) {
 	// look for the case where we import dosa
 	for _, impspec := range file.Imports {
-		if impspec.Path.Value == DosaPackageName {
+		if impspec.Path.Value == dosaPackageName {
 			// impspec.Name is nil when not renamed,
 			// so we use the default "dosa"
 			if impspec.Name == nil {
@@ -101,17 +101,17 @@ func findDosaPackage(file *ast.File) (string, bool) {
 	return "", false
 }
 
-// EntityRecordingVisitor is a visitor that records entities it finds
+// entityRecordingVisitor is a visitor that records entities it finds
 // It also keeps track of all failed entities that pass the basic "looks like a DOSA object" test
 // (see isDosaEntity to understand that test)
-type EntityRecordingVisitor struct {
-	Entities      []*Table
-	Warnings      []error
-	PackagePrefix string
+type entityRecordingVisitor struct {
+	entities      []*Table
+	warnings      []error
+	packagePrefix string
 }
 
-// Visit records all the entities seen into the EntityRecordingVisitor structure
-func (f *EntityRecordingVisitor) Visit(n ast.Node) ast.Visitor {
+// Visit records all the entities seen into the entityRecordingVisitor structure
+func (f *entityRecordingVisitor) Visit(n ast.Node) ast.Visitor {
 	switch n := n.(type) {
 	case *ast.File, *ast.Package, *ast.BlockStmt, *ast.DeclStmt, *ast.FuncDecl, *ast.GenDecl:
 		return f
@@ -119,11 +119,11 @@ func (f *EntityRecordingVisitor) Visit(n ast.Node) ast.Visitor {
 		if structType, ok := n.Type.(*ast.StructType); ok {
 			// look for a Entity with a dosa annotation
 			if isDosaEntity(structType) {
-				table, err := tableFromStructType(n.Name.Name, structType, f.PackagePrefix)
+				table, err := tableFromStructType(n.Name.Name, structType, f.packagePrefix)
 				if err == nil {
-					f.Entities = append(f.Entities, table)
+					f.entities = append(f.entities, table)
 				} else {
-					f.Warnings = append(f.Warnings, err)
+					f.warnings = append(f.warnings, err)
 				}
 			}
 		}
@@ -196,7 +196,7 @@ func parseASTType(expr ast.Expr) (string, error) {
 
 // tableFromStructType takes an ast StructType and converts it into a Table object
 func tableFromStructType(structName string, structType *ast.StructType, packagePrefix string) (*Table, error) {
-	normalizedName, err := NormalizeName(structName)
+	normalizedName, err := normalizeName(structName)
 	if err != nil {
 		// TODO: This isn't correct, someone could override the name later
 		return nil, errors.Wrapf(err, "struct name is invalid")

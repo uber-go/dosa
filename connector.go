@@ -26,8 +26,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 //go:generate stringer -type=Operator
@@ -205,32 +203,6 @@ type Connector interface {
 
 	// Shutdown finishes the connector to do clean up work
 	Shutdown() error
-}
-
-// CreationArgs contains values for configuring different connectors
-type CreationArgs map[string]interface{}
-
-// CreationFuncType is the type of a creation function that creates an instance of a registered connector
-type CreationFuncType func(CreationArgs) (Connector, error)
-
-var registeredConnectors map[string]CreationFuncType
-
-func init() {
-	// Can't seem to do this inline and make lint happy
-	registeredConnectors = map[string]CreationFuncType{}
-}
-
-// RegisterConnector registers a connector given a name
-func RegisterConnector(name string, creationFunc func(CreationArgs) (Connector, error)) {
-	registeredConnectors[name] = creationFunc
-}
-
-// GetConnector gets a connector by name, along with some options
-func GetConnector(name string, args CreationArgs) (Connector, error) {
-	if creationFunc, ok := registeredConnectors[name]; ok {
-		return creationFunc(args)
-	}
-	return nil, errors.Errorf("No such connector %q", name)
 }
 
 func (t ScopeType) String() string {

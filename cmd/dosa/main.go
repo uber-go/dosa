@@ -25,13 +25,15 @@ import (
 	"os"
 
 	flags "github.com/jessevdk/go-flags"
-	_ "github.com/uber-go/dosa/connectors/yarpc"
+	"github.com/uber-go/dosa"
 )
 
 // for testing, we make exit an overridable routine
 type exiter func(int)
 
 var exit = os.Exit
+
+type clientProvider = func(opts GlobalOptions) (dosa.AdminClient, error)
 
 // these are overridden at build-time w/ the -ldflags -X option
 var (
@@ -62,11 +64,9 @@ func (b BuildInfo) Execute(args []string) error {
 type GlobalOptions struct {
 	Host        string     `long:"host" default:"127.0.0.1" description:"The hostname or IP for the gateway."`
 	Port        string     `short:"p" long:"port" default:"21300" description:"The hostname or IP for the gateway."`
-	Transport   string     `long:"transport" default:"tchannel" description:"TCP Transport to use. Options: http, tchannel."`
 	ServiceName string     `short:"s" long:"service" default:"dosa-gateway" description:"The TChannel service name for the gateway."`
 	CallerName  callerFlag `long:"caller" default:"dosacli-$USER" description:"Caller will override the default caller name (which is dosacli-$USER)."`
 	Timeout     timeFlag   `long:"timeout" default:"60s" description:"The timeout for gateway requests. E.g., 100ms, 0.5s, 1s. If no unit is specified, milliseconds are assumed."`
-	Connector   string     `hidden:"true" long:"connector" default:"yarpc" description:"Name of connector to use"`
 	Version     bool       `long:"version" description:"Display version info"`
 }
 
@@ -86,15 +86,15 @@ dosa manages your schema both in production and development scopes`
 	c, _ := OptionsParser.AddCommand("version", "display build info", "display build info", &BuildInfo{})
 
 	c, _ = OptionsParser.AddCommand("scope", "commands to manage scope", "create, drop, or truncate development scopes", &ScopeOptions{})
-	_, _ = c.AddCommand("create", "Create scope", "creates a new scope", &ScopeCreate{})
-	_, _ = c.AddCommand("drop", "Drop scope", "drops a scope", &ScopeDrop{})
-	_, _ = c.AddCommand("truncate", "Truncate scope", "truncates a scope", &ScopeTruncate{})
+	_, _ = c.AddCommand("create", "Create scope", "creates a new scope", newScopeCreate(provideYarpcClient))
+	_, _ = c.AddCommand("drop", "Drop scope", "drops a scope", newScopeDrop(provideYarpcClient))
+	_, _ = c.AddCommand("truncate", "Truncate scope", "truncates a scope", newScopeTruncate(provideYarpcClient))
 
 	c, _ = OptionsParser.AddCommand("schema", "commands to manage schemas", "check or update schemas", &SchemaOptions{})
-	_, _ = c.AddCommand("check", "Check schema", "check the schema", &SchemaCheck{})
-	_, _ = c.AddCommand("upsert", "Upsert schema", "insert or update the schema", &SchemaUpsert{})
+	_, _ = c.AddCommand("check", "Check schema", "check the schema", newSchemaCheck(provideYarpcClient))
+	_, _ = c.AddCommand("upsert", "Upsert schema", "insert or update the schema", newSchemaUpsert(provideYarpcClient))
 	_, _ = c.AddCommand("dump", "Dump schema", "display the schema in a given format", &SchemaDump{})
-	_, _ = c.AddCommand("status", "Check schema status", "Check application status of schema", &SchemaStatus{})
+	_, _ = c.AddCommand("status", "Check schema status", "Check application status of schema", newSchemaStatus(provideYarpcClient))
 
 	_, err := OptionsParser.Parse()
 

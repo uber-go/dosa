@@ -216,9 +216,3 @@ func (c *Connector) Shutdown() error {
 func NewConnector() *Connector {
 	return &Connector{}
 }
-
-func init() {
-	dosa.RegisterConnector("random", func(args dosa.CreationArgs) (dosa.Connector, error) {
-		return NewConnector(), nil
-	})
-}
