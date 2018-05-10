@@ -309,7 +309,7 @@ func TestAllTypes(t *testing.T) {
 	cds := dosaTable.Columns
 	assert.Len(t, cds, 15)
 	for _, cd := range cds {
-		name, err := normalizeName(cd.Name)
+		name, err := NormalizeName(cd.Name)
 		assert.NoError(t, err)
 		switch name {
 		case "booltype":
@@ -367,7 +367,7 @@ func TestNullableType(t *testing.T) {
 	cds := dosaTable.Columns
 	assert.Len(t, cds, 8)
 	for _, cd := range cds {
-		name, err := normalizeName(cd.Name)
+		name, err := NormalizeName(cd.Name)
 		assert.NoError(t, err)
 		switch name {
 		case "booltype":

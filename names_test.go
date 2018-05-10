@@ -130,21 +130,21 @@ func TestNormalizeName(t *testing.T) {
 }
 
 func TestIsValidNamePrefix(t *testing.T) {
-	err := IsValidNamePrefix("service.foo")
+	err := isValidNamePrefix("service.foo")
 	assert.NoError(t, err)
 
-	err = IsValidNamePrefix("MyService.Foo.V2")
+	err = isValidNamePrefix("MyService.Foo.V2")
 	assert.NoError(t, err)
 
-	err = IsValidNamePrefix("")
+	err = isValidNamePrefix("")
 	assert.Error(t, err)
 
-	err = IsValidNamePrefix("service.an entity")
+	err = isValidNamePrefix("service.an entity")
 	assert.Error(t, err)
 
-	err = IsValidNamePrefix("germanRush.über")
+	err = isValidNamePrefix("germanRush.über")
 	assert.Error(t, err)
 
-	err = IsValidNamePrefix("this.prefix.has.more.than.thrity.two.characters.in.it")
+	err = isValidNamePrefix("this.prefix.has.more.than.thrity.two.characters.in.it")
 	assert.Error(t, err)
 }
