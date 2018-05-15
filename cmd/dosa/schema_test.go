@@ -109,7 +109,39 @@ func TestSchema_ExpandDirectories(t *testing.T) {
 	os.Chdir("..")
 }
 
-func TestSchema_Defaults(t *testing.T) {
+func TestSchema_DefaultsOldname(t *testing.T) {
+	tcs := []struct {
+		serviceName string
+		expected    string
+	}{
+		//  service = "" -> default
+		{
+			expected: _defServiceName,
+		},
+		//  service = "foo" -> foo
+		{
+			serviceName: "foo",
+			expected:    "foo",
+		},
+	}
+	for _, tc := range tcs {
+		for _, cmd := range []string{"check", "upsert", "status"} {
+			os.Args = []string{
+				"dosa",
+				"--service", tc.serviceName,
+				"schema",
+				cmd,
+				"--prefix", "foo",
+				"--scope", "bar",
+				"../../testentity",
+			}
+			main()
+			assert.Equal(t, options.ServiceName, tc.expected)
+		}
+	}
+}
+
+func TestSchema_DefaultsNewname(t *testing.T) {
 	tcs := []struct {
 		serviceName string
 		expected    string
@@ -237,6 +269,46 @@ func TestSchema_NoEntitiesFound(t *testing.T) {
 // 4 - failure case, problems with the directories on the command line or the entities
 
 func TestSchema_Check_Happy(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mc := mocks.NewMockConnector(ctrl)
+	mc.EXPECT().CanUpsertSchema(gomock.Any(), "scope", "foo", gomock.Any()).
+		Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
+			dl, ok := ctx.Deadline()
+			assert.True(t, ok)
+			assert.True(t, dl.After(time.Now()))
+			assert.Equal(t, 6, len(ed))
+			nameMap := getTestEntityNameMap()
+			for _, e := range ed {
+				assert.True(t, nameMap[e.Name])
+			}
+		}).Return(int32(1), nil)
+	mc.EXPECT().Shutdown().Return(nil)
+
+	provideClient := func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
+	}
+
+	schemaCheck := SchemaCheck{
+		SchemaCmd: &SchemaCmd{
+			SchemaOptions: &SchemaOptions{
+				Excludes: []string{"_test.go", "excludeme.go"},
+				Verbose:  true,
+			},
+			Scope:         scopeFlag("scope"),
+			Prefix:        "foo",
+			provideClient: provideClient,
+		},
+	}
+	schemaCheck.Args.Paths = []string{"../../testentity"}
+
+	err := schemaCheck.Execute(nil)
+	assert.NoError(t, err)
+}
+
+// Check the new name --namePrefix for --prefix
+func TestSchema_Check_Happy_New(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

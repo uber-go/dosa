@@ -54,6 +54,17 @@ func TestHostOptionButNothingElse(t *testing.T) {
 }
 
 // this test uses a trailing dot in the hostname to avoid multiple DNS lookups
+func TestInvalidHostOld(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "--host", "invalid-hostname.", "schema", "check", "--scope", "bar", "--prefix", "foo", "../../testentity"}
+	main()
+	output := c.stop(true)
+	assert.Contains(t, output, "invalid-hostname")
+	assert.Contains(t, output, "no such host")
+}
+
+// this test uses a trailing dot in the hostname to avoid multiple DNS lookups
 func TestInvalidHost(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}

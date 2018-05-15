@@ -69,8 +69,19 @@ type SchemaOptions struct {
 type SchemaCmd struct {
 	*SchemaOptions
 	Scope         scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
-	NamePrefix    string    `short:"p" long:"namePrefix" description:"Name prefix for schema types." required:"true"`
+	NamePrefix    string    `short:"n" long:"namePrefix" description:"Name prefix for schema types."`
+	Prefix        string    `short:"p" long:"prefix" description:"Name prefix for schema types." hidden:"true"`
 	provideClient clientProvider
+}
+
+func (c *SchemaCmd) getNamePrefix() (string, error) {
+	if len(c.NamePrefix) > 0 {
+		return c.NamePrefix, nil
+	}
+	if len(c.Prefix) > 0 {
+		return c.Prefix, nil
+	}
+	return "", errors.New("required argument '--namePrefix' was not specified")
 }
 
 func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) (*dosa.SchemaStatus, error), args []string) error {
@@ -108,7 +119,11 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 	defer cancel()
 
-	status, err := f(client, ctx, c.NamePrefix)
+	var prefix string
+	if prefix, err = c.getNamePrefix(); err != nil {
+		return err
+	}
+	status, err := f(client, ctx, prefix)
 	if err != nil {
 		if c.Verbose {
 			fmt.Printf("detail:%+v\n", err)
@@ -203,7 +218,11 @@ func (c *SchemaStatus) Execute(args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 	defer cancel()
 
-	status, err := client.CheckSchemaStatus(ctx, c.NamePrefix, c.Version)
+	var prefix string
+	if prefix, err = c.getNamePrefix(); err != nil {
+		return err
+	}
+	status, err := client.CheckSchemaStatus(ctx, prefix, c.Version)
 	if err != nil {
 		if c.Verbose {
 			fmt.Printf("detail:%+v\n", err)
