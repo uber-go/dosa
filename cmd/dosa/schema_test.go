@@ -109,7 +109,7 @@ func TestSchema_ExpandDirectories(t *testing.T) {
 	os.Chdir("..")
 }
 
-func TestSchema_Defaults(t *testing.T) {
+func TestSchema_DefaultsOldname(t *testing.T) {
 	tcs := []struct {
 		serviceName string
 		expected    string
