@@ -1,5 +1,5 @@
-hash: 96125a7d0da3a14581575b9e18dbc48fbabc48740b8a7286a668a3df9bf615b9
-updated: 2018-05-03T14:07:57.440533-07:00
+hash: 9ca207730a4388514bc0311303c3cdfa68a0fcc4a2369a07c6fedf57ca21679b
+updated: 2018-05-15T14:03:43.408467-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -7,8 +7,6 @@ imports:
   - quantile
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
-- name: github.com/facebookgo/clock
-  version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
 - name: github.com/garyburd/redigo
   version: a69d19351219b6dd56f274f96d85a7014a2ec34e
   subpackages:
@@ -29,7 +27,7 @@ imports:
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
+  version: 927b65914520a8b7d44f5c9057611cfec6b2e2d0
   subpackages:
   - proto
 - name: github.com/jessevdk/go-flags
@@ -77,9 +75,9 @@ imports:
   subpackages:
   - internal/mapstructure
 - name: github.com/uber-go/tally
-  version: 522328b48efad0c6034dba92bf39228694e9d31f
+  version: 6f121596292a5ec8618b71ee3687fe42da73d289
 - name: github.com/uber/dosa-idl
-  version: f3fe9986ab26bd2f262f61fdcee60990bd9b6abc
+  version: ec8c80f9cd2600096f02bb5098fc0a1723040727
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -114,14 +112,13 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 4ac8938c1046d4db2dc26a1436699935a8c5bb35
+  version: f890b9f2fd812eb3f81efac46ccddf0e46d15210
   subpackages:
   - api/backoff
   - api/encoding
   - api/middleware
   - api/peer
   - api/transport
-  - api/transport/transporttest
   - encoding/thrift
   - encoding/thrift/internal
   - internal
@@ -135,7 +132,6 @@ imports:
   - internal/interpolate
   - internal/introspection
   - internal/iopool
-  - internal/net
   - internal/observability
   - internal/outboundmiddleware
   - internal/request
@@ -160,7 +156,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: 640f4622ab692b87c2f3a94265e6f579fe38263d
+  version: 2491c5de3490fced2f6cff376127c667efeed857
   repo: https://github.com/golang/net
   subpackages:
   - bpf
@@ -183,7 +179,7 @@ testImports:
 - name: github.com/go-playground/overalls
   version: 22ec1a223b7c9a2e56355bd500b539cba3784238
 - name: github.com/kisielk/errcheck
-  version: 8050dd7cc11578becd8622667107bb21a7baf451
+  version: a174de0235f995854578e7ac8539f6599c7c575d
 - name: github.com/kisielk/gotool
   version: 80517062f582ea3340cd4baf70e86d539ae7d84d
 - name: github.com/matm/gocov-html
@@ -207,6 +203,6 @@ testImports:
   subpackages:
   - golint
 - name: golang.org/x/tools
-  version: 165bdd618e6d174c61ee7bd73a28f3e5c6fdced1
+  version: 48418e5732e1b1e2a10207c8007a5f959e422f20
   subpackages:
   - cover
