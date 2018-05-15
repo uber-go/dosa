@@ -109,6 +109,6 @@ func provideYarpcClient(opts GlobalOptions) (dosa.AdminClient, error) {
 
 func shutdownAdminClient(client dosa.AdminClient) {
 	if client.Shutdown() != nil {
-		fmt.Fprintf(os.Stderr, "Failed to properly shutdown client")
+		_, _ = fmt.Fprintf(os.Stderr, "Failed to properly shutdown client")
 	}
 }

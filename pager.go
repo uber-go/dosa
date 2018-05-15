@@ -33,10 +33,10 @@ type pager struct {
 
 func addLimitTokenString(w io.Writer, limit int, token string) {
 	if limit == AdaptiveRangeLimit || limit > 0 {
-		fmt.Fprintf(w, " limit %d", limit)
+		_, _ = fmt.Fprintf(w, " limit %d", limit)
 	}
 	if token != "" {
-		fmt.Fprintf(w, " token %q", token)
+		_, _ = fmt.Fprintf(w, " token %q", token)
 	}
 }
 

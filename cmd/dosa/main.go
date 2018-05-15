@@ -99,13 +99,13 @@ dosa manages your schema both in production and development scopes`
 	_, err := OptionsParser.Parse()
 
 	if options.Version {
-		fmt.Fprintf(os.Stdout, "%s\n", buildInfo.String())
+		_, _ = fmt.Fprintf(os.Stdout, "%s\n", buildInfo.String())
 		options.Version = false // for tests, we leak state between runs
 		exit(0)
 	}
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 		exit(1)
 		return
 	}

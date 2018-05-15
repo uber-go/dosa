@@ -93,9 +93,9 @@ func (r *RangeOp) String() string {
 			result.WriteString(" ")
 			for i, cond := range conds {
 				if i > 0 {
-					fmt.Fprintf(result, ", %s ", field)
+					_, _ = fmt.Fprintf(result, ", %s ", field)
 				}
-				fmt.Fprintf(result, "%s %v", cond.Op.String(), cond.Value)
+				_, _ = fmt.Fprintf(result, "%s %v", cond.Op.String(), cond.Value)
 			}
 		}
 	}
