@@ -69,8 +69,16 @@ type SchemaOptions struct {
 type SchemaCmd struct {
 	*SchemaOptions
 	Scope         scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
-	NamePrefix    string    `short:"p" long:"namePrefix" description:"Name prefix for schema types." required:"true"`
+	NamePrefix    string    `short:"n" long:"namePrefix" description:"Name prefix for schema types." required:"true"`
+	Prefix        string    `short:"p" long:"prefix" description:"Name prefix for schema types." required:"true" hidden:"true"`
 	provideClient clientProvider
+}
+
+func (c *SchemaCmd) getNamePrefix() string {
+	if len(c.NamePrefix) > 0 {
+		return c.NamePrefix
+	}
+	return c.Prefix
 }
 
 func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) (*dosa.SchemaStatus, error), args []string) error {
@@ -108,7 +116,7 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 	defer cancel()
 
-	status, err := f(client, ctx, c.NamePrefix)
+	status, err := f(client, ctx, c.getNamePrefix())
 	if err != nil {
 		if c.Verbose {
 			fmt.Printf("detail:%+v\n", err)
@@ -203,7 +211,7 @@ func (c *SchemaStatus) Execute(args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 	defer cancel()
 
-	status, err := client.CheckSchemaStatus(ctx, c.NamePrefix, c.Version)
+	status, err := client.CheckSchemaStatus(ctx, c.getNamePrefix(), c.Version)
 	if err != nil {
 		if c.Verbose {
 			fmt.Printf("detail:%+v\n", err)

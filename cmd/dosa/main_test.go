@@ -54,6 +54,17 @@ func TestHostOptionButNothingElse(t *testing.T) {
 }
 
 // this test uses a trailing dot in the hostname to avoid multiple DNS lookups
+func TestInvalidHostOld(t *testing.T) {
+	c := StartCapture()
+	exit = func(r int) {}
+	os.Args = []string{"dosa", "--host", "invalid-hostname.", "schema", "check", "--scope", "bar", "--namePrefix", "foo", "../../testentity"}
+	main()
+	output := c.stop(true)
+	assert.Contains(t, output, "invalid-hostname")
+	assert.Contains(t, output, "no such host")
+}
+
+// this test uses a trailing dot in the hostname to avoid multiple DNS lookups
 func TestInvalidHost(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
@@ -134,20 +145,20 @@ dosa schema
 // expect: schema check usage
 dosa schema check
 
-// expect: schema check, namePrefix=foo, default client config
-dosa schema check --namePrefix foo
+// expect: schema check, prefix=foo, default client config
+dosa schema check --prefix foo
 
-// expect: schema check, namePrefix=foo,
-dosa schema check --namePrefix foo -e test.go
+// expect: schema check, prefix=foo,
+dosa schema check --prefix foo -e test.go
 
-// expect: schema check, namePrefix=foo excludes=[test.go, test2.go]
-dosa schema check --namePrefix foo -e test.go -e test2.go
+// expect: schema check, prefix=foo excludes=[test.go, test2.go]
+dosa schema check --prefix foo -e test.go -e test2.go
 
-// expect: schema check, namePrefix=foo, scope=bar
-dosa schema check --namePrefix foo -s bar
+// expect: schema check, prefix=foo, scope=bar
+dosa schema check --prefix foo -s bar
 
-// expect: schema check, namePrefix=foo, dirs=[a b c]
-dosa schema check --namePrefix foo a b c
+// expect: schema check, prefix=foo, dirs=[a b c]
+dosa schema check --prefix foo a b c
 
 
 // Schema upsert
@@ -155,20 +166,20 @@ dosa schema check --namePrefix foo a b c
 // expect: schema upsert usage
 dosa schema upsert
 
-// expect: schema upsert, namePrefix=foo, default client config
-dosa schema upsert --namePrefix foo
+// expect: schema upsert, prefix=foo, default client config
+dosa schema upsert --prefix foo
 
-// expect: schema upsert, namePrefix=foo,
-dosa schema upsert --namePrefix foo -e test.go
+// expect: schema upsert, prefix=foo,
+dosa schema upsert --prefix foo -e test.go
 
-// expect: schema upsert, namePrefix=foo excludes=[test.go, test2.go]
-dosa schema upsert --namePrefix foo -e test.go -e test2.go
+// expect: schema upsert, prefix=foo excludes=[test.go, test2.go]
+dosa schema upsert --prefix foo -e test.go -e test2.go
 
-// expect: schema upsert, namePrefix=foo, scope=bar
-dosa schema upsert --namePrefix foo -s bar
+// expect: schema upsert, prefix=foo, scope=bar
+dosa schema upsert --prefix foo -s bar
 
-// expect: schema upsert, namePrefix=foo, dirs=[a b c]
-dosa schema upsert --namePrefix foo a b c
+// expect: schema upsert, prefix=foo, dirs=[a b c]
+dosa schema upsert --prefix foo a b c
 
 
 // Scope

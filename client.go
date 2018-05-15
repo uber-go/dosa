@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -17,6 +17,31 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
+
+// The simplest way to create a DOSA client is by using the yarpc connector:
+//
+//	func MakeDosaYarpcClient(
+//		gwHost	      string,
+//		gwPort	      uint16,
+//		scope, prefix string,
+//		callerName    string,
+//		models...     dosa.DomainObject,
+//	) (c dosa.Client, err error) {
+//		cfg := yarpc.ClientConfig{
+//			Scope:      scope,
+//			NamePrefix: prefix,
+//			Yarpc: yarpc.Config{
+//				Host:        gwHost,
+//				Port:        fmt.Sprintf("%d", gwPort),
+//				CallerName:  callerName,
+//				ServiceName: "dosa-gateway", //	or "dosa-gateway-staging"
+//			},
+//		}
+//		if c, err = cfg.NewClient(models...); err != nil { return }
+//		ctx, cancel := context.WithTimeout(context.Background(), timeout); defer cancel()
+//		if err = c.Initialize(ctx); err != nil { c = nil }
+//		return
+// 	}
 
 package dosa
 
