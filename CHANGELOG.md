@@ -1,7 +1,16 @@
 # Changelog
 
 ## v3.0.0 (unreleased)
-- Scope metadata handling, and rudimentary auth* support. The Connector interface (Admin API) has changed.
+- Simplified client creation when using the YARPC connector. (#321)
+- Scope metadata handling, and rudimentary auth* support. The Connector interface (Admin API) has changed. (#273)
+- Per-row TTL. (#323)
+- Satori UUID library version 1.2 -- do not use HEAD. (#313)
+- "Eq Matchers" have been removed. (#319)
+- FindAll() will not return an error if there are no entities. (#316)
+- Remove the notion of FQN (Fully Qualified Names). (#320)
+- Convert usernaems to lowercase when constructing scope names etc. (#322)
+- Initial support for Adaptive Rate Limits.
+- Many accidentally exported names have been unexported. (#327)
 
 ## v2.6.0 (2018-04-16)
 - Fix bug in invalidating fallback cache on upsert (#292)
