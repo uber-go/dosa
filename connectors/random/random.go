@@ -26,13 +26,13 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 )
 
 const (
-	maxBlobSize   = 32
-	maxStringSize = 64
+	maxBlobSize       = 32
+	maxStringSize     = 64
+	defaultRangeLimit = 200
 )
 
 // Connector is a connector implementation for testing
@@ -86,7 +86,7 @@ func Data(ei *dosa.EntityInfo, minimumFields []string) map[string]dosa.FieldValu
 		case dosa.Timestamp:
 			v = dosa.FieldValue(time.Unix(0, rand.Int63()/2))
 		case dosa.TUUID:
-			v = dosa.FieldValue(uuid.NewV4())
+			v = dosa.FieldValue(dosa.NewUUID())
 		default:
 			panic("invalid type " + cd.Type.String())
 
@@ -149,6 +149,9 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiV
 
 // Range returns a random set of data, and a random continuation token
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
+	if limit == dosa.AdaptiveRangeLimit {
+		limit = defaultRangeLimit
+	}
 	vals := make([]map[string]dosa.FieldValue, limit)
 	for inx := range vals {
 		vals[inx] = Data(ei, minimumFields)
@@ -185,7 +188,7 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 }
 
 // CreateScope returns success
-func (c *Connector) CreateScope(ctx context.Context, scope string) error {
+func (c *Connector) CreateScope(ctx context.Context, _ *dosa.ScopeMetadata) error {
 	return nil
 }
 
@@ -212,10 +215,4 @@ func (c *Connector) Shutdown() error {
 // NewConnector creates a new random connector
 func NewConnector() *Connector {
 	return &Connector{}
-}
-
-func init() {
-	dosa.RegisterConnector("random", func(args dosa.CreationArgs) (dosa.Connector, error) {
-		return NewConnector(), nil
-	})
 }

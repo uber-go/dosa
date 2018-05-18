@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,33 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package cassandra
+package dosa
 
-import (
-	"github.com/gocql/gocql"
-	"github.com/pkg/errors"
-)
+import "os/user"
 
-// Cluster contains the cluster configuration and session info
-type Cluster struct {
-	config  gocql.ClusterConfig
-	session *gocql.Session
-}
-
-// NewCluster creates a Cluster instance based on config
-func NewCluster(config gocql.ClusterConfig) (*Cluster, error) {
-	session, err := config.CreateSession()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create session to Cassandra")
+// GetUsername returns the username of the current user.
+func GetUsername() *string {
+	// user.Current only fails on some internal cache error: not sure what
+	// corrective action is appropriate... on failure return NULL.
+	if u, err := user.Current(); err == nil {
+		return &u.Username
 	}
-
-	return &Cluster{
-		config:  config,
-		session: session,
-	}, nil
-}
-
-// Close closes the session to cassandra
-func (c *Cluster) Close() {
-	c.session.Close()
+	return nil
 }

@@ -21,6 +21,7 @@
 package main
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -35,6 +36,29 @@ func TestCallerFlag_String(t *testing.T) {
 	err := f.UnmarshalFlag("qux.quux.corge")
 	assert.NoError(t, err)
 	assert.Equal(t, "qux-quux-corge", f.String())
+}
+
+func TestCallerFlag_Default(t *testing.T) {
+	oldEnv := os.Getenv("USER")
+	expected := "dosacli-firstname"
+	f := callerFlag("")
+
+	os.Setenv("USER", "firstname")
+	err := f.UnmarshalFlag("")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, f.String(), "Uses $USER environment variable for default caller")
+
+	os.Setenv("USER", "Firstname")
+	err = f.UnmarshalFlag("")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, f.String(), "Converts uppercase to lowercase")
+
+	os.Setenv("USER", "Fùrstname")
+	err = f.UnmarshalFlag("")
+	assert.NoError(t, err)
+	assert.Equal(t, "dosacli-fùrstname", f.String(), "Converts as expected when non-ascii characters are present")
+
+	os.Setenv("USER", oldEnv)
 }
 
 func TestTimeFlag_Duration(t *testing.T) {

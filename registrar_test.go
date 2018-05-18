@@ -193,10 +193,7 @@ func TestRegisteredEntity_OnlyFieldValues(t *testing.T) {
 func TestNewRegistrar(t *testing.T) {
 	entities := []dosa.DomainObject{&RegistryTestValid{}}
 
-	_, err := dosa.NewRegistrar("test", "invalid-prefix", entities...)
-	assert.Error(t, err)
-
-	_, err = dosa.NewRegistrar("test", "valid.prefix", entities...)
+	_, err := dosa.NewRegistrar("test", "valid.prefix", entities...)
 	assert.NoError(t, err)
 }
 
@@ -227,8 +224,6 @@ func TestRegistrar(t *testing.T) {
 	_, err = r.Find(invalidEntities[0])
 	assert.Error(t, err)
 
-	var registered []*dosa.RegisteredEntity
-	registered, err = r.FindAll()
-	assert.NoError(t, err)
+	registered := r.FindAll()
 	assert.Equal(t, len(registered), len(validEntities))
 }

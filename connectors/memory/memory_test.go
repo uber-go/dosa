@@ -731,6 +731,13 @@ func TestConnector_Range(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, data)
 	assert.Empty(t, token)
+
+	// Test with adaptive limits
+	data, _, _ = sut.Range(context.TODO(), clusteredEi, map[string][]*dosa.Condition{
+		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
+	}, dosa.All(), "", 200)
+	assert.Len(t, data, idcount)
 }
 
 func TestConnector_TUUIDs(t *testing.T) {
@@ -1021,16 +1028,6 @@ func TestConnector_ScanWithTokenNoClustering(t *testing.T) {
 
 }
 
-func TestConstruction(t *testing.T) {
-	c, err := dosa.GetConnector("memory", nil)
-	assert.NoError(t, err)
-	assert.IsType(t, NewConnector(), c)
-
-	v, err := c.CheckSchema(context.TODO(), "dummy", "dummy", nil)
-	assert.Equal(t, int32(1), v)
-	assert.NoError(t, err)
-}
-
 func TestPanics(t *testing.T) {
 	assert.Panics(t, func() {
 		passCol(dosa.FieldValue(int64(1)), &dosa.Condition{Op: 0, Value: dosa.FieldValue(int64(1))})
@@ -1196,23 +1193,23 @@ func TestCompoundPartSecondaryIndex(t *testing.T) {
 	bucketID := 1
 	now := time.Now()
 
-	repoUUID0 := uuid.NewV4().String()
+	repoUUID0 := dosa.NewUUID()
 	createdAt0 := now.Add(-1 * time.Hour)
 	result0 := 5
 
 	err := sut.Upsert(context.TODO(), compoundPartEi, map[string]dosa.FieldValue{
-		"RepositoryUUID": dosa.FieldValue(dosa.UUID(repoUUID0)),
+		"RepositoryUUID": dosa.FieldValue(repoUUID0),
 		"BucketID":       dosa.FieldValue(int32(bucketID)),
 		"CreatedAt":      dosa.FieldValue(createdAt0),
 		"Result":         dosa.FieldValue(int32(result0)),
 	})
 
-	repoUUID1 := uuid.NewV4().String()
+	repoUUID1 := dosa.NewUUID()
 	createdAt1 := now.Add(-2 * time.Hour)
 	result1 := 4
 
 	err = sut.Upsert(context.TODO(), compoundPartEi, map[string]dosa.FieldValue{
-		"RepositoryUUID": dosa.FieldValue(dosa.UUID(repoUUID1)),
+		"RepositoryUUID": dosa.FieldValue(repoUUID1),
 		"BucketID":       dosa.FieldValue(int32(bucketID)),
 		"CreatedAt":      dosa.FieldValue(createdAt1),
 		"Result":         dosa.FieldValue(int32(result1)),

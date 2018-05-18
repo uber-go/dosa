@@ -22,21 +22,18 @@ package dosa_test
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-
-	"fmt"
-	"time"
-
 	dosaRenamed "github.com/uber-go/dosa"
-	_ "github.com/uber-go/dosa/connectors/devnull"
-	_ "github.com/uber-go/dosa/connectors/memory"
+	"github.com/uber-go/dosa/connectors/devnull"
 	"github.com/uber-go/dosa/mocks"
 	"github.com/uber-go/dosa/testutil"
 )
@@ -59,17 +56,13 @@ type ClientTestEntity2 struct {
 }
 
 var (
-	cte1          = &ClientTestEntity1{ID: int64(1), Name: "foo", Email: "foo@uber.com"}
-	cte2          = &ClientTestEntity2{UUID: "b1f23fa3-f453-45b4-a5d5-6d73078ac3bd", Color: "blue", IsActive: true}
-	ctx           = context.TODO()
-	scope         = "test"
-	namePrefix    = "team.service"
-	nullConnector dosaRenamed.Connector
+	cte1                                = &ClientTestEntity1{ID: int64(1), Name: "foo", Email: "foo@uber.com"}
+	cte2                                = &ClientTestEntity2{UUID: "b1f23fa3-f453-45b4-a5d5-6d73078ac3bd", Color: "blue", IsActive: true}
+	ctx                                 = context.TODO()
+	scope                               = "test"
+	namePrefix                          = "team.service"
+	nullConnector dosaRenamed.Connector = devnull.NewConnector()
 )
-
-func init() {
-	nullConnector, _ = dosaRenamed.GetConnector("devnull", nil)
-}
 
 // ExampleNewClient initializes a client using the devnull connector, which discards all
 // the data you send it and always returns no rows. It's only useful for testing dosa.
@@ -83,13 +76,9 @@ func ExampleNewClient() {
 	}
 
 	// use a devnull connector for example purposes
-	conn, err := dosaRenamed.GetConnector("devnull", nil)
-	if err != nil {
-		fmt.Printf("GetConnector error: %s", err)
-		return
-	}
+	conn := devnull.NewConnector()
 
-	// create the client using the registry and connector
+	// create the client using the registrar and connector
 	client := dosaRenamed.NewClient(reg, conn)
 
 	err = client.Initialize(context.Background())
@@ -97,55 +86,6 @@ func ExampleNewClient() {
 		fmt.Printf("Initialize error: %s", err)
 		return
 	}
-}
-
-// ExampleGetConnector gets an in-memory connector that can be used for testing your code.
-// The in-memory connector always starts off with no rows, so you'll need to add rows to
-// your "database" before reading them
-func ExampleGetConnector() {
-	// register your entities so the engine can separate your data based on table names.
-	// Scopes and prefixes are not used by the in-memory connector, and are ignored, but
-	// your list of entities is important. In this case, we only have one, our ClientTestEntity1
-	reg, err := dosaRenamed.NewRegistrar("test", "myteam.myservice", &ClientTestEntity1{})
-	if err != nil {
-		fmt.Printf("NewRegistrar error: %s", err)
-		return
-	}
-
-	// Find the memory connector. There is no configuration information so pass a nil
-	// For this to work, you must force the init method of memory to run first, which happens
-	// when we imported memory in the import list, with an underscore to just get the side effects
-	conn, _ := dosaRenamed.GetConnector("memory", nil)
-
-	// now construct a client from the registry and the connector
-	client := dosaRenamed.NewClient(reg, conn)
-
-	// initialize the client; this should always work for the in-memory connector
-	if err = client.Initialize(context.Background()); err != nil {
-		fmt.Printf("Initialize error: %s", err)
-		return
-	}
-
-	// now populate an entity and insert it into the memory store
-	if err := client.CreateIfNotExists(context.Background(), &ClientTestEntity1{
-		ID:    int64(1),
-		Name:  "rkuris",
-		Email: "rkuris@uber.com"}); err != nil {
-		fmt.Printf("CreateIfNotExists error: %s", err)
-		return
-	}
-
-	// create an entity to hold the read result, just populate the key
-	e := ClientTestEntity1{ID: int64(1)}
-	// now read the data from the "database", all columns
-	err = client.Read(context.Background(), dosaRenamed.All(), &e)
-	if err != nil {
-		fmt.Printf("Read error: %s", err)
-		return
-	}
-	// great! It worked, so display the information we stored earlier
-	fmt.Printf("id:%d Name:%q Email:%q\n", e.ID, e.Name, e.Email)
-	// Output: id:1 Name:"rkuris" Email:"rkuris@uber.com"
 }
 
 func testAssert(t *testing.T) testutil.TestAssertFn {
@@ -400,6 +340,45 @@ func TestClient_Upsert(t *testing.T) {
 	assert.NoError(t, c3.Upsert(ctx, fieldsToUpdate, cte1))
 	assert.Equal(t, cte1.Email, updatedEmail)
 }
+
+func TestClient_Upsert_DynTTL(t *testing.T) {
+	cte3 := &ClientTestEntity1{}
+	reg1, _ := dosaRenamed.NewRegistrar("test", "team.service", cte3)
+
+	// valid cases
+	idx := 0
+	ttls := []time.Duration{
+		time.Duration(-1),
+		30 * time.Minute,
+		1 * time.Minute,
+		time.Duration(0),
+	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().Upsert(ctx, gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, ei *dosaRenamed.EntityInfo, _ map[string]dosaRenamed.FieldValue) {
+			assert.Equal(t, ttls[idx], *ei.TTL)
+			idx++
+		}).
+		Return(nil).MinTimes(1)
+	c1 := dosaRenamed.NewClient(reg1, mockConn)
+	assert.NoError(t, c1.Initialize(ctx))
+	for _, ttl := range ttls {
+		if ttl != dosaRenamed.NoTTL() {
+			cte3.TTL(&ttl)
+		}
+		assert.NoError(t, c1.Upsert(ctx, []string{}, cte3))
+	}
+
+	// invalid case
+	c2 := dosaRenamed.NewClient(reg1, nullConnector)
+	invalidTTL := 998 * time.Millisecond
+	cte3.TTL(&invalidTTL)
+	assert.Error(t, c2.Upsert(ctx, []string{}, cte3))
+}
+
 func TestClient_CreateIfNotExists(t *testing.T) {
 	reg1, _ := dosaRenamed.NewRegistrar("test", "team.service", cte1)
 	reg2, _ := dosaRenamed.NewRegistrar("test", "team.service", cte1, cte2)
@@ -430,6 +409,44 @@ func TestClient_CreateIfNotExists(t *testing.T) {
 	assert.NoError(t, c3.Initialize(ctx))
 	assert.NoError(t, c3.CreateIfNotExists(ctx, cte1))
 	assert.Equal(t, cte1.Email, updatedEmail)
+}
+
+func TestClient_CreateIfNotExists_DynTTL(t *testing.T) {
+	cte3 := &ClientTestEntity1{}
+	reg1, _ := dosaRenamed.NewRegistrar("test", "team.service", cte3)
+
+	// valid cases
+	idx := 0
+	ttls := []time.Duration{
+		time.Duration(-1),
+		30 * time.Minute,
+		1 * time.Minute,
+		time.Duration(0),
+	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConn := mocks.NewMockConnector(ctrl)
+	mockConn.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(int32(1), nil).AnyTimes()
+	mockConn.EXPECT().CreateIfNotExists(ctx, gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, ei *dosaRenamed.EntityInfo, _ map[string]dosaRenamed.FieldValue) {
+			assert.Equal(t, ttls[idx], *ei.TTL)
+			idx++
+		}).
+		Return(nil).MinTimes(1)
+	c1 := dosaRenamed.NewClient(reg1, mockConn)
+	assert.NoError(t, c1.Initialize(ctx))
+	for _, ttl := range ttls {
+		if ttl != dosaRenamed.NoTTL() {
+			cte3.TTL(&ttl)
+		}
+		assert.NoError(t, c1.CreateIfNotExists(ctx, cte3))
+	}
+
+	// invalid case
+	c2 := dosaRenamed.NewClient(reg1, nullConnector)
+	invalidTTL := 998 * time.Millisecond
+	cte3.TTL(&invalidTTL)
+	assert.Error(t, c2.CreateIfNotExists(ctx, cte3))
 }
 
 func TestClient_Upsert_Errors(t *testing.T) {
@@ -780,7 +797,7 @@ func TestAdminClient_CreateScope(t *testing.T) {
 	c := dosaRenamed.NewAdminClient(nullConnector)
 	assert.NotNil(t, c)
 
-	err := c.CreateScope(context.TODO(), scope)
+	err := c.CreateScope(context.TODO(), &dosaRenamed.ScopeMetadata{Name: scope})
 	assert.NoError(t, err)
 }
 
@@ -850,7 +867,7 @@ type TestEntityB struct {
 		},
 	}
 
-	// calls with "error" prefix will fail, rest succeed
+	// calls with "error" name prefix will fail, rest succeed
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
@@ -891,7 +908,7 @@ func TestAdminClient_CheckSchemaStatus(t *testing.T) {
 		},
 	}
 
-	// calls with "error" prefix will fail, rest succeed
+	// calls with "error" name prefix will fail, rest succeed
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)
@@ -960,7 +977,7 @@ type TestEntityB struct {
 		},
 	}
 
-	// calls with "error" prefix will fail, rest succeed
+	// calls with "error" name prefix will fail, rest succeed
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockConn := mocks.NewMockConnector(ctrl)

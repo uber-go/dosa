@@ -107,7 +107,7 @@ func TestGetMenu(t *testing.T) {
 	// mock error from Range call
 	c1 := mocks.NewMockClient(ctrl)
 	c1.EXPECT().Initialize(gomock.Any()).Return(nil).Times(1)
-	c1.EXPECT().Range(gomock.Any(), dosa.EqRangeOp(expectedOp)).Return(nil, "", errors.New("Range Error")).Times(1)
+	c1.EXPECT().Range(gomock.Any(), gomock.Eq(expectedOp)).Return(nil, "", errors.New("Range Error")).Times(1)
 	ds1, _ := examples.NewDatastore(c1)
 
 	m1, err1 := ds1.GetMenu(ctx, menuUUID)
@@ -117,7 +117,7 @@ func TestGetMenu(t *testing.T) {
 	// happy path
 	c2 := mocks.NewMockClient(ctrl)
 	c2.EXPECT().Initialize(gomock.Any()).Return(nil).Times(1)
-	c2.EXPECT().Range(gomock.Any(), dosa.EqRangeOp(expectedOp)).Return(objMenu, "", nil).Times(1)
+	c2.EXPECT().Range(gomock.Any(), gomock.Eq(expectedOp)).Return(objMenu, "", nil).Times(1)
 	ds2, _ := examples.NewDatastore(c2)
 
 	m2, err2 := ds2.GetMenu(ctx, menuUUID)

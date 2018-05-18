@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,6 +18,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// The simplest way to create a DOSA client is by using the yarpc connector:
+//
+//	func MakeDosaYarpcClient(
+//		gwHost	      string,
+//		gwPort	      uint16,
+//		scope, prefix string,
+//		callerName    string,
+//		models...     dosa.DomainObject,
+//	) (c dosa.Client, err error) {
+//		cfg := yarpc.ClientConfig{
+//			Scope:      scope,
+//			NamePrefix: prefix,
+//			Yarpc: yarpc.Config{
+//				Host:        gwHost,
+//				Port:        fmt.Sprintf("%d", gwPort),
+//				CallerName:  callerName,
+//				ServiceName: "dosa-gateway", //	or "dosa-gateway-staging"
+//			},
+//		}
+//		if c, err = cfg.NewClient(models...); err != nil { return }
+//		ctx, cancel := context.WithTimeout(context.Background(), timeout); defer cancel()
+//		if err = c.Initialize(ctx); err != nil { c = nil }
+//		return
+// 	}
+
 package dosa
 
 import (
@@ -25,6 +50,8 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
+	"time"
 
 	"bytes"
 	"io"
@@ -39,11 +66,19 @@ type DomainObject interface {
 }
 
 // Entity represents any object that can be persisted by DOSA
-type Entity struct{}
+type Entity struct {
+	// dynamic ttl set to an entity by user
+	ttl *time.Duration
+}
 
 // make entity a DomainObject
 func (*Entity) isDomainObject() bool {
 	return true
+}
+
+// TTL sets dynamic ttl to an entity
+func (e *Entity) TTL(t *time.Duration) {
+	e.ttl = t
 }
 
 // DomainIndex is a marker interface method for an Index
@@ -182,6 +217,12 @@ type Client interface {
 	// To scan the next set of rows, modify the scanOp to provide
 	// the string returned as an Offset()
 	ScanEverything(ctx context.Context, scanOp *ScanOp) ([]DomainObject, string, error)
+
+	// Shutdown gracefully shuts down the client, cleaning up any resources it may have
+	// allocated during its usage. Shutdown should be called whenever the client
+	// is no longer needed. After calling shutdown there should be no further usage
+	// of the client.
+	Shutdown() error
 }
 
 // MultiResult contains the result for each entity operation in the case of
@@ -211,11 +252,16 @@ type AdminClient interface {
 	// GetSchema finds entity definitions
 	GetSchema() ([]*EntityDefinition, error)
 	// CreateScope creates a new scope
-	CreateScope(ctx context.Context, s string) error
+	CreateScope(ctx context.Context, md *ScopeMetadata) error
 	// TruncateScope keeps the scope and the schemas, but drops the data associated with the scope
 	TruncateScope(ctx context.Context, s string) error
 	// DropScope drops the scope and the data and schemas in the scope
 	DropScope(ctx context.Context, s string) error
+	// Shutdown gracefully shuts down the client, cleaning up any resources it may have
+	// allocated during its usage. Shutdown should be called whenever the client
+	// is no longer needed. After calling shutdown there should be no further usage
+	// of the client.
+	Shutdown() error
 }
 
 type client struct {
@@ -224,9 +270,8 @@ type client struct {
 	connector   Connector
 }
 
-// NewClient returns a new DOSA client for the registry and connector
-// provided. This is currently only a partial implementation to demonstrate
-// basic CRUD functionality.
+// NewClient returns a new DOSA client for the registrar and connector provided.
+// This is currently only a partial implementation to demonstrate basic CRUD functionality.
 func NewClient(reg Registrar, conn Connector) Client {
 	return &client{
 		registrar: reg,
@@ -246,10 +291,11 @@ func (c *client) Initialize(ctx context.Context) error {
 	}
 
 	// check schema for all registered entities
-	registered, err := c.registrar.FindAll()
-	if err != nil {
-		return err
+	registered := c.registrar.FindAll()
+	if len(registered) == 0 {
+		return errors.Errorf("No registered entities found")
 	}
+
 	eds := []*EntityDefinition{}
 	for _, re := range registered {
 		eds = append(eds, re.EntityDefinition())
@@ -285,8 +331,7 @@ func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainO
 		return &ErrNotInitialized{}
 	}
 
-	// lookup registered entity, registry will return error if registration
-	// is not found
+	// lookup registered entity, the registrar will return error if it is not found
 	re, err := c.registrar.Find(entity)
 	if err != nil {
 		return err
@@ -326,8 +371,7 @@ func (c *client) MultiRead(ctx context.Context, fieldsToRead []string, entities 
 		return nil, fmt.Errorf("the number of entities to read is zero")
 	}
 
-	// lookup registered entity, registry will return error if registration
-	// is not found
+	// lookup registered entity, the registrar will return error if it is not found
 	var re *RegisteredEntity
 	var listFieldValues []map[string]FieldValue
 	for _, entity := range entities {
@@ -386,8 +430,7 @@ func (c *client) createOrUpsert(ctx context.Context, fieldsToUpdate []string, en
 		return &ErrNotInitialized{}
 	}
 
-	// lookup registered entity, registry will return error if registration
-	// is not found
+	// lookup registered entity, the registrar will return error if it is not found
 	re, err := c.registrar.Find(entity)
 	if err != nil {
 		return err
@@ -407,7 +450,20 @@ func (c *client) createOrUpsert(ctx context.Context, fieldsToUpdate []string, en
 		fieldValues[k] = v
 	}
 
-	return fn(ctx, re.EntityInfo(), fieldValues)
+	// get registered entity's EntityInfo
+	ei := re.EntityInfo()
+
+	// fetch, validate and set the dynamic TTL for current entity
+	e := reflect.ValueOf(entity).Elem().FieldByName("Entity")
+	dynTTL := e.Interface().(Entity).ttl
+	if dynTTL != nil {
+		if err = ValidateTTL(*dynTTL); err != nil {
+			return err
+		}
+		ei.TTL = dynTTL
+	}
+
+	return fn(ctx, ei, fieldValues)
 }
 
 // MultiUpsert updates several entities by primary key, The entities provided
@@ -425,8 +481,7 @@ func (c *client) Remove(ctx context.Context, entity DomainObject) error {
 		return &ErrNotInitialized{}
 	}
 
-	// lookup registered entity, registry will return error if registration
-	// is not found
+	// lookup registered entity, the registrar will return error if it is not found
 	re, err := c.registrar.Find(entity)
 	if err != nil {
 		return err
@@ -559,7 +614,10 @@ func (c *client) ScanEverything(ctx context.Context, sop *ScanOp) ([]DomainObjec
 	}
 	objectArray := objectsFromValueArray(sop.object, values, re, nil)
 	return objectArray, token, nil
+}
 
+func (c *client) Shutdown() error {
+	return c.connector.Shutdown()
 }
 
 type adminClient struct {
@@ -572,7 +630,7 @@ type adminClient struct {
 // NewAdminClient returns a new DOSA admin client for the connector provided.
 func NewAdminClient(conn Connector) AdminClient {
 	return &adminClient{
-		scope:     os.Getenv("USER"),
+		scope:     strings.ToLower(os.Getenv("USER")),
 		dirs:      []string{"."},
 		excludes:  []string{"_test.go"},
 		connector: conn,
@@ -659,7 +717,7 @@ func (c *adminClient) GetSchema() ([]*EntityDefinition, error) {
 		return nil, errors.Wrapf(err, "invalid scope name %q", c.scope)
 	}
 	// "warnings" mean entity was found but contained invalid annotations
-	entities, warns, err := FindEntities(c.dirs, c.excludes)
+	entities, warns, err := findEntities(c.dirs, c.excludes)
 	if len(warns) > 0 {
 		return nil, NewEntityErrors(warns)
 	}
@@ -708,8 +766,8 @@ func (ee *EntityErrors) Error() string {
 }
 
 // CreateScope creates a new scope
-func (c *adminClient) CreateScope(ctx context.Context, s string) error {
-	return c.connector.CreateScope(ctx, s)
+func (c *adminClient) CreateScope(ctx context.Context, md *ScopeMetadata) error {
+	return c.connector.CreateScope(ctx, md)
 }
 
 // TruncateScope keeps the scope and the schemas, but drops the data associated with the scope
@@ -720,4 +778,8 @@ func (c *adminClient) TruncateScope(ctx context.Context, s string) error {
 // DropScope drops the scope and the data and schemas in the scope
 func (c *adminClient) DropScope(ctx context.Context, s string) error {
 	return c.connector.DropScope(ctx, s)
+}
+
+func (c *adminClient) Shutdown() error {
+	return c.connector.Shutdown()
 }

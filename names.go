@@ -21,49 +21,31 @@
 package dosa
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
 )
 
 const (
-	fqnSeparator = "."
-	rootFQN      = FQN("")
-	maxNameLen   = 32
+	maxNameLen = 32
 )
 
-// FQN is the fully qualified name for an entity
-type FQN string
+var (
+	namePrefixRegex = regexp.MustCompile("^[a-z_][a-z0-9_.]{0,31}$")
+)
 
-// String satisfies fmt.Stringer interface
-func (f FQN) String() string {
-	return string(f)
-}
-
-// Child returns a new child FQN with the given comp at the end
-func (f FQN) Child(s string) (FQN, error) {
-	comp, err := NormalizeName(s)
-	if err != nil {
-		return "", errors.Wrap(err, "cannot create child FQN")
+func isValidNamePrefix(namePrefix string) error {
+	normalized := strings.ToLower(strings.TrimSpace(namePrefix))
+	if !namePrefixRegex.MatchString(normalized) {
+		return errors.Errorf("Name Prefix %s is invalid. It was normalized to "+
+			"%s which means it does not pass the regex %s",
+			namePrefix,
+			normalized,
+			namePrefixRegex.String(),
+		)
 	}
-	return FQN(strings.Join([]string{string(f), comp}, fqnSeparator)), nil
-}
-
-// ToFQN converts the input string to FQN
-func ToFQN(s string) (FQN, error) {
-	if s == "" {
-		return rootFQN, nil
-	}
-	comps := strings.Split(s, fqnSeparator)
-	normalizedComps := make([]string, len(comps))
-	for i, c := range comps {
-		comp, err := NormalizeName(c)
-		if err != nil {
-			return "", errors.Wrap(err, "cannot create FQN with invalid name component")
-		}
-		normalizedComps[i] = comp
-	}
-	return FQN(strings.Join(normalizedComps, fqnSeparator)), nil
+	return nil
 }
 
 func isInvalidFirstRune(r rune) bool {

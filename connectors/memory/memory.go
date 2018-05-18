@@ -65,6 +65,8 @@ type partitionRange struct {
 	end          int
 }
 
+const defaultRangeLimit = 200
+
 // remove deletes the values referenced by the partitionRange. Since this function modifies
 // the data stored in the in-memory connector, a write lock must be held when calling
 // this function.
@@ -514,6 +516,11 @@ func (c *Connector) Range(_ context.Context, ei *dosa.EntityInfo, columnConditio
 			partitionRange.start += offset
 		}
 	}
+
+	if limit == dosa.AdaptiveRangeLimit {
+		limit = defaultRangeLimit
+	}
+
 	slice := partitionRange.values()
 	token = ""
 	if len(slice) > limit {
@@ -726,10 +733,4 @@ func NewConnector() *Connector {
 	c := Connector{}
 	c.data = make(map[string]map[string][]map[string]dosa.FieldValue)
 	return &c
-}
-
-func init() {
-	dosa.RegisterConnector("memory", func(dosa.CreationArgs) (dosa.Connector, error) {
-		return NewConnector(), nil
-	})
 }

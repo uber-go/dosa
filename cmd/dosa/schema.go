@@ -68,8 +68,20 @@ type SchemaOptions struct {
 // SchemaCmd is a placeholder for all schema commands
 type SchemaCmd struct {
 	*SchemaOptions
-	Scope      scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
-	NamePrefix string    `long:"prefix" description:"Name prefix for schema types." required:"true"`
+	Scope         scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
+	NamePrefix    string    `short:"n" long:"namePrefix" description:"Name prefix for schema types."`
+	Prefix        string    `short:"p" long:"prefix" description:"Name prefix for schema types." hidden:"true"`
+	provideClient clientProvider
+}
+
+func (c *SchemaCmd) getNamePrefix() (string, error) {
+	if len(c.NamePrefix) > 0 {
+		return c.NamePrefix, nil
+	}
+	if len(c.Prefix) > 0 {
+		return c.Prefix, nil
+	}
+	return "", errors.New("required argument '--namePrefix' was not specified")
 }
 
 func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Context, string) (*dosa.SchemaStatus, error), args []string) error {
@@ -83,10 +95,13 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	if options.ServiceName == "" {
 		options.ServiceName = _defServiceName
 	}
-	client, err := getAdminClient(options)
+
+	client, err := c.provideClient(options)
 	if err != nil {
 		return err
 	}
+	defer shutdownAdminClient(client)
+
 	if len(args) != 0 {
 		dirs, err := expandDirectories(args)
 		if err != nil {
@@ -104,7 +119,11 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 	defer cancel()
 
-	status, err := f(client, ctx, c.NamePrefix)
+	var prefix string
+	if prefix, err = c.getNamePrefix(); err != nil {
+		return err
+	}
+	status, err := f(client, ctx, prefix)
 	if err != nil {
 		if c.Verbose {
 			fmt.Printf("detail:%+v\n", err)
@@ -125,6 +144,14 @@ type SchemaCheck struct {
 	} `positional-args:"yes"`
 }
 
+func newSchemaCheck(provideClient clientProvider) *SchemaCheck {
+	return &SchemaCheck{
+		SchemaCmd: &SchemaCmd{
+			provideClient: provideClient,
+		},
+	}
+}
+
 // Execute executes a schema check command
 func (c *SchemaCheck) Execute(args []string) error {
 	return c.doSchemaOp("schema check", dosa.AdminClient.CanUpsertSchema, c.Args.Paths)
@@ -138,6 +165,14 @@ type SchemaUpsert struct {
 	} `positional-args:"yes"`
 }
 
+func newSchemaUpsert(provideClient clientProvider) *SchemaUpsert {
+	return &SchemaUpsert{
+		SchemaCmd: &SchemaCmd{
+			provideClient: provideClient,
+		},
+	}
+}
+
 // Execute executes a schema upsert command
 func (c *SchemaUpsert) Execute(args []string) error {
 	return c.doSchemaOp("schema upsert", dosa.AdminClient.UpsertSchema, c.Args.Paths)
@@ -147,6 +182,14 @@ func (c *SchemaUpsert) Execute(args []string) error {
 type SchemaStatus struct {
 	*SchemaCmd
 	Version int32 `long:"version" description:"Specify schema version."`
+}
+
+func newSchemaStatus(provideClient clientProvider) *SchemaStatus {
+	return &SchemaStatus{
+		SchemaCmd: &SchemaCmd{
+			provideClient: provideClient,
+		},
+	}
 }
 
 // Execute executes a schema status command
@@ -162,10 +205,11 @@ func (c *SchemaStatus) Execute(args []string) error {
 		options.ServiceName = _defServiceName
 	}
 
-	client, err := getAdminClient(options)
+	client, err := c.provideClient(options)
 	if err != nil {
 		return err
 	}
+	defer shutdownAdminClient(client)
 
 	if c.Scope.String() != "" {
 		client.Scope(c.Scope.String())
@@ -174,7 +218,11 @@ func (c *SchemaStatus) Execute(args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 	defer cancel()
 
-	status, err := client.CheckSchemaStatus(ctx, c.NamePrefix, c.Version)
+	var prefix string
+	if prefix, err = c.getNamePrefix(); err != nil {
+		return err
+	}
+	status, err := client.CheckSchemaStatus(ctx, prefix, c.Version)
 	if err != nil {
 		if c.Verbose {
 			fmt.Printf("detail:%+v\n", err)

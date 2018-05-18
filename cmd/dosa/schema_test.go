@@ -31,8 +31,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/mocks"
-
-	_ "github.com/uber-go/dosa/connectors/devnull"
 )
 
 func getTestEntityNameMap() map[string]bool {
@@ -111,7 +109,7 @@ func TestSchema_ExpandDirectories(t *testing.T) {
 	os.Chdir("..")
 }
 
-func TestSchema_Defaults(t *testing.T) {
+func TestSchema_DefaultsOldname(t *testing.T) {
 	tcs := []struct {
 		serviceName string
 		expected    string
@@ -131,10 +129,41 @@ func TestSchema_Defaults(t *testing.T) {
 			os.Args = []string{
 				"dosa",
 				"--service", tc.serviceName,
-				"--connector", "devnull",
 				"schema",
 				cmd,
 				"--prefix", "foo",
+				"--scope", "bar",
+				"../../testentity",
+			}
+			main()
+			assert.Equal(t, options.ServiceName, tc.expected)
+		}
+	}
+}
+
+func TestSchema_DefaultsNewname(t *testing.T) {
+	tcs := []struct {
+		serviceName string
+		expected    string
+	}{
+		//  service = "" -> default
+		{
+			expected: _defServiceName,
+		},
+		//  service = "foo" -> foo
+		{
+			serviceName: "foo",
+			expected:    "foo",
+		},
+	}
+	for _, tc := range tcs {
+		for _, cmd := range []string{"check", "upsert", "status"} {
+			os.Args = []string{
+				"dosa",
+				"--service", tc.serviceName,
+				"schema",
+				cmd,
+				"--namePrefix", "foo",
 				"--scope", "bar",
 				"../../testentity",
 			}
@@ -152,7 +181,7 @@ func TestSchema_ScopeRequired(t *testing.T) {
 			"dosa",
 			"schema",
 			cmd,
-			"--prefix", "foo",
+			"--namePrefix", "foo",
 			"../../testentity",
 		}
 		main()
@@ -172,7 +201,7 @@ func TestSchema_PrefixRequired(t *testing.T) {
 			"../../testentity",
 		}
 		main()
-		assert.Contains(t, c.stop(true), "--prefix' was not specified")
+		assert.Contains(t, c.stop(true), "--namePrefix' was not specified")
 	}
 }
 
@@ -192,7 +221,7 @@ func TestSchema_InvalidDirectory(t *testing.T) {
 			cmd,
 		}
 		if hasPrefix {
-			os.Args = append(os.Args, "--scope", "bar", "--prefix", "foo")
+			os.Args = append(os.Args, "--scope", "bar", "--namePrefix", "foo")
 		}
 		os.Args = append(os.Args, []string{
 			"-e", "testentity.go",
@@ -220,7 +249,7 @@ func TestSchema_NoEntitiesFound(t *testing.T) {
 			cmd,
 		}
 		if hasPrefix {
-			os.Args = append(os.Args, "--scope", "bar", "--prefix", "foo")
+			os.Args = append(os.Args, "--scope", "bar", "--namePrefix", "foo")
 		}
 		os.Args = append(os.Args, []string{
 			"-e", "testentity.go",
@@ -243,76 +272,154 @@ func TestSchema_Check_Happy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	exit = func(r int) {
-		assert.Equal(t, 0, r)
+	mc := mocks.NewMockConnector(ctrl)
+	mc.EXPECT().CanUpsertSchema(gomock.Any(), "scope", "foo", gomock.Any()).
+		Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
+			dl, ok := ctx.Deadline()
+			assert.True(t, ok)
+			assert.True(t, dl.After(time.Now()))
+			assert.Equal(t, 6, len(ed))
+			nameMap := getTestEntityNameMap()
+			for _, e := range ed {
+				assert.True(t, nameMap[e.Name])
+			}
+		}).Return(int32(1), nil)
+	mc.EXPECT().Shutdown().Return(nil)
+
+	provideClient := func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
 	}
-	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
-		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().CanUpsertSchema(gomock.Any(), "scope", "foo", gomock.Any()).
-			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
-				dl, ok := ctx.Deadline()
-				assert.True(t, ok)
-				assert.True(t, dl.After(time.Now()))
-				assert.Equal(t, 6, len(ed))
-				nameMap := getTestEntityNameMap()
-				for _, e := range ed {
-					assert.True(t, nameMap[e.Name])
-				}
-			}).Return(int32(1), nil)
-		return mc, nil
-	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
-	main()
+
+	schemaCheck := SchemaCheck{
+		SchemaCmd: &SchemaCmd{
+			SchemaOptions: &SchemaOptions{
+				Excludes: []string{"_test.go", "excludeme.go"},
+				Verbose:  true,
+			},
+			Scope:         scopeFlag("scope"),
+			Prefix:        "foo",
+			provideClient: provideClient,
+		},
+	}
+	schemaCheck.Args.Paths = []string{"../../testentity"}
+
+	err := schemaCheck.Execute(nil)
+	assert.NoError(t, err)
+}
+
+// Check the new name --namePrefix for --prefix
+func TestSchema_Check_Happy_New(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mc := mocks.NewMockConnector(ctrl)
+	mc.EXPECT().CanUpsertSchema(gomock.Any(), "scope", "foo", gomock.Any()).
+		Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
+			dl, ok := ctx.Deadline()
+			assert.True(t, ok)
+			assert.True(t, dl.After(time.Now()))
+			assert.Equal(t, 6, len(ed))
+			nameMap := getTestEntityNameMap()
+			for _, e := range ed {
+				assert.True(t, nameMap[e.Name])
+			}
+		}).Return(int32(1), nil)
+	mc.EXPECT().Shutdown().Return(nil)
+
+	provideClient := func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
+	}
+
+	schemaCheck := SchemaCheck{
+		SchemaCmd: &SchemaCmd{
+			SchemaOptions: &SchemaOptions{
+				Excludes: []string{"_test.go", "excludeme.go"},
+				Verbose:  true,
+			},
+			Scope:         scopeFlag("scope"),
+			NamePrefix:    "foo",
+			provideClient: provideClient,
+		},
+	}
+	schemaCheck.Args.Paths = []string{"../../testentity"}
+
+	err := schemaCheck.Execute(nil)
+	assert.NoError(t, err)
 }
 
 func TestSchema_Status_Happy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	exit = func(r int) {
-		assert.Equal(t, 0, r)
+	mc := mocks.NewMockConnector(ctrl)
+	mc.EXPECT().CheckSchemaStatus(gomock.Any(), "scope", "foo", gomock.Any()).
+		Do(func(ctx context.Context, scope string, namePrefix string, version int32) {
+			dl, ok := ctx.Deadline()
+			assert.True(t, ok)
+			assert.True(t, dl.After(time.Now()))
+			assert.Equal(t, int32(12), version)
+		}).Return(&dosa.SchemaStatus{Version: int32(12)}, nil)
+	mc.EXPECT().Shutdown().Return(nil)
+
+	provideClient := func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
 	}
-	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
-		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().CheckSchemaStatus(gomock.Any(), "scope", "foo", gomock.Any()).
-			Do(func(ctx context.Context, scope string, namePrefix string, version int32) {
-				dl, ok := ctx.Deadline()
-				assert.True(t, ok)
-				assert.True(t, dl.After(time.Now()))
-				assert.Equal(t, int32(12), version)
-			}).Return(&dosa.SchemaStatus{Version: int32(12)}, nil)
-		return mc, nil
-	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "status", "--prefix", "foo", "-s", "scope", "-v", "--version", "12"}
-	main()
+
+	schemaStatus := SchemaStatus{
+		SchemaCmd: &SchemaCmd{
+			SchemaOptions: &SchemaOptions{
+				Excludes: []string{},
+				Verbose:  false,
+			},
+			Scope:         scopeFlag("scope"),
+			NamePrefix:    "foo",
+			provideClient: provideClient,
+		},
+		Version: 12,
+	}
+
+	err := schemaStatus.Execute([]string{})
+	assert.NoError(t, err)
 }
 
 func TestSchema_Upsert_Happy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	exit = func(r int) {
-		assert.Equal(t, 0, r)
+	mc := mocks.NewMockConnector(ctrl)
+	mc.EXPECT().UpsertSchema(gomock.Any(), "scope", "foo", gomock.Any()).
+		Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
+			dl, ok := ctx.Deadline()
+			assert.True(t, ok)
+			assert.True(t, dl.After(time.Now()))
+			assert.Equal(t, 6, len(ed))
+
+			nameMap := getTestEntityNameMap()
+			for _, e := range ed {
+				assert.True(t, nameMap[e.Name])
+			}
+		}).Return(&dosa.SchemaStatus{Version: int32(1)}, nil)
+	mc.EXPECT().Shutdown().Return(nil)
+
+	provideClient := func(opts GlobalOptions) (dosa.AdminClient, error) {
+		return dosa.NewAdminClient(mc), nil
 	}
 
-	dosa.RegisterConnector("mock", func(dosa.CreationArgs) (dosa.Connector, error) {
-		mc := mocks.NewMockConnector(ctrl)
-		mc.EXPECT().UpsertSchema(gomock.Any(), "scope", "foo", gomock.Any()).
-			Do(func(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) {
-				dl, ok := ctx.Deadline()
-				assert.True(t, ok)
-				assert.True(t, dl.After(time.Now()))
-				assert.Equal(t, 6, len(ed))
+	schemaUpsert := SchemaUpsert{
+		SchemaCmd: &SchemaCmd{
+			SchemaOptions: &SchemaOptions{
+				Excludes: []string{},
+				Verbose:  false,
+			},
+			Scope:         scopeFlag("scope"),
+			NamePrefix:    "foo",
+			provideClient: provideClient,
+		},
+	}
+	schemaUpsert.Args.Paths = []string{"../../testentity"}
 
-				nameMap := getTestEntityNameMap()
-				for _, e := range ed {
-					assert.True(t, nameMap[e.Name])
-				}
-			}).Return(&dosa.SchemaStatus{Version: int32(1)}, nil)
-		return mc, nil
-	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
-	main()
+	err := schemaUpsert.Execute([]string{})
+	assert.NoError(t, err)
 }
 
 func TestSchema_Dump_InvalidFormat(t *testing.T) {
