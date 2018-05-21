@@ -102,15 +102,18 @@ routers:
 	cfg := testCfg.findDefaultRouter()
 	assert.Equal(t, cfg.Scope, "default")
 
-	cfg = testCfg.FindRouter("production", "serviceA")
+	cfg, _ = testCfg.FindRouter("production", "serviceA", false)
 	assert.Equal(t, cfg, buildRouter("production", "serviceA", "cassandra"))
 
-	cfg = testCfg.FindRouter("ebook", "apple.k")
+	cfg, _ = testCfg.FindRouter("ebook", "apple.k", false)
 	assert.Equal(t, cfg, buildRouter("ebook", "apple.*", "ebook"))
 
-	cfg = testCfg.FindRouter("ebook", "d.k")
+	cfg, _ = testCfg.FindRouter("ebook", "d.k", false)
 	assert.Equal(t, cfg, buildRouter("ebook", "*", "ebook"))
 
-	cfg = testCfg.FindRouter("a", "d.k")
+	cfg, _ = testCfg.FindRouter("a", "d.k", false)
 	assert.Equal(t, cfg, buildRouter("default", "default", "dosa"))
+
+	cfg, err = testCfg.FindRouter("ebook", "d.k", true)
+	assert.Contains(t, err.Error(), "requests failed because they are explicitly set to fail")
 }
