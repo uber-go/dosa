@@ -179,6 +179,9 @@ type Client interface {
 	// TODO: Coming in v2.1
 	// MultiUpsert creates or updates multiple rows. A list of fields to
 	// update can be specified. Use All() or nil for all fields.
+	//
+	// Upsert should be preferred over MultiUpsert. If you are not sure which endpoint to use,
+	// use Upsert instead of MultiUpsert.
 	// MultiUpsert(context.Context, []string, ...DomainObject) (MultiResult, error)
 
 	// Remove removes a row by primary key. The passed-in entity should contain
