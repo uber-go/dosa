@@ -189,7 +189,7 @@ func (rc *Connector) CheckSchemaStatus(ctx context.Context, scope string, namePr
 
 // GetEntitySchema calls the selected connector
 func (rc *Connector) GetEntitySchema(ctx context.Context, scope, namePrefix, entityName string, version int32) (*dosa.EntityInfo, error) {
-	connector, err := rc.getConnector(scope, namePrefix, "GetEntitySchema")
+	connector, err := rc.getConnector(scope, namePrefix)
 	if err != nil {
 		return nil, err
 	}
