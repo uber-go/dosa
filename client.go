@@ -164,6 +164,9 @@ type Client interface {
 	// Otherwise the DomainObject as key and an error message as value will be saved into
 	// MultiResult map.
 	// NOTE: This API only fetches objects of same entity type from same scope.
+	//
+	// Range should be preferred over MultiRead. If you are not sure which endpoint to use,
+	// use Range instead of MultiRead.
 	MultiRead(context.Context, []string, ...DomainObject) (MultiResult, error)
 
 	// Upsert creates or update a row. A list of fields to update can be
