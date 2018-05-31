@@ -591,6 +591,13 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 	}, nil
 }
 
+// GetEntitySchema gets the schema for the specified entity.
+func (c *Connector) GetEntitySchema(ctx context.Context, scope, namePrefix, entityName string, version int32) (*dosa.EntityInfo, error) {
+	// We're not going to implement this at the moment since it's not needed. However, it could be easily
+	// implemented by adding a new method to the thrift idl
+	panic("Not implemented")
+}
+
 // CreateScope creates the scope specified
 func (c *Connector) CreateScope(ctx context.Context, md *dosa.ScopeMetadata) error {
 	bytes, err := json.Marshal(*md)
