@@ -173,11 +173,6 @@ type Client interface {
 	// to update in fieldsToUpdate (or all the fields if you use dosa.All())
 	Upsert(ctx context.Context, fieldsToUpdate []string, objectToUpdate DomainObject) error
 
-	// TODO: Coming in v2.1
-	// MultiUpsert creates or updates multiple rows. A list of fields to
-	// update can be specified. Use All() or nil for all fields.
-	// MultiUpsert(context.Context, []string, ...DomainObject) (MultiResult, error)
-
 	// Remove removes a row by primary key. The passed-in entity should contain
 	// the primary key field values, all other fields are ignored.
 	Remove(ctx context.Context, objectToRemove DomainObject) error
@@ -185,11 +180,6 @@ type Client interface {
 	// RemoveRange removes all of the rows that fall within the range specified by the
 	// given RemoveRangeOp.
 	RemoveRange(ctx context.Context, removeRangeOp *RemoveRangeOp) error
-
-	// TODO: Coming in v2.1
-	// MultiRemove removes multiple rows by primary key. The passed-in entity should
-	// contain the primary key field values.
-	// MultiRemove(context.Context, ...DomainObject) (MultiResult, error)
 
 	// Range fetches entities within a range
 	// Before calling range, create a RangeOp and fill in the table
