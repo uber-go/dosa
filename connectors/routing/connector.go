@@ -26,53 +26,29 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
-	"github.com/uber-go/dosa/connectors/base"
 )
-
-// PluginFunc is a plugin function that takes scope, namePrefix and operation name,
-// then gives wanted scope and namePrefix
-type PluginFunc func(scope, namePrefix, opName string) (string, string, error)
 
 // Connector holds a slice of configured connectors to route to
 type Connector struct {
-	base.Connector
 	// config connector slice is sorted in a manner:
 	// for the value of Config name prefix, strict string without "*" always comes first,
 	// and then string with "*" suffix (glob match) and pure "*".
 	// There shouldn't be any scope with a prefix "*" like "*.service.v1"
 	config     Config
 	connectors map[string]dosa.Connector
-	// PluginFunc is a plugin that passes in
-	// the scope, namePrefix and operation name, returns wanted scope and namePrefix
-	PluginFunc PluginFunc
 }
 
 // NewConnector initializes the Connector
 // connectorMap has a key of connectorName, and the value is a dosa.connector instance
-func NewConnector(cfg Config, connectorMap map[string]dosa.Connector, plugin PluginFunc) *Connector {
+func NewConnector(cfg Config, connectorMap map[string]dosa.Connector) *Connector {
 	return &Connector{
 		connectors: connectorMap,
 		config:     cfg,
-		PluginFunc: plugin,
 	}
 }
 
-// get connector by scope, namePrefix and operation name provided
-func (rc *Connector) getConnector(scope string, namePrefix string, opName string) (_ dosa.Connector, err error) {
-	if rc.PluginFunc != nil {
-		// plugin operation
-		// plugin should always be first considered if it exists
-		scope, namePrefix, err = rc.PluginFunc(scope, namePrefix, opName)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to execute getConnector due to Plugin function error")
-		}
-	}
-	return rc._getConnector(scope, namePrefix)
-}
-
-// if no specific scope is found,
-// Connector routes to the default scope that defined in routing config yaml file
-func (rc *Connector) _getConnector(scope, namePrefix string) (dosa.Connector, error) {
+// get connector by scope an namePrefix
+func (rc *Connector) getConnector(scope, namePrefix string) (dosa.Connector, error) {
 	router := rc.config.FindRouter(scope, namePrefix)
 
 	c, ok := rc.connectors[router.Connector]
@@ -85,7 +61,7 @@ func (rc *Connector) _getConnector(scope, namePrefix string) (dosa.Connector, er
 
 // CreateIfNotExists selects corresponding connector
 func (rc *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "CreateIfNotExists")
+	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	if err != nil {
 		return err
 	}
@@ -94,7 +70,7 @@ func (rc *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo,
 
 // Read selects corresponding connector
 func (rc *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue, minimumFields []string) (map[string]dosa.FieldValue, error) {
-	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Read")
+	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +79,7 @@ func (rc *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, values map[s
 
 // MultiRead selects corresponding connector
 func (rc *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue, minimumFields []string) ([]*dosa.FieldValuesOrError, error) {
-	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "MultiRead")
+	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +88,7 @@ func (rc *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, values 
 
 // Upsert selects corresponding connector
 func (rc *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Upsert")
+	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	if err != nil {
 		return err
 	}
@@ -121,7 +97,7 @@ func (rc *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map
 
 // MultiUpsert selects corresponding connector
 func (rc *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, values []map[string]dosa.FieldValue) ([]error, error) {
-	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "MultiUpsert")
+	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +106,7 @@ func (rc *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, value
 
 // Remove selects corresponding connector
 func (rc *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Remove")
+	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	if err != nil {
 		// here returns err because connector is not found
 		return err
@@ -141,7 +117,7 @@ func (rc *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, values map
 
 // RemoveRange selects corresponding connector
 func (rc *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition) error {
-	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "RemoveRange")
+	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	if err != nil {
 		return err
 	}
@@ -150,7 +126,7 @@ func (rc *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, colum
 
 // MultiRemove selects corresponding connector
 func (rc *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) ([]error, error) {
-	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "MultiRemove")
+	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +135,7 @@ func (rc *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multi
 
 // Range selects corresponding connector
 func (rc *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Range")
+	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	if err != nil {
 		return nil, "", err
 	}
@@ -168,7 +144,7 @@ func (rc *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondi
 
 // Scan selects corresponding connector
 func (rc *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Scan")
+	connector, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	if err != nil {
 		return nil, "", err
 	}
@@ -177,7 +153,7 @@ func (rc *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumField
 
 // CheckSchema calls selected connector
 func (rc *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
-	connector, err := rc.getConnector(scope, namePrefix, "CheckSchema")
+	connector, err := rc.getConnector(scope, namePrefix)
 	if err != nil {
 		return dosa.InvalidVersion, err
 	}
@@ -186,7 +162,7 @@ func (rc *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, 
 
 // UpsertSchema calls selected connector
 func (rc *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (*dosa.SchemaStatus, error) {
-	connector, err := rc.getConnector(scope, namePrefix, "UpsertSchema")
+	connector, err := rc.getConnector(scope, namePrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +171,7 @@ func (rc *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string,
 
 // CanUpsertSchema calls selected connector
 func (rc *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
-	connector, err := rc.getConnector(scope, namePrefix, "CanUpsertSchema")
+	connector, err := rc.getConnector(scope, namePrefix)
 	if err != nil {
 		return dosa.InvalidVersion, err
 	}
@@ -204,7 +180,7 @@ func (rc *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix stri
 
 // CheckSchemaStatus calls selected connector
 func (rc *Connector) CheckSchemaStatus(ctx context.Context, scope string, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
-	connector, err := rc.getConnector(scope, namePrefix, "CheckSchemaStatus")
+	connector, err := rc.getConnector(scope, namePrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +189,7 @@ func (rc *Connector) CheckSchemaStatus(ctx context.Context, scope string, namePr
 
 // GetEntitySchema calls the selected connector
 func (rc *Connector) GetEntitySchema(ctx context.Context, scope, namePrefix, entityName string, version int32) (*dosa.EntityInfo, error) {
-	connector, err := rc.getConnector(scope, namePrefix, "GetEntitySchema")
+	connector, err := rc.getConnector(scope, namePrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +199,7 @@ func (rc *Connector) GetEntitySchema(ctx context.Context, scope, namePrefix, ent
 // CreateScope calls selected connector
 func (rc *Connector) CreateScope(ctx context.Context, md *dosa.ScopeMetadata) error {
 	// will fall to default connector
-	connector, err := rc.getConnector(md.Name, "", "CreateScope")
+	connector, err := rc.getConnector(md.Name, "")
 	if err != nil {
 		return err
 	}
@@ -233,7 +209,7 @@ func (rc *Connector) CreateScope(ctx context.Context, md *dosa.ScopeMetadata) er
 // TruncateScope calls selected connector
 func (rc *Connector) TruncateScope(ctx context.Context, scope string) error {
 	// will fall to default connector
-	connector, err := rc.getConnector(scope, "", "TruncateScope")
+	connector, err := rc.getConnector(scope, "")
 	if err != nil {
 		return err
 	}
@@ -243,7 +219,7 @@ func (rc *Connector) TruncateScope(ctx context.Context, scope string) error {
 // DropScope calls selected connector
 func (rc *Connector) DropScope(ctx context.Context, scope string) error {
 	// will fall to default connector
-	connector, err := rc.getConnector(scope, "", "DropScope")
+	connector, err := rc.getConnector(scope, "")
 	if err != nil {
 		return err
 	}
@@ -253,7 +229,7 @@ func (rc *Connector) DropScope(ctx context.Context, scope string) error {
 // ScopeExists calls selected connector
 func (rc *Connector) ScopeExists(ctx context.Context, scope string) (bool, error) {
 	// will fall to default connector
-	connector, err := rc.getConnector(scope, "", "ScopeExists")
+	connector, err := rc.getConnector(scope, "")
 	if err != nil {
 		return false, err
 	}
