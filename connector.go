@@ -189,6 +189,8 @@ type Connector interface {
 	UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (status *SchemaStatus, err error)
 	// CheckSchemaStatus checks the status of the schema whether it is accepted or in progress of application.
 	CheckSchemaStatus(ctx context.Context, scope string, namePrefix string, version int32) (*SchemaStatus, error)
+	// GetEntitySchema returns the entity info for a given entity in a given scope and prefix.
+	GetEntitySchema(ctx context.Context, scope, namePrefix, entityName string, version int32) (*EntityInfo, error)
 
 	// Datastore management
 	// CreateScope creates a scope for storage of data, usually implemented by a keyspace for this data
