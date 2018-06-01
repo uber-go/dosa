@@ -22,16 +22,12 @@ package routing
 
 import (
 	"context"
+	"reflect"
+	"sort"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
-	"sort"
-
-	"reflect"
-
-	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/devnull"
 	"github.com/uber-go/dosa/connectors/memory"
@@ -174,22 +170,22 @@ func TestGetConnector(t *testing.T) {
 	connectorMap := getConnectorMap()
 	// no plugin
 	// glob match
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 	ei := &dosa.EntityInfo{
 		Ref: &dosa.SchemaRef{Scope: "ebook", NamePrefix: "apple.v1"},
 	}
-	conn, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Read")
+	conn, err := rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	assert.Nil(t, err)
 	assert.NotNil(t, conn)
 
 	// exact match
 	ei.Ref.NamePrefix = "ebook-store"
-	conn, err = rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Read")
+	conn, err = rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	assert.Nil(t, err)
 	assert.NotNil(t, conn)
 
 	// match "*"
-	conn, err = rc.getConnector(ei.Ref.Scope, "*", "Read")
+	conn, err = rc.getConnector(ei.Ref.Scope, "*")
 	assert.Nil(t, err)
 	assert.NotNil(t, conn)
 
@@ -197,32 +193,15 @@ func TestGetConnector(t *testing.T) {
 	ei = &dosa.EntityInfo{
 		Ref: &dosa.SchemaRef{Scope: "notexist", NamePrefix: "apple.v1"},
 	}
-	conn, err = rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Read")
+	conn, err = rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	assert.Nil(t, err)
 	assert.NotNil(t, conn)
 	assert.Equal(t, reflect.TypeOf(conn), reflect.TypeOf(memory.NewConnector()))
-
-	// with plugin
-	rc.PluginFunc = func(scope, namePrefix, opName string) (string, string, error) {
-		return "ebook", "ebook-store", nil
-	}
-
-	conn, err = rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Read")
-	assert.NoError(t, err)
-	assert.NotNil(t, conn)
-
-	// plugin returns error
-	rc.PluginFunc = func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("")
-	}
-	conn, err = rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix, "Read")
-	assert.Contains(t, err.Error(), "failed to execute getConnector due to Plugin function error")
-	assert.Nil(t, conn)
 }
 
 func TestConnector_CreateIfNotExists(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	assert.NoError(t, rc.CreateIfNotExists(ctx, testInfo, map[string]dosa.FieldValue{
 		"p1": dosa.FieldValue("data")}))
@@ -234,26 +213,17 @@ func TestConnector_CreateIfNotExists(t *testing.T) {
 
 func TestConnector_CreateIfNotExistsDefaultScope(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	// not exist scope, use default
 	err := rc.CreateIfNotExists(ctx, testNoMatchInfo, map[string]dosa.FieldValue{
 		"p1": dosa.FieldValue("data")})
 	assert.NoError(t, err)
-
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
-	}
-	rc.PluginFunc = plugin
-	// not exist scope, use default
-	err = rc.CreateIfNotExists(ctx, testNoMatchInfo, map[string]dosa.FieldValue{
-		"p1": dosa.FieldValue("data")})
-	assert.Contains(t, err.Error(), "dummy errors")
 }
 
 func TestConnector_CreateIfNotExists2(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	testUUIDs := make([]dosa.UUID, 10)
 	for x := 0; x < 10; x++ {
@@ -303,7 +273,7 @@ func TestConnector_CreateIfNotExists2(t *testing.T) {
 
 func TestConnector_Read(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	// read with no data
 	val, err := rc.Read(ctx, testInfo, map[string]dosa.FieldValue{
@@ -379,21 +349,11 @@ func TestConnector_Read(t *testing.T) {
 		"c1": dosa.FieldValue(int64(2)),
 		"c7": dosa.FieldValue(id)}, dosa.All())
 	assert.True(t, dosa.ErrorIsNotFound(err))
-
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
-	}
-	rc.PluginFunc = plugin
-	// not exist scope, use default
-	val, err = rc.Read(ctx, testInfo, map[string]dosa.FieldValue{
-		"p1": dosa.FieldValue("data"),
-	}, []string{"c1"})
-	assert.Contains(t, err.Error(), "dummy errors")
 }
 
 func TestMultiRead(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	// normal multi-read
 	rc.CreateIfNotExists(ctx, testInfoRandom, map[string]dosa.FieldValue{
@@ -412,19 +372,11 @@ func TestMultiRead(t *testing.T) {
 	}
 	_, err := rc.MultiRead(ctx, testInfoRandom, testMultiValues, dosa.All())
 	assert.NoError(t, err)
-
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
-	}
-	rc.PluginFunc = plugin
-	// not exist scope, use default
-	_, err = rc.MultiRead(ctx, testInfoRandom, testMultiValues, dosa.All())
-	assert.Contains(t, err.Error(), "dummy errors")
 }
 
 func TestConnector_Upsert(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	// no key value specified
 	err := rc.Upsert(ctx, testInfo, map[string]dosa.FieldValue{})
@@ -479,19 +431,11 @@ func TestConnector_Upsert(t *testing.T) {
 	assert.Empty(t, token)
 	assert.Len(t, data, 20)
 	assert.NotNil(t, data[0]["c6"])
-
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
-	}
-	rc.PluginFunc = plugin
-	// not exist scope, use default
-	err = rc.Upsert(ctx, testInfo, map[string]dosa.FieldValue{})
-	assert.Contains(t, err.Error(), "dummy errors")
 }
 
 func TestConnector_MultiUpsert(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	// normal multi-upsert
 	testMultiValues := []map[string]dosa.FieldValue{
@@ -505,19 +449,11 @@ func TestConnector_MultiUpsert(t *testing.T) {
 
 	_, err := rc.MultiUpsert(ctx, testInfoRandom, testMultiValues)
 	assert.NoError(t, err)
-
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
-	}
-	rc.PluginFunc = plugin
-	// not exist scope, use default
-	_, err = rc.MultiUpsert(ctx, testInfoRandom, testMultiValues)
-	assert.Contains(t, err.Error(), "dummy errors")
 }
 
 func TestConnector_Remove(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	// remove with no data
 	err := rc.Remove(ctx, testInfo, map[string]dosa.FieldValue{
@@ -566,20 +502,11 @@ func TestConnector_Remove(t *testing.T) {
 		"c1": dosa.FieldValue(int64(1)),
 		"c7": dosa.FieldValue(id)})
 	assert.NoError(t, err)
-
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
-	}
-	rc.PluginFunc = plugin
-	// not exist scope, use default
-	err = rc.Remove(ctx, testInfo, map[string]dosa.FieldValue{
-		"p1": dosa.FieldValue("nothere")})
-	assert.Contains(t, err.Error(), "dummy errors")
 }
 
 func TestConnector_RemoveRange(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	// test removing a range with no data in the range
 	err := rc.RemoveRange(ctx, clusteredEi, map[string][]*dosa.Condition{
@@ -655,22 +582,11 @@ func TestConnector_RemoveRange(t *testing.T) {
 	}, dosa.All(), "", 200)
 	assert.NoError(t, err)
 	assert.Empty(t, data)
-
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
-	}
-	rc.PluginFunc = plugin
-	// not exist scope, use default
-	err = rc.RemoveRange(ctx, clusteredEi, map[string][]*dosa.Condition{
-		"f1": {{Op: dosa.Eq, Value: dosa.FieldValue("data")}},
-		"c1": {{Op: dosa.Gt, Value: dosa.FieldValue(int64(0))}},
-	})
-	assert.Contains(t, err.Error(), "dummy errors")
 }
 
 func TestConnector_MultiRemove(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	// normal multi-upsert
 	testMultiValues := []map[string]dosa.FieldValue{
@@ -685,14 +601,6 @@ func TestConnector_MultiRemove(t *testing.T) {
 	errs, err := rc.MultiRemove(ctx, testInfoRandom, testMultiValues)
 	assert.NoError(t, err)
 	assert.NotNil(t, errs)
-
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
-	}
-	rc.PluginFunc = plugin
-	// not exist scope, use default
-	errs, err = rc.MultiRemove(ctx, testInfoRandom, testMultiValues)
-	assert.Contains(t, err.Error(), "dummy errors")
 }
 
 type ByUUID []dosa.UUID
@@ -703,7 +611,7 @@ func (u ByUUID) Less(i, j int) bool { return string(u[i]) < string(u[j]) }
 
 func TestConnector_Range(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	// no data at all (corner case)
 	data, token, err := rc.Range(ctx, clusteredEi, map[string][]*dosa.Condition{
@@ -818,21 +726,11 @@ func TestConnector_Range(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, data)
 	assert.Empty(t, token)
-
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
-	}
-	rc.PluginFunc = plugin
-	// not exist scope, use default
-	data, token, err = rc.Range(ctx, clusteredEi, map[string][]*dosa.Condition{
-		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
-	}, dosa.All(), "", 200)
-	assert.Contains(t, err.Error(), "dummy errors")
 }
 
 func TestConnector_Scan(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	testUUIDs := make([]dosa.UUID, idcount)
 	for x := 0; x < idcount; x++ {
@@ -869,19 +767,11 @@ func TestConnector_Scan(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, data)
 	assert.Empty(t, token)
-
-	plugin := func(scope, namePrefix, opName string) (string, string, error) {
-		return "", "", errors.New("dummy errors")
-	}
-	rc.PluginFunc = plugin
-	// not exist scope, use default
-	data, token, err = rc.Scan(ctx, clusteredEi, dosa.All(), "", 100)
-	assert.Contains(t, err.Error(), "dummy errors")
 }
 
 func TestConnector_Shutdown(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	err := rc.Shutdown()
 	assert.NoError(t, err)
@@ -889,7 +779,7 @@ func TestConnector_Shutdown(t *testing.T) {
 
 func TestConnector_TUUIDs(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	testUUIDs := make([]dosa.UUID, idcount)
 	for x := 0; x < idcount; x++ {
@@ -947,7 +837,7 @@ func TestConnector_TUUIDs(t *testing.T) {
 
 func TestConnector_ScanWithToken(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	createTestData(t, rc, func(id int) string {
 		return "data" + string(id%3)
@@ -983,7 +873,7 @@ func TestConnector_ScanWithToken(t *testing.T) {
 
 func TestConnector_ScanWithTokenFromWrongTable(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	createTestData(t, rc, func(id int) string {
 		return "data" + string(id%3)
@@ -1007,7 +897,7 @@ func TestConnector_ScanWithTokenFromWrongTable(t *testing.T) {
 
 func TestConnector_ScanWithTokenNoClustering(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	for x := 0; x < idcount; x++ {
 		rc.Upsert(ctx, testInfo, map[string]dosa.FieldValue{
@@ -1044,7 +934,7 @@ func TestConnector_ScanWithTokenNoClustering(t *testing.T) {
 
 func TestRangePager(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	// create test data in one partition "data"
 	createTestData(t, rc, func(_ int) string { return "data" }, idcount)
@@ -1085,7 +975,7 @@ func TestRangePager(t *testing.T) {
 
 func TestInvalidToken(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	// we don't use the token if there's no data that matches, so lets
 	// create one row
@@ -1111,7 +1001,7 @@ func TestInvalidToken(t *testing.T) {
 
 func TestConnector_RangeWithBadCriteria(t *testing.T) {
 	connectorMap := getConnectorMap()
-	rc := NewConnector(cfg, connectorMap, nil)
+	rc := NewConnector(cfg, connectorMap)
 
 	// we don't look at the criteria unless there is at least one row
 	createTestData(t, rc, func(id int) string {

@@ -167,6 +167,14 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope string, namePre
 	return c.Next.CheckSchemaStatus(ctx, scope, namePrefix, version)
 }
 
+// GetEntitySchema calls next
+func (c *Connector) GetEntitySchema(ctx context.Context, scope, namePrefix, entityName string, version int32) (*dosa.EntityInfo, error) {
+	if c.Next == nil {
+		return nil, NewErrNoMoreConnector()
+	}
+	return c.Next.GetEntitySchema(ctx, scope, namePrefix, entityName, version)
+}
+
 // CreateScope calls Next
 func (c *Connector) CreateScope(ctx context.Context, md *dosa.ScopeMetadata) error {
 	if c.Next == nil {

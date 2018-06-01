@@ -115,6 +115,11 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 	}, nil
 }
 
+// GetEntitySchema always returns a blank EntityInfo and no error.
+func (c *Connector) GetEntitySchema(ctx context.Context, scope, namePrefix, entityName string, version int32) (*dosa.EntityInfo, error) {
+	return &dosa.EntityInfo{}, nil
+}
+
 // CreateScope returns success
 func (c *Connector) CreateScope(ctx context.Context, _ *dosa.ScopeMetadata) error {
 	return nil

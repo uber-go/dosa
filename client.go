@@ -164,6 +164,9 @@ type Client interface {
 	// Otherwise the DomainObject as key and an error message as value will be saved into
 	// MultiResult map.
 	// NOTE: This API only fetches objects of same entity type from same scope.
+	//
+	// Range should be preferred over MultiRead. If you are not sure which endpoint to use,
+	// use Range instead of MultiRead.
 	MultiRead(context.Context, []string, ...DomainObject) (MultiResult, error)
 
 	// Upsert creates or update a row. A list of fields to update can be
@@ -173,11 +176,6 @@ type Client interface {
 	// to update in fieldsToUpdate (or all the fields if you use dosa.All())
 	Upsert(ctx context.Context, fieldsToUpdate []string, objectToUpdate DomainObject) error
 
-	// TODO: Coming in v2.1
-	// MultiUpsert creates or updates multiple rows. A list of fields to
-	// update can be specified. Use All() or nil for all fields.
-	// MultiUpsert(context.Context, []string, ...DomainObject) (MultiResult, error)
-
 	// Remove removes a row by primary key. The passed-in entity should contain
 	// the primary key field values, all other fields are ignored.
 	Remove(ctx context.Context, objectToRemove DomainObject) error
@@ -185,11 +183,6 @@ type Client interface {
 	// RemoveRange removes all of the rows that fall within the range specified by the
 	// given RemoveRangeOp.
 	RemoveRange(ctx context.Context, removeRangeOp *RemoveRangeOp) error
-
-	// TODO: Coming in v2.1
-	// MultiRemove removes multiple rows by primary key. The passed-in entity should
-	// contain the primary key field values.
-	// MultiRemove(context.Context, ...DomainObject) (MultiResult, error)
 
 	// Range fetches entities within a range
 	// Before calling range, create a RangeOp and fill in the table
@@ -226,7 +219,7 @@ type Client interface {
 }
 
 // MultiResult contains the result for each entity operation in the case of
-// MultiRead, MultiUpsert and MultiRemove. If the operation succeeded for
+// MultiRead. If the operation succeeded for
 // an entity, the value for in the map will be nil; otherwise, the entity is
 // untouched and error is not nil.
 type MultiResult map[DomainObject]error
@@ -466,14 +459,6 @@ func (c *client) createOrUpsert(ctx context.Context, fieldsToUpdate []string, en
 	return fn(ctx, ei, fieldValues)
 }
 
-// MultiUpsert updates several entities by primary key, The entities provided
-// must contain values for all components of its primary key for the operation
-// to succeed. If `fieldsToUpdate` is provided, only a subset of fields will be
-// updated.
-func (c *client) MultiUpsert(context.Context, []string, ...DomainObject) (MultiResult, error) {
-	panic("not implemented")
-}
-
 // Remove deletes an entity by primary key, The entity provided must contain
 // values for all components of its primary key for the operation to succeed.
 func (c *client) Remove(ctx context.Context, entity DomainObject) error {
@@ -514,13 +499,6 @@ func (c *client) RemoveRange(ctx context.Context, r *RemoveRangeOp) error {
 	}
 
 	return errors.Wrap(c.connector.RemoveRange(ctx, re.EntityInfo(), columnConditions), "RemoveRange")
-}
-
-// MultiRemove deletes several entities by primary key, The entities provided
-// must contain values for all components of its primary key for the operation
-// to succeed.
-func (c *client) MultiRemove(context.Context, ...DomainObject) (MultiResult, error) {
-	panic("not implemented")
 }
 
 // Range uses the connector to fetch DOSA entities for a given range.

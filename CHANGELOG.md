@@ -11,6 +11,8 @@
 - Convert usernaems to lowercase when constructing scope names etc. (#322)
 - Initial support for Adaptive Rate Limits.
 - Many accidentally exported names have been unexported. (#327)
+- Add new GetEntitySchema function to the Connector interface (#335)
+- Remove unused PluginFunc argument from the routing connector (#337)
 
 ## v2.6.0 (2018-04-16)
 - Fix bug in invalidating fallback cache on upsert (#292)
