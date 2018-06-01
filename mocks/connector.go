@@ -131,9 +131,9 @@ func (mr *MockConnectorMockRecorder) DropScope(arg0, arg1 interface{}) *gomock.C
 }
 
 // GetEntitySchema mocks base method
-func (m *MockConnector) GetEntitySchema(arg0 context.Context, arg1, arg2, arg3 string, arg4 int32) (*dosa.EntityInfo, error) {
+func (m *MockConnector) GetEntitySchema(arg0 context.Context, arg1, arg2, arg3 string, arg4 int32) (*dosa.EntityDefinition, error) {
 	ret := m.ctrl.Call(m, "GetEntitySchema", arg0, arg1, arg2, arg3, arg4)
-	ret0, _ := ret[0].(*dosa.EntityInfo)
+	ret0, _ := ret[0].(*dosa.EntityDefinition)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

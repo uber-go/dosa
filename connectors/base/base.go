@@ -168,7 +168,7 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope string, namePre
 }
 
 // GetEntitySchema calls next
-func (c *Connector) GetEntitySchema(ctx context.Context, scope, namePrefix, entityName string, version int32) (*dosa.EntityInfo, error) {
+func (c *Connector) GetEntitySchema(ctx context.Context, scope, namePrefix, entityName string, version int32) (*dosa.EntityDefinition, error) {
 	if c.Next == nil {
 		return nil, NewErrNoMoreConnector()
 	}
