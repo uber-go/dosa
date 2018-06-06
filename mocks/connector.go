@@ -130,6 +130,19 @@ func (mr *MockConnectorMockRecorder) DropScope(arg0, arg1 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DropScope", reflect.TypeOf((*MockConnector)(nil).DropScope), arg0, arg1)
 }
 
+// GetEntitySchema mocks base method
+func (m *MockConnector) GetEntitySchema(arg0 context.Context, arg1, arg2, arg3 string, arg4 int32) (*dosa.EntityDefinition, error) {
+	ret := m.ctrl.Call(m, "GetEntitySchema", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(*dosa.EntityDefinition)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEntitySchema indicates an expected call of GetEntitySchema
+func (mr *MockConnectorMockRecorder) GetEntitySchema(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEntitySchema", reflect.TypeOf((*MockConnector)(nil).GetEntitySchema), arg0, arg1, arg2, arg3, arg4)
+}
+
 // MultiRead mocks base method
 func (m *MockConnector) MultiRead(arg0 context.Context, arg1 *dosa.EntityInfo, arg2 []map[string]dosa.FieldValue, arg3 []string) ([]*dosa.FieldValuesOrError, error) {
 	ret := m.ctrl.Call(m, "MultiRead", arg0, arg1, arg2, arg3)
