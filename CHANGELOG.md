@@ -1,6 +1,8 @@
 # Changelog
+## v3.0.1 (2018-06-07)
+- Fixed version const
 
-## v3.0.0 (unreleased)
+## v3.0.0 (2018-06-07)
 - Simplified client creation when using the YARPC connector. (#321)
 - Scope metadata handling, and rudimentary auth* support. The Connector interface (Admin API) has changed. (#273)
 - Per-row TTL. (#323)
