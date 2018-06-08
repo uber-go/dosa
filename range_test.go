@@ -70,6 +70,12 @@ var rangeTestCases = []struct {
 		converted: "<empty> limit 10",
 	},
 	{
+		descript:  "empty with adaptive limit",
+		rop:       NewRangeOp(&AllTypes{}).Limit(AdaptiveRangeLimit),
+		stringer:  "<empty> limit -1",
+		converted: "<empty> limit -1",
+	},
+	{
 		descript:  "empty with token",
 		rop:       NewRangeOp(&AllTypes{}).Offset("toketoketoke"),
 		stringer:  "<empty> token \"toketoketoke\"",
@@ -104,21 +110,4 @@ func TestRangeOpStringer(t *testing.T) {
 	for _, test := range rangeTestCases {
 		assert.Equal(t, test.stringer, test.rop.String(), test.descript)
 	}
-}
-
-func TestRangeOpMatcher(t *testing.T) {
-	RangeOp0 := NewRangeOp(&AllTypes{}).Eq("StringType", "Hello")
-	RangeOp1 := NewRangeOp(&AllTypes{}).Eq("StringType", "Hello")
-	RangeOp2 := NewRangeOp(&AllTypes{}).Lt("StringType", "Hello")
-	RangeOp3 := NewRangeOp(&AllTypes{}).Eq("StringType", "Hello").Offset("token1")
-	RangeOp4 := NewRangeOp(&AllTypes{}).Eq("StringType", "Hello").Limit(5)
-	RangeOp5 := NewRangeOp(&AllTypes{}).Eq("StringType", "Hello").Fields([]string{"BoolType"})
-
-	matcher := EqRangeOp(RangeOp0)
-	assert.True(t, matcher.Matches(RangeOp1))
-	assert.False(t, matcher.Matches(RangeOp2))
-	assert.False(t, matcher.Matches(RangeOp3))
-	assert.False(t, matcher.Matches(RangeOp4))
-	assert.False(t, matcher.Matches(RangeOp5))
-	assert.False(t, matcher.Matches(3))
 }

@@ -21,6 +21,7 @@
 package redis_test
 
 import (
+	"context"
 	"math/rand"
 	"testing"
 	"time"
@@ -31,7 +32,6 @@ import (
 	"github.com/uber-go/dosa/connectors/redis"
 	"github.com/uber-go/dosa/mocks"
 	"github.com/uber-go/dosa/testentity"
-	"golang.org/x/net/context"
 )
 
 var testRedisConfig = redis.Config{

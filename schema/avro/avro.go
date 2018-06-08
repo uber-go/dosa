@@ -132,7 +132,7 @@ func (s *Field) MarshalJSON() ([]byte, error) {
 }
 
 // ToAvro converts dosa entity definition to avro schema
-func ToAvro(fqn dosa.FQN, ed *dosa.EntityDefinition) ([]byte, error) {
+func ToAvro(namePrefix string, ed *dosa.EntityDefinition) ([]byte, error) {
 	fields := make([]*Field, len(ed.Columns))
 	for i, c := range ed.Columns {
 		props := make(map[string]string)
@@ -153,7 +153,7 @@ func ToAvro(fqn dosa.FQN, ed *dosa.EntityDefinition) ([]byte, error) {
 
 	ar := &Record{
 		Name:       ed.Name,
-		Namespace:  fqn.String(),
+		Namespace:  namePrefix,
 		Fields:     fields,
 		Properties: meta,
 	}

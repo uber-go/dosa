@@ -115,8 +115,13 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 	}, nil
 }
 
+// GetEntitySchema always returns a blank EntityInfo and no error.
+func (c *Connector) GetEntitySchema(ctx context.Context, scope, namePrefix, entityName string, version int32) (*dosa.EntityDefinition, error) {
+	return &dosa.EntityDefinition{}, nil
+}
+
 // CreateScope returns success
-func (c *Connector) CreateScope(ctx context.Context, scope string) error {
+func (c *Connector) CreateScope(ctx context.Context, _ *dosa.ScopeMetadata) error {
 	return nil
 }
 
@@ -143,10 +148,4 @@ func (c *Connector) Shutdown() error {
 // NewConnector creates a new devnull connector
 func NewConnector() *Connector {
 	return &Connector{}
-}
-
-func init() {
-	dosa.RegisterConnector("devnull", func(dosa.CreationArgs) (dosa.Connector, error) {
-		return &Connector{}, nil
-	})
 }

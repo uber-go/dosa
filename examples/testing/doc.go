@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -90,71 +90,6 @@
 //   }
 //
 // A complete, runnable example of this can be found in our testing examples package (https://github.com/uber-go/dosa/tree/master/examples/testing).
-//
-// EqRangeOp and EqScanOp
-//
-// In addition to the MockClient, dosa provides two useful gomock.Matchers. EqRangeOp allows you to verify
-// that an expected call to
-// Range is made with a specific RangeOp. EqScanOp does the same thing, except for
-// the
-// Scan function. For instance, assume we have the following entity:
-//
-//   type MenuItem struct {
-//       dosa.Entity `dosa:"primaryKey=((MenuUUID), MenuItemUUID)"`
-//       MenuUUID     dosa.UUID
-//       MenuItemUUID dosa.UUID
-//       Name         string
-//       Description  string
-//   }
-//
-// Let's also assume we add the following receiver function to our DataStore struct:
-//
-//   func (d *Datastore) GetMenu(ctx context.Context, menuUUID dosa.UUID) ([]*MenuItem, error) {
-//   	op := dosa.NewRangeOp(&MenuItem{}).Eq("MenuUUID", menuUUID).Limit(50)
-//   	rangeCtx, rangeCancelFn := context.WithTimeout(ctx, 1*time.Second)
-//   	defer rangeCancelFn()
-//
-//   	objs, _, err := d.client.Range(rangeCtx, op)
-//   	if err != nil {
-//   		return nil, err
-//   	}
-//
-//   	menuItems := make([]*MenuItem, len(objs))
-//   	for i, obj := range objs {
-//   		menuItems[i] = obj.(*MenuItem)
-//   	}
-//   	return menuItems, nil
-//   }
-//
-// In our tests, we could verify that a particular list of MenuItem entities were queried for using the EqRangeOplike so:
-//
-//
-//   func TestGetMenu(t *testing.T) {
-//       ctrl := gomock.NewController(t)
-//       defer ctrl.Finish()
-//
-//       expectedOp := dosa.NewRangeOp(&examples.MenuItem{}).Eq("MenuUUID", menuUUID).Limit(50)
-//
-//       // mock error from Range call
-//       c1 := mocks.NewMockClient(ctrl)
-//       c1.EXPECT().Initialize(gomock.Any()).Return(nil).Times(1)
-//       c1.EXPECT().Range(gomock.Any(), dosa.EqRangeOp(expectedOp)).Return(nil, "", errors.New("Range Error")).Times(1)
-//       ds1, _ := examples.NewDatastore(c1)
-//
-//       m1, err1 := ds1.GetMenu(ctx, menuUUID)
-//       assert.Error(t, err1)
-//       assert.Nil(t, m1)
-//
-//       // happy path
-//       c2 := mocks.NewMockClient(ctrl)
-//       c2.EXPECT().Initialize(gomock.Any()).Return(nil).Times(1)
-//       c2.EXPECT().Range(gomock.Any(), dosa.EqRangeOp(expectedOp)).Return(objMenu, "", nil).Times(1)
-//       ds2, _ := examples.NewDatastore(c2)
-//
-//       m2, err2 := ds2.GetMenu(ctx, menuUUID)
-//       assert.NoError(t, err2)
-//       assert.Equal(t, menu, m2)
-//   }
 //
 //
 package testingexamples

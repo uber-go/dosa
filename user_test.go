@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,17 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package cassandra includes convenient functions to start the embedded server
-package cassandra
+package dosa_test
 
 import (
-	"github.com/uber-go/dosa/testutil"
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/dosa"
 )
 
-// CassandraPort is the default port for talking to Cassandra
-const CassandraPort = 9042
+func TestGetUsername(t *testing.T) {
+	username := os.Getenv("USER")
 
-// IsRunning provides a quick check to see if Cassandra is already running
-func IsRunning() bool {
-	return testutil.IsRunningOnPort(CassandraPort)
+	u := dosa.GetUsername()
+	assert.Equal(t, username, *u)
 }

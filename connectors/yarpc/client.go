@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,17 +18,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package cassandra_test
+package yarpc
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/dosa/connectors/cassandra"
+	"github.com/uber-go/dosa"
 )
 
-func TestUseNamePrefix_Keyspace(t *testing.T) {
-	sut := cassandra.KeyspaceMapper(&cassandra.UseNamePrefix{})
+// ClientConfig represents the settings for the dosa client
+// based on a yarpc connector.
+type ClientConfig struct {
+	Scope      string `yaml:"scope"`
+	NamePrefix string `yaml:"namePrefix"`
+	Yarpc      Config `yaml:"yarpc"`
+}
 
-	assert.Equal(t, "nameprefix_test", sut.Keyspace("unused", "nameprefix.test"))
+// NewClient creates a DOSA client based on a ClientConfig
+func (c ClientConfig) NewClient(entities ...dosa.DomainObject) (dosa.Client, error) {
+	reg, err := dosa.NewRegistrar(c.Scope, c.NamePrefix, entities...)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := NewConnector(c.Yarpc)
+	if err != nil {
+		return nil, err
+	}
+
+	return dosa.NewClient(reg, conn), nil
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,15 +22,11 @@
 //
 // Abstract
 //
-// :warning: DOSA is BETA software. It is not recommended for production use.
-// We will announce when it's ready.
-//
-//
 // DOSA (https://github.com/uber-go/dosa/wiki) is a storage framework that
 // provides a
 // declarative object storage abstraction for applications in Golang
-// and (eventually) Java. DOSA is designed to relieve common headaches developers
-// face while building stateful, database-dependent services.
+// and (soon) Java. DOSA is designed to relieve common headaches developers face
+// while building stateful, database-dependent services.
 //
 //
 // If you'd like to start by writing a small DOSA-enabled program, check out

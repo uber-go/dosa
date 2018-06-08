@@ -18,14 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package dosa_test
+package dosa
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/dosa"
 )
 
 func TestIsValidName(t *testing.T) {
@@ -76,7 +75,7 @@ func TestIsValidName(t *testing.T) {
 	}
 
 	for _, testData := range dataProvider {
-		err := dosa.IsValidName(testData.arg)
+		err := IsValidName(testData.arg)
 		if testData.allowed {
 			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", testData.arg))
 		} else {
@@ -119,7 +118,7 @@ func TestNormalizeName(t *testing.T) {
 	}
 
 	for _, testData := range dataProvider {
-		name, err := dosa.NormalizeName(testData.arg)
+		name, err := NormalizeName(testData.arg)
 		if testData.allowed {
 			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", testData.arg))
 			assert.Equal(t, testData.expected, name,
@@ -130,40 +129,22 @@ func TestNormalizeName(t *testing.T) {
 	}
 }
 
-func TestToFQN(t *testing.T) {
-	f, err := dosa.ToFQN("service.foo")
+func TestIsValidNamePrefix(t *testing.T) {
+	err := isValidNamePrefix("service.foo")
 	assert.NoError(t, err)
-	assert.EqualValues(t, "service.foo", f)
 
-	f, err = dosa.ToFQN("MyService.Foo.V2")
+	err = isValidNamePrefix("MyService.Foo.V2")
 	assert.NoError(t, err)
-	assert.EqualValues(t, "myservice.foo.v2", f)
 
-	f, err = dosa.ToFQN("")
-	assert.NoError(t, err)
-	assert.EqualValues(t, "", f)
-
-	_, err = dosa.ToFQN("service.an entity")
+	err = isValidNamePrefix("")
 	assert.Error(t, err)
 
-	_, err = dosa.ToFQN("germanRush.über")
+	err = isValidNamePrefix("service.an entity")
 	assert.Error(t, err)
-}
 
-func TestFQNChild(t *testing.T) {
-	fqn, err := dosa.ToFQN("foo.bar")
-	assert.NoError(t, err)
-
-	c, err := fqn.Child("qux")
-	assert.NoError(t, err)
-	assert.EqualValues(t, "foo.bar.qux", c)
-
-	_, err = fqn.Child("世界")
+	err = isValidNamePrefix("germanRush.über")
 	assert.Error(t, err)
-}
 
-func TestFQNStringer(t *testing.T) {
-	fqn, err := dosa.ToFQN("foo.bar")
-	assert.NoError(t, err)
-	assert.Equal(t, "foo.bar", fqn.String())
+	err = isValidNamePrefix("this.prefix.has.more.than.thrity.two.characters.in.it")
+	assert.Error(t, err)
 }

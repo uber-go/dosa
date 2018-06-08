@@ -22,10 +22,10 @@ package dosa
 
 import (
 	"context"
-
+	"fmt"
+	"sort"
+	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 //go:generate stringer -type=Operator
@@ -76,6 +76,56 @@ type EntityInfo struct {
 	Def *EntityDefinition
 	TTL *time.Duration
 }
+
+// StringSet is a set of strings.
+type StringSet map[string]struct{}
+
+// ScopeMetadata is metadata about a scope. (JSON tags to support MD setting CLI tools.) The scope
+// may be qualified by a prefix, as in "production.vsoffers".
+type ScopeMetadata struct {
+	Entity      `dosa:"primaryKey=(Name)" json:"-"`
+	Name        string     `json:"name"`
+	Owner       string     `json:"owner"` // Owning group name (or the same as Creator)
+	Type        int32      `json:"type"`  // Production, Staging, or Development
+	Flags       int64      `json:"flags"`
+	Version     int32      `json:"version"`
+	PrefixStr   string     `json:"prefix_str,omitempty"` // With ":" separators
+	Cluster     string     `json:"cluster,omitempty"`    // Host DB cluster
+	Creator     string     `json:"creator"`
+	CreatedOn   time.Time  `json:"created_on"`
+	ExpiresOn   *time.Time `json:"expires_on,omitempty"`
+	ExtendCount int32      `json:"extend_count,omitempty"`
+	NotifyCount int32      `json:"notify_count,omitempty"`
+	ReadMaxRPS  int32      `json:"read_max_rps"`
+	WriteMaxRPS int32      `json:"write_max_rps"`
+	// This is for convenience only, not stored in the DB:
+	Prefixes StringSet `dosa:"-" json:"-"`
+}
+
+// MetadataSchemaVersion is the version of the schema of the scope metadata
+const MetadataSchemaVersion = 1
+
+// ScopeType is the type of a scope
+type ScopeType int32
+
+// Scope types
+const (
+	// Development scope (also the default, so should be 0)
+	Development ScopeType = iota
+	// Staging doesn't really exist yet, but may in the future
+	Staging
+	// Production scope
+	Production
+)
+
+// ScopeFlagType is a set of scope flags
+type ScopeFlagType int64
+
+// Scope flags (remember to update ScopeFlagType.String)
+const (
+	// AccessFromProd means access is allowed from production (only relevant for Dev scopes)
+	AccessFromProd ScopeFlagType = 1 << iota
+)
 
 // FieldValue holds a field value. It's just a marker.
 type FieldValue interface{}
@@ -139,11 +189,13 @@ type Connector interface {
 	UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (status *SchemaStatus, err error)
 	// CheckSchemaStatus checks the status of the schema whether it is accepted or in progress of application.
 	CheckSchemaStatus(ctx context.Context, scope string, namePrefix string, version int32) (*SchemaStatus, error)
+	// GetEntitySchema returns the entity info for a given entity in a given scope and prefix.
+	GetEntitySchema(ctx context.Context, scope, namePrefix, entityName string, version int32) (*EntityDefinition, error)
 
 	// Datastore management
 	// CreateScope creates a scope for storage of data, usually implemented by a keyspace for this data
 	// This is usually followed by UpsertSchema
-	CreateScope(ctx context.Context, scope string) error
+	CreateScope(ctx context.Context, md *ScopeMetadata) error
 	// TruncateScope keeps the scope around, but removes all the data
 	TruncateScope(ctx context.Context, scope string) error
 	// DropScope removes the scope and all of the data
@@ -155,28 +207,57 @@ type Connector interface {
 	Shutdown() error
 }
 
-// CreationArgs contains values for configuring different connectors
-type CreationArgs map[string]interface{}
-
-// CreationFuncType is the type of a creation function that creates an instance of a registered connector
-type CreationFuncType func(CreationArgs) (Connector, error)
-
-var registeredConnectors map[string]CreationFuncType
-
-func init() {
-	// Can't seem to do this inline and make lint happy
-	registeredConnectors = map[string]CreationFuncType{}
-}
-
-// RegisterConnector registers a connector given a name
-func RegisterConnector(name string, creationFunc func(CreationArgs) (Connector, error)) {
-	registeredConnectors[name] = creationFunc
-}
-
-// GetConnector gets a connector by name, along with some options
-func GetConnector(name string, args CreationArgs) (Connector, error) {
-	if creationFunc, ok := registeredConnectors[name]; ok {
-		return creationFunc(args)
+func (t ScopeType) String() string {
+	switch t {
+	case Production:
+		return "production"
+	case Staging:
+		return "staging"
+	case Development:
+		return "development"
 	}
-	return nil, errors.Errorf("No such connector %q", name)
+	return fmt.Sprintf("unknown scope type %d", t)
+}
+
+func (md *ScopeMetadata) String() string {
+	s := fmt.Sprintf("<Scope %s (%s): owner=%s, creator=%s, created=%v", md.Name, ScopeType(md.Type),
+		md.Owner, md.Creator, md.CreatedOn)
+	if md.ExpiresOn != nil {
+		s += fmt.Sprintf(", expires=%v", *md.ExpiresOn)
+	}
+	if len(md.Prefixes) > 0 {
+		s += fmt.Sprintf(", prefixes=%s", md.Prefixes)
+	}
+	if len(md.PrefixStr) > 0 {
+		s += fmt.Sprintf(", prefixes=%v", md.PrefixStr)
+	}
+	if len(md.Cluster) > 0 {
+		s += fmt.Sprintf(", cluster=%v", md.Cluster)
+	}
+	if md.ExtendCount > 0 {
+		s += fmt.Sprintf(", extended=%d", md.ExtendCount)
+	}
+	if md.NotifyCount > 0 {
+		s += fmt.Sprintf(", notified=%d", md.ExtendCount)
+	}
+	return s + ">"
+}
+
+func (s StringSet) String() string {
+	ss := make([]string, len(s))
+	i := 0
+	for k := range s {
+		ss[i] = k
+		i++
+	}
+	sort.Strings(ss)
+	return "{" + strings.Join(ss, ", ") + "}"
+}
+
+func (f ScopeFlagType) String() string {
+	fs := make([]string, 1)
+	if f&AccessFromProd != 0 {
+		fs = append(fs, "AccessFromProd")
+	}
+	return "{" + strings.Join(fs, ", ") + "}"
 }

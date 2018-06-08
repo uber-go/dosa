@@ -66,6 +66,7 @@ type UUID string
 
 // NewUUID is a helper for returning a new dosa.UUID value
 func NewUUID() UUID {
+	// return UUID(uuid.Must(uuid.NewV4()).String())
 	return UUID(uuid.NewV4().String())
 }
 
