@@ -1,4 +1,7 @@
 # Changelog
+## v3.0.2 (unreleased)
+ - Add functionality to not invalidate cache when upsert (#341)
+
 ## v3.0.1 (2018-06-07)
 - Fixed version const
 

@@ -49,12 +49,31 @@ type rangeQuery struct {
 	Limit      int
 }
 
-// NewConnector creates a fallback cache connector
-func NewConnector(origin, fallback dosa.Connector, scope metrics.Scope, entities ...dosa.DomainObject) *Connector {
-	return newConnector(origin, fallback, scope, encoding.NewGobEncoder(), entities...)
+// Options returns a function that's being used for connector initialization
+type Options func(*Connector) error
+
+// WithSkipWriteInvalidateEntities provides the option for client to set the entites
+func WithSkipWriteInvalidateEntities(entities ...dosa.DomainObject) Options {
+	return func(c *Connector) error {
+		c.skipWriteInvalidateEntitiesMap = createSkipWriteCacheInvalidateSet(entities)
+		return nil
+	}
 }
 
-func newConnector(origin, fallback dosa.Connector, scope metrics.Scope, encoder encoding.Encoder, entities ...dosa.DomainObject) *Connector {
+// NewConnector creates a fallback cache connector
+func NewConnector(origin, fallback dosa.Connector, scope metrics.Scope, entities []dosa.DomainObject, options ...Options) *Connector {
+	c := newConnector(origin, fallback, scope, encoding.NewGobEncoder(), entities)
+	for _, option := range options {
+		err := option(c)
+		if err != nil {
+			// It's a no-op when getting an error now
+			continue
+		}
+	}
+	return c
+}
+
+func newConnector(origin, fallback dosa.Connector, scope metrics.Scope, encoder encoding.Encoder, entities []dosa.DomainObject) *Connector {
 	bc := base.Connector{Next: origin}
 	set := createCachedEntitiesSet(entities)
 	return &Connector{
@@ -69,23 +88,17 @@ func newConnector(origin, fallback dosa.Connector, scope metrics.Scope, encoder 
 // Connector is a fallback cache connector
 type Connector struct {
 	base.Connector
-	fallback          dosa.Connector
-	encoder           encoding.Encoder
-	cacheableEntities map[string]bool
-	mux               sync.Mutex
-	stats             metrics.Scope
+	fallback                       dosa.Connector
+	encoder                        encoding.Encoder
+	cacheableEntities              map[string]bool
+	skipWriteInvalidateEntitiesMap map[string]bool
+	mux                            sync.Mutex
+	stats                          metrics.Scope
 	// Used primarily for testing so that nothing is called in a goroutine
 	synchronous bool
 }
 
-// SetCachedEntities sets the entities that will write and read from the fallback
-func (c *Connector) SetCachedEntities(entities ...dosa.DomainObject) {
-	c.mux.Lock()
-	defer c.mux.Unlock()
-	c.cacheableEntities = createCachedEntitiesSet(entities)
-}
-
-// Upsert removes (invalidates) the entry from the fallback
+// Upsert removes (invalidates) the entry from the fallback if the entity is not in the skipWriteInvalidateEntitiesMap
 func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
 	if c.isCacheable(ei) {
 		w := func() error {
@@ -286,7 +299,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 	return c.Next.Remove(ctx, ei, keys)
 }
 
-// MultiUpsert deletes the entries getting upserted from the fallback
+// MultiUpsert deletes the entries getting upserted from the fallback if the entity is not in the skipWriteInvalidateEntitiesMap
 func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) (result []error, err error) {
 	if c.isCacheable(ei) {
 		w := func() error {
@@ -335,6 +348,9 @@ func (c *Connector) getValueFromFallback(ctx context.Context, ei *dosa.EntityInf
 }
 
 func (c *Connector) removeValueFromFallback(ctx context.Context, ei *dosa.EntityInfo, ckey interface{}) error {
+	if c.shouldSkipInvalidateCacheOnWrite(ei) {
+		return nil
+	}
 	cacheKey, err := c.encoder.Encode(ckey)
 	if err != nil {
 		return err
@@ -393,13 +409,15 @@ func (c *Connector) cacheWrite(w func() error) error {
 	return nil
 }
 
+func (c *Connector) shouldSkipInvalidateCacheOnWrite(ei *dosa.EntityInfo) bool {
+	return c.skipWriteInvalidateEntitiesMap[ei.Def.Name]
+}
+
 func (c *Connector) isCacheable(ei *dosa.EntityInfo) bool {
 	return c.cacheableEntities[ei.Def.Name]
 }
 
-// returns a set of entity names that should go through the fallback cache
-// All other entities will just return results from origin
-func createCachedEntitiesSet(entities []dosa.DomainObject) map[string]bool {
+func createCacheMapFromEntites(entities []dosa.DomainObject) map[string]bool {
 	set := map[string]bool{}
 	for _, e := range entities {
 		if e == nil {
@@ -412,6 +430,17 @@ func createCachedEntitiesSet(entities []dosa.DomainObject) map[string]bool {
 		set[t.EntityDefinition.Name] = true
 	}
 	return set
+}
+
+// returns a set of entity names that should skip the cache invalidation on write
+func createSkipWriteCacheInvalidateSet(entities []dosa.DomainObject) map[string]bool {
+	return createCacheMapFromEntites(entities)
+}
+
+// returns a set of entity names that should go through the fallback cache
+// All other entities will just return results from origin
+func createCachedEntitiesSet(entities []dosa.DomainObject) map[string]bool {
+	return createCacheMapFromEntites(entities)
 }
 
 // new entity info is being derived from the original to support the structure of a caching connector
