@@ -1,8 +1,10 @@
 # Changelog
 ## v3.0.2 (unreleased)
  - Add functionality to not invalidate cache when upsert (#341)
+
 ## v3.0.1 (2018-06-07)
 - Fixed version const
+
 ## v3.0.0 (2018-06-07)
 - Simplified client creation when using the YARPC connector. (#321)
 - Scope metadata handling, and rudimentary auth* support. The Connector interface (Admin API) has changed. (#273)
