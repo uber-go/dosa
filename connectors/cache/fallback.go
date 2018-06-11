@@ -66,7 +66,7 @@ func NewConnector(origin, fallback dosa.Connector, scope metrics.Scope, entities
 	for _, option := range options {
 		err := option(c)
 		if err != nil {
-			// It's an no-op when getting an error now
+			// It's a no-op when getting an error now
 			continue
 		}
 	}
