@@ -124,6 +124,22 @@ func BenchmarkFinder(b *testing.B) {
 	}
 }
 
+func TestFindEntityByName(t *testing.T) {
+	validName := "SinglePrimaryKey"
+	invalidName := "BadEntityName"
+
+	// happy case
+	entity, err := FindEntityByName(".", validName)
+	assert.NotNil(t, entity)
+	assert.NoError(t, err)
+	assert.Equal(t, validName, entity.StructName)
+
+	// bad case
+	entity, err = FindEntityByName(".", invalidName)
+	assert.Nil(t, entity)
+	assert.Error(t, err)
+}
+
 func TestStringToDosaType(t *testing.T) {
 	data := []struct {
 		inType    string

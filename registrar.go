@@ -61,6 +61,12 @@ func (e *RegisteredEntity) EntityInfo() *EntityInfo {
 	}
 }
 
+// Table is a helper for accessing the registered entity's
+// Table instance.
+func (e *RegisteredEntity) Table() *Table {
+	return e.table
+}
+
 // SchemaRef is a helper for accessing the registered entity's
 // SchemaRef instance.
 func (e *RegisteredEntity) SchemaRef() *SchemaRef {
@@ -213,7 +219,7 @@ type prefixedRegistrar struct {
 // and prefix to uniquely identify where entities should live but the
 // registrar itself is only responsible for basic accounting of entities.
 func NewRegistrar(scope, namePrefix string, entities ...DomainObject) (Registrar, error) {
-	if err := isValidNamePrefix(namePrefix); err != nil {
+	if err := IsValidNamePrefix(namePrefix); err != nil {
 		return nil, errors.Wrap(err, "failed to construct Registrar")
 	}
 	typeIndex := make(map[reflect.Type]*RegisteredEntity)

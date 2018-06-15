@@ -77,6 +77,33 @@ func findEntities(paths, excludes []string) ([]*Table, []error, error) {
 	return entities, warnings, nil
 }
 
+// FindEntityByName returns the entity with given name in the path.
+func FindEntityByName(path string, structName string) (*Table, error) {
+	// find all entites in the given path
+	entities, _, err := findEntities([]string{path}, []string{})
+	if err != nil {
+		return nil, err
+	}
+
+	// filter entites with the given struct name
+	entitiesFilteredByName := []*Table{}
+	for _, table := range entities {
+		if table.StructName == structName {
+			entitiesFilteredByName = append(entitiesFilteredByName, table)
+		}
+	}
+
+	// only one entity with given name should be found
+	if len(entitiesFilteredByName) == 0 {
+		return nil, errors.Errorf("no entity named %s found in the path %s", structName, path)
+	}
+	if len(entitiesFilteredByName) > 1 {
+		return nil, errors.Errorf("more than one entities named %s found in the path %s", structName, path)
+	}
+
+	return entitiesFilteredByName[0], nil
+}
+
 // dosaPackageName is the name of the dosa package, fully qualified and quoted
 const dosaPackageName = `"github.com/uber-go/dosa"`
 

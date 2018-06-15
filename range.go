@@ -135,6 +135,16 @@ func (r *RangeOp) LtOrEq(fieldName string, value interface{}) *RangeOp {
 	return r
 }
 
+// Conditions returns all conditions embedded in the range operator
+func (r *RangeOp) Conditions() map[string][]*Condition {
+	return r.conditions
+}
+
+// LimitRows returns number of rows to return per call
+func (r *RangeOp) LimitRows() int {
+	return r.limit
+}
+
 // IndexFromConditions returns the name of the index or the base table to use, along with the key info
 // for that index. If no suitable index could be found, an error is returned
 func (ei *EntityInfo) IndexFromConditions(conditions map[string][]*Condition, searchIndexes bool) (name string, key *PrimaryKey, err error) {

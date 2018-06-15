@@ -35,7 +35,8 @@ var (
 	namePrefixRegex = regexp.MustCompile("^[a-z_][a-z0-9_.]{0,31}$")
 )
 
-func isValidNamePrefix(namePrefix string) error {
+// IsValidNamePrefix checks if a prefix name conforms the regular expression
+func IsValidNamePrefix(namePrefix string) error {
 	normalized := strings.ToLower(strings.TrimSpace(namePrefix))
 	if !namePrefixRegex.MatchString(normalized) {
 		return errors.Errorf("Name Prefix %s is invalid. It was normalized to "+

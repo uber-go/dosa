@@ -35,6 +35,8 @@ var exit = os.Exit
 
 type clientProvider func(opts GlobalOptions) (dosa.AdminClient, error)
 
+type queryClientProvider func(opts GlobalOptions, scope, prefix, path, structName string) (ShellQueryClient, error)
+
 // these are overridden at build-time w/ the -ldflags -X option
 var (
 	version   = "0.0.0"
@@ -95,6 +97,13 @@ dosa manages your schema both in production and development scopes`
 	_, _ = c.AddCommand("upsert", "Upsert schema", "insert or update the schema", newSchemaUpsert(provideYarpcClient))
 	_, _ = c.AddCommand("dump", "Dump schema", "display the schema in a given format", &SchemaDump{})
 	_, _ = c.AddCommand("status", "Check schema status", "Check application status of schema", newSchemaStatus(provideYarpcClient))
+
+	c, _ = OptionsParser.AddCommand("query", "commands to do query", "fetch one or multiple rows", &QueryOptions{})
+	_, _ = c.AddCommand("read", "Read query", "read a row by primary keys", newQueryRead(provideShellQueryClient))
+	_, _ = c.AddCommand("range", "Range query", "read rows with range of primary keys and indexes", newQueryRange(provideShellQueryClient))
+
+	// TODO: implement admin subcommand
+	// c, _ = OptionsParser.AddCommand("admin", "commands to administrate", "", &AdminOptions{})
 
 	_, err := OptionsParser.Parse()
 

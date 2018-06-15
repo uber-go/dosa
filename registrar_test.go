@@ -63,6 +63,8 @@ func TestNewRegisteredEntity(t *testing.T) {
 	def := re.EntityDefinition()
 	assert.NotNil(t, def)
 
+	assert.NotNil(t, re.Table())
+
 	re.SetVersion(version)
 	assert.Equal(t, ref.Scope, scope)
 	assert.Equal(t, ref.NamePrefix, namePrefix)

@@ -21,6 +21,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
@@ -108,6 +109,54 @@ func provideYarpcClient(opts GlobalOptions) (dosa.AdminClient, error) {
 }
 
 func shutdownAdminClient(client dosa.AdminClient) {
+	if client.Shutdown() != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Failed to properly shutdown client")
+	}
+}
+
+func provideShellQueryClient(opts GlobalOptions, scope, prefix, path, structName string) (ShellQueryClient, error) {
+	// from YARPC: "must begin with a letter and consist only of dash-delimited
+	// lower-case ASCII alphanumeric words" -- we do this here because YARPC
+	// will panic if caller name is invalid.
+	if !validNameRegex.MatchString(string(opts.CallerName)) {
+		return nil, fmt.Errorf("invalid caller name: %s, must begin with a letter and consist only of dash-delimited lower-case ASCII alphanumeric words", opts.CallerName)
+	}
+
+	ycfg := yarpc.Config{
+		Host:        opts.Host,
+		Port:        opts.Port,
+		CallerName:  opts.CallerName.String(),
+		ServiceName: opts.ServiceName,
+	}
+
+	conn, err := yarpc.NewConnector(ycfg)
+	if err != nil {
+		return nil, err
+	}
+
+	// search the directory and get the entity with input name
+	table, err := dosa.FindEntityByName(path, structName)
+	if err != nil {
+		return nil, err
+	}
+
+	reg, err := newSimpleRegistrar(scope, prefix, table)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
+	defer cancel()
+
+	client := newShellQueryClient(reg, conn)
+	if err := client.Initialize(ctx); err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}
+
+func shutdownQueryClient(client ShellQueryClient) {
 	if client.Shutdown() != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to properly shutdown client")
 	}

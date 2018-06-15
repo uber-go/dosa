@@ -18,29 +18,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package dosa
+package main
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/dosa"
 )
 
-func TestConvertConditions(t *testing.T) {
-	alltypesTable, _ := TableFromInstance((*AllTypes)(nil))
-	for _, test := range rangeTestCases {
-		result, err := ConvertConditions(test.rop.conditions, alltypesTable)
-		if err != nil {
-			assert.Contains(t, err.Error(), test.err, test.descript)
-		} else {
-			if assert.NoError(t, err) {
-				// we don't have a stringify method on just the conditions bit
-				// so just build a new RangeOp from the old one
-				newRop := *test.rop
-				newRop.conditions = result
-				final := (&newRop).String()
-				assert.Equal(t, test.converted, final, test.descript)
-			}
-		}
-	}
+type RegistrarTest struct {
+	dosa.Entity `dosa:"primaryKey=(ID, Name)"`
+	ID          int64
+	Name        string
+	Email       string
+}
+
+func TestNewRegistrar(t *testing.T) {
+	table, err := dosa.FindEntityByName(".", "RegistrarTest")
+	assert.NotNil(t, table)
+	assert.NoError(t, err)
+
+	r, err := newSimpleRegistrar(scope, namePrefix, table)
+	assert.NotNil(t, r)
+	assert.NoError(t, err)
+
+	re, err := r.Find(&dosa.Entity{})
+	assert.NotNil(t, re)
+	assert.NoError(t, err)
+
+	info := re.EntityInfo()
+	assert.Equal(t, info.Ref.Scope, r.Scope())
+	assert.Equal(t, info.Ref.NamePrefix, r.NamePrefix())
+
+	registered := r.FindAll()
+	assert.Equal(t, len(registered), 1)
 }
