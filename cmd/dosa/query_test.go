@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +23,7 @@ package main
 import (
 	"context"
 	"os"
-	"reflect"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -156,83 +154,6 @@ func TestQuery_NewQueryObj(t *testing.T) {
 	assert.Equal(t, "StrKey", qo.fieldName)
 	assert.Equal(t, "eq", qo.op)
 	assert.Equal(t, "foo", qo.valueStr)
-}
-
-func TestQuery_ParseQuery(t *testing.T) {
-	cases := []struct {
-		inExps     []string
-		expQueries []*queryObj
-		expErr     bool
-	}{
-		{
-			[]string{"StrKey:eq:foo"},
-			[]*queryObj{
-				{
-					fieldName: "StrKey",
-					op:        "eq",
-					valueStr:  "foo",
-				},
-			},
-			false,
-		}, {
-			[]string{"StrKey:eq"},
-			nil,
-			true,
-		}, {
-			[]string{"StrKey:eq:foo", "StrKey:eq"},
-			nil,
-			true,
-		},
-	}
-
-	for _, c := range cases {
-		outQueries, err := parseQuery(c.inExps)
-		assert.True(t, reflect.DeepEqual(c.expQueries, outQueries))
-		assert.Equal(t, c.expErr, err != nil)
-	}
-}
-
-func TestQuery_SetQueryFieldValues(t *testing.T) {
-	table, _ := dosa.FindEntityByName("../../testentity", "TestEntity")
-	re := dosa.NewRegisteredEntity(scope, namePrefix, table)
-
-	// success case
-	query := newQueryObj("StrKey", "eq", "foo")
-	queries, err := setQueryFieldValues([]*queryObj{query}, re)
-	assert.NotNil(t, queries)
-	assert.NoError(t, err)
-	assert.Len(t, queries, 1)
-	assert.Equal(t, dosa.FieldValue("foo"), queries[0].value)
-
-	// bad case
-	query = newQueryObj("BadKey", "eq", "foo")
-	queries, err = setQueryFieldValues([]*queryObj{query}, re)
-	assert.Nil(t, queries)
-	assert.Contains(t, err.Error(), "is not a valid field for")
-}
-
-func TestQuery_StrToFieldValue(t *testing.T) {
-	tStr := "2018-06-11T13:03:01Z"
-	ts, _ := time.Parse(time.RFC3339, tStr)
-	cases := []struct {
-		inType dosa.Type
-		inStr  string
-		expFv  dosa.FieldValue
-	}{
-		{dosa.Int32, "42", dosa.FieldValue(int32(42))},
-		{dosa.Int64, "42", dosa.FieldValue(int64(42))},
-		{dosa.Bool, "false", dosa.FieldValue(false)},
-		{dosa.String, "42", dosa.FieldValue("42")},
-		{dosa.Double, "42.00", dosa.FieldValue(float64(42))},
-		{dosa.Timestamp, tStr, dosa.FieldValue(ts)},
-		{dosa.TUUID, "3e4befa0-69d3-11e8-95b0-d55aa227a290", dosa.FieldValue(dosa.UUID("3e4befa0-69d3-11e8-95b0-d55aa227a290"))},
-	}
-
-	for _, c := range cases {
-		outFv, err := strToFieldValue(c.inType, c.inStr)
-		assert.Equal(t, c.expFv, outFv)
-		assert.Nil(t, err)
-	}
 }
 
 func TestQuery_ScopeRequired(t *testing.T) {

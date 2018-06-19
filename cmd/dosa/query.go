@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,8 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"reflect"
-	"strconv"
 	"strings"
-	"time"
 
-	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 )
 
@@ -63,22 +58,12 @@ type QueryCmd struct {
 	provideClient queryClientProvider
 }
 
-func (c *QueryCmd) getNamePrefix() (string, error) {
-	if len(c.NamePrefix) > 0 {
-		return c.NamePrefix, nil
-	}
-	if len(c.Prefix) > 0 {
-		return c.Prefix, nil
-	}
-	return "", errors.New("required argument '--namePrefix' was not specified")
-}
-
 func (c *QueryCmd) doQueryOp(f func(ShellQueryClient, context.Context, []*queryObj, []string, int) ([]map[string]dosa.FieldValue, error), entityName string, queries []string, limit int) error {
 	if options.ServiceName == "" {
 		options.ServiceName = _defServiceName
 	}
 
-	prefix, err := c.getNamePrefix()
+	prefix, err := getNamePrefix(c.NamePrefix, c.Prefix)
 	if err != nil {
 		return err
 	}
@@ -162,97 +147,4 @@ func newQueryRange(provideClient queryClientProvider) *QueryRange {
 // Execute executes a range query command
 func (c *QueryRange) Execute(args []string) error {
 	return c.doQueryOp(ShellQueryClient.Range, c.Args.EntityName, c.Args.Queries, c.Limit)
-}
-
-// parseQuery parses the input query expressions
-func parseQuery(exps []string) ([]*queryObj, error) {
-	queries := make([]*queryObj, len(exps))
-	for idx, exp := range exps {
-		strs := strings.SplitN(exp, ":", 3)
-		if len(strs) != 3 {
-			return nil, errors.Errorf("query expression should be in the form field:op:value")
-		}
-		queries[idx] = newQueryObj(strs[0], strs[1], strs[2])
-	}
-	return queries, nil
-}
-
-// setQueryFieldValues sets the value field of queryObj
-func setQueryFieldValues(queries []*queryObj, re *dosa.RegisteredEntity) ([]*queryObj, error) {
-	cts := re.EntityDefinition().ColumnTypes()
-	for _, query := range queries {
-		// convert field name to column name, ColumnNames method will return error if field name not found
-		cols, err := re.ColumnNames([]string{query.fieldName})
-		if err != nil {
-			return nil, err
-		}
-		query.colName = cols[0]
-		if typ, ok := cts[cols[0]]; ok {
-			fv, err := strToFieldValue(typ, query.valueStr)
-			if err != nil {
-				return nil, err
-			}
-			query.value = fv
-		} else {
-			return nil, errors.Errorf("cannot find the type of column %s", cols[0])
-		}
-	}
-	return queries, nil
-}
-
-// strToFieldValue converts the 'value' of input query expression from string
-// to dosa.FieldValue
-func strToFieldValue(t dosa.Type, s string) (dosa.FieldValue, error) {
-	switch t {
-	case dosa.Int32:
-		i, err := strconv.ParseInt(s, 10, 32)
-		if err != nil {
-			return nil, err
-		}
-		return dosa.FieldValue(int32(i)), nil
-	case dosa.Int64:
-		i, err := strconv.ParseInt(s, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		return dosa.FieldValue(int64(i)), nil
-	case dosa.Bool:
-		b, err := strconv.ParseBool(s)
-		if err != nil {
-			return nil, err
-		}
-		return dosa.FieldValue(b), nil
-	case dosa.String:
-		return dosa.FieldValue(s), nil
-	case dosa.Double:
-		d, err := strconv.ParseFloat(s, 64)
-		if err != nil {
-			return nil, err
-		}
-		return dosa.FieldValue(d), nil
-	case dosa.Timestamp:
-		t, err := time.Parse(time.RFC3339, s)
-		if err != nil {
-			return nil, err
-		}
-		return dosa.FieldValue(t), nil
-	case dosa.TUUID:
-		u := dosa.UUID(s)
-		return dosa.FieldValue(u), nil
-	case dosa.Blob:
-		// TODO: support query with binary arrays
-		return nil, errors.Errorf("blob query not supported for now")
-	default:
-		return nil, errors.Errorf("unsupported type")
-	}
-}
-
-func printResult(res []map[string]dosa.FieldValue) {
-	fmt.Println("Results:")
-	for _, fvs := range res {
-		for k, v := range fvs {
-			fmt.Printf("%s: %v\n", k, reflect.Indirect(reflect.ValueOf(v)))
-		}
-		fmt.Printf("\n")
-	}
 }

@@ -74,12 +74,12 @@ type SchemaCmd struct {
 	provideClient clientProvider
 }
 
-func (c *SchemaCmd) getNamePrefix() (string, error) {
-	if len(c.NamePrefix) > 0 {
-		return c.NamePrefix, nil
+func getNamePrefix(namePrefix, prefix string) (string, error) {
+	if len(namePrefix) > 0 {
+		return namePrefix, nil
 	}
-	if len(c.Prefix) > 0 {
-		return c.Prefix, nil
+	if len(prefix) > 0 {
+		return prefix, nil
 	}
 	return "", errors.New("required argument '--namePrefix' was not specified")
 }
@@ -120,7 +120,7 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	defer cancel()
 
 	var prefix string
-	if prefix, err = c.getNamePrefix(); err != nil {
+	if prefix, err = getNamePrefix(c.NamePrefix, c.Prefix); err != nil {
 		return err
 	}
 	status, err := f(client, ctx, prefix)
@@ -219,7 +219,7 @@ func (c *SchemaStatus) Execute(args []string) error {
 	defer cancel()
 
 	var prefix string
-	if prefix, err = c.getNamePrefix(); err != nil {
+	if prefix, err = getNamePrefix(c.NamePrefix, c.Prefix); err != nil {
 		return err
 	}
 	status, err := client.CheckSchemaStatus(ctx, prefix, c.Version)

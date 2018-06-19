@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,11 @@ var (
 	namePrefixRegex = regexp.MustCompile("^[a-z_][a-z0-9_.]{0,31}$")
 )
 
-// IsValidNamePrefix checks if a prefix name conforms the regular expression
+// IsValidNamePrefix checks if a name prefix (a namespace prefixed to all DOSA entity type names)
+// conforms the following rules:
+// 1. name prefix starts with [a-z_]
+// 2. the rest of name prefix can contain only [a-z0-9_.]
+// 3. the length of name prefix must be greater than 0 and less than or equal to 32
 func IsValidNamePrefix(namePrefix string) error {
 	normalized := strings.ToLower(strings.TrimSpace(namePrefix))
 	if !namePrefixRegex.MatchString(normalized) {
