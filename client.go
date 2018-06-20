@@ -46,15 +46,12 @@
 package dosa
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"os"
-	"reflect"
-	"strings"
-	"time"
-
-	"bytes"
 	"io"
+	"reflect"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -608,7 +605,7 @@ type adminClient struct {
 // NewAdminClient returns a new DOSA admin client for the connector provided.
 func NewAdminClient(conn Connector) AdminClient {
 	return &adminClient{
-		scope:     strings.ToLower(os.Getenv("USER")),
+		scope:     "default",
 		dirs:      []string{"."},
 		excludes:  []string{"_test.go"},
 		connector: conn,
