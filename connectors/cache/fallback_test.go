@@ -185,7 +185,7 @@ func provideTestWithOptions(tc testCase, shouldskip bool, opts ...Options) func(
 		fallbackCtrl := gomock.NewController(t)
 		defer fallbackCtrl.Finish()
 		mockFallback := mocks.NewMockConnector(fallbackCtrl)
-		if tc.fallbackUpsert != nil && !shouldskip{
+		if tc.fallbackUpsert != nil && !shouldskip {
 			mockFallback.EXPECT().Remove(gomock.Not(context.TODO()), adaptedEi, tc.fallbackUpsert.values).Return(nil).MinTimes(1)
 		}
 

@@ -18,35 +18,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package dosa
+package main
 
-import "github.com/pkg/errors"
+import (
+	"testing"
 
-type conditioner struct {
-	object     DomainObject
-	conditions map[string][]*Condition
+	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/dosa"
+)
+
+type RegistrarTest struct {
+	dosa.Entity `dosa:"primaryKey=(ID, Name)"`
+	ID          int64
+	Name        string
+	Email       string
 }
 
-func (c *conditioner) appendOp(op Operator, fieldName string, value interface{}) {
-	c.conditions[fieldName] = append(c.conditions[fieldName], &Condition{Op: op, Value: value})
-}
+func TestNewRegistrar(t *testing.T) {
+	table, err := dosa.FindEntityByName(".", "RegistrarTest")
+	assert.NotNil(t, table)
+	assert.NoError(t, err)
 
-// ConvertConditions converts a list of client field names to server side field names
-func ConvertConditions(conditions map[string][]*Condition, t *Table) (map[string][]*Condition, error) {
-	serverConditions := map[string][]*Condition{}
-	for colName, conds := range conditions {
-		if scolName, ok := t.FieldToCol[colName]; ok {
-			serverConditions[scolName] = conds
-			// we need to be sure each of the types are correct for marshaling
-			cd := t.FindColumnDefinition(scolName)
-			for _, cond := range conds {
-				if err := ensureTypeMatch(cd.Type, cond.Value); err != nil {
-					return nil, errors.Wrapf(err, "column %s", colName)
-				}
-			}
-		} else {
-			return nil, errors.Errorf("Cannot find column %q in struct %q", colName, t.StructName)
-		}
-	}
-	return serverConditions, nil
+	r, err := newSimpleRegistrar(scope, namePrefix, table)
+	assert.NotNil(t, r)
+	assert.NoError(t, err)
+
+	re, err := r.Find(&dosa.Entity{})
+	assert.NotNil(t, re)
+	assert.NoError(t, err)
+
+	info := re.EntityInfo()
+	assert.Equal(t, info.Ref.Scope, r.Scope())
+	assert.Equal(t, info.Ref.NamePrefix, r.NamePrefix())
+
+	registered := r.FindAll()
+	assert.Equal(t, len(registered), 1)
 }

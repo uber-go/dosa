@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -59,6 +59,12 @@ func (e *RegisteredEntity) EntityInfo() *EntityInfo {
 		Def: &e.table.EntityDefinition,
 		TTL: &e.table.TTL,
 	}
+}
+
+// Table is a helper for accessing the registered entity's
+// Table instance.
+func (e *RegisteredEntity) Table() *Table {
+	return e.table
 }
 
 // SchemaRef is a helper for accessing the registered entity's
@@ -213,7 +219,7 @@ type prefixedRegistrar struct {
 // and prefix to uniquely identify where entities should live but the
 // registrar itself is only responsible for basic accounting of entities.
 func NewRegistrar(scope, namePrefix string, entities ...DomainObject) (Registrar, error) {
-	if err := isValidNamePrefix(namePrefix); err != nil {
+	if err := IsValidNamePrefix(namePrefix); err != nil {
 		return nil, errors.Wrap(err, "failed to construct Registrar")
 	}
 	typeIndex := make(map[reflect.Type]*RegisteredEntity)

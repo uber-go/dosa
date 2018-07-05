@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -122,6 +122,22 @@ func BenchmarkFinder(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		findEntities([]string{"."}, []string{})
 	}
+}
+
+func TestFindEntityByName(t *testing.T) {
+	validName := "SinglePrimaryKey"
+	invalidName := "BadEntityName"
+
+	// happy case
+	entity, err := FindEntityByName(".", validName)
+	assert.NotNil(t, entity)
+	assert.NoError(t, err)
+	assert.Equal(t, validName, entity.StructName)
+
+	// bad case
+	entity, err = FindEntityByName(".", invalidName)
+	assert.Nil(t, entity)
+	assert.Error(t, err)
 }
 
 func TestStringToDosaType(t *testing.T) {

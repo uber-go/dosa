@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -133,6 +133,16 @@ func (r *RangeOp) Lt(fieldName string, value interface{}) *RangeOp {
 func (r *RangeOp) LtOrEq(fieldName string, value interface{}) *RangeOp {
 	r.appendOp(LtOrEq, fieldName, value)
 	return r
+}
+
+// Conditions returns all conditions embedded in the range operator
+func (r *RangeOp) Conditions() map[string][]*Condition {
+	return r.conditions
+}
+
+// LimitRows returns number of rows to return per call
+func (r *RangeOp) LimitRows() int {
+	return r.limit
 }
 
 // IndexFromConditions returns the name of the index or the base table to use, along with the key info
