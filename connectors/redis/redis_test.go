@@ -40,6 +40,7 @@ var testRedisConfig = redis.Config{
 		Port: redis.RedisPort,
 	},
 	TTL: 1 * time.Minute,
+	KeyPrefix: "testPrefix",
 }
 
 var (
