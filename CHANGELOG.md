@@ -1,5 +1,5 @@
 # Changelog
-## v3.0.2 (unreleased)
+## v3.1.0 (2018-07-12)
  - Add functionality to not invalidate cache when upsert (#341)
  - Add query (read/range) support to CLI (#342)
 
