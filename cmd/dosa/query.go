@@ -108,8 +108,8 @@ func (c *QueryCmd) doQueryOp(f func(ShellQueryClient, context.Context, []*queryO
 type QueryRead struct {
 	*QueryCmd
 	Args struct {
-		EntityName string   `positional-arg-name:"entity"`
-		Queries    []string `positional-arg-name:"queries" description:"queries should be in the form field:op:value, supported operator: eq"`
+		EntityName string   `positional-arg-name:"entity" description:"entity name"`
+		Queries    []string `positional-arg-name:"queries" description:"queries should be in the form field:operator:value, supported operator: eq"`
 	} `positional-args:"yes"`
 }
 
@@ -129,10 +129,10 @@ func (c *QueryRead) Execute(args []string) error {
 // QueryRange holds the options for 'query range'
 type QueryRange struct {
 	*QueryCmd
-	Limit int `short:"l" long:"limit" default:"100" description:"max number of results to return, all results will be returned if not specified"`
+	Limit int `short:"l" long:"limit" default:"100" description:"max number of results to return"`
 	Args  struct {
 		EntityName string   `positional-arg-name:"entity" description:"entity name"`
-		Queries    []string `positional-arg-name:"queries" description:"queries should be in the form field:op:value, supported operators: eq,lt,le,gt,ge"`
+		Queries    []string `positional-arg-name:"queries" description:"queries should be in the form field:operator:value, supported operators: eq,lt,le,gt,ge"`
 	} `positional-args:"yes"`
 }
 
