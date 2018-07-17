@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,7 @@ import (
 func TestConvertConditions(t *testing.T) {
 	alltypesTable, _ := TableFromInstance((*AllTypes)(nil))
 	for _, test := range rangeTestCases {
-		result, err := convertConditions(test.rop.conditions, alltypesTable)
+		result, err := ConvertConditions(test.rop.conditions, alltypesTable)
 		if err != nil {
 			assert.Contains(t, err.Error(), test.err, test.descript)
 		} else {
