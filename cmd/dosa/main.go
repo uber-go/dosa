@@ -90,6 +90,9 @@ dosa manages your schema both in production and development scopes`
 	_, _ = c.AddCommand("drop", "Drop scope", "drops a scope", newScopeDrop(provideYarpcClient))
 	_, _ = c.AddCommand("truncate", "Truncate scope", "truncates a scope", newScopeTruncate(provideYarpcClient))
 
+	_, _ = c.AddCommand("list", "List scopes", "lists scopes", newScopeList(provideYarpcClient))
+	_, _ = c.AddCommand("show", "Show scope MD", "show scope metadata", newScopeShow(provideYarpcClient))
+
 	c, _ = OptionsParser.AddCommand("schema", "commands to manage schemas", "check or update schemas", &SchemaOptions{})
 	_, _ = c.AddCommand("check", "Check schema", "check the schema", newSchemaCheck(provideYarpcClient))
 	_, _ = c.AddCommand("upsert", "Upsert schema", "insert or update the schema", newSchemaUpsert(provideYarpcClient))
