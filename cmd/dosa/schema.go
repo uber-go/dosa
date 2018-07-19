@@ -71,7 +71,7 @@ type SchemaCmd struct {
 	Scope         scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
 	NamePrefix    string    `short:"n" long:"namePrefix" description:"Name prefix for schema types."`
 	Prefix        string    `short:"p" long:"prefix" description:"Name prefix for schema types." hidden:"true"`
-	provideClient clientProvider
+	provideClient adminClientProvider
 }
 
 func getNamePrefix(namePrefix, prefix string) (string, error) {
@@ -144,7 +144,7 @@ type SchemaCheck struct {
 	} `positional-args:"yes"`
 }
 
-func newSchemaCheck(provideClient clientProvider) *SchemaCheck {
+func newSchemaCheck(provideClient adminClientProvider) *SchemaCheck {
 	return &SchemaCheck{
 		SchemaCmd: &SchemaCmd{
 			provideClient: provideClient,
@@ -165,7 +165,7 @@ type SchemaUpsert struct {
 	} `positional-args:"yes"`
 }
 
-func newSchemaUpsert(provideClient clientProvider) *SchemaUpsert {
+func newSchemaUpsert(provideClient adminClientProvider) *SchemaUpsert {
 	return &SchemaUpsert{
 		SchemaCmd: &SchemaCmd{
 			provideClient: provideClient,
@@ -184,7 +184,7 @@ type SchemaStatus struct {
 	Version int32 `long:"version" description:"Specify schema version."`
 }
 
-func newSchemaStatus(provideClient clientProvider) *SchemaStatus {
+func newSchemaStatus(provideClient adminClientProvider) *SchemaStatus {
 	return &SchemaStatus{
 		SchemaCmd: &SchemaCmd{
 			provideClient: provideClient,

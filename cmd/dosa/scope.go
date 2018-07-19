@@ -34,7 +34,8 @@ type ScopeOptions struct{}
 
 // ScopeCmd are options for all scope commands
 type ScopeCmd struct {
-	provideClient clientProvider
+	provideClient   adminClientProvider
+	provideMDClient mdClientProvider
 }
 
 func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Context, string) error, scopes []string) error {
@@ -73,7 +74,7 @@ type ScopeCreate struct {
 	} `positional-args:"yes" required:"1"`
 }
 
-func newScopeCreate(provideClient clientProvider) *ScopeCreate {
+func newScopeCreate(provideClient adminClientProvider) *ScopeCreate {
 	return &ScopeCreate{
 		ScopeCmd: &ScopeCmd{
 			provideClient: provideClient,
@@ -112,7 +113,7 @@ type ScopeDrop struct {
 	} `positional-args:"yes" required:"1"`
 }
 
-func newScopeDrop(provideClient clientProvider) *ScopeDrop {
+func newScopeDrop(provideClient adminClientProvider) *ScopeDrop {
 	return &ScopeDrop{
 		ScopeCmd: &ScopeCmd{
 			provideClient: provideClient,
@@ -133,7 +134,7 @@ type ScopeTruncate struct {
 	} `positional-args:"yes" required:"1"`
 }
 
-func newScopeTruncate(provideClient clientProvider) *ScopeTruncate {
+func newScopeTruncate(provideClient adminClientProvider) *ScopeTruncate {
 	return &ScopeTruncate{
 		ScopeCmd: &ScopeCmd{
 			provideClient: provideClient,

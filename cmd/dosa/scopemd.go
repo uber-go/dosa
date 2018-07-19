@@ -23,28 +23,62 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 )
+
+func (c *ScopeCmd) makeClient() (dosa.Client, error) {
+	if options.ServiceName == "" {
+		options.ServiceName = _defServiceName
+	}
+	return c.provideMDClient(options)
+}
 
 // ScopeList contains data for executing scope truncate command.
 type ScopeList struct {
 	*ScopeCmd
 }
 
-func newScopeList(provideClient clientProvider) *ScopeLst {
+func newScopeList(provideClient mdClientProvider) *ScopeList {
 	return &ScopeList{
 		ScopeCmd: &ScopeCmd{
-			provideClient: provideClient,
+			provideMDClient: provideClient,
 		},
 	}
 }
 
 // Execute executes a scope list command
 func (c *ScopeList) Execute(args []string) error {
-	return c.doScopeOp("list", dosa.AdminClient.ListScope, c.Args.Scopes)
+	client, err := c.makeClient()
+	if err != nil {
+		return errors.Wrap(err, "could not make client")
+	}
+	defer shutdownMDClient(client)
+
+	var md dosa.ScopeMetadata
+	scanOp := dosa.NewScanOp(&md).Limit(100)
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
+		defer cancel()
+
+		scopes, token, err := client.ScanEverything(ctx, scanOp)
+		if err != nil {
+			if dosa.ErrorIsNotFound(err) {
+				err = nil
+				break
+			}
+			fmt.Printf("MD table scan failed (token=%q): %v\n", token, err)
+			continue
+		}
+		scanOp.Offset(token)
+
+		for _, e := range scopes {
+			md := e.(*dosa.ScopeMetadata)
+			fmt.Printf("%q\n", md.Name)
+		}
+	}
+	return err
 }
 
 // ScopeShow contains data for executing scope truncate command.
@@ -55,18 +89,29 @@ type ScopeShow struct {
 	} `positional-args:"yes" required:"1"`
 }
 
-func newScopeShow(provideClient clientProvider) *ScopeShow {
+func newScopeShow(provideClient mdClientProvider) *ScopeShow {
 	return &ScopeShow{
 		ScopeCmd: &ScopeCmd{
-			provideClient: provideClient,
+			provideMDClient: provideClient,
 		},
 	}
 }
 
-// Execute executes a scope truncate command
+// Execute shows MD for the scope(s)
 func (c *ScopeShow) Execute(args []string) error {
-	return c.doScopeOp("show",
-		func() error {
-			md := &dosa.ScopeMetadata{Name: c.Args.Name}
-		}, c.Args.Scopes)
+	client, err := c.makeClient()
+	if err != nil {
+		return errors.Wrap(err, "could not make client")
+	}
+	defer shutdownMDClient(client)
+
+	for _, scope := range c.Args.Scopes {
+		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
+		defer cancel()
+
+		md := &dosa.ScopeMetadata{Name: scope}
+		client.Read(ctx, dosa.All(), md)
+		fmt.Printf("%s\n", md)
+	}
+	return nil
 }

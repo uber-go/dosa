@@ -35,7 +35,13 @@ import (
 
 const _defServiceName = "dosa-gateway"
 
-var validNameRegex = regexp.MustCompile("^[a-z]+([a-z0-9]|[^-]-)*[^-]$")
+var (
+	// from YARPC: "must begin with a letter and consist only of dash-delimited
+	// lower-case ASCII alphanumeric words" -- we do this here because YARPC
+	// will panic if caller name is invalid.
+	validNameRegex = regexp.MustCompile("^[a-z]+([a-z0-9]|[^-]-)*[^-]$")
+	errmsg         = "callerName %s must begin with a letter and consist only of dash-separated lower-case ASCII alphanumeric words"
+)
 
 type callerFlag string
 
@@ -85,12 +91,9 @@ func (t *timeFlag) UnmarshalFlag(value string) error {
 	return nil
 }
 
-func provideYarpcClient(opts GlobalOptions) (dosa.AdminClient, error) {
-	// from YARPC: "must begin with a letter and consist only of dash-delimited
-	// lower-case ASCII alphanumeric words" -- we do this here because YARPC
-	// will panic if caller name is invalid.
+func provideAdminClient(opts GlobalOptions) (dosa.AdminClient, error) {
 	if !validNameRegex.MatchString(string(opts.CallerName)) {
-		return nil, fmt.Errorf("invalid caller name: %s, must begin with a letter and consist only of dash-delimited lower-case ASCII alphanumeric words", opts.CallerName)
+		return nil, fmt.Errorf(errmsg, opts.CallerName)
 	}
 
 	ycfg := yarpc.Config{
@@ -109,6 +112,40 @@ func provideYarpcClient(opts GlobalOptions) (dosa.AdminClient, error) {
 }
 
 func shutdownAdminClient(client dosa.AdminClient) {
+	if client.Shutdown() != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Failed to properly shutdown client")
+	}
+}
+
+func provideMDClient(opts GlobalOptions) (c dosa.Client, err error) {
+	if !validNameRegex.MatchString(string(opts.CallerName)) {
+		return nil, fmt.Errorf(errmsg, opts.CallerName)
+	}
+
+	cfg := yarpc.ClientConfig{
+		Scope:      "production",
+		NamePrefix: "dosa_scopes_metadata",
+		Yarpc: yarpc.Config{
+			Host:        opts.Host,
+			Port:        opts.Port,
+			CallerName:  opts.CallerName.String(),
+			ServiceName: opts.ServiceName,
+		},
+	}
+
+	if c, err = cfg.NewClient((*dosa.ScopeMetadata)(nil)); err != nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	if err = c.Initialize(ctx); err != nil {
+		c = nil
+	}
+	return
+
+}
+
+func shutdownMDClient(client dosa.Client) {
 	if client.Shutdown() != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to properly shutdown client")
 	}

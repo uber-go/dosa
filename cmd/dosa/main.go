@@ -33,8 +33,8 @@ type exiter func(int)
 
 var exit = os.Exit
 
-type clientProvider func(opts GlobalOptions) (dosa.AdminClient, error)
-
+type adminClientProvider func(opts GlobalOptions) (dosa.AdminClient, error)
+type mdClientProvider func(opts GlobalOptions) (dosa.Client, error)
 type queryClientProvider func(opts GlobalOptions, scope, prefix, path, structName string) (ShellQueryClient, error)
 
 // these are overridden at build-time w/ the -ldflags -X option
@@ -88,18 +88,18 @@ dosa manages your schema both in production and development scopes`
 	c, _ := OptionsParser.AddCommand("version", "display build info", "display build info", &BuildInfo{})
 
 	c, _ = OptionsParser.AddCommand("scope", "commands to manage scope", "create, drop, or truncate development scopes", &ScopeOptions{})
-	_, _ = c.AddCommand("create", "Create scope", "creates a new scope", newScopeCreate(provideYarpcClient))
-	_, _ = c.AddCommand("drop", "Drop scope", "drops a scope", newScopeDrop(provideYarpcClient))
-	_, _ = c.AddCommand("truncate", "Truncate scope", "truncates a scope", newScopeTruncate(provideYarpcClient))
+	_, _ = c.AddCommand("create", "Create scope", "creates a new scope", newScopeCreate(provideAdminClient))
+	_, _ = c.AddCommand("drop", "Drop scope", "drops a scope", newScopeDrop(provideAdminClient))
+	_, _ = c.AddCommand("truncate", "Truncate scope", "truncates a scope", newScopeTruncate(provideAdminClient))
 
-	_, _ = c.AddCommand("list", "List scopes", "lists scopes", newScopeList(provideYarpcClient))
-	_, _ = c.AddCommand("show", "Show scope MD", "show scope metadata", newScopeShow(provideYarpcClient))
+	_, _ = c.AddCommand("list", "List scopes", "lists scopes", newScopeList(provideMDClient))
+	_, _ = c.AddCommand("show", "Show scope MD", "show scope metadata", newScopeShow(provideMDClient))
 
 	c, _ = OptionsParser.AddCommand("schema", "commands to manage schemas", "check or update schemas", &SchemaOptions{})
-	_, _ = c.AddCommand("check", "Check schema", "check the schema", newSchemaCheck(provideYarpcClient))
-	_, _ = c.AddCommand("upsert", "Upsert schema", "insert or update the schema", newSchemaUpsert(provideYarpcClient))
+	_, _ = c.AddCommand("check", "Check schema", "check the schema", newSchemaCheck(provideAdminClient))
+	_, _ = c.AddCommand("upsert", "Upsert schema", "insert or update the schema", newSchemaUpsert(provideAdminClient))
 	_, _ = c.AddCommand("dump", "Dump schema", "display the schema in a given format", &SchemaDump{})
-	_, _ = c.AddCommand("status", "Check schema status", "Check application status of schema", newSchemaStatus(provideYarpcClient))
+	_, _ = c.AddCommand("status", "Check schema status", "Check application status of schema", newSchemaStatus(provideAdminClient))
 
 	c, _ = OptionsParser.AddCommand("query", "commands to do query", "fetch one or multiple rows", &QueryOptions{})
 	_, _ = c.AddCommand("read", "Read query", "read a row by primary keys", newQueryRead(provideShellQueryClient))
