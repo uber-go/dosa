@@ -70,6 +70,8 @@ type Config struct {
 	ServerSettings ServerConfig
 	// TTL for how long values should live in the cache
 	TTL time.Duration
+	// KeyPrefix is used as the prefix to construct redis key
+	KeyPrefix string
 }
 
 // ServerConfig holds the settings for redis
@@ -94,18 +96,20 @@ type ServerConfig struct {
 // NewConnector initializes a Redis Connector
 func NewConnector(config Config, scope metrics.Scope) dosa.Connector {
 	return &Connector{
-		client: NewRedigoClient(config.ServerSettings, scope),
-		ttl:    config.TTL,
-		stats:  metrics.CheckIfNilStats(scope),
+		client:    NewRedigoClient(config.ServerSettings, scope),
+		ttl:       config.TTL,
+		stats:     metrics.CheckIfNilStats(scope),
+		keyPrefix: config.KeyPrefix,
 	}
 }
 
 // Connector for redis database
 type Connector struct {
 	base.Connector
-	client SimpleRedis
-	ttl    time.Duration
-	stats  metrics.Scope
+	client    SimpleRedis
+	ttl       time.Duration
+	stats     metrics.Scope
+	keyPrefix string
 }
 
 // CreateIfNotExists not implemented
@@ -159,7 +163,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 
 	keyName, valueName := nameOfKeyValue(ei)
 
-	cacheKey, err := buildKey(ei.Ref.Scope, ei.Ref.NamePrefix, ei.Def.Name, keys[keyName])
+	cacheKey, err := buildKey(c.keyPrefix, ei.Ref.Scope, ei.Ref.NamePrefix, ei.Def.Name, keys[keyName])
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +202,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		return NewErrInvalidEntity("No value specified.")
 	}
 
-	cacheKey, err := buildKey(ei.Ref.Scope, ei.Ref.NamePrefix, ei.Def.Name, values[keyName])
+	cacheKey, err := buildKey(c.keyPrefix, ei.Ref.Scope, ei.Ref.NamePrefix, ei.Def.Name, values[keyName])
 	if err != nil {
 		return err
 	}
@@ -215,7 +219,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		return err
 	}
 	keyName, _ := nameOfKeyValue(ei)
-	cacheKey, err := buildKey(ei.Ref.Scope, ei.Ref.NamePrefix, ei.Def.Name, keys[keyName])
+	cacheKey, err := buildKey(c.keyPrefix, ei.Ref.Scope, ei.Ref.NamePrefix, ei.Def.Name, keys[keyName])
 	if err != nil {
 		return err
 	}
@@ -268,11 +272,12 @@ func validateSchema(ei *dosa.EntityInfo) error {
 	return nil
 }
 
-func buildKey(scope, namePrefix, name string, keyValue interface{}) (string, error) {
+func buildKey(keyPrefix, scope, namePrefix, name string, keyValue interface{}) (string, error) {
 	keyNamespace := strings.Join([]string{scope, namePrefix, name}, keySeparator)
 	keyString := keyValue.([]byte)
 	if len(keyString) == 0 {
 		return "", NewErrInvalidEntity("No key specified.")
 	}
-	return strings.Join([]string{keyNamespace, string(keyString)}, keySeparator), nil
+
+	return strings.Join([]string{keyPrefix, keyNamespace, string(keyString)}, keySeparator), nil
 }

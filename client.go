@@ -46,15 +46,12 @@
 package dosa
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"os"
-	"reflect"
-	"strings"
-	"time"
-
-	"bytes"
 	"io"
+	"reflect"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -493,7 +490,7 @@ func (c *client) RemoveRange(ctx context.Context, r *RemoveRangeOp) error {
 	}
 
 	// now convert the client range columns to server side column conditions structure
-	columnConditions, err := convertConditions(r.conditions, re.table)
+	columnConditions, err := ConvertConditions(r.conditions, re.table)
 	if err != nil {
 		return errors.Wrap(err, "RemoveRange")
 	}
@@ -513,7 +510,7 @@ func (c *client) Range(ctx context.Context, r *RangeOp) ([]DomainObject, string,
 	}
 
 	// now convert the client range columns to server side column conditions structure
-	columnConditions, err := convertConditions(r.conditions, re.table)
+	columnConditions, err := ConvertConditions(r.conditions, re.table)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Range")
 	}
@@ -608,7 +605,7 @@ type adminClient struct {
 // NewAdminClient returns a new DOSA admin client for the connector provided.
 func NewAdminClient(conn Connector) AdminClient {
 	return &adminClient{
-		scope:     strings.ToLower(os.Getenv("USER")),
+		scope:     "default",
 		dirs:      []string{"."},
 		excludes:  []string{"_test.go"},
 		connector: conn,
