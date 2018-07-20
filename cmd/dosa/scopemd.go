@@ -28,13 +28,6 @@ import (
 	"github.com/uber-go/dosa"
 )
 
-func (c *ScopeCmd) makeClient() (dosa.Client, error) {
-	if options.ServiceName == "" {
-		options.ServiceName = _defServiceName
-	}
-	return c.provideMDClient(options)
-}
-
 // ScopeList contains data for executing scope truncate command.
 type ScopeList struct {
 	*ScopeCmd
@@ -75,13 +68,13 @@ func (c *ScopeList) Execute(args []string) error {
 
 		for _, e := range scopes {
 			md := e.(*dosa.ScopeMetadata)
-			fmt.Printf("%q\n", md.Name)
+			fmt.Printf("%+q\n", md)
 		}
 	}
 	return err
 }
 
-// ScopeShow contains data for executing scope truncate command.
+// ScopeShow displays metadata for the specified scopes.
 type ScopeShow struct {
 	*ScopeCmd
 	Args struct {
@@ -105,13 +98,30 @@ func (c *ScopeShow) Execute(args []string) error {
 	}
 	defer shutdownMDClient(client)
 
-	for _, scope := range c.Args.Scopes {
-		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
-		defer cancel()
-
-		md := &dosa.ScopeMetadata{Name: scope}
-		client.Read(ctx, dosa.All(), md)
-		fmt.Printf("%s\n", md)
+	for _, scope := range args {
+		if md, err := c.run(client, scope); err != nil {
+			fmt.Printf("Could not read scope metadata for %q: %v\n", scope, err)
+		} else {
+			fmt.Printf("%+v\n", md)
+		}
 	}
 	return nil
+}
+
+func (c *ScopeShow) run(client dosa.Client, scope string) (*dosa.ScopeMetadata, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
+	defer cancel()
+
+	md := &dosa.ScopeMetadata{Name: scope}
+	if err := client.Read(ctx, dosa.All(), md); err != nil {
+		return nil, err
+	}
+	return md, nil
+}
+
+func (c *ScopeCmd) makeClient() (dosa.Client, error) {
+	if options.ServiceName == "" {
+		options.ServiceName = _defServiceName
+	}
+	return c.provideMDClient(options)
 }
