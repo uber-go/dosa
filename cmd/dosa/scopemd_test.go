@@ -58,7 +58,7 @@ func TestScopeShow(t *testing.T) {
 	client, e2 := show.makeClient()
 	assert.Nil(t, e2)
 
-	md, e3 := show.run(client, "test_dev")
+	md, e3 := show.getMetadata(client, "test_dev")
 
 	assert.Nil(t, e3)
 	assert.Equal(t, "test_dev", md.Name)

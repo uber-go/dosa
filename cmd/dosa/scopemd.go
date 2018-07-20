@@ -99,7 +99,7 @@ func (c *ScopeShow) Execute(args []string) error {
 	defer shutdownMDClient(client)
 
 	for _, scope := range args {
-		if md, err := c.run(client, scope); err != nil {
+		if md, err := c.getMetadata(client, scope); err != nil {
 			fmt.Printf("Could not read scope metadata for %q: %v\n", scope, err)
 		} else {
 			fmt.Printf("%+v\n", md)
@@ -108,7 +108,7 @@ func (c *ScopeShow) Execute(args []string) error {
 	return nil
 }
 
-func (c *ScopeShow) run(client dosa.Client, scope string) (*dosa.ScopeMetadata, error) {
+func (c *ScopeShow) getMetadata(client dosa.Client, scope string) (*dosa.ScopeMetadata, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 	defer cancel()
 
