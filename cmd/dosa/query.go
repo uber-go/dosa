@@ -99,7 +99,10 @@ func (c *QueryCmd) doQueryOp(f func(ShellQueryClient, context.Context, []*queryO
 		return err
 	}
 
-	printResult(results)
+	err = printResults(results)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
