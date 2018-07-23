@@ -1,4 +1,7 @@
 # Changelog
+## v3.1.1 (unreleased)
+ - Print CLI results in tabulated format (#351)
+
 ## v3.1.0 (2018-07-12)
  - Add functionality to not invalidate cache when upsert (#341)
  - Add query (read/range) support to CLI (#342)
