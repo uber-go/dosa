@@ -118,7 +118,7 @@ func strToFieldValue(t dosa.Type, s string) (dosa.FieldValue, error) {
 }
 
 func printResults(results []map[string]dosa.FieldValue) error {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.Debug)
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.Debug|tabwriter.StripEscape)
 	if len(results) == 0 {
 		return errors.New("Empty results")
 	}
@@ -136,7 +136,12 @@ func printResults(results []map[string]dosa.FieldValue) error {
 	values := make([]string, width)
 	for _, result := range results {
 		for idx, key := range keys {
-			values[idx] = fmt.Sprintf("%v", reflect.Indirect(reflect.ValueOf(result[key])))
+			values[idx] = fmt.Sprintf(
+				"%s%v%s",
+				[]byte{tabwriter.Escape},
+				reflect.Indirect(reflect.ValueOf(result[key])),
+				[]byte{tabwriter.Escape},
+			)
 		}
 		if _, err := fmt.Fprintln(w, strings.Join(values, "\t")); err != nil {
 			return errors.WithStack(err)
