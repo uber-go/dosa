@@ -118,8 +118,7 @@ func strToFieldValue(t dosa.Type, s string) (dosa.FieldValue, error) {
 }
 
 func printResults(results []map[string]dosa.FieldValue) error {
-	const padding = 3
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, padding, ' ', tabwriter.Debug)
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.Debug)
 	if len(results) == 0 {
 		return errors.New("Empty results")
 	}
@@ -131,19 +130,15 @@ func printResults(results []map[string]dosa.FieldValue) error {
 		i++
 	}
 	sort.Strings(keys)
-	_, err := fmt.Fprintln(w, strings.Join(keys, "\t"))
-	if err != nil {
+	if _, err := fmt.Fprintln(w, strings.Join(keys, "\t")); err != nil {
 		return errors.WithStack(err)
 	}
 	values := make([]string, width)
 	for _, result := range results {
-		i := 0
-		for _, key := range keys {
-			values[i] = fmt.Sprintf("%v", reflect.Indirect(reflect.ValueOf(result[key])))
-			i++
+		for idx, key := range keys {
+			values[idx] = fmt.Sprintf("%v", reflect.Indirect(reflect.ValueOf(result[key])))
 		}
-		_, err := fmt.Fprintln(w, strings.Join(values, "\t"))
-		if err != nil {
+		if _, err := fmt.Fprintln(w, strings.Join(values, "\t")); err != nil {
 			return errors.WithStack(err)
 		}
 	}
