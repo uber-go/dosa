@@ -122,12 +122,12 @@ func printResults(results []map[string]dosa.FieldValue) error {
 	if len(results) == 0 {
 		return errors.New("Empty results")
 	}
-	i := 0
+	idx := 0
 	width := len(results[0])
 	keys := make([]string, width)
 	for k := range results[0] {
-		keys[i] = k
-		i++
+		keys[idx] = k
+		idx++
 	}
 	sort.Strings(keys)
 	if _, err := fmt.Fprintln(w, strings.Join(keys, "\t")); err != nil {
