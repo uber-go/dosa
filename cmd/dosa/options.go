@@ -40,7 +40,7 @@ const _defServiceName = "dosa-gateway"
 // will panic if caller name is invalid.
 var validNameRegex = regexp.MustCompile("^[a-z]+([a-z0-9]|[^-]-)*[^-]$")
 
-// Error message for malformed scope names.
+// Error message for malformed service names.
 const errmsg = "callerName %s must begin with a letter and consist only of dash-separated lower-case ASCII alphanumeric words"
 
 type callerFlag string
