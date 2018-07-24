@@ -35,13 +35,13 @@ import (
 
 const _defServiceName = "dosa-gateway"
 
-var (
-	// from YARPC: "must begin with a letter and consist only of dash-delimited
-	// lower-case ASCII alphanumeric words" -- we do this here because YARPC
-	// will panic if caller name is invalid.
-	validNameRegex = regexp.MustCompile("^[a-z]+([a-z0-9]|[^-]-)*[^-]$")
-	errmsg         = "callerName %s must begin with a letter and consist only of dash-separated lower-case ASCII alphanumeric words"
-)
+// from YARPC: "must begin with a letter and consist only of dash-delimited
+// lower-case ASCII alphanumeric words" -- we do this here because YARPC
+// will panic if caller name is invalid.
+var validNameRegex = regexp.MustCompile("^[a-z]+([a-z0-9]|[^-]-)*[^-]$")
+
+// Error message for malformed scope names.
+const errmsg = "callerName %s must begin with a letter and consist only of dash-separated lower-case ASCII alphanumeric words"
 
 type callerFlag string
 
