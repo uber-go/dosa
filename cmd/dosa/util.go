@@ -117,31 +117,45 @@ func strToFieldValue(t dosa.Type, s string) (dosa.FieldValue, error) {
 	}
 }
 
+func getFields(results []map[string]dosa.FieldValue) []string {
+	fieldSet := make(map[string]bool)
+	for _, result := range results {
+		for field := range result {
+			fieldSet[field] = true
+		}
+	}
+	var fields []string
+	for field := range fieldSet {
+		fields = append(fields, field)
+	}
+	sort.Strings(fields)
+	return fields
+}
+
 func printResults(results []map[string]dosa.FieldValue) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.Debug|tabwriter.StripEscape)
 	if len(results) == 0 {
 		return errors.New("Empty results")
 	}
-	idx := 0
-	width := len(results[0])
-	keys := make([]string, width)
-	for k := range results[0] {
-		keys[idx] = k
-		idx++
-	}
-	sort.Strings(keys)
-	if _, err := fmt.Fprintln(w, strings.Join(keys, "\t")); err != nil {
+	fields := getFields(results)
+	if _, err := fmt.Fprintln(w, strings.Join(fields, "\t")); err != nil {
 		return errors.WithStack(err)
 	}
-	values := make([]string, width)
+	values := make([]string, len(fields))
 	for _, result := range results {
-		for idx, key := range keys {
-			values[idx] = fmt.Sprintf(
-				"%s%v%s",
-				[]byte{tabwriter.Escape},
-				reflect.Indirect(reflect.ValueOf(result[key])),
-				[]byte{tabwriter.Escape},
-			)
+		for idx, field := range fields {
+			var value string
+			if _, ok := result[field]; ok {
+				value = fmt.Sprintf(
+					"%s%v%s",
+					[]byte{tabwriter.Escape},
+					reflect.Indirect(reflect.ValueOf(result[field])),
+					[]byte{tabwriter.Escape},
+				)
+			} else {
+				value = "nil"
+			}
+			values[idx] = value
 		}
 		if _, err := fmt.Fprintln(w, strings.Join(values, "\t")); err != nil {
 			return errors.WithStack(err)
