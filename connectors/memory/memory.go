@@ -273,16 +273,16 @@ func (c *Connector) CreateIfNotExists(_ context.Context, ei *dosa.EntityInfo, va
 	defer c.lock.Unlock()
 
 	valsCopy := copyRow(values)
-	err := c.mergedInsert(ei.Def.Name, ei.Def.Key, valsCopy, func(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
+	_, err := c.mergedInsert(ei.Def.Name, ei.Def.Key, valsCopy, func(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
 		return &dosa.ErrAlreadyExists{}
-	})
+	}, false)
 	if err != nil {
 		return err
 	}
 	for iName, iDef := range ei.Def.Indexes {
 		// this error must be ignored, so we skip indexes when the value
 		// for one of the index fields is not specified
-		_ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), valsCopy, overwriteValuesFunc)
+		_, _ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), valsCopy, overwriteValuesFunc, false)
 	}
 	return nil
 }
@@ -371,11 +371,16 @@ func (c *Connector) Upsert(_ context.Context, ei *dosa.EntityInfo, values map[st
 	defer c.lock.Unlock()
 
 	valsCopy := copyRow(values)
-	if err := c.mergedInsert(ei.Def.Name, ei.Def.Key, valsCopy, overwriteValuesFunc); err != nil {
+	var oldValues map[string]dosa.FieldValue
+	var err error
+	if oldValues, err = c.mergedInsert(ei.Def.Name, ei.Def.Key, valsCopy, overwriteValuesFunc, true); err != nil {
 		return err
 	}
 	for iName, iDef := range ei.Def.Indexes {
-		_ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), valsCopy, overwriteValuesFunc)
+		if oldValues != nil {
+			c.removeItem(iName, ei.Def.UniqueKey(iDef.Key), oldValues)
+		}
+		_, _ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), valsCopy, overwriteValuesFunc, false)
 	}
 
 	return nil
@@ -384,7 +389,8 @@ func (c *Connector) Upsert(_ context.Context, ei *dosa.EntityInfo, values map[st
 func (c *Connector) mergedInsert(name string,
 	pk *dosa.PrimaryKey,
 	values map[string]dosa.FieldValue,
-	mergeFunc func(map[string]dosa.FieldValue, map[string]dosa.FieldValue) error) error {
+	mergeFunc func(map[string]dosa.FieldValue, map[string]dosa.FieldValue) error,
+	returnCopy bool) (map[string]dosa.FieldValue, error) {
 
 	if c.data[name] == nil {
 		c.data[name] = make(map[string][]map[string]dosa.FieldValue)
@@ -392,7 +398,7 @@ func (c *Connector) mergedInsert(name string,
 	entityRef := c.data[name]
 	encodedPartitionKey, err := partitionKeyBuilder(pk, values)
 	if err != nil {
-		return errors.Wrapf(err, "Cannot build partition key for %q", name)
+		return nil, errors.Wrapf(err, "Cannot build partition key for %q", name)
 	}
 	if entityRef[encodedPartitionKey] == nil {
 		entityRef[encodedPartitionKey] = make([]map[string]dosa.FieldValue, 0, 1)
@@ -401,17 +407,23 @@ func (c *Connector) mergedInsert(name string,
 	// no data in this partition? easy out!
 	if len(partitionRef) == 0 {
 		entityRef[encodedPartitionKey] = append(entityRef[encodedPartitionKey], values)
-		return nil
+		return nil, nil
 	}
 
 	if len(pk.ClusteringKeySet()) == 0 {
 		// no clustering key, so the row must already exist, merge it
-		return mergeFunc(partitionRef[0], values)
+		if returnCopy {
+			return copyRow(partitionRef[0]), mergeFunc(partitionRef[0], values)
+		}
+		return nil, mergeFunc(partitionRef[0], values)
 	}
 	// there is a clustering key, find the insertion point (binary search would be fastest)
 	found, offset := findInsertionPoint(pk, partitionRef, values)
 	if found {
-		return mergeFunc(partitionRef[offset], values)
+		if returnCopy {
+			return copyRow(partitionRef[offset]), mergeFunc(partitionRef[offset], values)
+		}
+		return nil, mergeFunc(partitionRef[offset], values)
 	}
 	// perform slice magic to insert value at given offset
 	l := len(entityRef[encodedPartitionKey])                                                                     // get length
@@ -420,7 +432,7 @@ func (c *Connector) mergedInsert(name string,
 	copy(entityRef[encodedPartitionKey][offset+1:], entityRef[encodedPartitionKey][offset:])
 	// and plunk value into appropriate location
 	entityRef[encodedPartitionKey][offset] = values
-	return nil
+	return nil, nil
 }
 
 // Remove deletes a single row
