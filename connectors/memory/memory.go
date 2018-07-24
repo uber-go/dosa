@@ -275,14 +275,14 @@ func (c *Connector) CreateIfNotExists(_ context.Context, ei *dosa.EntityInfo, va
 	valsCopy := copyRow(values)
 	_, err := c.mergedInsert(ei.Def.Name, ei.Def.Key, valsCopy, func(into map[string]dosa.FieldValue, from map[string]dosa.FieldValue) error {
 		return &dosa.ErrAlreadyExists{}
-	})
+	}, false)
 	if err != nil {
 		return err
 	}
 	for iName, iDef := range ei.Def.Indexes {
 		// this error must be ignored, so we skip indexes when the value
 		// for one of the index fields is not specified
-		_, _ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), valsCopy, overwriteValuesFunc)
+		_, _ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), valsCopy, overwriteValuesFunc, false)
 	}
 	return nil
 }
@@ -373,14 +373,14 @@ func (c *Connector) Upsert(_ context.Context, ei *dosa.EntityInfo, values map[st
 	valsCopy := copyRow(values)
 	var oldValues map[string]dosa.FieldValue
 	var err error
-	if oldValues, err = c.mergedInsert(ei.Def.Name, ei.Def.Key, valsCopy, overwriteValuesFunc); err != nil {
+	if oldValues, err = c.mergedInsert(ei.Def.Name, ei.Def.Key, valsCopy, overwriteValuesFunc, true); err != nil {
 		return err
 	}
 	for iName, iDef := range ei.Def.Indexes {
 		if oldValues != nil {
 			c.removeItem(iName, ei.Def.UniqueKey(iDef.Key), oldValues)
 		}
-		_, _ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), valsCopy, overwriteValuesFunc)
+		_, _ = c.mergedInsert(iName, ei.Def.UniqueKey(iDef.Key), valsCopy, overwriteValuesFunc, false)
 	}
 
 	return nil
@@ -389,7 +389,8 @@ func (c *Connector) Upsert(_ context.Context, ei *dosa.EntityInfo, values map[st
 func (c *Connector) mergedInsert(name string,
 	pk *dosa.PrimaryKey,
 	values map[string]dosa.FieldValue,
-	mergeFunc func(map[string]dosa.FieldValue, map[string]dosa.FieldValue) error) (map[string]dosa.FieldValue, error) {
+	mergeFunc func(map[string]dosa.FieldValue, map[string]dosa.FieldValue) error,
+	returnCopy bool) (map[string]dosa.FieldValue, error) {
 
 	if c.data[name] == nil {
 		c.data[name] = make(map[string][]map[string]dosa.FieldValue)
@@ -411,12 +412,18 @@ func (c *Connector) mergedInsert(name string,
 
 	if len(pk.ClusteringKeySet()) == 0 {
 		// no clustering key, so the row must already exist, merge it
-		return copyRow(partitionRef[0]), mergeFunc(partitionRef[0], values)
+		if returnCopy {
+			return copyRow(partitionRef[0]), mergeFunc(partitionRef[0], values)
+		}
+		return nil, mergeFunc(partitionRef[0], values)
 	}
 	// there is a clustering key, find the insertion point (binary search would be fastest)
 	found, offset := findInsertionPoint(pk, partitionRef, values)
 	if found {
-		return copyRow(partitionRef[offset]), mergeFunc(partitionRef[offset], values)
+		if returnCopy {
+			return copyRow(partitionRef[offset]), mergeFunc(partitionRef[offset], values)
+		}
+		return nil, mergeFunc(partitionRef[offset], values)
 	}
 	// perform slice magic to insert value at given offset
 	l := len(entityRef[encodedPartitionKey])                                                                     // get length
