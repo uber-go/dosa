@@ -22,9 +22,12 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/pkg/errors"
@@ -114,16 +117,49 @@ func strToFieldValue(t dosa.Type, s string) (dosa.FieldValue, error) {
 	}
 }
 
-func printResult(res []map[string]dosa.FieldValue) {
-	if len(res) == 0 {
-		fmt.Println("Error: not found")
-		return
-	}
-	fmt.Println("Results:")
-	for _, fieldValues := range res {
-		for field, value := range fieldValues {
-			fmt.Printf("%s: %v\n", field, reflect.Indirect(reflect.ValueOf(value)))
+func getFields(results []map[string]dosa.FieldValue) []string {
+	fieldSet := make(map[string]bool)
+	for _, result := range results {
+		for field := range result {
+			fieldSet[field] = true
 		}
-		fmt.Printf("\n")
 	}
+	var fields []string
+	for field := range fieldSet {
+		fields = append(fields, field)
+	}
+	sort.Strings(fields)
+	return fields
+}
+
+func printResults(results []map[string]dosa.FieldValue) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.Debug|tabwriter.StripEscape)
+	if len(results) == 0 {
+		return errors.New("Empty results")
+	}
+	fields := getFields(results)
+	if _, err := fmt.Fprintln(w, strings.Join(fields, "\t")); err != nil {
+		return errors.WithStack(err)
+	}
+	values := make([]string, len(fields))
+	for _, result := range results {
+		for idx, field := range fields {
+			var value string
+			if _, ok := result[field]; ok {
+				value = fmt.Sprintf(
+					"%s%v%s",
+					[]byte{tabwriter.Escape},
+					reflect.Indirect(reflect.ValueOf(result[field])),
+					[]byte{tabwriter.Escape},
+				)
+			} else {
+				value = "nil"
+			}
+			values[idx] = value
+		}
+		if _, err := fmt.Fprintln(w, strings.Join(values, "\t")); err != nil {
+			return errors.WithStack(err)
+		}
+	}
+	return w.Flush()
 }
