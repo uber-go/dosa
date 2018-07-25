@@ -1,5 +1,7 @@
 # Changelog
-## v3.1.1 (unreleased)
+## v3.1.1 (2018-07-25)
+ - Add keyPrefix to the config of redis connector (#344)
+ - Fixed memory connector upsert bug (#350)
  - Print CLI results in tabulated format (#351)
 
 ## v3.1.0 (2018-07-12)
