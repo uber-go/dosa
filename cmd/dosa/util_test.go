@@ -82,6 +82,14 @@ func TestSetQueryFieldValues(t *testing.T) {
 	assert.Contains(t, err.Error(), "is not a valid field for")
 }
 
+func TestGetfields(t *testing.T) {
+	fields := []map[string]dosa.FieldValue{
+		{"id": dosa.FieldValue(int32(1)), "name": dosa.FieldValue("foo")},
+		{"name": dosa.FieldValue("bar"), "address": dosa.FieldValue("bar")},
+	}
+	assert.Equal(t, getFields(fields), []string{"address", "id", "name"})
+}
+
 func TestPrintResults(t *testing.T) {
 	results := []map[string]dosa.FieldValue{
 		{
