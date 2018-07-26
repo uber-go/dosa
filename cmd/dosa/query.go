@@ -99,9 +99,7 @@ func (c *QueryCmd) doQueryOp(f func(ShellQueryClient, context.Context, []*queryO
 		return err
 	}
 
-	printResult(results)
-
-	return nil
+	return printResults(results)
 }
 
 // QueryRead holds the options for 'query read'

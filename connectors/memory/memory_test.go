@@ -154,23 +154,34 @@ func TestConnector_Upsert(t *testing.T) {
 	// regular upsert
 	err = sut.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"p1": dosa.FieldValue("data"),
+		"c1": dosa.FieldValue(int64(1)),
 	})
 	assert.NoError(t, err)
 	vals, err := sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
-		"p1": dosa.FieldValue("data")}, []string{"c1"})
+		"p1": dosa.FieldValue("data")}, []string{"c1", "c2"})
 	assert.NoError(t, err)
-	assert.Nil(t, vals["c1"])
+	assert.Nil(t, vals["c2"])
 
 	err = sut.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"p1": dosa.FieldValue("data"),
-		"c1": dosa.FieldValue(int64(1)),
+		"c1": dosa.FieldValue(int64(2)),
 	})
 	assert.NoError(t, err)
 
 	vals, err = sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"p1": dosa.FieldValue("data")}, []string{"c1"})
 	assert.NoError(t, err)
-	assert.Equal(t, dosa.FieldValue(int64(1)), vals["c1"])
+	assert.Equal(t, dosa.FieldValue(int64(2)), vals["c1"])
+
+	var rangeVals []map[string]dosa.FieldValue
+	rangeVals, _, err = sut.Range(context.TODO(), testEi, map[string][]*dosa.Condition{
+		"c1": []*dosa.Condition{&dosa.Condition{
+			Op:    dosa.Eq,
+			Value: dosa.FieldValue(int64(1)),
+		}},
+	}, []string{"c1"}, "", 5)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(rangeVals))
 }
 
 func TestConnector_Read(t *testing.T) {

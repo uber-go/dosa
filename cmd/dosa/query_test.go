@@ -117,7 +117,7 @@ func TestQuery_Range_Happy(t *testing.T) {
 			assert.Len(t, columnConditions, 1)
 			assert.Len(t, columnConditions["int64key"], 1)
 			assert.Equal(t, []string{"strkey", "int64key"}, minimumFields)
-		}).Return([]map[string]dosa.FieldValue{}, "", nil)
+		}).Return([]map[string]dosa.FieldValue{{"key": "value"}}, "", nil)
 
 	mc.EXPECT().Shutdown().Return(nil)
 
