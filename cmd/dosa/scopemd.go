@@ -49,8 +49,21 @@ func (c *ScopeList) Execute(args []string) error {
 	}
 	defer shutdownMDClient(client)
 
+	var scopes []string
+	if scopes, err = c.getScopes(client); err == nil {
+		return err
+	}
+	for _, sp := range scopes {
+		fmt.Println(sp)
+	}
+	return nil
+}
+
+func (c *ScopeList) getScopes(client dosa.Client) ([]string, error) {
+	scopeList := []string{}
+
 	var md dosa.ScopeMetadata
-	scanOp := dosa.NewScanOp(&md).Limit(100)
+	scanOp := dosa.NewScanOp(&md).Limit(100).Fields([]string{"Name"})
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 		defer cancel()
@@ -58,7 +71,6 @@ func (c *ScopeList) Execute(args []string) error {
 		scopes, token, err := client.ScanEverything(ctx, scanOp)
 		if err != nil {
 			if dosa.ErrorIsNotFound(err) {
-				err = nil
 				break
 			}
 			fmt.Printf("MD table scan failed (token=%q): %v\n", token, err)
@@ -68,10 +80,10 @@ func (c *ScopeList) Execute(args []string) error {
 
 		for _, e := range scopes {
 			md := e.(*dosa.ScopeMetadata)
-			fmt.Printf("%+q\n", md)
+			scopeList = append(scopeList, md.Name)
 		}
 	}
-	return err
+	return scopeList, nil
 }
 
 // ScopeShow displays metadata for the specified scopes.

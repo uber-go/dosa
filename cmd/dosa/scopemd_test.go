@@ -65,3 +65,42 @@ func TestScopeShow(t *testing.T) {
 	assert.Equal(t, "tester", md.Owner)
 	assert.Equal(t, int32(dosa.Development), md.Type)
 }
+
+func TestScopeList(t *testing.T) {
+	token := "tokenFoobar"
+	scopes := []string{"foo", "bar", "foobar"}
+	values := []map[string]dosa.FieldValue{}
+	for _, sp := range scopes {
+		values = append(values, map[string]dosa.FieldValue{"name": dosa.FieldValue(sp)})
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	reg, e1 := dosa.NewRegistrar("production", "prefix", &dosa.ScopeMetadata{})
+	assert.Nil(t, e1)
+
+	conn := mocks.NewMockConnector(ctrl)
+	conn.EXPECT().CheckSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+	// First call (no token) to ScanEverything will return a list of scope names and a token.
+	conn.EXPECT().Scan(gomock.Any(), gomock.Any(), gomock.Any(), "", 100).Return(values, token, nil)
+
+	// Second call (with token) will return EOF.
+	conn.EXPECT().Scan(gomock.Any(), gomock.Any(), gomock.Any(), token, 100).Return(nil, "", error(&dosa.ErrNotFound{}))
+
+	lst := newScopeList(func(opts GlobalOptions) (dosa.Client, error) {
+		client := dosa.NewClient(reg, conn)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+		err := client.Initialize(ctx)
+		assert.Nil(t, err, "couldn't initialize client")
+		return client, nil
+	})
+	client, e2 := lst.makeClient()
+	assert.Nil(t, e2)
+
+	slst, e3 := lst.getScopes(client)
+	assert.Nil(t, e3)
+	assert.Equal(t, scopes, slst)
+}
