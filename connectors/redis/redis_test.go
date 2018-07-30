@@ -39,7 +39,7 @@ var testRedisConfig = redis.Config{
 		Host: "localhost",
 		Port: redis.RedisPort,
 	},
-	TTL: 1 * time.Minute,
+	TTL:       1 * time.Minute,
 	KeyPrefix: "testPrefix",
 }
 

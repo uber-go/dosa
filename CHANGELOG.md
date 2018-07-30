@@ -1,4 +1,8 @@
 # Changelog
+
+## v3.2.0 (unreleased)
+ - add readonly scope metadata access to CLI
+
 ## v3.1.1 (2018-07-25)
  - Add keyPrefix to the config of redis connector (#344)
  - Fixed memory connector upsert bug (#350)

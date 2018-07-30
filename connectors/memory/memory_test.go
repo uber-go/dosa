@@ -175,7 +175,7 @@ func TestConnector_Upsert(t *testing.T) {
 
 	var rangeVals []map[string]dosa.FieldValue
 	rangeVals, _, err = sut.Range(context.TODO(), testEi, map[string][]*dosa.Condition{
-		"c1": []*dosa.Condition{&dosa.Condition{
+		"c1": {{
 			Op:    dosa.Eq,
 			Value: dosa.FieldValue(int64(1)),
 		}},
