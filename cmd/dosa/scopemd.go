@@ -108,6 +108,8 @@ func (c *ScopeShow) Execute(args []string) error {
 	return nil
 }
 
+// getMetadata returns the MD for a scope. Currently prefixes (for prod) are not handled; the intent
+// is that a scope may be qualified by a name-prefix, as in "production.vsoffers".
 func (c *ScopeShow) getMetadata(client dosa.Client, scope string) (*dosa.ScopeMetadata, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout.Duration())
 	defer cancel()
