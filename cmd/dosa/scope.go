@@ -147,6 +147,7 @@ func (c *ScopeTruncate) Execute(args []string) error {
 	return c.doScopeOp("truncate", dosa.AdminClient.TruncateScope, c.Args.Scopes)
 }
 
+// Parse a string into a scope type.
 func parseType(t string) (dosa.ScopeType, error) {
 	if len(t) == 0 {
 		return dosa.Development, nil
