@@ -13,12 +13,13 @@ import:
   - gomock
 - package: github.com/jessevdk/go-flags
   version: ^1.4.0
+- package: github.com/jonboulle/clockwork
 - package: github.com/pkg/errors
   version: ^0.8.0
 - package: github.com/satori/go.uuid
   version: ^1.2.0
 - package: github.com/uber/dosa-idl
-  version: ^3
+  version: ^3.1 
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -35,11 +36,9 @@ testImport:
   version: ^1.2.1
   subpackages:
   - assert
-- package: github.com/uber/tchannel-go
-  version: ^1
 
-# The following packages are needed soley for build and test 
-# reporting related things. None of our actual code (including 
+# The following packages are needed soley for build and test
+# reporting related things. None of our actual code (including
 # out tests) depends on these packages.
 - package: github.com/axw/gocov
   subpackages:

@@ -1,5 +1,5 @@
-hash: 9846493bc45dbefc53b7d0aee005163f0d34c2059b6511c92ff9bc7d66a2f0d1
-updated: 2018-05-15T14:37:43.630936-07:00
+hash: 64b9155b4cce3e33de1d2df3f8633fd4822db891a7050b780bc8fd912b3d47c9
+updated: 2018-08-05T22:17:24.262735-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -27,11 +27,13 @@ imports:
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: 927b65914520a8b7d44f5c9057611cfec6b2e2d0
+  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
   - proto
 - name: github.com/jessevdk/go-flags
   version: c6ca198ec95c841fdb89fc0de7496fed11ab854e
+- name: github.com/jonboulle/clockwork
+  version: e7c6d408fd5c44ee1e1d8b79ae32b426afae1f28
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
@@ -53,7 +55,7 @@ imports:
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: d811d2e9bf898806ecfb6ef6296774b13ffc314c
+  version: 2f17f4a9d485bf34b4bfaccc273805040e4f86c8
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
@@ -75,15 +77,15 @@ imports:
   subpackages:
   - internal/mapstructure
 - name: github.com/uber-go/tally
-  version: 6f121596292a5ec8618b71ee3687fe42da73d289
+  version: ff17f3c43c065c3c2991f571e740eee43ea3a14a
 - name: github.com/uber/dosa-idl
-  version: 8a75cc9ec3d9cdf2542db437c784ae557b28ad17
+  version: ac79c598a228a5686923860f57cc5fd7044f225e
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
   - .gen/dosa/dosatest
 - name: github.com/uber/tchannel-go
-  version: cc0c40929b0dbdb755b727a8c253de2b5d4af46b
+  version: 7f5c12c66261f3ac3c5dde959d65eed59e3b63af
   subpackages:
   - internal/argreader
   - relay
@@ -102,7 +104,7 @@ imports:
   - push
   - tallypush
 - name: go.uber.org/thriftrw
-  version: 43dfafd7bb1c99f0460d645a1959b73f6dfa536f
+  version: fb439a9a7f5a388d8606aae1c1ff6654b8b67fbe
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -112,7 +114,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: f890b9f2fd812eb3f81efac46ccddf0e46d15210
+  version: fc2d75d3b5e30fc81e5dc2375667bbd6333b0099
   subpackages:
   - api/backoff
   - api/encoding
@@ -148,7 +150,7 @@ imports:
   - yarpcconfig
   - yarpcerrors
 - name: go.uber.org/zap
-  version: eeedf312bc6c57391d84767a4cd413f02a917974
+  version: 4d45f9617f7d90f7a663ff21c7a4321dbe78098b
   subpackages:
   - buffer
   - internal/bufferpool
@@ -156,7 +158,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: 2491c5de3490fced2f6cff376127c667efeed857
+  version: f4c29de78a2a91c00474a2e689954305c350adf9
   repo: https://github.com/golang/net
   subpackages:
   - bpf
@@ -173,7 +175,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 8991bc29aa16c548c550c7ff78260e27b9ab7c73
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
@@ -193,7 +195,7 @@ testImports:
 - name: github.com/sectioneight/md-to-godoc
   version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
 - name: github.com/stretchr/testify
-  version: 12b6f73e6084dad08a7c6e575284b177ecafbc71
+  version: f35b8ab0b5a2cef36673838d662e249dd9c94686
   subpackages:
   - assert
 - name: github.com/yookoala/realpath

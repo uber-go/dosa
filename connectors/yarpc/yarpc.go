@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jonboulle/clockwork"
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
@@ -59,16 +60,19 @@ func ErrorIsConnectionRefused(err error) bool {
 
 // Config contains the YARPC connector parameters.
 type Config struct {
-	Host        string `yaml:"host"`
-	Port        string `yaml:"port"`
-	CallerName  string `yaml:"callerName"`
-	ServiceName string `yaml:"serviceName"`
+	Host            string `yaml:"host"`
+	Port            string `yaml:"port"`
+	CallerName      string `yaml:"callerName"`
+	ServiceName     string `yaml:"serviceName"`
+	ClientTimestamp bool   `yaml:"clientTimestamp"`
 }
 
 // Connector holds the client-side RPC interface and some schema information
 type Connector struct {
-	client     dosaclient.Interface
-	dispatcher *rpc.Dispatcher
+	client             dosaclient.Interface
+	dispatcher         *rpc.Dispatcher
+	useClientTimestamp bool
+	clock              clockwork.Clock
 }
 
 // NewConnector creates a new instance with user provided transport
@@ -115,8 +119,10 @@ func NewConnector(config Config) (*Connector, error) {
 	client := dosaclient.New(dispatcher.ClientConfig(config.ServiceName))
 
 	return &Connector{
-		dispatcher: dispatcher,
-		client:     client,
+		dispatcher:         dispatcher,
+		client:             client,
+		useClientTimestamp: config.ClientTimestamp,
+		clock:              clockwork.NewRealClock(),
 	}, nil
 }
 
@@ -171,6 +177,10 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		TTL:          &ttl,
 	}
 
+	if c.useClientTimestamp {
+		upsertRequest.Timestamp = c.advanceTimestamp()
+	}
+
 	err = c.client.Upsert(ctx, &upsertRequest, VersionHeader())
 
 	if !dosarpc.Dosa_Upsert_Helper.IsException(err) {
@@ -197,6 +207,10 @@ func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiV
 		Ref:      entityInfoToSchemaRef(ei),
 		Entities: values,
 		// TTL:      &ttl, mgode@ has not yet committed origin/ttl-for-multi-upsert
+	}
+
+	if c.useClientTimestamp {
+		request.Timestamp = c.advanceTimestamp()
 	}
 
 	response, err := c.client.MultiUpsert(ctx, request, VersionHeader())
@@ -343,6 +357,10 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		KeyValues: rpcFields,
 	}
 
+	if c.useClientTimestamp {
+		removeRequest.Timestamp = c.advanceTimestamp()
+	}
+
 	err = c.client.Remove(ctx, removeRequest, VersionHeader())
 	if err != nil {
 		if !dosarpc.Dosa_Remove_Helper.IsException(err) {
@@ -365,6 +383,10 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiK
 	request := &dosarpc.MultiRemoveRequest{
 		Ref:       entityInfoToSchemaRef(ei),
 		KeyValues: keyValues,
+	}
+
+	if c.useClientTimestamp {
+		request.Timestamp = c.advanceTimestamp()
 	}
 
 	response, err := c.client.MultiRemove(ctx, request, VersionHeader())
@@ -397,6 +419,10 @@ func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, column
 	request := &dosarpc.RemoveRangeRequest{
 		Ref:        entityInfoToSchemaRef(ei),
 		Conditions: rpcConditions,
+	}
+
+	if c.useClientTimestamp {
+		request.Timestamp = c.advanceTimestamp()
 	}
 
 	if err := c.client.RemoveRange(ctx, request, VersionHeader()); err != nil {
@@ -686,4 +712,9 @@ func wrapIDLError(err *dosarpc.Error) error {
 	}
 	// TODO check other fields in the thrift error object such as ShouldRetry
 	return errors.New(*err.Msg)
+}
+
+func (c *Connector) advanceTimestamp() *int64 {
+	timeStamp := c.clock.Now().UnixNano() / 1000
+	return &timeStamp
 }
