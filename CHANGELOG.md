@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.2.0 (unreleased)
+## v3.2.0 (2018-08-17)
  - add readonly scope metadata access to CLI
 
 ## v3.1.1 (2018-07-25)
