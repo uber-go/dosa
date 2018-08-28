@@ -163,7 +163,11 @@ func (md *ScopeMetadata) GetCreatedOn() time.Time {
 
 // GetExpiresOn is the expiration timestamp of the scope.
 func (md *ScopeMetadata) GetExpiresOn() *time.Time {
-	return md.ExpiresOn
+	if md.ExpiresOn == nil {
+		return nil
+	}
+	rv := *md.ExpiresOn
+	return &rv
 }
 
 // GetExtendCount is the extend count of the scope.

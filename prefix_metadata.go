@@ -119,7 +119,11 @@ func (md *PrefixMetadata) GetCreatedOn() time.Time {
 
 // GetExpiresOn is the expiration timestamp of the prefix.
 func (md *PrefixMetadata) GetExpiresOn() *time.Time {
-	return md.ExpiresOn
+	if md.ExpiresOn == nil {
+		return nil
+	}
+	rv := *md.ExpiresOn
+	return &rv
 }
 
 // GetExtendCount is the extend count of the prefix.
