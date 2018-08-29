@@ -108,6 +108,7 @@ func TestPrintResultsEmpty(t *testing.T) {
 }
 
 func TestStrToFieldValue(t *testing.T) {
+	// happy cases
 	tDateSec := "2018-06-11T13:03:01Z"
 	tDateMsec := "2018-06-11T13:03:01.000Z"
 	tUnixMsec := "1528722181000"
@@ -133,4 +134,16 @@ func TestStrToFieldValue(t *testing.T) {
 		assert.Equal(t, c.expFv, outFv)
 		assert.Nil(t, err)
 	}
+
+	// sad case for negative unix timestamp
+	tUnixMsecNeg := "-1528722181000"
+	fv, err := strToFieldValue(dosa.Timestamp, tUnixMsecNeg)
+	assert.Nil(t, fv)
+	assert.Contains(t, err.Error(), "timestamp should not be negative")
+
+	// sad case for overflow unix timestamp
+	tUnixMsecOverflow := "15287221810000000000"
+	fv, err = strToFieldValue(dosa.Timestamp, tUnixMsecOverflow)
+	assert.Nil(t, fv)
+	assert.Contains(t, err.Error(), "value out of range")
 }
