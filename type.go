@@ -22,7 +22,7 @@ package dosa
 
 import (
 	"github.com/pkg/errors"
-	"github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 )
 
 //go:generate stringer -type=Type
@@ -67,7 +67,7 @@ type UUID string
 // NewUUID is a helper for returning a new dosa.UUID value
 func NewUUID() UUID {
 	// return UUID(uuid.Must(uuid.NewV4()).String())
-	return UUID(uuid.NewV4().String())
+	return UUID(uuid.Must(uuid.NewV4()).String())
 }
 
 // Bytes gets the bytes from a UUID
