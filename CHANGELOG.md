@@ -1,7 +1,10 @@
 # Changelog
 
+## v3.2.1 (2018-08-31)
+ - Support RFC3339Nano and unix epoch time in millisecond for CLI timestamp query (#360)
+
 ## v3.2.0 (2018-08-17)
- - add readonly scope metadata access to CLI
+ - Add readonly scope metadata access to CLI (#349)
 
 ## v3.1.1 (2018-07-25)
  - Add keyPrefix to the config of redis connector (#344)
