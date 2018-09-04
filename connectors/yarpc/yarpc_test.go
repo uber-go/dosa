@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/jonboulle/clockwork"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
@@ -448,6 +449,22 @@ func TestYARPCClient_Upsert(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "\"c7\"")                // must contain name of bad field
 		assert.Contains(t, err.Error(), "incorrect UUID length") // must mention that the uuid is too short
+
+		// cover the timestamp case
+		testInstant := time.Unix(0, 1999)
+		testTimestamp := testInstant.UnixNano() / 1000
+		mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
+			Ref:          &testRPCSchemaRef,
+			EntityValues: outFields,
+			TTL:          &nt,
+			Timestamp:    &testTimestamp,
+		}, gomock.Any())
+
+		sut = Connector{client: mockedClient,
+			clock:              clockwork.NewFakeClockAt(testInstant),
+			useClientTimestamp: true}
+		err = sut.Upsert(ctx, testEi, inFields)
+		assert.Nil(t, err)
 	}
 }
 
@@ -512,6 +529,9 @@ func TestYARPCClient_MultiUpsert(t *testing.T) {
 	testErrMsg := "response error"
 
 	ttlVal := int64(1)
+	// for the timestamp cases
+	testInstant := time.Unix(0, 1999)
+	testTimestamp := testInstant.UnixNano() / 1000
 
 	testCases := []struct {
 		NetworkError  error
@@ -520,24 +540,35 @@ func TestYARPCClient_MultiUpsert(t *testing.T) {
 			Name  string
 			Value interface{}
 		}
-		TTL *int64
+		TTL       *int64
+		timestamp *int64
 	}{
 		{
 			nil,
 			nil,
 			getStubbedUpsertRequests()[0],
 			&ttlVal,
+			nil,
 		},
 		{
 			nil,
 			nil,
 			getStubbedUpsertRequests()[1],
 			nil,
+			&testTimestamp,
+		},
+		{
+			nil,
+			nil,
+			getStubbedUpsertRequests()[1],
+			nil,
+			nil,
 		},
 		{
 			errors.New("an error"),
 			nil,
 			getStubbedUpsertRequests()[0],
+			nil,
 			nil,
 		},
 		{
@@ -546,6 +577,7 @@ func TestYARPCClient_MultiUpsert(t *testing.T) {
 				Msg: &testErrMsg,
 			},
 			getStubbedUpsertRequests()[0],
+			nil,
 			nil,
 		},
 	}
@@ -576,11 +608,14 @@ func TestYARPCClient_MultiUpsert(t *testing.T) {
 			Ref:      &testRPCSchemaRef,
 			Entities: []drpc.FieldValueMap{outFields},
 			// TTL:      expectedTTL,
+			Timestamp: testCase.timestamp,
 		}, gomock.Any()).Return(&drpc.MultiUpsertResponse{Errors: []*drpc.Error{testCase.ResponseError}}, testCase.NetworkError).Times(1)
 
 		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
-		sut := Connector{client: mockedClient}
+		sut := Connector{client: mockedClient,
+			clock:              clockwork.NewFakeClockAt(testInstant),
+			useClientTimestamp: testCase.timestamp != nil}
 
 		retErrors, err := sut.MultiUpsert(ctx, ei, []map[string]dosa.FieldValue{inFields})
 		if testCase.NetworkError != nil {
@@ -611,20 +646,32 @@ func TestYARPCClient_MultiRemove(t *testing.T) {
 
 	testErrMsg := "response error"
 
+	testInstant := time.Unix(0, 1999)
+	testTimestamp := testInstant.UnixNano() / 1000
+
 	testCases := []struct {
 		NetworkError  error
 		ResponseError *drpc.Error
 		RemoveRequest map[string]dosa.FieldValue
+		timestamp     *int64
 	}{
 		{
 			nil,
 			nil,
 			getStubbedRemoveRequest(),
+			nil,
+		},
+		{
+			nil,
+			nil,
+			getStubbedRemoveRequest(),
+			&testTimestamp,
 		},
 		{
 			errors.New("an error"),
 			nil,
 			getStubbedRemoveRequest(),
+			nil,
 		},
 		{
 			nil,
@@ -632,6 +679,7 @@ func TestYARPCClient_MultiRemove(t *testing.T) {
 				Msg: &testErrMsg,
 			},
 			getStubbedRemoveRequest(),
+			nil,
 		},
 	}
 
@@ -639,11 +687,14 @@ func TestYARPCClient_MultiRemove(t *testing.T) {
 		mockedClient.EXPECT().MultiRemove(ctx, &drpc.MultiRemoveRequest{
 			Ref:       &testRPCSchemaRef,
 			KeyValues: []drpc.FieldValueMap{getStubbedRemoveDOSARequest()},
+			Timestamp: testCase.timestamp,
 		}, gomock.Any()).Return(&drpc.MultiRemoveResponse{Errors: []*drpc.Error{testCase.ResponseError}}, testCase.NetworkError).Times(1)
 
 		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
-		sut := Connector{client: mockedClient}
+		sut := Connector{client: mockedClient,
+			clock:              clockwork.NewFakeClockAt(testInstant),
+			useClientTimestamp: testCase.timestamp != nil}
 
 		retErrors, err := sut.MultiRemove(ctx, testEi, []map[string]dosa.FieldValue{testCase.RemoveRequest})
 		if testCase.NetworkError != nil {
@@ -956,6 +1007,31 @@ func TestConnector_RemoveRange(t *testing.T) {
 	})
 	assert.Error(t, err)
 	assert.EqualError(t, errors.Cause(err), "uuid: incorrect UUID length: baduuid")
+
+	// cover the timestamp case
+	testInstant := time.Unix(0, 1999)
+	testTimestamp := testInstant.UnixNano() / 1000
+
+	mockedClient.EXPECT().RemoveRange(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.RemoveRangeRequest, option yarpc2.CallOption) {
+		assert.Equal(t, testRPCSchemaRef, *request.Ref)
+		assert.Equal(t, len(request.Conditions), 1)
+		assert.Equal(t, *request.Timestamp, testTimestamp)
+		condition := request.Conditions[0]
+		assert.Equal(t, fieldName, *condition.Field.Name)
+		assert.Equal(t, field.Value, condition.Field.Value)
+		assert.Equal(t, &op, condition.Op)
+	}).Return(nil)
+
+	sut = Connector{client: mockedClient,
+		clock:              clockwork.NewFakeClockAt(testInstant),
+		useClientTimestamp: true}
+	err = sut.RemoveRange(ctx, testEi, map[string][]*dosa.Condition{
+		"c1": {&dosa.Condition{
+			Value: int64(10),
+			Op:    dosa.Eq,
+		}},
+	})
+	assert.NoError(t, err)
 }
 
 func TestConnector_Scan(t *testing.T) {
@@ -1066,6 +1142,22 @@ func TestConnector_Remove(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "\"c7\"")               // must contain name of bad field
 	assert.Contains(t, err.Error(), ErrInCorrectUUIDLength) // must mention that the uuid is too short
+
+	// cover the timestamp case
+	testInstant := time.Unix(0, 1999)
+	testTimestamp := testInstant.UnixNano() / 1000
+	removeRequest = &drpc.RemoveRequest{
+		Ref:       &testRPCSchemaRef,
+		KeyValues: getStubbedRemoveDOSARequest(),
+		Timestamp: &testTimestamp,
+	}
+	mockedClient.EXPECT().Remove(ctx, removeRequest, gomock.Any()).Return(nil)
+
+	sut = Connector{client: mockedClient,
+		clock:              clockwork.NewFakeClockAt(testInstant),
+		useClientTimestamp: true}
+	err = sut.Remove(ctx, testEi, getStubbedRemoveRequest())
+	assert.Nil(t, err)
 
 	// make sure we actually called Read on the interface
 	ctrl.Finish()

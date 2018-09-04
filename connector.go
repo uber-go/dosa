@@ -72,9 +72,10 @@ type SchemaRef struct {
 // EntityInfo is all the information about an entity, including the schema reference
 // as well as the entity definition
 type EntityInfo struct {
-	Ref *SchemaRef
-	Def *EntityDefinition
-	TTL *time.Duration
+	Ref             *SchemaRef
+	Def             *EntityDefinition
+	TTL             *time.Duration
+	ClientTimestamp *time.Time
 }
 
 // StringSet is a set of strings.
