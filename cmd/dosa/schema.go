@@ -27,6 +27,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"os/exec"
+
+	"strconv"
+
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/devnull"
@@ -44,6 +48,9 @@ var (
 )
 
 type scopeFlag string
+
+const schemaCheck = "schema check"
+const schemaUpsert = "schema upsert"
 
 func (s *scopeFlag) setString(value string) {
 	*s = scopeFlag(strings.Replace(value, ".", "_", -1))
@@ -71,6 +78,8 @@ type SchemaCmd struct {
 	Scope         scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
 	NamePrefix    string    `short:"n" long:"namePrefix" description:"Name prefix for schema types."`
 	Prefix        string    `short:"p" long:"prefix" description:"Name prefix for schema types." hidden:"true"`
+	JarPath       string    `short:"j" long:"jarpath" description:"Path of the jar files"`
+	ClassNames    string    `short:"c" long:"classnames" description:"Classes contain schema."`
 	provideClient adminClientProvider
 }
 
@@ -94,6 +103,11 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	// TODO(eculver): use options/configurator pattern to apply defaults
 	if options.ServiceName == "" {
 		options.ServiceName = _defServiceName
+	}
+
+	if c.JarPath != "" {
+		c.doSchemaOpInJavaClient(name)
+		return nil
 	}
 
 	client, err := c.provideClient(options)
@@ -136,6 +150,27 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	return nil
 }
 
+func (c *SchemaCmd) doSchemaOpInJavaClient(op string) {
+	cmd := "java"
+	var schemaOp string
+	if strings.Compare(op, schemaCheck) == 0 {
+		schemaOp = "CAN_UPSERT"
+	} else if strings.Compare(op, schemaUpsert) == 0 {
+		schemaOp = "UPSERT"
+	} else {
+		fmt.Println(fmt.Errorf("this operation has not been implemented in Java; please check documentation for usage"))
+		return
+	}
+
+	args := []string{"-jar", "dosa-Java-client-0.0.1.jar", "SCOPE::" + c.Scope.String(), "NAME_PREFIX::" + c.NamePrefix,
+		"JARPATH::" + c.JarPath, "SCHEMA_OPERATION::" + schemaOp, "CLASSNAME::" + c.ClassNames, "EXCLUDE::" + strings.Join(c.Excludes, ","),
+		"VERBOSE::" + strconv.FormatBool(c.Verbose)}
+	if err := exec.Command(cmd, args...).Run(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
 // SchemaCheck holds the options for 'schema check'
 type SchemaCheck struct {
 	*SchemaCmd
@@ -154,7 +189,7 @@ func newSchemaCheck(provideClient adminClientProvider) *SchemaCheck {
 
 // Execute executes a schema check command
 func (c *SchemaCheck) Execute(args []string) error {
-	return c.doSchemaOp("schema check", dosa.AdminClient.CanUpsertSchema, c.Args.Paths)
+	return c.doSchemaOp(schemaCheck, dosa.AdminClient.CanUpsertSchema, c.Args.Paths)
 }
 
 // SchemaUpsert contains data for executing schema upsert command.
@@ -175,7 +210,7 @@ func newSchemaUpsert(provideClient adminClientProvider) *SchemaUpsert {
 
 // Execute executes a schema upsert command
 func (c *SchemaUpsert) Execute(args []string) error {
-	return c.doSchemaOp("schema upsert", dosa.AdminClient.UpsertSchema, c.Args.Paths)
+	return c.doSchemaOp(schemaUpsert, dosa.AdminClient.UpsertSchema, c.Args.Paths)
 }
 
 // SchemaStatus contains data for executing schema status command
