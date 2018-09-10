@@ -26,11 +26,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
 	"os/exec"
-
 	"strconv"
-
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/devnull"
