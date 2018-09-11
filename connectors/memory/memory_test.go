@@ -29,7 +29,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 )
@@ -858,8 +858,8 @@ func BenchmarkConnector_Read(b *testing.B) {
 
 func TestCompareType(t *testing.T) {
 	tuuid := dosa.NewUUID()
-	v1uuid := dosa.UUID(uuid.NewV1().String())
-	v1newer := dosa.UUID(uuid.NewV1().String())
+	v1uuid := dosa.UUID(uuid.Must(uuid.NewV1()).String())
+	v1newer := dosa.UUID(uuid.Must(uuid.NewV1()).String())
 	tests := []struct {
 		t1, t2 dosa.FieldValue
 		result int8
@@ -1569,7 +1569,7 @@ func createTestData(t *testing.T, sut *Connector, keyGenFunc func(int) string, i
 			"f1": dosa.FieldValue(keyGenFunc(x)),
 			"c1": dosa.FieldValue(int64(1)),
 			"c6": dosa.FieldValue(int32(x)),
-			"c7": dosa.FieldValue(dosa.UUID(uuid.NewV1().String()))})
+			"c7": dosa.FieldValue(dosa.UUID(uuid.Must(uuid.NewV1()).String()))})
 		assert.NoError(t, err)
 	}
 }

@@ -24,13 +24,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/binary"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
 	"github.com/uber-go/dosa/encoding"
@@ -157,17 +156,6 @@ func copyRow(row map[string]dosa.FieldValue) map[string]dosa.FieldValue {
 	return copied
 }
 
-// This function returns the time bits from a UUID
-// You would have to scale this to nanos to make a
-// time.Time but we don't generally need that for
-// comparisons. See RFC 4122 for these bit offsets
-func timeFromUUID(u uuid.UUID) int64 {
-	low := int64(binary.BigEndian.Uint32(u[0:4]))
-	mid := int64(binary.BigEndian.Uint16(u[4:6]))
-	hi := int64((binary.BigEndian.Uint16(u[6:8]) & 0x0fff))
-	return low + (mid << 32) + (hi << 48)
-}
-
 // compareType compares a single DOSA field based on the type. This code assumes the types of each
 // of the columns are the same, or it will panic
 func compareType(d1 dosa.FieldValue, d2 dosa.FieldValue) int8 {
@@ -183,8 +171,8 @@ func compareType(d1 dosa.FieldValue, d2 dosa.FieldValue) int8 {
 		}
 		if u1.Version() == 1 {
 			// compare time UUIDs
-			t1 := timeFromUUID(u1)
-			t2 := timeFromUUID(u2)
+			t1, _ := uuid.TimestampFromV1(u1)
+			t2, _ := uuid.TimestampFromV1(u2)
 			if t1 == t2 {
 				return 0
 			}
