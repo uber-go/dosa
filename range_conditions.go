@@ -59,7 +59,7 @@ func (list sortedColumnCondition) Less(i, j int) bool {
 	return si.Condition.Op < sj.Condition.Op
 }
 
-// NormalizeConditions takes a set of conditions for columns and returns a sorted, denormalized view of the conditions
+// NormalizeConditions takes a set of conditions for columns and returns a sorted, denormalized view of the conditions.
 func NormalizeConditions(columnConditions map[string][]*Condition) []*ColumnCondition {
 	var cc []*ColumnCondition
 
@@ -75,45 +75,56 @@ func NormalizeConditions(columnConditions map[string][]*Condition) []*ColumnCond
 	return cc
 }
 
-// EnsureValidRangeConditions checks if the conditions for a range query is valid.
-// The transform arg is a function to transform the column name to a better representation for error message under
-// different circumstances. For example, on client side it can transform the column name to actual go struct field name;
-// and on the server side, an identity transformer func can be used.
+// EnsureValidRangeConditions checks the conditions for a PK Range(). "transform" is a name-prettifying function.
 func EnsureValidRangeConditions(ed *EntityDefinition, pk *PrimaryKey, columnConditions map[string][]*Condition, transform func(string) string) error {
-	unconstrainedPartitionKeySet := pk.PartitionKeySet()
+	// The requirements for range conditions on the PK being valid:
+	//     partition key: each field must be present, with a single Eq constraint on each
+	//     clustering key: conditions must be applied to consecutive fields and must all be Eq except for the last one
+
+	// Get the partition key. Fields will be removed from missingPKs as we find them in columnConditions.
+	partitionKeys := pk.PartitionKeySet()
+	missingPKs := pk.PartitionKeySet()
+
+	// For the clustering key the order matters; remember the position of each one.
+	clusteringKeys := make(map[string]int)
+	for i, k := range pk.ClusteringKeys {
+		clusteringKeys[k.Name] = i
+	}
+	clusteringConds := make([][]*Condition, len(pk.ClusteringKeys))
+
 	columnTypes := ed.ColumnTypes()
 
-	clusteringKeyConditions := make([][]*Condition, len(pk.ClusteringKeys))
-
-COND:
 	for column, conds := range columnConditions {
-		if _, ok := unconstrainedPartitionKeySet[column]; ok {
-			delete(unconstrainedPartitionKeySet, column)
+		// column in the partition key?
+		if _, ok := partitionKeys[column]; ok {
 			if err := ensureExactOneEqCondition(columnTypes[column], conds); err != nil {
 				return errors.Wrapf(err, "invalid conditions for partition key: %s", transform(column))
 			}
+			delete(missingPKs, column)
 			continue
 		}
 
-		for i, c := range pk.ClusteringKeys {
-			if column == c.Name {
-				clusteringKeyConditions[i] = conds
-				continue COND
-			}
+		// column in the clustering key?
+		if i, ok := clusteringKeys[column]; ok {
+			// Save the condition, check after we've collected them all.
+			clusteringConds[i] = conds
+			continue
 		}
 
-		return errors.Errorf("cannot enforce condition on non-key column: %s", transform(column))
+		return errors.Errorf("column %s is not in the primary key", transform(column))
 	}
 
-	if len(unconstrainedPartitionKeySet) > 0 {
+	// Were all the partition key fields OK?
+	if len(missingPKs) > 0 {
 		names := []string{}
-		for k := range unconstrainedPartitionKeySet {
+		for k := range missingPKs {
 			names = append(names, transform(k))
 		}
 		return errors.Errorf("missing Eq condition on partition keys: %v", names)
 	}
 
-	if err := ensureClusteringKeyConditions(pk.ClusteringKeys, columnTypes, clusteringKeyConditions, transform); err != nil {
+	// Finally, ensure the clustering key conditions are OK.
+	if err := ensureClusteringKeyConditions(pk.ClusteringKeys, columnTypes, clusteringConds, transform); err != nil {
 		return errors.Wrap(err, "conditions for clustering keys are invalid")
 	}
 
@@ -122,16 +133,16 @@ COND:
 
 func ensureExactOneEqCondition(t Type, conditions []*Condition) error {
 	if len(conditions) != 1 {
-		return errors.Errorf("expect exact one Eq condition, found: %v", conditions)
+		return errors.Errorf("expected exactly one Eq condition, found: %v", conditions)
 	}
 
 	r := conditions[0]
 	if r.Op != Eq {
-		return errors.Errorf("only Eq condition is allowed on this column for this query, found: %s", r.Op.String())
+		return errors.Errorf("only Eq is allowed on this column for this query, found: %s", r.Op.String())
 	}
 
 	if err := ensureTypeMatch(t, r.Value); err != nil {
-		return errors.Wrap(err, "the value in condition does not have expected type")
+		return errors.Wrapf(err, "the value %v in the condition does not have expected type %v", r.Value, t)
 	}
 	return nil
 }

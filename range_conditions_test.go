@@ -195,7 +195,7 @@ func TestEnsureValidRangeConditions(t *testing.T) {
 				"b": {{dosa.Eq, int64(100)}},
 				"f": {{dosa.Eq, []byte{1, 2, 3}}},
 			},
-			errMsg:   "cannot enforce condition on non-key column",
+			errMsg:   "is not in the primary key",
 			desc:     "conditions on non-key column",
 			errField: columnToFieldMap["f"],
 		},
