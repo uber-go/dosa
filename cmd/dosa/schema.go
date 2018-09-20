@@ -24,10 +24,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
-	"os/exec"
-	"strconv"
+
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/devnull"
@@ -159,9 +159,16 @@ func (c *SchemaCmd) doSchemaOpInJavaClient(op string) {
 		return
 	}
 
-	args := []string{"-jar", "dosa-Java-client-0.0.1.jar", "SCOPE::" + c.Scope.String(), "NAME_PREFIX::" + c.NamePrefix,
-		"JARPATH::" + c.JarPath, "SCHEMA_OPERATION::" + schemaOp, "CLASSNAME::" + c.ClassNames, "EXCLUDE::" + strings.Join(c.Excludes, ","),
-		"VERBOSE::" + strconv.FormatBool(c.Verbose)}
+	args := []string{"-jar", "dosa-Java-client-0.0.1.jar", "-s", c.Scope.String(), "-n", c.NamePrefix,
+		"-j", c.JarPath, "-so" + schemaOp, "-c", c.ClassNames, "-e"}
+	for _, element := range c.Excludes {
+		args = append(args, element)
+	}
+
+	if c.Verbose {
+		args = append(args, "-v")
+	}
+
 	if err := exec.Command(cmd, args...).Run(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
