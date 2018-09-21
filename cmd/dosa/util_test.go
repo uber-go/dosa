@@ -108,8 +108,11 @@ func TestPrintResultsEmpty(t *testing.T) {
 }
 
 func TestStrToFieldValue(t *testing.T) {
-	tStr := "2018-06-11T13:03:01Z"
-	ts, _ := time.Parse(time.RFC3339, tStr)
+	// happy cases
+	tDateSec := "2018-06-11T13:03:01Z"
+	tDateMsec := "2018-06-11T13:03:01.000Z"
+	tUnixMsec := "1528722181000"
+	ts, _ := time.Parse(time.RFC3339Nano, tDateSec)
 	cases := []struct {
 		inType dosa.Type
 		inStr  string
@@ -120,7 +123,9 @@ func TestStrToFieldValue(t *testing.T) {
 		{dosa.Bool, "false", dosa.FieldValue(false)},
 		{dosa.String, "42", dosa.FieldValue("42")},
 		{dosa.Double, "42.00", dosa.FieldValue(float64(42))},
-		{dosa.Timestamp, tStr, dosa.FieldValue(ts)},
+		{dosa.Timestamp, tDateSec, dosa.FieldValue(ts)},
+		{dosa.Timestamp, tDateMsec, dosa.FieldValue(ts)},
+		{dosa.Timestamp, tUnixMsec, dosa.FieldValue(ts)},
 		{dosa.TUUID, "3e4befa0-69d3-11e8-95b0-d55aa227a290", dosa.FieldValue(dosa.UUID("3e4befa0-69d3-11e8-95b0-d55aa227a290"))},
 	}
 
@@ -129,4 +134,16 @@ func TestStrToFieldValue(t *testing.T) {
 		assert.Equal(t, c.expFv, outFv)
 		assert.Nil(t, err)
 	}
+
+	// sad case for negative unix timestamp
+	tUnixMsecNeg := "-1528722181000"
+	fv, err := strToFieldValue(dosa.Timestamp, tUnixMsecNeg)
+	assert.Nil(t, fv)
+	assert.Contains(t, err.Error(), "timestamp should not be negative")
+
+	// sad case for overflow unix timestamp
+	tUnixMsecOverflow := "15287221810000000000"
+	fv, err = strToFieldValue(dosa.Timestamp, tUnixMsecOverflow)
+	assert.Nil(t, fv)
+	assert.Contains(t, err.Error(), "value out of range")
 }

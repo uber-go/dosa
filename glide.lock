@@ -22,6 +22,8 @@ imports:
   - syntax/lexer
   - util/runes
   - util/strings
+- name: github.com/gofrs/uuid
+  version: d41eeda0759468834c84365a32d1b1ec4264c75f
 - name: github.com/golang/mock
   version: c34cdb4725f4c3844d095133c6e40e448b86589b
   subpackages:
@@ -64,8 +66,6 @@ imports:
   - internal/util
   - nfs
   - xfs
-- name: github.com/satori/go.uuid
-  version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/uber-go/atomic
   version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
   subpackages:
@@ -77,7 +77,7 @@ imports:
 - name: github.com/uber-go/tally
   version: ff17f3c43c065c3c2991f571e740eee43ea3a14a
 - name: github.com/uber/dosa-idl
-  version: 8a75cc9ec3d9cdf2542db437c784ae557b28ad17
+  version: ac79c598a228a5686923860f57cc5fd7044f225e
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -190,6 +190,8 @@ testImports:
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
+- name: github.com/satori/go.uuid
+  version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/sectioneight/md-to-godoc
   version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
 - name: github.com/stretchr/testify

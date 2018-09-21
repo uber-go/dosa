@@ -101,9 +101,17 @@ func strToFieldValue(t dosa.Type, s string) (dosa.FieldValue, error) {
 		}
 		return dosa.FieldValue(d), nil
 	case dosa.Timestamp:
-		t, err := time.Parse(time.RFC3339, s)
+		t, err := time.Parse(time.RFC3339Nano, s)
 		if err != nil {
-			return nil, errors.Wrapf(err, "timestamp should be in form 2006-01-02T15:04:05Z")
+			// check if the input is a unix epoch timestamp
+			i, err := strconv.ParseInt(s, 10, 64)
+			if err != nil {
+				return nil, errors.Wrapf(err, "timestamp should be in form 2006-01-02T15:04:05.1Z (RFC3339Nano) or Unix epoch time in millisecond")
+			}
+			if i < 0 {
+				return nil, errors.Errorf("timestamp should not be negative")
+			}
+			return dosa.FieldValue(time.Unix(0, i*int64(time.Millisecond)).UTC()), nil
 		}
 		return dosa.FieldValue(t), nil
 	case dosa.TUUID:
