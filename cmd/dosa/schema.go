@@ -76,7 +76,7 @@ type SchemaCmd struct {
 	NamePrefix    string    `short:"n" long:"namePrefix" description:"Name prefix for schema types."`
 	Prefix        string    `short:"p" long:"prefix" description:"Name prefix for schema types." hidden:"true"`
 	JarPath       string    `short:"j" long:"jarpath" description:"Path of the jar files"`
-	ClassNames    string    `short:"c" long:"classnames" description:"Classes contain schema."`
+	ClassNames  []string    `short:"c" long:"classnames" description:"Classes contain schema."`
 	provideClient adminClientProvider
 }
 
@@ -159,20 +159,33 @@ func (c *SchemaCmd) doSchemaOpInJavaClient(op string) {
 		return
 	}
 
-	args := []string{"-jar", "dosa-Java-client-0.0.1.jar", "-s", c.Scope.String(), "-n", c.NamePrefix,
-		"-j", c.JarPath, "-so" + schemaOp, "-c", c.ClassNames, "-e"}
-	for _, element := range c.Excludes {
-		args = append(args, element)
+	args := []string{"-jar", "/Users/cici/gocode/src/github.com/java/dosa/dosa-core/build/libs/dosa-Java-client-0.0.1.jar", "-s", c.Scope.String(), "-n", c.NamePrefix,
+		"-j", c.JarPath, "-so", schemaOp}
+
+	if len(c.ClassNames) > 0 {
+		args = append(args, "-c")
+		for _, element := range c.ClassNames {
+			args = append(args, element)
+		}
+	}
+
+	if len(c.Excludes) > 0 {
+		args = append(args, "-e")
+		for _, element := range c.Excludes {
+			args = append(args, element)
+		}
 	}
 
 	if c.Verbose {
 		args = append(args, "-v")
 	}
 
-	if err := exec.Command(cmd, args...).Run(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	out, err := exec.Command(cmd, args...).Output()
+	if err != nil {
+		fmt.Printf("%v", err)
 	}
+
+	fmt.Printf("%s", out)
 }
 
 // SchemaCheck holds the options for 'schema check'
@@ -277,8 +290,10 @@ func (c *SchemaStatus) Execute(args []string) error {
 // SchemaDump contains data for executing the schema dump command
 type SchemaDump struct {
 	*SchemaOptions
-	Format string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
-	Args   struct {
+	Format       string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
+	JarPath      string `short:"j" long:"jarpath" description:"Path of the jar files"`
+	ClassNames []string `short:"c" long:"classnames" description:"Classes contain schema."`
+	Args       struct {
 		Paths []string `positional-arg-name:"paths"`
 	} `positional-args:"yes"`
 }
@@ -289,6 +304,11 @@ func (c *SchemaDump) Execute(args []string) error {
 		fmt.Printf("executing schema dump with %v\n", args)
 		fmt.Printf("options are %+v\n", *c)
 		fmt.Printf("global options are %+v\n", options)
+	}
+
+	if c.JarPath != "" {
+		c.doSchemaDumpInJavaClient()
+		return nil
 	}
 
 	// no connection necessary
@@ -324,6 +344,48 @@ func (c *SchemaDump) Execute(args []string) error {
 	}
 
 	return nil
+}
+
+func (c *SchemaDump) doSchemaDumpInJavaClient() {
+	cmd := "java"
+	var format string
+
+	switch c.Format {
+	case "cql":
+		format = "DUMP_CQL"
+	case "uql":
+		format = "DUMP_UQL"
+	case "avro":
+		format = "DUMP_AVRO"
+	}
+
+	args := []string{"-jar", "/Users/cici/gocode/src/github.com/java/dosa/dosa-core/build/libs/dosa-Java-client-0.0.1.jar",
+		"-j", c.JarPath, "-so", format}
+
+	if len(c.ClassNames) > 0 {
+		args = append(args, "-c")
+		for _, element := range c.ClassNames {
+			args = append(args, element)
+		}
+	}
+
+	if len(c.Excludes) > 0 {
+		args = append(args, "-e")
+		for _, element := range c.Excludes {
+			args = append(args, element)
+		}
+	}
+	
+	if c.Verbose {
+		args = append(args, "-v")
+	}
+
+	out, err := exec.Command(cmd, args...).Output()
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+
+	fmt.Printf("%s", out)
 }
 
 // expandDirectory verifies that each argument is actually a directory or
