@@ -21,6 +21,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/jessevdk/go-flags"
 	"github.com/uber-go/dosa"
@@ -43,6 +44,7 @@ var (
 	githash   = "master"
 	timestamp = "now"
 	javaclient = "java-client-1.0.0-beta-all.jar"
+	path = "/tmp/dosa/java/client/"
 )
 
 // BuildInfo reports information about the binary build environment
@@ -129,12 +131,21 @@ dosa manages your schema both in production and development scopes`
 }
 
 func downloadJar() {
-	cmd := "curl"
-	args := []string{"-O", "http://artifactory.uber.internal:4587/artifactory/libs-release-local/com/uber/dosa/java-client/1.0.0-beta/" + javaclient}
-	out, err := exec.Command(cmd, args...).Output()
+    cmd := exec.Command("curl", "-O", "http://artifactory.uber.internal:4587/artifactory/libs-release-local/com/uber/dosa/java-client/1.0.0-beta/" + javaclient)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err := cmd.Run()
 	if err != nil {
-		fmt.Printf("%v", err)
+		fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
+		return
 	}
 
-	fmt.Printf("%s", out)
+	cleanup()
+}
+
+func cleanup() {
+	exec.Command("mkdir", "-p", path)
+	exec.Command("mv", javaclient, path)
 }
