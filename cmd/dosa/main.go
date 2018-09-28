@@ -22,10 +22,10 @@ package main
 
 import (
 	"fmt"
-	"os"
-
-	flags "github.com/jessevdk/go-flags"
+	"github.com/jessevdk/go-flags"
 	"github.com/uber-go/dosa"
+	"os"
+	"os/exec"
 )
 
 // for testing, we make exit an overridable routine
@@ -42,6 +42,7 @@ var (
 	version   = "0.0.0"
 	githash   = "master"
 	timestamp = "now"
+	javaclient = "java-client-1.0.0-beta-all.jar"
 )
 
 // BuildInfo reports information about the binary build environment
@@ -81,10 +82,12 @@ var (
 
 func main() {
 	buildInfo := &BuildInfo{}
+	downloadJar()
 	OptionsParser := flags.NewParser(&options, flags.PassAfterNonOption|flags.HelpFlag)
 	OptionsParser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
 	OptionsParser.LongDescription = `
 dosa manages your schema both in production and development scopes`
+
 	c, _ := OptionsParser.AddCommand("version", "display build info", "display build info", &BuildInfo{})
 
 	c, _ = OptionsParser.AddCommand("scope", "commands to manage scope", "create, drop, or truncate development scopes", &ScopeOptions{})
@@ -123,4 +126,15 @@ dosa manages your schema both in production and development scopes`
 	}
 
 	exit(0)
+}
+
+func downloadJar() {
+	cmd := "curl"
+	args := []string{"-O", "http://artifactory.uber.internal:4587/artifactory/libs-release-local/com/uber/dosa/java-client/1.0.0-beta/" + javaclient}
+	out, err := exec.Command(cmd, args...).Output()
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+
+	fmt.Printf("%s", out)
 }

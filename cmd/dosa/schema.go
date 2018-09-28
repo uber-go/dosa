@@ -159,7 +159,7 @@ func (c *SchemaCmd) doSchemaOpInJavaClient(op string) {
 		return
 	}
 
-	args := []string{"-jar", "dosa-Java-client-0.0.1.jar", "-s", c.Scope.String(), "-n", c.NamePrefix,
+	args := []string{"-jar", javaclient, "-s", c.Scope.String(), "-n", c.NamePrefix,
 		"-j", c.JarPath, "-so", schemaOp}
 
 	if len(c.ClassNames) > 0 {
@@ -359,7 +359,7 @@ func (c *SchemaDump) doSchemaDumpInJavaClient() {
 		format = "DUMP_AVRO"
 	}
 
-	args := []string{"-jar", "dosa-Java-client-0.0.1.jar",
+	args := []string{"-jar", javaclient,
 		"-j", c.JarPath, "-so", format}
 
 	if len(c.ClassNames) > 0 {
