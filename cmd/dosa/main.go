@@ -84,7 +84,6 @@ var (
 
 func main() {
 	buildInfo := &BuildInfo{}
-	downloadJar()
 	OptionsParser := flags.NewParser(&options, flags.PassAfterNonOption|flags.HelpFlag)
 	OptionsParser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
 	OptionsParser.LongDescription = `

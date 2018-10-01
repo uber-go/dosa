@@ -103,6 +103,10 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	}
 
 	if c.JarPath != "" {
+		if _, err := os.Stat(path + javaclient); os.IsNotExist(err) {
+			downloadJar()
+		}
+
 		c.doSchemaOpInJavaClient(name)
 		return nil
 	}
@@ -307,6 +311,10 @@ func (c *SchemaDump) Execute(args []string) error {
 	}
 
 	if c.JarPath != "" {
+		if _, err := os.Stat(path + javaclient); os.IsNotExist(err) {
+			downloadJar()
+		}
+
 		c.doSchemaDumpInJavaClient()
 		return nil
 	}
