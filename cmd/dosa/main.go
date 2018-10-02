@@ -43,8 +43,8 @@ var (
 	version   = "0.0.0"
 	githash   = "master"
 	timestamp = "now"
-	javaclient = "java-client-1.0.0-beta-all.jar"
-	path = "/tmp/dosa/java/client/"
+	javaclientVersion = "1.0.0-beta"
+	javaclient = os.Getenv("HOME") + "/.m2/target/dependency/java-client-" + javaclientVersion + ".jar"
 )
 
 // BuildInfo reports information about the binary build environment
@@ -130,7 +130,9 @@ dosa manages your schema both in production and development scopes`
 }
 
 func downloadJar() {
-    cmd := exec.Command("curl", "-O", "http://artifactory.uber.internal:4587/artifactory/libs-release-local/com/uber/dosa/java-client/1.0.0-beta/" + javaclient)
+	fmt.Println("Downloading required dependency... This may take some time.")
+    cmd := exec.Command( "mvn", "org.apache.maven.plugins:maven-dependency-plugin:RELEASE:copy",
+    	"-Dartifact=com.uber.dosa:java-client:" + javaclientVersion, "-Dproject.basedir=" + os.Getenv("HOME") + "/.m2/")
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out
@@ -140,11 +142,4 @@ func downloadJar() {
 		fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
 		return
 	}
-
-	cleanup()
-}
-
-func cleanup() {
-	exec.Command("mkdir", "-p", path)
-	exec.Command("mv", javaclient, path)
 }

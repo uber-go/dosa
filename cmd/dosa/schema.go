@@ -103,7 +103,7 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	}
 
 	if c.JarPath != "" {
-		if _, err := os.Stat(path + javaclient); os.IsNotExist(err) {
+		if _, err := os.Stat(javaclient); os.IsNotExist(err) {
 			downloadJar()
 		}
 
@@ -163,7 +163,7 @@ func (c *SchemaCmd) doSchemaOpInJavaClient(op string) {
 		return
 	}
 
-	args := []string{"-jar", path + javaclient, "-s", c.Scope.String(), "-n", c.NamePrefix,
+	args := []string{"-jar", javaclient, "-s", c.Scope.String(), "-n", c.NamePrefix,
 		"-j", c.JarPath, "-so", schemaOp}
 
 	if len(c.ClassNames) > 0 {
@@ -311,10 +311,9 @@ func (c *SchemaDump) Execute(args []string) error {
 	}
 
 	if c.JarPath != "" {
-		if _, err := os.Stat(path + javaclient); os.IsNotExist(err) {
+		if _, err := os.Stat(javaclient); os.IsNotExist(err) {
 			downloadJar()
 		}
-
 		c.doSchemaDumpInJavaClient()
 		return nil
 	}
@@ -367,7 +366,7 @@ func (c *SchemaDump) doSchemaDumpInJavaClient() {
 		format = "DUMP_AVRO"
 	}
 
-	args := []string{"-jar", path + javaclient,
+	args := []string{"-jar", javaclient,
 		"-j", c.JarPath, "-so", format}
 
 	if len(c.ClassNames) > 0 {
