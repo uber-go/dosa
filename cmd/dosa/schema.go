@@ -48,6 +48,7 @@ type scopeFlag string
 
 const schemaCheck = "schema check"
 const schemaUpsert = "schema upsert"
+const java = "java"
 
 func (s *scopeFlag) setString(value string) {
 	*s = scopeFlag(strings.Replace(value, ".", "_", -1))
@@ -75,7 +76,7 @@ type SchemaCmd struct {
 	Scope         scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
 	NamePrefix    string    `short:"n" long:"namePrefix" description:"Name prefix for schema types."`
 	Prefix        string    `short:"p" long:"prefix" description:"Name prefix for schema types." hidden:"true"`
-	JarPath       string    `short:"j" long:"jarpath" description:"Path of the jar files"`
+	JarPath       string    `short:"j" long:"jarpath" description:"Path of the jar. This jar contains schema entities."`
 	ClassNames  []string    `short:"c" long:"classnames" description:"Classes contain schema."`
 	provideClient adminClientProvider
 }
@@ -152,7 +153,7 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 }
 
 func (c *SchemaCmd) doSchemaOpInJavaClient(op string) {
-	cmd := "java"
+	cmd := java
 	var schemaOp string
 	if strings.Compare(op, schemaCheck) == 0 {
 		schemaOp = "CAN_UPSERT"
@@ -295,7 +296,7 @@ func (c *SchemaStatus) Execute(args []string) error {
 type SchemaDump struct {
 	*SchemaOptions
 	Format       string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
-	JarPath      string `short:"j" long:"jarpath" description:"Path of the jar files"`
+	JarPath      string `short:"j" long:"jarpath" description:"Path of the jar. This jar contains schema entities."`
 	ClassNames []string `short:"c" long:"classnames" description:"Classes contain schema."`
 	Args       struct {
 		Paths []string `positional-arg-name:"paths"`
@@ -354,7 +355,7 @@ func (c *SchemaDump) Execute(args []string) error {
 }
 
 func (c *SchemaDump) doSchemaDumpInJavaClient() {
-	cmd := "java"
+	cmd := java
 	var format string
 
 	switch c.Format {
