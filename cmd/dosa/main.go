@@ -43,7 +43,7 @@ var (
 	version   = "0.0.0"
 	githash   = "master"
 	timestamp = "now"
-	javaclientVersion = "1.1.0-beta"
+	javaclientVersion = "1.1.0-SNAPSHOT"
 	javaclient = os.Getenv("HOME") + "/.m2/target/dependency/java-client-" + javaclientVersion + ".jar"
 )
 
