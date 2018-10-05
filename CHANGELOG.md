@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.3.0 (2018-10-04)
+ - Switch to gofrs/uuid (#361)
+ - Cleanup EnsureValidRangeConditions (#364)
+ - Add Java client cli support (#363)
+ - Add String() to cli output (#366)
+
 ## v3.2.1 (2018-08-31)
  - Support RFC3339Nano and unix epoch time in millisecond for CLI timestamp query (#360)
 
