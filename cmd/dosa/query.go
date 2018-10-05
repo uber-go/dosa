@@ -22,6 +22,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/uber-go/dosa"
@@ -55,10 +56,16 @@ type QueryCmd struct {
 	NamePrefix    string    `short:"n" long:"namePrefix" description:"Name prefix for schema types."`
 	Prefix        string    `short:"p" long:"prefix" description:"Name prefix for schema types." hidden:"true"`
 	Path          string    `long:"path" description:"Path to source." required:"true"`
+	JarPath       string    `short:"j" long:"jarpath" description:"Path of the jar. This jar contains schema entities."`
+	ClassNames  []string    `short:"c" long:"classnames" description:"Classes contain schema."`
 	provideClient queryClientProvider
 }
 
 func (c *QueryCmd) doQueryOp(f func(ShellQueryClient, context.Context, []*queryObj, []string, int) ([]map[string]dosa.FieldValue, error), entityName string, queries []string, limit int) error {
+	if c.JarPath != "" {
+		fmt.Println("This operation has not been implemented in Java yet.")
+	}
+
 	if options.ServiceName == "" {
 		options.ServiceName = _defServiceName
 	}

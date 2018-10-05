@@ -21,11 +21,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
-	"os"
-
-	flags "github.com/jessevdk/go-flags"
+	"github.com/jessevdk/go-flags"
 	"github.com/uber-go/dosa"
+	"os"
+	"os/exec"
 )
 
 // for testing, we make exit an overridable routine
@@ -42,6 +43,8 @@ var (
 	version   = "0.0.0"
 	githash   = "master"
 	timestamp = "now"
+	javaclientVersion = "1.1.0-beta"
+	javaclient = os.Getenv("HOME") + "/.m2/target/dependency/java-client-" + javaclientVersion + ".jar"
 )
 
 // BuildInfo reports information about the binary build environment
@@ -85,6 +88,7 @@ func main() {
 	OptionsParser.ShortDescription = "DOSA CLI - The command-line tool for your DOSA client"
 	OptionsParser.LongDescription = `
 dosa manages your schema both in production and development scopes`
+
 	c, _ := OptionsParser.AddCommand("version", "display build info", "display build info", &BuildInfo{})
 
 	c, _ = OptionsParser.AddCommand("scope", "commands to manage scope", "create, drop, or truncate development scopes", &ScopeOptions{})
@@ -123,4 +127,19 @@ dosa manages your schema both in production and development scopes`
 	}
 
 	exit(0)
+}
+
+func downloadJar() {
+	fmt.Println("Downloading required dependencies... This may take some time...")
+    cmd := exec.Command( "mvn", "org.apache.maven.plugins:maven-dependency-plugin:RELEASE:copy",
+    	"-Dartifact=com.uber.dosa:java-client:" + javaclientVersion, "-Dproject.basedir=" + os.Getenv("HOME") + "/.m2/")
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
+		return
+	}
 }

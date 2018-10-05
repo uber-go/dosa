@@ -1,5 +1,5 @@
-hash: e1f56e45a7835c9819955e67720297f7f41b839a6a88c6eb7ee89fe191dc0cd3
-updated: 2018-08-29T08:13:43.844085095-07:00
+hash: 8b80aa59f75a2ce7eeaf511ffe1fbf97b951e30f3819301d0da63080b8962bc8
+updated: 2018-08-03T16:03:03.359809516-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -112,7 +112,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 57163f1e97e7bf5573c50329be0fc302e7b145ca
+  version: fc2d75d3b5e30fc81e5dc2375667bbd6333b0099
   subpackages:
   - api/backoff
   - api/encoding
@@ -148,7 +148,7 @@ imports:
   - yarpcconfig
   - yarpcerrors
 - name: go.uber.org/zap
-  version: ff33455a0e382e8a81d14dd7c922020b6b5e7982
+  version: 4d45f9617f7d90f7a663ff21c7a4321dbe78098b
   subpackages:
   - buffer
   - internal/bufferpool
@@ -156,7 +156,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: 8a410e7b638dca158bf9e766925842f6651ff828
+  version: f4c29de78a2a91c00474a2e689954305c350adf9
   repo: https://github.com/golang/net
   subpackages:
   - bpf

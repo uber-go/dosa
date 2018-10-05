@@ -21,9 +21,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -44,6 +46,10 @@ var (
 )
 
 type scopeFlag string
+
+const schemaCheck = "schema check"
+const schemaUpsert = "schema upsert"
+const java = "java"
 
 func (s *scopeFlag) setString(value string) {
 	*s = scopeFlag(strings.Replace(value, ".", "_", -1))
@@ -71,6 +77,8 @@ type SchemaCmd struct {
 	Scope         scopeFlag `short:"s" long:"scope" description:"Storage scope for the given operation." required:"true"`
 	NamePrefix    string    `short:"n" long:"namePrefix" description:"Name prefix for schema types."`
 	Prefix        string    `short:"p" long:"prefix" description:"Name prefix for schema types." hidden:"true"`
+	JarPath       string    `short:"j" long:"jarpath" description:"Path of the jar. This jar contains schema entities."`
+	ClassNames  []string    `short:"c" long:"classnames" description:"Classes contain schema."`
 	provideClient adminClientProvider
 }
 
@@ -94,6 +102,15 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	// TODO(eculver): use options/configurator pattern to apply defaults
 	if options.ServiceName == "" {
 		options.ServiceName = _defServiceName
+	}
+
+	if c.JarPath != "" {
+		if _, err := os.Stat(javaclient); os.IsNotExist(err) {
+			downloadJar()
+		}
+
+		c.doSchemaOpInJavaClient(name)
+		return nil
 	}
 
 	client, err := c.provideClient(options)
@@ -136,6 +153,52 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	return nil
 }
 
+func (c *SchemaCmd) doSchemaOpInJavaClient(op string) {
+	var schemaOp string
+	if strings.Compare(op, schemaCheck) == 0 {
+		schemaOp = "CAN_UPSERT"
+	} else if strings.Compare(op, schemaUpsert) == 0 {
+		schemaOp = "UPSERT"
+	} else {
+		fmt.Println(fmt.Errorf("this operation has not been implemented in Java; please check documentation for usage"))
+		return
+	}
+
+	args := []string{"-jar", javaclient, "-s", c.Scope.String(), "-n", c.NamePrefix,
+		"-j", c.JarPath, "-so", schemaOp}
+
+	if len(c.ClassNames) > 0 {
+		args = append(args, "-c")
+		for _, element := range c.ClassNames {
+			args = append(args, element)
+		}
+	}
+
+	if len(c.Excludes) > 0 {
+		args = append(args, "-e")
+		for _, element := range c.Excludes {
+			args = append(args, element)
+		}
+	}
+
+	if c.Verbose {
+		args = append(args, "-v")
+	}
+
+	cmd := exec.Command(java, args...)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
+		return
+	}
+
+	fmt.Printf("%s", out)
+}
+
 // SchemaCheck holds the options for 'schema check'
 type SchemaCheck struct {
 	*SchemaCmd
@@ -154,7 +217,7 @@ func newSchemaCheck(provideClient adminClientProvider) *SchemaCheck {
 
 // Execute executes a schema check command
 func (c *SchemaCheck) Execute(args []string) error {
-	return c.doSchemaOp("schema check", dosa.AdminClient.CanUpsertSchema, c.Args.Paths)
+	return c.doSchemaOp(schemaCheck, dosa.AdminClient.CanUpsertSchema, c.Args.Paths)
 }
 
 // SchemaUpsert contains data for executing schema upsert command.
@@ -175,7 +238,7 @@ func newSchemaUpsert(provideClient adminClientProvider) *SchemaUpsert {
 
 // Execute executes a schema upsert command
 func (c *SchemaUpsert) Execute(args []string) error {
-	return c.doSchemaOp("schema upsert", dosa.AdminClient.UpsertSchema, c.Args.Paths)
+	return c.doSchemaOp(schemaUpsert, dosa.AdminClient.UpsertSchema, c.Args.Paths)
 }
 
 // SchemaStatus contains data for executing schema status command
@@ -238,8 +301,10 @@ func (c *SchemaStatus) Execute(args []string) error {
 // SchemaDump contains data for executing the schema dump command
 type SchemaDump struct {
 	*SchemaOptions
-	Format string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
-	Args   struct {
+	Format       string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
+	JarPath      string `short:"j" long:"jarpath" description:"Path of the jar. This jar contains schema entities."`
+	ClassNames []string `short:"c" long:"classnames" description:"Classes contain schema."`
+	Args       struct {
 		Paths []string `positional-arg-name:"paths"`
 	} `positional-args:"yes"`
 }
@@ -250,6 +315,14 @@ func (c *SchemaDump) Execute(args []string) error {
 		fmt.Printf("executing schema dump with %v\n", args)
 		fmt.Printf("options are %+v\n", *c)
 		fmt.Printf("global options are %+v\n", options)
+	}
+
+	if c.JarPath != "" {
+		if _, err := os.Stat(javaclient); os.IsNotExist(err) {
+			downloadJar()
+		}
+		c.doSchemaDumpInJavaClient()
+		return nil
 	}
 
 	// no connection necessary
@@ -285,6 +358,53 @@ func (c *SchemaDump) Execute(args []string) error {
 	}
 
 	return nil
+}
+
+func (c *SchemaDump) doSchemaDumpInJavaClient() {
+	var format string
+
+	switch c.Format {
+	case "cql":
+		format = "DUMP_CQL"
+	case "uql":
+		format = "DUMP_UQL"
+	case "avro":
+		format = "DUMP_AVRO"
+	}
+
+	args := []string{"-jar", javaclient,
+		"-j", c.JarPath, "-so", format}
+
+	if len(c.ClassNames) > 0 {
+		args = append(args, "-c")
+		for _, element := range c.ClassNames {
+			args = append(args, element)
+		}
+	}
+
+	if len(c.Excludes) > 0 {
+		args = append(args, "-e")
+		for _, element := range c.Excludes {
+			args = append(args, element)
+		}
+	}
+	
+	if c.Verbose {
+		args = append(args, "-v")
+	}
+
+	cmd := exec.Command(java, args...)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
+		return
+	}
+
+	fmt.Printf("%s", out)
 }
 
 // expandDirectory verifies that each argument is actually a directory or
