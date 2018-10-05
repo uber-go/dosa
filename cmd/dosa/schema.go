@@ -196,7 +196,7 @@ func (c *SchemaCmd) doSchemaOpInJavaClient(op string) {
 		return
 	}
 
-	fmt.Printf("%s", out)
+	fmt.Printf("%s", out.String())
 }
 
 // SchemaCheck holds the options for 'schema check'
@@ -404,7 +404,7 @@ func (c *SchemaDump) doSchemaDumpInJavaClient() {
 		return
 	}
 
-	fmt.Printf("%s", out)
+	fmt.Printf("%s", out.String())
 }
 
 // expandDirectory verifies that each argument is actually a directory or
