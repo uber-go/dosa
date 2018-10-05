@@ -130,7 +130,7 @@ dosa manages your schema both in production and development scopes`
 }
 
 func downloadJar() {
-	fmt.Println("Downloading required dependency... This may take some time.")
+	fmt.Println("Downloading required dependencies... This may take some time...")
     cmd := exec.Command( "mvn", "org.apache.maven.plugins:maven-dependency-plugin:RELEASE:copy",
     	"-Dartifact=com.uber.dosa:java-client:" + javaclientVersion, "-Dproject.basedir=" + os.Getenv("HOME") + "/.m2/")
 	var out bytes.Buffer
