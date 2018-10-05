@@ -21,6 +21,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -153,7 +154,6 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 }
 
 func (c *SchemaCmd) doSchemaOpInJavaClient(op string) {
-	cmd := java
 	var schemaOp string
 	if strings.Compare(op, schemaCheck) == 0 {
 		schemaOp = "CAN_UPSERT"
@@ -185,9 +185,15 @@ func (c *SchemaCmd) doSchemaOpInJavaClient(op string) {
 		args = append(args, "-v")
 	}
 
-	out, err := exec.Command(cmd, args...).Output()
+	cmd := exec.Command(java, args...)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err := cmd.Run()
 	if err != nil {
-		fmt.Printf("%v", err)
+		fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
+		return
 	}
 
 	fmt.Printf("%s", out)
@@ -355,7 +361,6 @@ func (c *SchemaDump) Execute(args []string) error {
 }
 
 func (c *SchemaDump) doSchemaDumpInJavaClient() {
-	cmd := java
 	var format string
 
 	switch c.Format {
@@ -388,9 +393,15 @@ func (c *SchemaDump) doSchemaDumpInJavaClient() {
 		args = append(args, "-v")
 	}
 
-	out, err := exec.Command(cmd, args...).Output()
+	cmd := exec.Command(java, args...)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err := cmd.Run()
 	if err != nil {
-		fmt.Printf("%v", err)
+		fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
+		return
 	}
 
 	fmt.Printf("%s", out)
