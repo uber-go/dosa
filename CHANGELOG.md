@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.3.1 (2018-10-04)
+## v3.3.0 (2018-10-04)
  - Switch to gofrs/uuid (#361)
  - Cleanup EnsureValidRangeConditions (#364)
  - Add Java client cli support (#363)
