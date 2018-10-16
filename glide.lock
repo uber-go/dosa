@@ -1,5 +1,5 @@
-hash: 8b80aa59f75a2ce7eeaf511ffe1fbf97b951e30f3819301d0da63080b8962bc8
-updated: 2018-08-03T16:03:03.359809516-07:00
+hash: e1f56e45a7835c9819955e67720297f7f41b839a6a88c6eb7ee89fe191dc0cd3
+updated: 2018-10-16T14:42:38.207209479-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -23,7 +23,7 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gofrs/uuid
-  version: d41eeda0759468834c84365a32d1b1ec4264c75f
+  version: 370558f003bfe29580cd0f698d8640daccdcc45c
 - name: github.com/golang/mock
   version: c34cdb4725f4c3844d095133c6e40e448b86589b
   subpackages:
@@ -102,7 +102,7 @@ imports:
   - push
   - tallypush
 - name: go.uber.org/thriftrw
-  version: fb439a9a7f5a388d8606aae1c1ff6654b8b67fbe
+  version: 7c449ccc4449ee826f5063a81e7f48b178396ef1
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -112,7 +112,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: fc2d75d3b5e30fc81e5dc2375667bbd6333b0099
+  version: e9ce3a1b4a82c45d493d700bdbaa3d40c62348d9
   subpackages:
   - api/backoff
   - api/encoding
@@ -148,7 +148,7 @@ imports:
   - yarpcconfig
   - yarpcerrors
 - name: go.uber.org/zap
-  version: 4d45f9617f7d90f7a663ff21c7a4321dbe78098b
+  version: ff33455a0e382e8a81d14dd7c922020b6b5e7982
   subpackages:
   - buffer
   - internal/bufferpool
@@ -156,7 +156,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: f4c29de78a2a91c00474a2e689954305c350adf9
+  version: 640f4622ab692b87c2f3a94265e6f579fe38263d
   repo: https://github.com/golang/net
   subpackages:
   - bpf
@@ -190,8 +190,6 @@ testImports:
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
-- name: github.com/satori/go.uuid
-  version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/sectioneight/md-to-godoc
   version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
 - name: github.com/stretchr/testify
