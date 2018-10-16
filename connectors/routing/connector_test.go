@@ -26,7 +26,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/devnull"
@@ -1025,7 +1025,7 @@ func createTestData(t *testing.T, rc *Connector, keyGenFunc func(int) string, id
 			"f1": dosa.FieldValue(keyGenFunc(x)),
 			"c1": dosa.FieldValue(int64(1)),
 			"c6": dosa.FieldValue(int32(x)),
-			"c7": dosa.FieldValue(dosa.UUID(uuid.NewV1().String()))})
+			"c7": dosa.FieldValue(dosa.UUID(uuid.Must(uuid.NewV1()).String()))})
 		assert.NoError(t, err)
 	}
 }
