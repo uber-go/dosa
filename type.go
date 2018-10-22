@@ -21,8 +21,8 @@
 package dosa
 
 import (
-	"github.com/pkg/errors"
 	"github.com/gofrs/uuid"
+	"github.com/pkg/errors"
 )
 
 //go:generate stringer -type=Type

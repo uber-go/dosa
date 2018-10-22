@@ -28,8 +28,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/gofrs/uuid"
+	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/connectors/base"
 	"github.com/uber-go/dosa/encoding"

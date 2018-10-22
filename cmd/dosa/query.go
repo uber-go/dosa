@@ -57,7 +57,7 @@ type QueryCmd struct {
 	Prefix        string    `short:"p" long:"prefix" description:"Name prefix for schema types." hidden:"true"`
 	Path          string    `long:"path" description:"Path to source." required:"true"`
 	JarPath       string    `short:"j" long:"jarpath" description:"Path of the jar. This jar contains schema entities."`
-	ClassNames  []string    `short:"c" long:"classnames" description:"Classes contain schema."`
+	ClassNames    []string  `short:"c" long:"classnames" description:"Classes contain schema."`
 	provideClient queryClientProvider
 }
 

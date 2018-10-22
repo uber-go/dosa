@@ -78,7 +78,7 @@ type SchemaCmd struct {
 	NamePrefix    string    `short:"n" long:"namePrefix" description:"Name prefix for schema types."`
 	Prefix        string    `short:"p" long:"prefix" description:"Name prefix for schema types." hidden:"true"`
 	JarPath       string    `short:"j" long:"jarpath" description:"Path of the jar. This jar contains schema entities."`
-	ClassNames  []string    `short:"c" long:"classnames" description:"Classes contain schema."`
+	ClassNames    []string  `short:"c" long:"classnames" description:"Classes contain schema."`
 	provideClient adminClientProvider
 }
 
@@ -301,8 +301,8 @@ func (c *SchemaStatus) Execute(args []string) error {
 // SchemaDump contains data for executing the schema dump command
 type SchemaDump struct {
 	*SchemaOptions
-	Format       string `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
-	JarPath      string `short:"j" long:"jarpath" description:"Path of the jar. This jar contains schema entities."`
+	Format     string   `long:"format" short:"f" description:"output format" choice:"cql" choice:"uql" choice:"avro" default:"cql"`
+	JarPath    string   `short:"j" long:"jarpath" description:"Path of the jar. This jar contains schema entities."`
 	ClassNames []string `short:"c" long:"classnames" description:"Classes contain schema."`
 	Args       struct {
 		Paths []string `positional-arg-name:"paths"`
@@ -388,7 +388,7 @@ func (c *SchemaDump) doSchemaDumpInJavaClient() {
 			args = append(args, element)
 		}
 	}
-	
+
 	if c.Verbose {
 		args = append(args, "-v")
 	}
