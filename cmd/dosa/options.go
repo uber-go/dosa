@@ -97,10 +97,11 @@ func provideAdminClient(opts GlobalOptions) (dosa.AdminClient, error) {
 	}
 
 	ycfg := yarpc.Config{
-		Host:        opts.Host,
-		Port:        opts.Port,
-		CallerName:  opts.CallerName.String(),
-		ServiceName: opts.ServiceName,
+		Host:         opts.Host,
+		Port:         opts.Port,
+		CallerName:   opts.CallerName.String(),
+		ServiceName:  opts.ServiceName,
+		ExtraHeaders: getAuthHeaders(opts.CallerName.String()),
 	}
 
 	conn, err := yarpc.NewConnector(ycfg)
@@ -126,10 +127,11 @@ func provideMDClient(opts GlobalOptions) (c dosa.Client, err error) {
 		Scope:      "production",
 		NamePrefix: "dosa_scopes_metadata",
 		Yarpc: yarpc.Config{
-			Host:        opts.Host,
-			Port:        opts.Port,
-			CallerName:  opts.CallerName.String(),
-			ServiceName: opts.ServiceName,
+			Host:         opts.Host,
+			Port:         opts.Port,
+			CallerName:   opts.CallerName.String(),
+			ServiceName:  opts.ServiceName,
+			ExtraHeaders: getAuthHeaders(opts.CallerName.String()),
 		},
 	}
 
@@ -160,10 +162,11 @@ func provideShellQueryClient(opts GlobalOptions, scope, prefix, path, structName
 	}
 
 	ycfg := yarpc.Config{
-		Host:        opts.Host,
-		Port:        opts.Port,
-		CallerName:  opts.CallerName.String(),
-		ServiceName: opts.ServiceName,
+		Host:         opts.Host,
+		Port:         opts.Port,
+		CallerName:   opts.CallerName.String(),
+		ServiceName:  opts.ServiceName,
+		ExtraHeaders: getAuthHeaders(opts.CallerName.String()),
 	}
 
 	conn, err := yarpc.NewConnector(ycfg)
