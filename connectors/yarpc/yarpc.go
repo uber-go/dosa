@@ -119,8 +119,20 @@ func NewConnector(config Config) (*Connector, error) {
 	return &Connector{
 		dispatcher: dispatcher,
 		client:     client,
-		headers:    config.ExtraHeaders,
+		headers:    checkHeaders(config.ExtraHeaders, config.CallerName),
 	}, nil
+}
+
+// checkHeaders ensures that X-Uber-Source is set.
+func checkHeaders(headers map[string]string, caller string) map[string]string {
+	if headers == nil {
+		headers = map[string]string{}
+	}
+	// We don't just check to see if there's a value; it has to be non-empty.
+	if headers["X-Uber-Source"] == "" {
+		headers["X-Uber-Source"] = caller
+	}
+	return headers
 }
 
 // CreateIfNotExists ...

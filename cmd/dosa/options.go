@@ -101,7 +101,7 @@ func provideAdminClient(opts GlobalOptions) (dosa.AdminClient, error) {
 		Port:         opts.Port,
 		CallerName:   opts.CallerName.String(),
 		ServiceName:  opts.ServiceName,
-		ExtraHeaders: getAuthHeaders(opts.CallerName.String()),
+		ExtraHeaders: getAuthHeaders(),
 	}
 
 	conn, err := yarpc.NewConnector(ycfg)
@@ -131,7 +131,7 @@ func provideMDClient(opts GlobalOptions) (c dosa.Client, err error) {
 			Port:         opts.Port,
 			CallerName:   opts.CallerName.String(),
 			ServiceName:  opts.ServiceName,
-			ExtraHeaders: getAuthHeaders(opts.CallerName.String()),
+			ExtraHeaders: getAuthHeaders(),
 		},
 	}
 
@@ -166,7 +166,7 @@ func provideShellQueryClient(opts GlobalOptions, scope, prefix, path, structName
 		Port:         opts.Port,
 		CallerName:   opts.CallerName.String(),
 		ServiceName:  opts.ServiceName,
-		ExtraHeaders: getAuthHeaders(opts.CallerName.String()),
+		ExtraHeaders: getAuthHeaders(),
 	}
 
 	conn, err := yarpc.NewConnector(ycfg)
