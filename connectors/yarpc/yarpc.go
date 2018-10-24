@@ -59,16 +59,18 @@ func ErrorIsConnectionRefused(err error) bool {
 
 // Config contains the YARPC connector parameters.
 type Config struct {
-	Host        string `yaml:"host"`
-	Port        string `yaml:"port"`
-	CallerName  string `yaml:"callerName"`
-	ServiceName string `yaml:"serviceName"`
+	Host         string `yaml:"host"`
+	Port         string `yaml:"port"`
+	CallerName   string `yaml:"callerName"`
+	ServiceName  string `yaml:"serviceName"`
+	ExtraHeaders map[string]string
 }
 
 // Connector holds the client-side RPC interface and some schema information
 type Connector struct {
 	client     dosaclient.Interface
 	dispatcher *rpc.Dispatcher
+	headers    map[string]string
 }
 
 // NewConnector creates a new instance with user provided transport
@@ -117,7 +119,20 @@ func NewConnector(config Config) (*Connector, error) {
 	return &Connector{
 		dispatcher: dispatcher,
 		client:     client,
+		headers:    checkHeaders(config.ExtraHeaders, config.CallerName),
 	}, nil
+}
+
+// checkHeaders ensures that X-Uber-Source is set.
+func checkHeaders(headers map[string]string, caller string) map[string]string {
+	if headers == nil {
+		headers = map[string]string{}
+	}
+	// We don't just check to see if there's a value; it has to be non-empty.
+	if headers["X-Uber-Source"] == "" {
+		headers["X-Uber-Source"] = caller
+	}
+	return headers
 }
 
 // CreateIfNotExists ...
@@ -138,7 +153,7 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 		TTL:          &ttl,
 	}
 
-	err = c.client.CreateIfNotExists(ctx, &createRequest, VersionHeader())
+	err = c.client.CreateIfNotExists(ctx, &createRequest, getHeaders(c.headers)...)
 	if err != nil {
 		if be, ok := err.(*dosarpc.BadRequestError); ok {
 			if be.ErrorCode != nil && *be.ErrorCode == errCodeAlreadyExists {
@@ -171,7 +186,7 @@ func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[
 		TTL:          &ttl,
 	}
 
-	err = c.client.Upsert(ctx, &upsertRequest, VersionHeader())
+	err = c.client.Upsert(ctx, &upsertRequest, getHeaders(c.headers)...)
 
 	if !dosarpc.Dosa_Upsert_Helper.IsException(err) {
 		return errors.Wrap(err, "failed to Upsert due to network issue")
@@ -199,7 +214,7 @@ func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiV
 		// TTL:      &ttl, mgode@ has not yet committed origin/ttl-for-multi-upsert
 	}
 
-	response, err := c.client.MultiUpsert(ctx, request, VersionHeader())
+	response, err := c.client.MultiUpsert(ctx, request, getHeaders(c.headers)...)
 	if err != nil {
 		if !dosarpc.Dosa_MultiUpsert_Helper.IsException(err) {
 			return nil, errors.Wrap(err, "failed to MultiUpsert due to network issue")
@@ -251,7 +266,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 		FieldsToRead: rpcMinimumFields,
 	}
 
-	response, err := c.client.Read(ctx, readRequest, VersionHeader())
+	response, err := c.client.Read(ctx, readRequest, getHeaders(c.headers)...)
 	if err != nil {
 		if be, ok := err.(*dosarpc.BadRequestError); ok {
 			if be.ErrorCode != nil && *be.ErrorCode == errCodeNotFound {
@@ -300,7 +315,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 		FieldsToRead: rpcMinimumFields,
 	}
 
-	response, err := c.client.MultiRead(ctx, request, VersionHeader())
+	response, err := c.client.MultiRead(ctx, request, getHeaders(c.headers)...)
 	if err != nil {
 		if !dosarpc.Dosa_MultiRead_Helper.IsException(err) {
 			return nil, errors.Wrap(err, "failed to MultiRead due to network issue")
@@ -343,7 +358,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 		KeyValues: rpcFields,
 	}
 
-	err = c.client.Remove(ctx, removeRequest, VersionHeader())
+	err = c.client.Remove(ctx, removeRequest, getHeaders(c.headers)...)
 	if err != nil {
 		if !dosarpc.Dosa_Remove_Helper.IsException(err) {
 			return errors.Wrap(err, "failed to Remove due to network issue")
@@ -367,7 +382,7 @@ func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiK
 		KeyValues: keyValues,
 	}
 
-	response, err := c.client.MultiRemove(ctx, request, VersionHeader())
+	response, err := c.client.MultiRemove(ctx, request, getHeaders(c.headers)...)
 	if err != nil {
 		if !dosarpc.Dosa_MultiRemove_Helper.IsException(err) {
 			return nil, errors.Wrap(err, "failed to MultiRemove due to network issue")
@@ -399,7 +414,7 @@ func (c *Connector) RemoveRange(ctx context.Context, ei *dosa.EntityInfo, column
 		Conditions: rpcConditions,
 	}
 
-	if err := c.client.RemoveRange(ctx, request, VersionHeader()); err != nil {
+	if err := c.client.RemoveRange(ctx, request, getHeaders(c.headers)...); err != nil {
 		if !dosarpc.Dosa_RemoveRange_Helper.IsException(err) {
 			return errors.Wrap(err, "failed to RemoveRange due to network issue")
 		}
@@ -423,7 +438,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 		Conditions:   rpcConditions,
 		FieldsToRead: rpcMinimumFields,
 	}
-	response, err := c.client.Range(ctx, &rangeRequest, VersionHeader())
+	response, err := c.client.Range(ctx, &rangeRequest, getHeaders(c.headers)...)
 	if err != nil {
 		if !dosarpc.Dosa_Range_Helper.IsException(err) {
 			return nil, "", errors.Wrap(err, "failed to Range due to network issue")
@@ -472,7 +487,7 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields
 		Limit:        &limit32,
 		FieldsToRead: rpcMinimumFields,
 	}
-	response, err := c.client.Scan(ctx, &scanRequest, VersionHeader())
+	response, err := c.client.Scan(ctx, &scanRequest, getHeaders(c.headers)...)
 	if err != nil {
 		if !dosarpc.Dosa_Scan_Helper.IsException(err) {
 			return nil, "", errors.Wrap(err, "failed to Scan due to network issue")
@@ -497,7 +512,7 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 		Scope:      &scope,
 		NamePrefix: &namePrefix,
 	}
-	response, err := c.client.CheckSchema(ctx, &csr, VersionHeader())
+	response, err := c.client.CheckSchema(ctx, &csr, getHeaders(c.headers)...)
 	if err != nil {
 		if !dosarpc.Dosa_CheckSchema_Helper.IsException(err) {
 			return dosa.InvalidVersion, errors.Wrap(err, "failed to CheckSchema due to network issue")
@@ -520,7 +535,7 @@ func (c *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix strin
 		Scope:      &scope,
 		NamePrefix: &namePrefix,
 	}
-	response, err := c.client.CanUpsertSchema(ctx, &csr, VersionHeader())
+	response, err := c.client.CanUpsertSchema(ctx, &csr, getHeaders(c.headers)...)
 	if err != nil {
 		if !dosarpc.Dosa_CanUpsertSchema_Helper.IsException(err) {
 			return dosa.InvalidVersion, errors.Wrap(err, "failed to CanUpsertSchema due to network issue")
@@ -540,7 +555,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 		EntityDefs: rpcEds,
 	}
 
-	response, err := c.client.UpsertSchema(ctx, request, VersionHeader())
+	response, err := c.client.UpsertSchema(ctx, request, getHeaders(c.headers)...)
 	if err != nil {
 		if !dosarpc.Dosa_UpsertSchema_Helper.IsException(err) {
 			return nil, errors.Wrap(err, "failed to UpsertSchema due to network issue")
@@ -566,7 +581,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 // CheckSchemaStatus checks the status of specific version of schema
 func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix string, version int32) (*dosa.SchemaStatus, error) {
 	request := dosarpc.CheckSchemaStatusRequest{Scope: &scope, NamePrefix: &namePrefix, Version: &version}
-	response, err := c.client.CheckSchemaStatus(ctx, &request, VersionHeader())
+	response, err := c.client.CheckSchemaStatus(ctx, &request, getHeaders(c.headers)...)
 
 	if err != nil {
 		if !dosarpc.Dosa_CheckSchemaStatus_Helper.IsException(err) {
@@ -612,7 +627,7 @@ func (c *Connector) CreateScope(ctx context.Context, md *dosa.ScopeMetadata) err
 		Metadata:  &mds,
 	}
 
-	if err = c.client.CreateScope(ctx, request, VersionHeader()); err != nil {
+	if err = c.client.CreateScope(ctx, request, getHeaders(c.headers)...); err != nil {
 		if !dosarpc.Dosa_CreateScope_Helper.IsException(err) {
 			return errors.Wrap(err, "failed to CreateScope due to network issue")
 		}
@@ -632,7 +647,7 @@ func (c *Connector) TruncateScope(ctx context.Context, scope string) error {
 		Requester: dosa.GetUsername(),
 	}
 
-	if err := c.client.TruncateScope(ctx, request, VersionHeader()); err != nil {
+	if err := c.client.TruncateScope(ctx, request, getHeaders(c.headers)...); err != nil {
 		if !dosarpc.Dosa_TruncateScope_Helper.IsException(err) {
 			return errors.Wrap(err, "failed to TruncateScope due to network issue")
 		}
@@ -652,7 +667,7 @@ func (c *Connector) DropScope(ctx context.Context, scope string) error {
 		Requester: dosa.GetUsername(),
 	}
 
-	if err := c.client.DropScope(ctx, request, VersionHeader()); err != nil {
+	if err := c.client.DropScope(ctx, request, getHeaders(c.headers)...); err != nil {
 		if !dosarpc.Dosa_DropScope_Helper.IsException(err) {
 			return errors.Wrap(err, "failed to DropScope due to network issue")
 		}

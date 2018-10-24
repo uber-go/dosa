@@ -415,7 +415,12 @@ func multiKeyValuesToRPCValues(keysSlice []map[string]dosa.FieldValue) ([]dosarp
 	return rpcFieldsSlice, nil
 }
 
-// VersionHeader returns the rpc style version header
-func VersionHeader() rpc.CallOption {
-	return rpc.WithHeader(_version, dosa.VERSION)
+// getHeaders converts the provided headers into rpc.CallOption values. A header for Version is also added.
+func getHeaders(headers map[string]string) []rpc.CallOption {
+	hdrs := make([]rpc.CallOption, 0, len(headers)+1)
+	hdrs = append(hdrs, rpc.WithHeader(_version, dosa.VERSION))
+	for h, v := range headers {
+		hdrs = append(hdrs, rpc.WithHeader(h, v))
+	}
+	return hdrs
 }

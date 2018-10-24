@@ -21,6 +21,7 @@
 package yarpc
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -232,5 +233,17 @@ func TestEncodeOperator(t *testing.T) {
 
 	for _, test := range data {
 		assert.Equal(t, test.rpcop, *encodeOperator(test.dop))
+	}
+}
+
+func TestGetHeaders(t *testing.T) {
+	headers := map[string]string{
+		"Foo": "bar",
+		"Bar": "foo",
+	}
+	hdrs := getHeaders(headers)
+	assert.Equal(t, len(headers)+1, len(hdrs))
+	for _, h := range hdrs {
+		assert.Equal(t, "yarpc.CallOption", reflect.TypeOf(h).String())
 	}
 }

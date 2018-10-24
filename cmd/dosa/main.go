@@ -23,10 +23,11 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/jessevdk/go-flags"
-	"github.com/uber-go/dosa"
 	"os"
 	"os/exec"
+
+	"github.com/jessevdk/go-flags"
+	"github.com/uber-go/dosa"
 )
 
 // for testing, we make exit an overridable routine
@@ -40,11 +41,11 @@ type queryClientProvider func(opts GlobalOptions, scope, prefix, path, structNam
 
 // these are overridden at build-time w/ the -ldflags -X option
 var (
-	version   = "0.0.0"
-	githash   = "master"
-	timestamp = "now"
+	version           = "0.0.0"
+	githash           = "master"
+	timestamp         = "now"
 	javaclientVersion = "1.1.0-beta"
-	javaclient = os.Getenv("HOME") + "/.m2/target/dependency/java-client-" + javaclientVersion + ".jar"
+	javaclient        = os.Getenv("HOME") + "/.m2/target/dependency/java-client-" + javaclientVersion + ".jar"
 )
 
 // BuildInfo reports information about the binary build environment
@@ -70,7 +71,7 @@ type GlobalOptions struct {
 	Host        string     `long:"host" default:"127.0.0.1" description:"The hostname or IP for the gateway."`
 	Port        string     `short:"p" long:"port" default:"21300" description:"The hostname or IP for the gateway."`
 	ServiceName string     `short:"s" long:"service" default:"dosa-gateway" description:"The TChannel service name for the gateway."`
-	CallerName  callerFlag `long:"caller" default:"dosacli-$USER" description:"Caller will override the default caller name (which is dosacli-$USER)."`
+	CallerName  callerFlag `long:"caller" default:"dosacli-$USER" description:"The RPC Caller name."`
 	Timeout     timeFlag   `long:"timeout" default:"60s" description:"The timeout for gateway requests. E.g., 100ms, 0.5s, 1s. If no unit is specified, milliseconds are assumed."`
 	Version     bool       `long:"version" description:"Display version info"`
 }
@@ -131,8 +132,8 @@ dosa manages your schema both in production and development scopes`
 
 func downloadJar() {
 	fmt.Println("Downloading required dependencies... This may take some time...")
-    cmd := exec.Command( "mvn", "org.apache.maven.plugins:maven-dependency-plugin:RELEASE:copy",
-    	"-Dartifact=com.uber.dosa:java-client:" + javaclientVersion, "-Dproject.basedir=" + os.Getenv("HOME") + "/.m2/")
+	cmd := exec.Command("mvn", "org.apache.maven.plugins:maven-dependency-plugin:RELEASE:copy",
+		"-Dartifact=com.uber.dosa:java-client:"+javaclientVersion, "-Dproject.basedir="+os.Getenv("HOME")+"/.m2/")
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out

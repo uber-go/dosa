@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.3.1 (unreleased)
+ - CLI: Send Auth header
+ - Library: send CallerName in header
+
 ## v3.3.0 (2018-10-04)
  - Switch to gofrs/uuid (#361)
  - Cleanup EnsureValidRangeConditions (#364)
