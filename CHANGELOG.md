@@ -1,6 +1,9 @@
 # Changelog
 
-## v3.3.1 (unreleased)
+## v3.4.1 (unreleased)
+ - Nothing yet
+
+## v3.4.0 (2018-10-26)
  - CLI: Send Auth header
  - Library: send CallerName in header
 
