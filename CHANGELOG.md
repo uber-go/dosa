@@ -1,7 +1,10 @@
 # Changelog
 
-## v3.4.1 (unreleased)
+## v3.4.2 (unreleased)
  - Nothing yet
+
+## v3.4.1 (2018-11-07)
+ - Remove all uses of satori.uuid
 
 ## v3.4.0 (2018-10-26)
  - CLI: Send Auth header
