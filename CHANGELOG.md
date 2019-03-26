@@ -1,7 +1,10 @@
 # Changelog
 
-## v3.4.2 (unreleased)
+## v3.4.3 (unreleased)
  - Nothing yet
+
+## v3.4.2 (2019-03-26)
+ - Update version.VERSION
 
 ## v3.4.1 (2018-11-07)
  - Remove all uses of satori.uuid
