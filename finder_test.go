@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -76,6 +77,7 @@ func TestParser(t *testing.T) {
 		"multipleindexes":               &MultipleIndexes{},
 		"complexindexes":                &ComplexIndexes{},
 		"scopemetadata":                 &ScopeMetadata{},
+		"prefixmetadata":                &PrefixMetadata{},
 	}
 	entitiesExcludedForTest := map[string]interface{}{
 		"clienttestentity1":      struct{}{}, // skip, see https://jira.uberinternal.com/browse/DOSA-788
@@ -104,11 +106,13 @@ func TestParser(t *testing.T) {
 
 func TestExclusion(t *testing.T) {
 	entities, errs, err := findEntities([]string{"."}, []string{"*_test.go"})
-	// We expect to find only ScopeMetadata
-	assert.Equal(t, 1, len(entities))
-	assert.Equal(t, "ScopeMetadata", entities[0].StructName)
-	assert.Equal(t, 0, len(errs))
 	assert.Nil(t, err)
+	assert.Equal(t, 0, len(errs))
+	// We expect to find only ScopeMetadata and Prefixmetadata
+	assert.Equal(t, 2, len(entities))
+	enames := []string{entities[0].StructName, entities[1].StructName}
+	sort.Strings(enames)
+	assert.Equal(t, []string{"PrefixMetadata", "ScopeMetadata"}, enames)
 }
 
 func TestFindEntitiesInOtherPkg(t *testing.T) {
