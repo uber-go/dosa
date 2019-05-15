@@ -348,8 +348,8 @@ func parseNameTag(tag, defaultName string) (string, string, error) {
 	return fullNameTag, name, nil
 }
 
-// parseColumnsTag parses "columns" tag of dosa.Index in the entity
-// returns full string of columns and a slice of column fields.
+// parseColumnsTag parses the "columns" tag of a dosa.Index in the entity. It returns
+// the matched section of the tag string and a list of the selected fields.
 func parseColumnsTag(tag string) (string, []string, error) {
 	fullColumnsTag := ""
 	var indexColumns []string
