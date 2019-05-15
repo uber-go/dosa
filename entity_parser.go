@@ -49,7 +49,7 @@ var (
 
 	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
 
-	columnsPattern0 = regexp.MustCompile(`columns\s*=\s*\(([^\(\)]+)\)`)
+	columnsPattern = regexp.MustCompile(`columns\s*=\s*\(([^\(\)]+)\)`)
 
 	etlPattern0 = regexp.MustCompile(`etl\s*=\s*(\S*)`)
 
@@ -348,13 +348,13 @@ func parseNameTag(tag, defaultName string) (string, string, error) {
 	return fullNameTag, name, nil
 }
 
-// parseColumnsTag functions parse DOSA "columns" tag
+// parseColumnsTag parses "columns" tag of dosa.Index in the entity
+// returns full string of columns and a slice of column fields.
 func parseColumnsTag(tag string) (string, []string, error) {
 	fullColumnsTag := ""
-	// var indexColumns []string
-	indexColumns := []string{}
+	var indexColumns []string
 	var fields []string
-	matches := columnsPattern0.FindStringSubmatch(tag)
+	matches := columnsPattern.FindStringSubmatch(tag)
 	if len(matches) == 2 {
 		fullColumnsTag = matches[0]
 		fields = strings.Split(matches[1], ",")
