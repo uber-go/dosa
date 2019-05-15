@@ -39,8 +39,7 @@ func TestSingleIndexNoParen(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, map[string]*IndexDefinition{
 		"searchbydata": {
-			Key:     &PrimaryKey{PartitionKeys: []string{"data"}},
-			Columns: []string{},
+			Key: &PrimaryKey{PartitionKeys: []string{"data"}},
 		},
 	}, dosaTable.Indexes)
 }
@@ -72,12 +71,10 @@ func TestMultipleIndexes(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, map[string]*IndexDefinition{
 		"searchbydata": {
-			Key:     &PrimaryKey{PartitionKeys: []string{"data"}},
-			Columns: []string{},
+			Key: &PrimaryKey{PartitionKeys: []string{"data"}},
 		},
 		"searchbydate": {
-			Key:     &PrimaryKey{PartitionKeys: []string{"date"}},
-			Columns: []string{},
+			Key: &PrimaryKey{PartitionKeys: []string{"date"}},
 		},
 	}, dosaTable.Indexes)
 }
@@ -109,7 +106,6 @@ func TestComplexIndexes(t *testing.T) {
 					},
 				},
 			},
-			Columns: []string{},
 		},
 		"index_date": {
 			Key: &PrimaryKey{
@@ -121,7 +117,6 @@ func TestComplexIndexes(t *testing.T) {
 					},
 				},
 			},
-			Columns: []string{},
 		},
 	}, dosaTable.Indexes)
 }
