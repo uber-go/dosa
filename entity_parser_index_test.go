@@ -39,7 +39,8 @@ func TestSingleIndexNoParen(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, map[string]*IndexDefinition{
 		"searchbydata": {
-			Key: &PrimaryKey{PartitionKeys: []string{"data"}},
+			Key:     &PrimaryKey{PartitionKeys: []string{"data"}},
+			Columns: []string{},
 		},
 	}, dosaTable.Indexes)
 }
@@ -71,10 +72,12 @@ func TestMultipleIndexes(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, map[string]*IndexDefinition{
 		"searchbydata": {
-			Key: &PrimaryKey{PartitionKeys: []string{"data"}},
+			Key:     &PrimaryKey{PartitionKeys: []string{"data"}},
+			Columns: []string{},
 		},
 		"searchbydate": {
-			Key: &PrimaryKey{PartitionKeys: []string{"date"}},
+			Key:     &PrimaryKey{PartitionKeys: []string{"date"}},
+			Columns: []string{},
 		},
 	}, dosaTable.Indexes)
 }
@@ -106,6 +109,7 @@ func TestComplexIndexes(t *testing.T) {
 					},
 				},
 			},
+			Columns: []string{},
 		},
 		"index_date": {
 			Key: &PrimaryKey{
@@ -117,6 +121,42 @@ func TestComplexIndexes(t *testing.T) {
 					},
 				},
 			},
+			Columns: []string{},
+		},
+	}, dosaTable.Indexes)
+}
+
+type IndexesWithColumnsTag struct {
+	Entity       `dosa:"primaryKey=(ID)"`
+	SearchByCity Index `dosa:"key=(City, Payload) columns=(ID)"`
+	SearchByID   Index `dosa:"key=(City) columns=(ID, Payload)"`
+
+	ID      UUID
+	City    string
+	Payload []byte
+}
+
+func TestIndexesWithColumnsTag(t *testing.T) {
+	dosaTable, err := TableFromInstance(&IndexesWithColumnsTag{})
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]*IndexDefinition{
+		"searchbycity": {
+			Key: &PrimaryKey{
+				PartitionKeys: []string{"city"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "payload",
+						Descending: false,
+					},
+				},
+			},
+			Columns: []string{"id"},
+		},
+		"searchbyid": {
+			Key: &PrimaryKey{
+				PartitionKeys: []string{"city"},
+			},
+			Columns: []string{"id", "payload"},
 		},
 	}, dosaTable.Indexes)
 }

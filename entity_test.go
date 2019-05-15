@@ -342,12 +342,14 @@ func getValidEntityDefinition() *dosa.EntityDefinition {
 						},
 					},
 				},
+				Columns: []string{},
 			},
 
 			"index2": {
 				Key: &dosa.PrimaryKey{
 					PartitionKeys: []string{"bar"},
 				},
+				Columns: []string{},
 			},
 		},
 		Columns: []*dosa.ColumnDefinition{

@@ -166,13 +166,19 @@ func (cd *ColumnDefinition) Clone() *ColumnDefinition {
 
 // IndexDefinition stores information about a DOSA entity's index
 type IndexDefinition struct {
-	Key *PrimaryKey
+	Key     *PrimaryKey
+	Columns []string
 }
 
 // Clone returns a deep copy of IndexDefinition
 func (id *IndexDefinition) Clone() *IndexDefinition {
+	columns := make([]string, len(id.Columns))
+	for i, c := range id.Columns {
+		columns[i] = c
+	}
 	return &IndexDefinition{
-		Key: id.Key.Clone(),
+		Key:     id.Key.Clone(),
+		Columns: columns,
 	}
 }
 

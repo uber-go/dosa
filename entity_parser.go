@@ -49,6 +49,8 @@ var (
 
 	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
 
+	columnsPattern0 = regexp.MustCompile(`columns\s*=\s*\(([^\(\)]+)\)`)
+
 	etlPattern0 = regexp.MustCompile(`etl\s*=\s*(\S*)`)
 
 	ttlPattern0 = regexp.MustCompile(`ttl\s*=\s*(\S*)`)
@@ -206,14 +208,14 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		} else {
 			// parse index fields
 			if structField.Type == indexType {
-				indexName, indexKey, err := parseIndexTag(structField.Name, tag)
+				indexName, indexKey, indexColumns, err := parseIndexTag(structField.Name, tag)
 				if err != nil {
 					return nil, err
 				}
 				if _, exist := t.Indexes[indexName]; exist {
 					return nil, errors.Errorf("index name is duplicated: %s", indexName)
 				}
-				t.Indexes[indexName] = &IndexDefinition{Key: indexKey}
+				t.Indexes[indexName] = &IndexDefinition{Key: indexKey, Columns: indexColumns}
 			} else {
 				cd, err := parseFieldTag(structField, tag)
 				if err != nil {
@@ -276,25 +278,26 @@ func translateKeyName(t *Table) {
 }
 
 // parseIndexTag functions parses DOSA index tag
-func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, error) {
+func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, []string, error) {
 	// index name struct must be exported in the entity,
 	// otherwise it will be ignored when upserting the schema.
 	if len(indexName) != 0 && unicode.IsLower([]rune(indexName)[0]) {
 		expected := []rune(indexName)
 		expected[0] = unicode.ToUpper(expected[0])
-		return "", nil, fmt.Errorf("index name (%s) must be exported, "+
+		return "", nil, nil, fmt.Errorf("index name (%s) must be exported, "+
 			"try (%s) instead", indexName, string(expected))
 	}
 	tag := dosaAnnotation
+
 	// find the primaryKey
 	matchs := indexKeyPattern0.FindStringSubmatch(tag)
 	if len(matchs) != 4 {
-		return "", nil, fmt.Errorf("dosa.Index %s with an invalid dosa index tag %q", indexName, tag)
+		return "", nil, nil, fmt.Errorf("dosa.Index %s with an invalid dosa index tag %q", indexName, tag)
 	}
 	pkString := matchs[1]
 	key, err := parsePrimaryKey(indexName, pkString)
 	if err != nil {
-		return "", nil, errors.Wrapf(err, "struct %s has an invalid index key %q", indexName, pkString)
+		return "", nil, nil, errors.Wrapf(err, "struct %s has an invalid index key %q", indexName, pkString)
 	}
 	toRemove := strings.TrimSuffix(matchs[0], matchs[2])
 	toRemove = strings.TrimSuffix(matchs[0], matchs[3])
@@ -303,16 +306,23 @@ func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, error
 	//find the name
 	fullNameTag, name, err := parseNameTag(tag, indexName)
 	if err != nil {
-		return "", nil, errors.Wrapf(err, "invalid name tag: %s", tag)
+		return "", nil, nil, errors.Wrapf(err, "invalid name tag: %s", tag)
 	}
-
 	tag = strings.Replace(tag, fullNameTag, "", 1)
+
+	// find the columns
+	fullColumnsTag, indexColumns, err := parseColumnsTag(tag)
+	if err != nil {
+		return "", nil, nil, errors.Wrapf(err, "invalid columns tag: %s", tag)
+	}
+	tag = strings.Replace(tag, fullColumnsTag, "", 1)
+
 	tag = strings.TrimSpace(tag)
 	if tag != "" {
-		return "", nil, fmt.Errorf("index field %s with an invalid dosa index tag: %s", indexName, tag)
+		return "", nil, nil, fmt.Errorf("index field %s with an invalid dosa index tag: %s", indexName, tag)
 	}
 
-	return name, key, nil
+	return name, key, indexColumns, nil
 }
 
 // parseNameTag functions parses DOSA "name" tag
@@ -336,6 +346,30 @@ func parseNameTag(tag, defaultName string) (string, string, error) {
 	}
 
 	return fullNameTag, name, nil
+}
+
+// parseColumnsTag functions parse DOSA "columns" tag
+func parseColumnsTag(tag string) (string, []string, error) {
+	fullColumnsTag := ""
+	// var indexColumns []string
+	indexColumns := []string{}
+	var fields []string
+	matches := columnsPattern0.FindStringSubmatch(tag)
+	if len(matches) == 2 {
+		fullColumnsTag = matches[0]
+		fields = strings.Split(matches[1], ",")
+	}
+	for _, field := range fields {
+		field = strings.TrimSpace(field)
+		if field != "" {
+			field, err := NormalizeName(strings.TrimSpace(field))
+			if err != nil {
+				return "", nil, err
+			}
+			indexColumns = append(indexColumns, field)
+		}
+	}
+	return fullColumnsTag, indexColumns, nil
 }
 
 // parseETLTag functions parses DOSA "etl" tag

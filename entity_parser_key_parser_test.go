@@ -739,6 +739,7 @@ func TestIndexParse(t *testing.T) {
 		InputIndexName    string
 		ExpectedIndexName string
 		PrimaryKey        *PrimaryKey
+		Columns           []string
 		Error             error
 	}{
 		{
@@ -749,6 +750,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "SearchByKey",
+			Columns:        []string{},
 			Error:          nil,
 		},
 		{
@@ -759,6 +761,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "SearchByKey",
+			Columns:        []string{},
 			Error:          nil,
 		},
 		{
@@ -769,6 +772,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "SearchByKey",
+			Columns:        []string{},
 			Error:          nil,
 		},
 		{
@@ -779,6 +783,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "SearchByKey",
+			Columns:        []string{},
 			Error:          nil,
 		},
 		{
@@ -789,6 +794,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "SearchByKey",
+			Columns:        []string{},
 			Error:          nil,
 		},
 		{
@@ -799,6 +805,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "SearchByKey",
+			Columns:        []string{},
 			Error:          nil,
 		},
 		{
@@ -809,6 +816,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "SearchByKey",
+			Columns:        []string{},
 			Error:          nil,
 		},
 		{
@@ -819,6 +827,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "SearchByKey",
+			Columns:        []string{},
 			Error:          nil,
 		},
 		{
@@ -842,6 +851,7 @@ func TestIndexParse(t *testing.T) {
 				},
 			},
 			InputIndexName: "SearchByKey",
+			Columns:        []string{},
 			Error:          nil,
 		},
 		{
@@ -865,6 +875,7 @@ func TestIndexParse(t *testing.T) {
 				},
 			},
 			InputIndexName: "SearchByKey",
+			Columns:        []string{},
 			Error:          nil,
 		},
 		{
@@ -872,6 +883,7 @@ func TestIndexParse(t *testing.T) {
 			ExpectedIndexName: "jj",
 			PrimaryKey:        nil,
 			InputIndexName:    "SearchByKey",
+			Columns:           []string{},
 			Error:             errors.New("ok,adsf"),
 		},
 		{
@@ -879,6 +891,7 @@ func TestIndexParse(t *testing.T) {
 			ExpectedIndexName: "jj",
 			PrimaryKey:        nil,
 			InputIndexName:    "SearchByKey",
+			Columns:           []string{},
 			Error:             errors.New("dosa.Index SearchByKey with an invalid dosa index tag"),
 		},
 		{
@@ -886,6 +899,7 @@ func TestIndexParse(t *testing.T) {
 			ExpectedIndexName: "jj",
 			PrimaryKey:        nil,
 			InputIndexName:    "SearchByKey",
+			Columns:           []string{},
 			Error:             errors.New("invalid name tag:  name=jj**"),
 		},
 		{
@@ -893,6 +907,7 @@ func TestIndexParse(t *testing.T) {
 			ExpectedIndexName: "jj",
 			PrimaryKey:        nil,
 			InputIndexName:    "SearchByKey",
+			Columns:           []string{},
 			Error:             errors.New("index field SearchByKey with an invalid dosa index tag: nxxx"),
 		},
 		{
@@ -903,6 +918,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "SearchByKey",
+			Columns:        []string{},
 			Error:          nil,
 		},
 		{
@@ -913,6 +929,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "",
+			Columns:        []string{},
 			Error:          errors.New("invalid name tag"),
 		},
 		{
@@ -923,18 +940,53 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "searchByKey",
+			Columns:        []string{},
 			Error:          errors.New("index name (searchByKey) must be exported, try (SearchByKey) instead"),
+		},
+		{
+			Tag:               "name=jj key=ok columns=(ok)",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Columns:        []string{"ok"},
+			Error:          nil,
+		},
+		{
+			Tag:               "name=jj key=ok columns=(ok, test, hi,)",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Columns:        []string{"ok", "test", "hi"},
+			Error:          nil,
+		},
+		{
+			Tag:               "name=jj key=ok columns=(ok, test, (hi),)",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Columns:        []string{"ok", "test", "hi"},
+			Error:          errors.New("index field SearchByKey with an invalid dosa index tag: columns=(ok, test, (hi),)"),
 		},
 	}
 
 	for _, d := range data {
-		name, primaryKey, err := parseIndexTag(d.InputIndexName, d.Tag)
+		name, primaryKey, columns, err := parseIndexTag(d.InputIndexName, d.Tag)
 		if d.Error != nil {
 			assert.Contains(t, err.Error(), d.Error.Error())
 		} else {
 			assert.Nil(t, err)
 			assert.Equal(t, name, d.ExpectedIndexName)
 			assert.Equal(t, primaryKey, d.PrimaryKey)
+			assert.Equal(t, columns, d.Columns)
 		}
 	}
 }
