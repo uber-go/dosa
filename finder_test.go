@@ -76,6 +76,7 @@ func TestParser(t *testing.T) {
 		"multipleindexes":               &MultipleIndexes{},
 		"complexindexes":                &ComplexIndexes{},
 		"scopemetadata":                 &ScopeMetadata{},
+		"indexeswithcolumnstag":         &IndexesWithColumnsTag{},
 	}
 	entitiesExcludedForTest := map[string]interface{}{
 		"clienttestentity1":      struct{}{}, // skip, see https://jira.uberinternal.com/browse/DOSA-788

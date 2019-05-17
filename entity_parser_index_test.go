@@ -120,3 +120,38 @@ func TestComplexIndexes(t *testing.T) {
 		},
 	}, dosaTable.Indexes)
 }
+
+type IndexesWithColumnsTag struct {
+	Entity       `dosa:"primaryKey=(ID)"`
+	SearchByCity Index `dosa:"key=(City, Payload) columns=(ID)"`
+	SearchByID   Index `dosa:"key=(City) columns=(ID, Payload)"`
+
+	ID      UUID
+	City    string
+	Payload []byte
+}
+
+func TestIndexesWithColumnsTag(t *testing.T) {
+	dosaTable, err := TableFromInstance(&IndexesWithColumnsTag{})
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]*IndexDefinition{
+		"searchbycity": {
+			Key: &PrimaryKey{
+				PartitionKeys: []string{"city"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "payload",
+						Descending: false,
+					},
+				},
+			},
+			Columns: []string{"id"},
+		},
+		"searchbyid": {
+			Key: &PrimaryKey{
+				PartitionKeys: []string{"city"},
+			},
+			Columns: []string{"id", "payload"},
+		},
+	}, dosaTable.Indexes)
+}

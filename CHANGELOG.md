@@ -1,7 +1,7 @@
 # Changelog
 
 ## v3.4.3 (unreleased)
- - Nothing yet
+ - Add optional 'columns' tag to Index definitions
 
 ## v3.4.2 (2019-03-26)
  - Update version.VERSION
