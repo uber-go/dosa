@@ -1,12 +1,18 @@
-hash: 8b80aa59f75a2ce7eeaf511ffe1fbf97b951e30f3819301d0da63080b8962bc8
-updated: 2018-08-03T16:03:03.359809516-07:00
+hash: e1f56e45a7835c9819955e67720297f7f41b839a6a88c6eb7ee89fe191dc0cd3
+updated: 2019-05-21T14:56:18.086423-07:00
 imports:
+- name: github.com/anmitsu/go-shlex
+  version: 648efa622239a2f6ff949fed78ee37b48d499ba4
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
   subpackages:
   - quantile
+- name: github.com/BurntSushi/toml
+  version: 3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005
 - name: github.com/elodina/go-avro
   version: 0c8185d9a3ba82aeac98db3313a268a5b6df99b5
+- name: github.com/fatih/structtag
+  version: 76ae1d6d2117609598c7d4e8f3e938145f204e8f
 - name: github.com/garyburd/redigo
   version: a69d19351219b6dd56f274f96d85a7014a2ec34e
   subpackages:
@@ -23,28 +29,67 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gofrs/uuid
-  version: d41eeda0759468834c84365a32d1b1ec4264c75f
+  version: 6b08a5c5172ba18946672b49749cde22873dd7c2
+- name: github.com/gogo/protobuf
+  version: ba06b47c162d49f2af050fb4c75bcbc86a159d5c
+  subpackages:
+  - gogoproto
+  - plugin/compare
+  - plugin/defaultcheck
+  - plugin/description
+  - plugin/embedcheck
+  - plugin/enumstringer
+  - plugin/equal
+  - plugin/face
+  - plugin/gostring
+  - plugin/marshalto
+  - plugin/oneofcheck
+  - plugin/populate
+  - plugin/size
+  - plugin/stringer
+  - plugin/testgen
+  - plugin/union
+  - plugin/unmarshal
+  - proto
+  - protoc-gen-gogo/descriptor
+  - protoc-gen-gogo/generator
+  - protoc-gen-gogo/generator/internal/remap
+  - protoc-gen-gogo/grpc
+  - protoc-gen-gogo/plugin
+  - protoc-gen-gogoslick
+  - vanity
+  - vanity/command
 - name: github.com/golang/mock
-  version: c34cdb4725f4c3844d095133c6e40e448b86589b
+  version: 9fa652df1129bef0e734c9cf9bf6dbae9ef3b9fa
   subpackages:
   - gomock
+  - mockgen
+  - mockgen/model
 - name: github.com/golang/protobuf
-  version: 927b65914520a8b7d44f5c9057611cfec6b2e2d0
+  version: b5d812f8a3706043e23a9cd5babf2e5423744d30
   subpackages:
   - proto
 - name: github.com/jessevdk/go-flags
   version: c6ca198ec95c841fdb89fc0de7496fed11ab854e
+- name: github.com/kisielk/errcheck
+  version: a174de0235f995854578e7ac8539f6599c7c575d
+  subpackages:
+  - internal/errcheck
+- name: github.com/kisielk/gotool
+  version: 80517062f582ea3340cd4baf70e86d539ae7d84d
+  subpackages:
+  - internal/load
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
   - pbutil
 - name: github.com/opentracing/opentracing-go
-  version: 1949ddbfd147afd4d964a9f00b24eb291e0e7c38
+  version: 659c90643e714681897ec2521c60567dd21da733
   subpackages:
   - ext
   - log
 - name: github.com/pkg/errors
-  version: 645ef00459ed84a119197bfb8d8205042c6df63d
+  version: ba968bfe8b2f7e042a574c888954fccecfa385b4
 - name: github.com/prometheus/client_golang
   version: c5b7fccd204277076155f10851dad72b76a49317
   subpackages:
@@ -66,53 +111,76 @@ imports:
   - internal/util
   - nfs
   - xfs
-- name: github.com/uber-go/atomic
-  version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
+- name: github.com/samuel/go-thrift
+  version: e8b6b52668fe9c972220addc130edf46a9b466b1
   subpackages:
-  - utils
+  - parser
 - name: github.com/uber-go/mapdecode
   version: 718b4994083e432669f44a00174c5f1bcdb1434d
   subpackages:
   - internal/mapstructure
 - name: github.com/uber-go/tally
-  version: ff17f3c43c065c3c2991f571e740eee43ea3a14a
+  version: f331b65108ed41d0a83a6ce650c1ea9c0fe2878f
 - name: github.com/uber/dosa-idl
-  version: ac79c598a228a5686923860f57cc5fd7044f225e
+  version: 097e20c83d25cc733a977da96a6894cc9434fb99
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
   - .gen/dosa/dosatest
 - name: github.com/uber/tchannel-go
-  version: 7f5c12c66261f3ac3c5dde959d65eed59e3b63af
+  version: 58b01ae38cfff68102223e374c580a40c1d91dda
   subpackages:
   - internal/argreader
   - relay
+  - thrift/thrift-gen
   - tnet
   - tos
   - trand
   - typed
 - name: go.uber.org/atomic
-  version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
+  version: df976f2515e274675050de7b3f42545de80594fd
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - name: go.uber.org/net/metrics
-  version: 1e19de5b971489a45d178e12a0f72a78c70e300e
+  version: 0327310766f9da183152db859680ae0345c31957
   subpackages:
   - bucket
   - push
   - tallypush
 - name: go.uber.org/thriftrw
-  version: fb439a9a7f5a388d8606aae1c1ff6654b8b67fbe
+  version: f3ff6fef5b56823cf763aebc81b42b8cbd1082c1
   subpackages:
+  - ast
+  - compile
   - envelope
+  - gen
+  - idl
+  - idl/internal
+  - internal/concurrent
+  - internal/curry
+  - internal/envelope
   - internal/envelope/exception
+  - internal/frame
+  - internal/goast
+  - internal/multiplex
+  - internal/plugin
+  - internal/plugin/builtin/pluginapigen
+  - internal/process
+  - internal/semver
+  - plugin
+  - plugin/api
   - protocol
   - protocol/binary
+  - ptr
   - thriftreflect
   - version
   - wire
+- name: go.uber.org/tools
+  version: ce2550dad7144b81ae2f67dc5e55597643f6902b
+  subpackages:
+  - update-license
 - name: go.uber.org/yarpc
-  version: fc2d75d3b5e30fc81e5dc2375667bbd6333b0099
+  version: 515ae026b5555b1fa00a77ffa650ab4dc32c72ed
   subpackages:
   - api/backoff
   - api/encoding
@@ -148,16 +216,19 @@ imports:
   - yarpcconfig
   - yarpcerrors
 - name: go.uber.org/zap
-  version: 4d45f9617f7d90f7a663ff21c7a4321dbe78098b
+  version: 27376062155ad36be76b0f12cf1572a221d3a48c
   subpackages:
   - buffer
   - internal/bufferpool
   - internal/color
   - internal/exit
   - zapcore
+- name: golang.org/x/lint
+  version: 470b6b0bb3005eda157f0275e2e4895055396a81
+  subpackages:
+  - golint
 - name: golang.org/x/net
-  version: f4c29de78a2a91c00474a2e689954305c350adf9
-  repo: https://github.com/golang/net
+  version: 018c4d40a106a7ae83689758294fcd8d23850745
   subpackages:
   - bpf
   - context
@@ -165,8 +236,50 @@ imports:
   - internal/socket
   - ipv4
   - ipv6
+- name: golang.org/x/tools
+  version: 6aabc1ca790df3e0b556593b27bc25d26b151751
+  repo: https://github.com/golang/tools
+  subpackages:
+  - cmd/stringer
+  - go/ast/astutil
+  - go/ast/inspector
+  - go/buildutil
+  - go/gcexportdata
+  - go/internal/cgo
+  - go/internal/gcimporter
+  - go/internal/packagesdriver
+  - go/loader
+  - go/packages
+  - go/types/typeutil
+  - internal/fastwalk
+  - internal/gopathwalk
+  - internal/semver
 - name: gopkg.in/yaml.v2
-  version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
+  version: 51d6538a90f86fe93ac480b35f37b2be17fef232
+- name: honnef.co/go/tools
+  version: d116c56a00f35fccc49f42d6368582e8967f9e22
+  subpackages:
+  - arg
+  - callgraph
+  - callgraph/static
+  - cmd/staticcheck
+  - config
+  - deprecated
+  - functions
+  - internal/sharedcheck
+  - lint
+  - lint/lintdsl
+  - lint/lintutil
+  - lint/lintutil/format
+  - simple
+  - ssa
+  - ssa/ssautil
+  - ssautil
+  - staticcheck
+  - staticcheck/vrp
+  - stylecheck
+  - unused
+  - version
 testImports:
 - name: github.com/axw/gocov
   version: 3a69a0d2a4ef1f263e2d92b041a69593d6964fe8
@@ -178,10 +291,6 @@ testImports:
   - spew
 - name: github.com/go-playground/overalls
   version: 22ec1a223b7c9a2e56355bd500b539cba3784238
-- name: github.com/kisielk/errcheck
-  version: a174de0235f995854578e7ac8539f6599c7c575d
-- name: github.com/kisielk/gotool
-  version: 80517062f582ea3340cd4baf70e86d539ae7d84d
 - name: github.com/matm/gocov-html
   version: f6dd0fd0ebc7c8cff8b24c0a585caeef250627a3
 - name: github.com/mattn/goveralls
@@ -190,21 +299,11 @@ testImports:
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
-- name: github.com/satori/go.uuid
-  version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/sectioneight/md-to-godoc
   version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
 - name: github.com/stretchr/testify
-  version: f35b8ab0b5a2cef36673838d662e249dd9c94686
+  version: ffdc059bfe9ce6a4e144ba849dbedead332c6053
   subpackages:
   - assert
 - name: github.com/yookoala/realpath
   version: d19ef9c409d9817c1e685775e53d361b03eabbc8
-- name: golang.org/x/lint
-  version: 470b6b0bb3005eda157f0275e2e4895055396a81
-  subpackages:
-  - golint
-- name: golang.org/x/tools
-  version: 48418e5732e1b1e2a10207c8007a5f959e422f20
-  subpackages:
-  - cover
