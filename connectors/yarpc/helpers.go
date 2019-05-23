@@ -286,7 +286,8 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 	indexes := make(map[string]*dosa.IndexDefinition)
 	for name, index := range ed.Indexes {
 		indexes[name] = &dosa.IndexDefinition{
-			Key: FromThriftToPrimaryKey(index.Key),
+			Key:     FromThriftToPrimaryKey(index.Key),
+			Columns: index.Columns,
 		}
 	}
 

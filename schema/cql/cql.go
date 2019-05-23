@@ -55,15 +55,20 @@ func typeMap(t dosa.Type) string {
 	return "unknown"
 }
 
+func isSelectAllCreatingView(columns []string) bool {
+	return len(columns) == 0
+}
+
 // precompile the template for create table
 var cqlCreateTableTemplate = template.Must(template.
 	New("cqlCreateTable").
 	Funcs(map[string]interface{}{"typeMap": typeMap}).
 	Funcs(map[string]interface{}{"uniqueKey": uniqueKey}).
+	Funcs(map[string]interface{}{"isSelectAllCreatingView": isSelectAllCreatingView}).
 	Parse(`create table "{{.Name}}" ({{range .Columns}}"{{- .Name -}}" {{ typeMap .Type -}}, {{end}}primary key {{ .Key }});
 {{- range $name, $indexdef := .Indexes }}
 create materialized view "{{- $name -}}" as
-  select * from "{{- $.Name -}}"
+  select {{if isSelectAllCreatingView $indexdef.Columns}}*{{else}}{{range $colnum, $col := $indexdef.Columns}}{{if $colnum}}, {{end}}"{{$col}}"{{end}}{{end}} from "{{- $.Name -}}"
   where{{range $keynum, $key := $indexdef.Key.PartitionKeys }}{{if $keynum}} AND {{end}} "{{ $key }}" is not null {{- end}}
   primary key {{ uniqueKey $ $indexdef.Key }};
 {{- end -}}`))

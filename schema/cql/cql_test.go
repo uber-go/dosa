@@ -50,6 +50,15 @@ type SinglePrimaryKey struct {
 	Data        string
 }
 
+type IndexesWithColumnsTag struct {
+	dosa.Entity  `dosa:"primaryKey=(ID)"`
+	SearchByCity dosa.Index `dosa:"key=(City, Payload) columns=(ID)"`
+	SearchByID   dosa.Index `dosa:"key=(City) columns=(ID, Payload)"`
+	ID           dosa.UUID
+	City         string
+	Payload      []byte
+}
+
 func TestCQL(t *testing.T) {
 	data := []struct {
 		Instance  dosa.DomainObject
@@ -71,7 +80,18 @@ create materialized view "i2" as
   where "int64type" is not null
   primary key (int64type, booltype ASC);`,
 		},
-		// TODO: Add more test cases
+		{
+			Instance: &IndexesWithColumnsTag{},
+			Statement: `create table "indexeswithcolumnstag" ("id" uuid, "city" text, "payload" blob, primary key (id));
+create materialized view "searchbycity" as
+  select "id" from "indexeswithcolumnstag"
+  where "city" is not null
+  primary key (city, payload ASC, id ASC);
+create materialized view "searchbyid" as
+  select "id", "payload" from "indexeswithcolumnstag"
+  where "city" is not null
+  primary key (city, id ASC);`,
+		},
 	}
 
 	for _, d := range data {
