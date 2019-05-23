@@ -328,6 +328,17 @@ func (e *EntityDefinition) EnsureValid() error {
 			}
 			keyNamesSeen[c.Name] = struct{}{}
 		}
+
+		columnsTagFieldsSeen := map[string]struct{}{}
+		for _, c := range index.Columns {
+			if _, ok := columnNamesSeen[c]; !ok {
+				return errors.Errorf("columns tag field does not refer to a column: %q", c)
+			}
+			if _, ok := columnsTagFieldsSeen[c]; ok {
+				return errors.Errorf("a column cannot be used twice in column tags: %q", c)
+			}
+			columnsTagFieldsSeen[c] = struct{}{}
+		}
 	}
 
 	return nil
