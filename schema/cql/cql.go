@@ -55,8 +55,18 @@ func typeMap(t dosa.Type) string {
 	return "unknown"
 }
 
-func isSelectAllCreatingView(columns []string) bool {
-	return len(columns) == 0
+func selectFieldsInCreatingView(columns []string) string {
+	if len(columns) == 0 {
+		return "*"
+	}
+	fields := ""
+	for colnum, col := range columns {
+		if colnum != 0 {
+			fields += ", "
+		}
+		fields += "\"" + col + "\""
+	}
+	return fields
 }
 
 // precompile the template for create table
@@ -64,11 +74,11 @@ var cqlCreateTableTemplate = template.Must(template.
 	New("cqlCreateTable").
 	Funcs(map[string]interface{}{"typeMap": typeMap}).
 	Funcs(map[string]interface{}{"uniqueKey": uniqueKey}).
-	Funcs(map[string]interface{}{"isSelectAllCreatingView": isSelectAllCreatingView}).
+	Funcs(map[string]interface{}{"selectFieldsInCreatingView": selectFieldsInCreatingView}).
 	Parse(`create table "{{.Name}}" ({{range .Columns}}"{{- .Name -}}" {{ typeMap .Type -}}, {{end}}primary key {{ .Key }});
 {{- range $name, $indexdef := .Indexes }}
 create materialized view "{{- $name -}}" as
-  select {{if isSelectAllCreatingView $indexdef.Columns}}*{{else}}{{range $colnum, $col := $indexdef.Columns}}{{if $colnum}}, {{end}}"{{$col}}"{{end}}{{end}} from "{{- $.Name -}}"
+  select {{selectFieldsInCreatingView $indexdef.Columns}} from "{{- $.Name -}}"
   where{{range $keynum, $key := $indexdef.Key.PartitionKeys }}{{if $keynum}} AND {{end}} "{{ $key }}" is not null {{- end}}
   primary key {{ uniqueKey $ $indexdef.Key }};
 {{- end -}}`))

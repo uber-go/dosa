@@ -50,15 +50,6 @@ type SinglePrimaryKey struct {
 	Data        string
 }
 
-type IndexesWithColumnsTag struct {
-	dosa.Entity  `dosa:"primaryKey=(ID)"`
-	SearchByCity dosa.Index `dosa:"key=(City, Payload) columns=(ID)"`
-	SearchByID   dosa.Index `dosa:"key=(City) columns=(ID, Payload)"`
-	ID           dosa.UUID
-	City         string
-	Payload      []byte
-}
-
 func TestCQL(t *testing.T) {
 	data := []struct {
 		Instance  dosa.DomainObject
@@ -80,18 +71,6 @@ create materialized view "i2" as
   where "int64type" is not null
   primary key (int64type, booltype ASC);`,
 		},
-		{
-			Instance: &IndexesWithColumnsTag{},
-			Statement: `create table "indexeswithcolumnstag" ("id" uuid, "city" text, "payload" blob, primary key (id));
-create materialized view "searchbycity" as
-  select "id" from "indexeswithcolumnstag"
-  where "city" is not null
-  primary key (city, payload ASC, id ASC);
-create materialized view "searchbyid" as
-  select "id", "payload" from "indexeswithcolumnstag"
-  where "city" is not null
-  primary key (city, id ASC);`,
-		},
 		// TODO: Add more test cases
 	}
 
@@ -100,6 +79,30 @@ create materialized view "searchbyid" as
 		assert.Nil(t, err) // this code does not test TableFromInstance
 		statement := ToCQL(&table.EntityDefinition)
 		assert.Equal(t, d.Statement, statement, fmt.Sprintf("Instance: %T", d.Instance))
+	}
+}
+
+func TestSelectFieldsInCreatingView(t *testing.T) {
+	data := []struct {
+		Columns   []string
+		Statement string
+	}{
+		{
+			Columns:   []string{"foo", "bar", "hello"},
+			Statement: "\"foo\", \"bar\", \"hello\"",
+		},
+		{
+			Columns:   []string{"foo"},
+			Statement: "\"foo\"",
+		},
+		{
+			Columns:   []string{},
+			Statement: "*",
+		},
+	}
+	for _, d := range data {
+		statement := selectFieldsInCreatingView(d.Columns)
+		assert.Equal(t, d.Statement, statement)
 	}
 }
 
