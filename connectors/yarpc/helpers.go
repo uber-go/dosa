@@ -240,7 +240,7 @@ func entityDefToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
 	indexes := make(map[string]*dosarpc.IndexDefinition)
 	for name, index := range ed.Indexes {
 		pkI := PrimaryKeyToThrift(index.Key)
-		indexes[name] = &dosarpc.IndexDefinition{Key: pkI}
+		indexes[name] = &dosarpc.IndexDefinition{Key: pkI, Columns: index.Columns}
 	}
 
 	etl := ETLStateToThrift(ed.ETL)
@@ -286,7 +286,8 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 	indexes := make(map[string]*dosa.IndexDefinition)
 	for name, index := range ed.Indexes {
 		indexes[name] = &dosa.IndexDefinition{
-			Key: FromThriftToPrimaryKey(index.Key),
+			Key:     FromThriftToPrimaryKey(index.Key),
+			Columns: index.Columns,
 		}
 	}
 
