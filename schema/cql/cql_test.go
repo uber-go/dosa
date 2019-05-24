@@ -92,6 +92,7 @@ create materialized view "searchbyid" as
   where "city" is not null
   primary key (city, id ASC);`,
 		},
+		// TODO: Add more test cases
 	}
 
 	for _, d := range data {
