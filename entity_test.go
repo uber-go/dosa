@@ -219,6 +219,12 @@ func TestEntityDefinitionEnsureValidForIndex(t *testing.T) {
 	noClusteringKey := getValidEntityDefinition()
 	noClusteringKey.Indexes["index1"].Key.ClusteringKeys = []*dosa.ClusteringKey{}
 
+	invalidColumnsTagField := getValidEntityDefinition()
+	invalidColumnsTagField.Indexes["index1"].Columns = []string{"badfoo"}
+
+	dupColumnsTagField := getValidEntityDefinition()
+	dupColumnsTagField.Indexes["index1"].Columns = []string{"foo", "foo"}
+
 	data := []testData{
 		{
 			e:     invalidName,
@@ -284,6 +290,16 @@ func TestEntityDefinitionEnsureValidForIndex(t *testing.T) {
 			e:     nilClusteringKey,
 			valid: false,
 			msg:   "nil clustering key",
+		},
+		{
+			e:     invalidColumnsTagField,
+			valid: false,
+			msg:   "columns tag field does not refer to a column: \"badfoo\"",
+		},
+		{
+			e:     dupColumnsTagField,
+			valid: false,
+			msg:   "a column cannot be used twice in column tags: \"foo\"",
 		},
 	}
 
