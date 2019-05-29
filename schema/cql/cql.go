@@ -22,6 +22,7 @@ package cql
 
 import (
 	"bytes"
+	"strings"
 	"text/template"
 
 	"github.com/uber-go/dosa"
@@ -59,14 +60,7 @@ func selectFieldsInCreatingView(columns []string) string {
 	if len(columns) == 0 {
 		return "*"
 	}
-	fields := ""
-	for colnum, col := range columns {
-		if colnum != 0 {
-			fields += ", "
-		}
-		fields += "\"" + col + "\""
-	}
-	return fields
+	return `"` + strings.Join(columns, `", "`) + `"`
 }
 
 // precompile the template for create table

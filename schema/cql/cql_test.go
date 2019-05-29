@@ -89,11 +89,11 @@ func TestSelectFieldsInCreatingView(t *testing.T) {
 	}{
 		{
 			Columns:   []string{"foo", "bar", "hello"},
-			Statement: "\"foo\", \"bar\", \"hello\"",
+			Statement: `"foo", "bar", "hello"`,
 		},
 		{
 			Columns:   []string{"foo"},
-			Statement: "\"foo\"",
+			Statement: `"foo"`,
 		},
 		{
 			Columns:   []string{},
