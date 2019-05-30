@@ -1,5 +1,5 @@
-hash: e1f56e45a7835c9819955e67720297f7f41b839a6a88c6eb7ee89fe191dc0cd3
-updated: 2019-05-24T12:41:47.097478-07:00
+hash: 3a161b2246b45ecccd550c70486c37361650084e22a34da58be7d980f0f38c1e
+updated: 2019-05-30T11:49:02.779243-07:00
 imports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -72,11 +72,15 @@ imports:
 - name: github.com/jessevdk/go-flags
   version: c6ca198ec95c841fdb89fc0de7496fed11ab854e
 - name: github.com/kisielk/errcheck
-  version: e14f8d59a22d460d56c5ee92507cd94c78fbf274
+  version: a174de0235f995854578e7ac8539f6599c7c575d
   subpackages:
   - internal/errcheck
+- name: github.com/kisielk/gotool
+  version: 80517062f582ea3340cd4baf70e86d539ae7d84d
+  subpackages:
+  - internal/load
 - name: github.com/matttproud/golang_protobuf_extensions
-  version: c182affec369e30f25d3eb8cd8a478dee585ae7d
+  version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
   - pbutil
 - name: github.com/opentracing/opentracing-go
@@ -92,20 +96,19 @@ imports:
   - prometheus
   - prometheus/promhttp
 - name: github.com/prometheus/client_model
-  version: fd36f4220a901265f90734c3183c5f0c91daa0b8
+  version: 99fa1f4be8e564e8a6b613da7fa6f46c9edafc6c
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: 1ab4d74fc89940cfbc3c2b3a89821336cdefa119
+  version: d811d2e9bf898806ecfb6ef6296774b13ffc314c
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
   - model
 - name: github.com/prometheus/procfs
-  version: 40f3c57fb1983891f95378042bd0bfd590f52384
+  version: 8b1c2da0d56deffdbb9e48d4414b4e674bd8083e
   subpackages:
   - internal/util
-  - iostats
   - nfs
   - xfs
 - name: github.com/samuel/go-thrift
@@ -221,7 +224,7 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/lint
-  version: d0100b6bd8b389f0385611eb39152c4d7c3a7905
+  version: 470b6b0bb3005eda157f0275e2e4895055396a81
   subpackages:
   - golint
 - name: golang.org/x/net
@@ -283,19 +286,17 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: d8f796af33cc11cb798c1aaeb27a4ebc5099927d
+  version: 8991bc29aa16c548c550c7ff78260e27b9ab7c73
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
   version: 22ec1a223b7c9a2e56355bd500b539cba3784238
-- name: github.com/kisielk/gotool
-  version: 80517062f582ea3340cd4baf70e86d539ae7d84d
 - name: github.com/matm/gocov-html
   version: f6dd0fd0ebc7c8cff8b24c0a585caeef250627a3
 - name: github.com/mattn/goveralls
   version: 1c14a4061c1cb86f0310cc0d4c0b5bc743879bc5
 - name: github.com/pmezard/go-difflib
-  version: 5d4384ee4fb2527b0a1256a821ebfc92f91efefc
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/sectioneight/md-to-godoc
@@ -306,3 +307,7 @@ testImports:
   - assert
 - name: github.com/yookoala/realpath
   version: d19ef9c409d9817c1e685775e53d361b03eabbc8
+- name: golang.org/x/sys
+  version: d4feaf1a7e61e1d9e79e6c4e76c6349e9cab0a03
+  subpackages:
+  - unix
