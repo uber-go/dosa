@@ -22,6 +22,7 @@ package cql
 
 import (
 	"bytes"
+	"strings"
 	"text/template"
 
 	"github.com/uber-go/dosa"
@@ -55,15 +56,23 @@ func typeMap(t dosa.Type) string {
 	return "unknown"
 }
 
+func selectFieldsInCreatingView(columns []string) string {
+	if len(columns) == 0 {
+		return "*"
+	}
+	return `"` + strings.Join(columns, `", "`) + `"`
+}
+
 // precompile the template for create table
 var cqlCreateTableTemplate = template.Must(template.
 	New("cqlCreateTable").
 	Funcs(map[string]interface{}{"typeMap": typeMap}).
 	Funcs(map[string]interface{}{"uniqueKey": uniqueKey}).
+	Funcs(map[string]interface{}{"selectFieldsInCreatingView": selectFieldsInCreatingView}).
 	Parse(`create table "{{.Name}}" ({{range .Columns}}"{{- .Name -}}" {{ typeMap .Type -}}, {{end}}primary key {{ .Key }});
 {{- range $name, $indexdef := .Indexes }}
 create materialized view "{{- $name -}}" as
-  select * from "{{- $.Name -}}"
+  select {{selectFieldsInCreatingView $indexdef.Columns}} from "{{- $.Name -}}"
   where{{range $keynum, $key := $indexdef.Key.PartitionKeys }}{{if $keynum}} AND {{end}} "{{ $key }}" is not null {{- end}}
   primary key {{ uniqueKey $ $indexdef.Key }};
 {{- end -}}`))

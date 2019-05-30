@@ -82,6 +82,30 @@ create materialized view "i2" as
 	}
 }
 
+func TestSelectFieldsInCreatingView(t *testing.T) {
+	data := []struct {
+		Columns   []string
+		Statement string
+	}{
+		{
+			Columns:   []string{"foo", "bar", "hello"},
+			Statement: `"foo", "bar", "hello"`,
+		},
+		{
+			Columns:   []string{"foo"},
+			Statement: `"foo"`,
+		},
+		{
+			Columns:   []string{},
+			Statement: "*",
+		},
+	}
+	for _, d := range data {
+		statement := selectFieldsInCreatingView(d.Columns)
+		assert.Equal(t, d.Statement, statement)
+	}
+}
+
 func BenchmarkCQL(b *testing.B) {
 	table, _ := dosa.TableFromInstance(&AllTypes{})
 	for i := 0; i < b.N; i++ {
