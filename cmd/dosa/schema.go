@@ -47,7 +47,7 @@ var (
 
 type scopeFlag string
 
-const schemaCheck = "schema check"
+const schemaUpsertable = "schema upsertable"
 const schemaUpsert = "schema upsert"
 const java = "java"
 
@@ -155,7 +155,7 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 
 func (c *SchemaCmd) doSchemaOpInJavaClient(op string) {
 	var schemaOp string
-	if strings.Compare(op, schemaCheck) == 0 {
+	if strings.Compare(op, schemaUpsertable) == 0 {
 		schemaOp = "CAN_UPSERT"
 	} else if strings.Compare(op, schemaUpsert) == 0 {
 		schemaOp = "UPSERT"
@@ -199,25 +199,25 @@ func (c *SchemaCmd) doSchemaOpInJavaClient(op string) {
 	fmt.Printf("%s", out.String())
 }
 
-// SchemaCheck holds the options for 'schema check'
-type SchemaCheck struct {
+// SchemaUpsertable holds the options for 'schema upsertable'
+type SchemaUpsertable struct {
 	*SchemaCmd
 	Args struct {
 		Paths []string `positional-arg-name:"paths"`
 	} `positional-args:"yes"`
 }
 
-func newSchemaCheck(provideClient adminClientProvider) *SchemaCheck {
-	return &SchemaCheck{
+func newSchemaUpsertable(provideClient adminClientProvider) *SchemaUpsertable {
+	return &SchemaUpsertable{
 		SchemaCmd: &SchemaCmd{
 			provideClient: provideClient,
 		},
 	}
 }
 
-// Execute executes a schema check command
-func (c *SchemaCheck) Execute(args []string) error {
-	return c.doSchemaOp(schemaCheck, dosa.AdminClient.CanUpsertSchema, c.Args.Paths)
+// Execute executes a schema upsertable command
+func (c *SchemaUpsertable) Execute(args []string) error {
+	return c.doSchemaOp(schemaUpsertable, dosa.AdminClient.CanUpsertSchema, c.Args.Paths)
 }
 
 // SchemaUpsert contains data for executing schema upsert command.

@@ -4,6 +4,7 @@
  - Add optional 'columns' tag to Index definitions
  - update dosa-idl into v3.2.1
  - add columns support to materialized view creation using Schema dump
+ - rename CLI command "schema check" to "schema upsertable"
 
 ## v3.4.2 (2019-03-26)
  - Update version.VERSION
