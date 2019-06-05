@@ -125,7 +125,7 @@ func TestSchema_DefaultsOldname(t *testing.T) {
 		},
 	}
 	for _, tc := range tcs {
-		for _, cmd := range []string{"check", "upsert", "status"} {
+		for _, cmd := range []string{"upsertable", "upsert", "status"} {
 			os.Args = []string{
 				"dosa",
 				"--service", tc.serviceName,
@@ -157,7 +157,7 @@ func TestSchema_DefaultsNewname(t *testing.T) {
 		},
 	}
 	for _, tc := range tcs {
-		for _, cmd := range []string{"check", "upsert", "status"} {
+		for _, cmd := range []string{"upsertable", "upsert", "status"} {
 			os.Args = []string{
 				"dosa",
 				"--service", tc.serviceName,
@@ -174,7 +174,7 @@ func TestSchema_DefaultsNewname(t *testing.T) {
 }
 
 func TestSchema_ScopeRequired(t *testing.T) {
-	for _, cmd := range []string{"check", "upsert"} {
+	for _, cmd := range []string{"upsertable", "upsert"} {
 		c := StartCapture()
 		exit = func(r int) {}
 		os.Args = []string{
@@ -190,7 +190,7 @@ func TestSchema_ScopeRequired(t *testing.T) {
 }
 
 func TestSchema_PrefixRequired(t *testing.T) {
-	for _, cmd := range []string{"check", "upsert"} {
+	for _, cmd := range []string{"upsertable", "upsert"} {
 		c := StartCapture()
 		exit = func(r int) {}
 		os.Args = []string{
@@ -208,9 +208,9 @@ func TestSchema_PrefixRequired(t *testing.T) {
 func TestSchema_InvalidDirectory(t *testing.T) {
 	// dump is a special snowflake
 	prefixMap := map[string]bool{
-		"check":  true,
-		"upsert": true,
-		"dump":   false,
+		"upsertable": true,
+		"upsert":     true,
+		"dump":       false,
 	}
 	for cmd, hasPrefix := range prefixMap {
 		c := StartCapture()
@@ -236,9 +236,9 @@ func TestSchema_InvalidDirectory(t *testing.T) {
 func TestSchema_NoEntitiesFound(t *testing.T) {
 	// dump is a special snowflake
 	prefixMap := map[string]bool{
-		"check":  true,
-		"upsert": true,
-		"dump":   false,
+		"upsertable": true,
+		"upsert":     true,
+		"dump":       false,
 	}
 	for cmd, hasPrefix := range prefixMap {
 		c := StartCapture()
@@ -290,7 +290,7 @@ func TestSchema_Check_Happy(t *testing.T) {
 		return dosa.NewAdminClient(mc), nil
 	}
 
-	schemaCheck := SchemaCheck{
+	schemaUpsertable := SchemaUpsertable{
 		SchemaCmd: &SchemaCmd{
 			SchemaOptions: &SchemaOptions{
 				Excludes: []string{"_test.go", "excludeme.go"},
@@ -301,9 +301,9 @@ func TestSchema_Check_Happy(t *testing.T) {
 			provideClient: provideClient,
 		},
 	}
-	schemaCheck.Args.Paths = []string{"../../testentity"}
+	schemaUpsertable.Args.Paths = []string{"../../testentity"}
 
-	err := schemaCheck.Execute(nil)
+	err := schemaUpsertable.Execute(nil)
 	assert.NoError(t, err)
 }
 
@@ -330,7 +330,7 @@ func TestSchema_Check_Happy_New(t *testing.T) {
 		return dosa.NewAdminClient(mc), nil
 	}
 
-	schemaCheck := SchemaCheck{
+	schemaUpsertable := SchemaUpsertable{
 		SchemaCmd: &SchemaCmd{
 			SchemaOptions: &SchemaOptions{
 				Excludes: []string{"_test.go", "excludeme.go"},
@@ -341,9 +341,9 @@ func TestSchema_Check_Happy_New(t *testing.T) {
 			provideClient: provideClient,
 		},
 	}
-	schemaCheck.Args.Paths = []string{"../../testentity"}
+	schemaUpsertable.Args.Paths = []string{"../../testentity"}
 
-	err := schemaCheck.Execute(nil)
+	err := schemaUpsertable.Execute(nil)
 	assert.NoError(t, err)
 }
 
