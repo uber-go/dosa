@@ -42,7 +42,7 @@ func TestMissingSubcommands(t *testing.T) {
 	exit = func(r int) {}
 	os.Args = []string{"dosa", "schema"}
 	main()
-	assert.Contains(t, c.stop(true), "check, dump, status or upsert")
+	assert.Contains(t, c.stop(true), "dump, status, upsert or upsertable")
 }
 
 func TestHostOptionButNothingElse(t *testing.T) {
@@ -57,7 +57,7 @@ func TestHostOptionButNothingElse(t *testing.T) {
 func TestInvalidHostOld(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "--host", "invalid-hostname.", "schema", "check", "--scope", "bar", "--prefix", "foo", "../../testentity"}
+	os.Args = []string{"dosa", "--host", "invalid-hostname.", "schema", "upsertable", "--scope", "bar", "--prefix", "foo", "../../testentity"}
 	main()
 	output := c.stop(true)
 	assert.Contains(t, output, "invalid-hostname")
@@ -68,7 +68,7 @@ func TestInvalidHostOld(t *testing.T) {
 func TestInvalidHost(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "--host", "invalid-hostname.", "schema", "check", "--scope", "bar", "--namePrefix", "foo", "../../testentity"}
+	os.Args = []string{"dosa", "--host", "invalid-hostname.", "schema", "upsertable", "--scope", "bar", "--namePrefix", "foo", "../../testentity"}
 	main()
 	output := c.stop(true)
 	assert.Contains(t, output, "invalid-hostname")
@@ -80,7 +80,7 @@ func TestInvalidHost(t *testing.T) {
 func TestInvalidPort(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "-p", "invalid-port", "schema", "check", "--scope", "bar", "--namePrefix", "foo", "../../testentity"}
+	os.Args = []string{"dosa", "-p", "invalid-port", "schema", "upsertable", "--scope", "bar", "--namePrefix", "foo", "../../testentity"}
 	main()
 	output := c.stop(true)
 	assert.Contains(t, output, "invalid-port")
