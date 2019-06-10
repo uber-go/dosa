@@ -1,6 +1,13 @@
 # Changelog
 
-## v3.4.3 (unreleased)
+## v3.4.5
+ - update CHANGELOG and version.VERSION
+
+## v3.4.4
+ - fix the bug, index columns zero value is []string(nil) but not []string{}
+ - Update the copyright messages to 2019
+
+## v3.4.3
  - Add optional 'columns' tag to Index definitions
  - update dosa-idl into v3.2.1
  - add columns support to materialized view creation using Schema dump
