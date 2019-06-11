@@ -173,7 +173,9 @@ type IndexDefinition struct {
 // Clone returns a deep copy of IndexDefinition
 func (id *IndexDefinition) Clone() *IndexDefinition {
 	var columns []string
-	copy(columns, id.Columns)
+	for _, c := range id.Columns {
+		columns = append(columns, c)
+	}
 	return &IndexDefinition{
 		Key:     id.Key.Clone(),
 		Columns: columns,
