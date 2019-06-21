@@ -49,7 +49,7 @@ var (
 
 	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
 
-	columnsPattern = regexp.MustCompile(`columns\s*=\s*\(([^\(\)]+)\)`)
+	columnsPattern = regexp.MustCompile(`columns\s*=\s*\(([^\(\)]+)\)(\S*)`)
 
 	etlPattern0 = regexp.MustCompile(`etl\s*=\s*(\S*)`)
 
@@ -355,7 +355,7 @@ func parseColumnsTag(tag string) (string, []string, error) {
 	var indexColumns []string
 	var fields []string
 	matches := columnsPattern.FindStringSubmatch(tag)
-	if len(matches) == 2 {
+	if len(matches) == 3 {
 		fullColumnsTag = matches[0]
 		fields = strings.Split(matches[1], ",")
 	}
