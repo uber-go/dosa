@@ -1,5 +1,5 @@
 hash: 3a161b2246b45ecccd550c70486c37361650084e22a34da58be7d980f0f38c1e
-updated: 2019-05-30T11:49:02.779243-07:00
+updated: 2019-06-21T11:22:09.666001-07:00
 imports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -120,9 +120,9 @@ imports:
   subpackages:
   - internal/mapstructure
 - name: github.com/uber-go/tally
-  version: 24c699f78afd17db5aac42f83c1c5cad70254294
+  version: f266f90e9c4d5894364039a324a05d061f2f34e2
 - name: github.com/uber/dosa-idl
-  version: 097e20c83d25cc733a977da96a6894cc9434fb99
+  version: 25b8c1aa8ed54ed3cd177d07761a8b376605dbdc
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -148,7 +148,7 @@ imports:
   - push
   - tallypush
 - name: go.uber.org/thriftrw
-  version: f3ff6fef5b56823cf763aebc81b42b8cbd1082c1
+  version: 23f23e7fc269002cb7e34f4e2dc079593cd6ad36
   subpackages:
   - ast
   - compile
