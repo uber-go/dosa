@@ -365,6 +365,7 @@ func getValidEntityDefinition() *dosa.EntityDefinition {
 					PartitionKeys: []string{"bar"},
 				},
 				Columns: []string{"qux", "foo"},
+				Defunct: true,
 			},
 		},
 		Columns: []*dosa.ColumnDefinition{

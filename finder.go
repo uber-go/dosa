@@ -263,14 +263,14 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 			for _, fieldName := range field.Names {
 				name := fieldName.Name
 				if kind == packagePrefix+"."+indexName || (packagePrefix == "" && kind == indexName) {
-					indexName, indexKey, indexColumns, err := parseIndexTag(name, dosaTag)
+					indexName, indexKey, indexColumns, defunct, err := parseIndexTag(name, dosaTag)
 					if err != nil {
 						return nil, err
 					}
 					if _, exist := t.Indexes[indexName]; exist {
 						return nil, errors.Errorf("index name is duplicated: %s", indexName)
 					}
-					t.Indexes[indexName] = &IndexDefinition{Key: indexKey, Columns: indexColumns}
+					t.Indexes[indexName] = &IndexDefinition{Key: indexKey, Columns: indexColumns, Defunct: defunct}
 				} else {
 					firstRune, _ := utf8.DecodeRuneInString(name)
 					if unicode.IsLower(firstRune) {
@@ -293,14 +293,14 @@ func tableFromStructType(structName string, structType *ast.StructType, packageP
 
 			if len(field.Names) == 0 {
 				if kind == packagePrefix+"."+indexName || (packagePrefix == "" && kind == indexName) {
-					indexName, indexKey, indexColumns, err := parseIndexTag("", dosaTag)
+					indexName, indexKey, indexColumns, defunct, err := parseIndexTag("", dosaTag)
 					if err != nil {
 						return nil, err
 					}
 					if _, exist := t.Indexes[indexName]; exist {
 						return nil, errors.Errorf("index name is duplicated: %s", indexName)
 					}
-					t.Indexes[indexName] = &IndexDefinition{Key: indexKey, Columns: indexColumns}
+					t.Indexes[indexName] = &IndexDefinition{Key: indexKey, Columns: indexColumns, Defunct: defunct}
 				}
 			}
 		}

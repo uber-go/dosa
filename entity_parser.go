@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -50,6 +51,8 @@ var (
 	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
 
 	columnsPattern = regexp.MustCompile(`columns\s*=\s*\(([^\(\)]+)\)`)
+
+	defunctPattern = regexp.MustCompile(`defunct\s*=\s*(true|false)`)
 
 	etlPattern0 = regexp.MustCompile(`etl\s*=\s*(\S*)`)
 
@@ -208,14 +211,14 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 		} else {
 			// parse index fields
 			if structField.Type == indexType {
-				indexName, indexKey, indexColumns, err := parseIndexTag(structField.Name, tag)
+				indexName, indexKey, indexColumns, defunct, err := parseIndexTag(structField.Name, tag)
 				if err != nil {
 					return nil, err
 				}
 				if _, exist := t.Indexes[indexName]; exist {
 					return nil, errors.Errorf("index name is duplicated: %s", indexName)
 				}
-				t.Indexes[indexName] = &IndexDefinition{Key: indexKey, Columns: indexColumns}
+				t.Indexes[indexName] = &IndexDefinition{Key: indexKey, Columns: indexColumns, Defunct: defunct}
 			} else {
 				cd, err := parseFieldTag(structField, tag)
 				if err != nil {
@@ -278,13 +281,13 @@ func translateKeyName(t *Table) {
 }
 
 // parseIndexTag functions parses DOSA index tag
-func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, []string, error) {
+func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, []string, bool, error) {
 	// index name struct must be exported in the entity,
 	// otherwise it will be ignored when upserting the schema.
 	if len(indexName) != 0 && unicode.IsLower([]rune(indexName)[0]) {
 		expected := []rune(indexName)
 		expected[0] = unicode.ToUpper(expected[0])
-		return "", nil, nil, fmt.Errorf("index name (%s) must be exported, "+
+		return "", nil, nil, false, fmt.Errorf("index name (%s) must be exported, "+
 			"try (%s) instead", indexName, string(expected))
 	}
 	tag := dosaAnnotation
@@ -292,12 +295,12 @@ func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, []str
 	// find the primaryKey
 	matchs := indexKeyPattern0.FindStringSubmatch(tag)
 	if len(matchs) != 4 {
-		return "", nil, nil, fmt.Errorf("dosa.Index %s with an invalid dosa index tag %q", indexName, tag)
+		return "", nil, nil, false, fmt.Errorf("dosa.Index %s with an invalid dosa index tag %q", indexName, tag)
 	}
 	pkString := matchs[1]
 	key, err := parsePrimaryKey(indexName, pkString)
 	if err != nil {
-		return "", nil, nil, errors.Wrapf(err, "struct %s has an invalid index key %q", indexName, pkString)
+		return "", nil, nil, false, errors.Wrapf(err, "struct %s has an invalid index key %q", indexName, pkString)
 	}
 	toRemove := strings.TrimSuffix(matchs[0], matchs[2])
 	toRemove = strings.TrimSuffix(matchs[0], matchs[3])
@@ -306,23 +309,30 @@ func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, []str
 	//find the name
 	fullNameTag, name, err := parseNameTag(tag, indexName)
 	if err != nil {
-		return "", nil, nil, errors.Wrapf(err, "invalid name tag: %s", tag)
+		return "", nil, nil, false, errors.Wrapf(err, "invalid name tag: %s", tag)
 	}
 	tag = strings.Replace(tag, fullNameTag, "", 1)
 
 	// find the columns
 	fullColumnsTag, indexColumns, err := parseColumnsTag(tag)
 	if err != nil {
-		return "", nil, nil, errors.Wrapf(err, "invalid columns tag: %s", tag)
+		return "", nil, nil, false, errors.Wrapf(err, "invalid columns tag: %s", tag)
 	}
 	tag = strings.Replace(tag, fullColumnsTag, "", 1)
 
+	// find the defunct
+	fullDefunctTag, defunct, err := parseDefunctTag(tag)
+	if err != nil {
+		return "", nil, nil, false, errors.Wrapf(err, "invalid defunct tag: %s", tag)
+	}
+	tag = strings.Replace(tag, fullDefunctTag, "", 1)
+
 	tag = strings.TrimSpace(tag)
 	if tag != "" {
-		return "", nil, nil, fmt.Errorf("index field %s with an invalid dosa index tag: %s", indexName, tag)
+		return "", nil, nil, false, fmt.Errorf("index field %s with an invalid dosa index tag: %s", indexName, tag)
 	}
 
-	return name, key, indexColumns, nil
+	return name, key, indexColumns, defunct, nil
 }
 
 // parseNameTag functions parses DOSA "name" tag
@@ -370,6 +380,21 @@ func parseColumnsTag(tag string) (string, []string, error) {
 		}
 	}
 	return fullColumnsTag, indexColumns, nil
+}
+
+// parseDefunctTag parses the "defunct" tag of a dosa.Index in the entity. It returns
+// the matched section of the tag string and boolean value of "defunct"
+func parseDefunctTag(tag string) (string, bool, error) {
+	matches := defunctPattern.FindStringSubmatch(tag)
+	if len(matches) == 2 {
+		fullDefunctTag := matches[0]
+		defunct, err := strconv.ParseBool(matches[1])
+		if err != nil {
+			return "", false, err
+		}
+		return fullDefunctTag, defunct, nil
+	}
+	return "", false, nil
 }
 
 // parseETLTag functions parses DOSA "etl" tag

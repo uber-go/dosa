@@ -740,6 +740,7 @@ func TestIndexParse(t *testing.T) {
 		ExpectedIndexName string
 		PrimaryKey        *PrimaryKey
 		Columns           []string
+		Defunct           bool
 		Error             error
 	}{
 		{
@@ -959,10 +960,46 @@ func TestIndexParse(t *testing.T) {
 			Columns:        []string{"ok", "test", "hi"},
 			Error:          errors.New("index field SearchByKey with an invalid dosa index tag: columns=(ok, test, (hi),)"),
 		},
+		{
+			Tag:               "name=jj key=ok columns=(ok, test, hi,) defunct=true",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Columns:        []string{"ok", "test", "hi"},
+			Defunct:        true,
+			Error:          nil,
+		},
+		{
+			Tag:               "defunct = true name=jj key=ok columns=(ok, test, hi,)",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Columns:        []string{"ok", "test", "hi"},
+			Defunct:        true,
+			Error:          nil,
+		},
+		{
+			Tag:               "name=jj key=ok columns=(ok, test, hi,) defunct=false",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Columns:        []string{"ok", "test", "hi"},
+			Defunct:        false,
+			Error:          nil,
+		},
 	}
 
 	for _, d := range data {
-		name, primaryKey, columns, err := parseIndexTag(d.InputIndexName, d.Tag)
+		name, primaryKey, columns, defunct, err := parseIndexTag(d.InputIndexName, d.Tag)
 		if d.Error != nil {
 			assert.Contains(t, err.Error(), d.Error.Error())
 		} else {
@@ -970,6 +1007,7 @@ func TestIndexParse(t *testing.T) {
 			assert.Equal(t, name, d.ExpectedIndexName)
 			assert.Equal(t, primaryKey, d.PrimaryKey)
 			assert.Equal(t, columns, d.Columns)
+			assert.Equal(t, defunct, d.Defunct)
 		}
 	}
 }
