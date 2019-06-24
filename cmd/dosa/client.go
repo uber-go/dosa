@@ -61,7 +61,11 @@ func (c *shellQueryClient) GetRegistrar() dosa.Registrar {
 
 func (c *shellQueryClient) Initialize(ctx context.Context) error {
 	registar := c.GetRegistrar()
-	reg, _ := registar.Find(&dosa.Entity{})
+	reg, err := registar.Find(&dosa.Entity{})
+	// this error should never happen for CLI query cases
+	if err != nil {
+		return errors.New("Error finding dosa entities")
+	}
 
 	version, err := c.connector.CheckSchema(ctx, registar.Scope(), registar.NamePrefix(), []*dosa.EntityDefinition{reg.EntityDefinition()})
 	if err != nil {

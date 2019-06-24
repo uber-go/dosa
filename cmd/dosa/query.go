@@ -86,7 +86,11 @@ func (c *QueryCmd) doQueryOp(f func(ShellQueryClient, context.Context, []*queryO
 		return err
 	}
 
-	re, _ := client.GetRegistrar().Find(&dosa.Entity{})
+	re, err := client.GetRegistrar().Find(&dosa.Entity{})
+	// this error should never happen for CLI query cases
+	if err != nil {
+		return err
+	}
 
 	fvs, err := setQueryFieldValues(kvs, re)
 	if err != nil {

@@ -30,7 +30,11 @@ import (
 // Range uses the connector to fetch rows for a given range
 func (c *shellQueryClient) Range(ctx context.Context, ops []*queryObj, fields []string, limit int) ([]map[string]dosa.FieldValue, error) {
 	// look up the entity in the registry
-	re, _ := c.registrar.Find(&dosa.Entity{})
+	re, err := c.registrar.Find(&dosa.Entity{})
+	// this error should never happen for CLI query cases
+	if err != nil {
+		return nil, err
+	}
 
 	// build range operator with expressions and limit number
 	r, err := buildRangeOp(ops, limit)
