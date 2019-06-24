@@ -30,7 +30,11 @@ import (
 // Read fetches a row by primary key.
 func (c *shellQueryClient) Read(ctx context.Context, ops []*queryObj, fields []string, limit int) ([]map[string]dosa.FieldValue, error) {
 	// look up entity in the registry
-	re, _ := c.registrar.Find(&dosa.Entity{})
+	re, err := c.registrar.Find(&dosa.Entity{})
+	// this error should never happen for CLI query cases
+	if err != nil {
+		return nil, err
+	}
 
 	// build arguments for read with expressions
 	fvs, err := buildReadArgs(ops)
