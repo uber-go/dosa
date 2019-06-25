@@ -155,3 +155,47 @@ func TestIndexesWithColumnsTag(t *testing.T) {
 		},
 	}, dosaTable.Indexes)
 }
+
+type IndexesWithDefunctTag struct {
+	Entity          `dosa:"primaryKey=(ID)"`
+	SearchByCity    Index `dosa:"key=(City, Payload) columns=(ID) defunct=true"`
+	SearchByID      Index `dosa:"key=(City) columns=(ID, Payload) defunct=false"`
+	SearchByPayload Index `dosa:"key=Payload"`
+
+	ID      UUID
+	City    string
+	Payload []byte
+}
+
+func TestIndexWithDefunctTag(t *testing.T) {
+	dosaTable, err := TableFromInstance(&IndexesWithDefunctTag{})
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]*IndexDefinition{
+		"searchbycity": {
+			Key: &PrimaryKey{
+				PartitionKeys: []string{"city"},
+				ClusteringKeys: []*ClusteringKey{
+					{
+						Name:       "payload",
+						Descending: false,
+					},
+				},
+			},
+			Columns: []string{"id"},
+			Defunct: true,
+		},
+		"searchbyid": {
+			Key: &PrimaryKey{
+				PartitionKeys: []string{"city"},
+			},
+			Columns: []string{"id", "payload"},
+			Defunct: false,
+		},
+		"searchbypayload": {
+			Key: &PrimaryKey{
+				PartitionKeys: []string{"payload"},
+			},
+			Defunct: false,
+		},
+	}, dosaTable.Indexes)
+}

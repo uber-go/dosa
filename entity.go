@@ -168,6 +168,7 @@ func (cd *ColumnDefinition) Clone() *ColumnDefinition {
 type IndexDefinition struct {
 	Key     *PrimaryKey
 	Columns []string
+	Defunct bool
 }
 
 // Clone returns a deep copy of IndexDefinition
@@ -176,9 +177,11 @@ func (id *IndexDefinition) Clone() *IndexDefinition {
 	for _, c := range id.Columns {
 		columns = append(columns, c)
 	}
+	defunct := id.Defunct
 	return &IndexDefinition{
 		Key:     id.Key.Clone(),
 		Columns: columns,
+		Defunct: defunct,
 	}
 }
 
