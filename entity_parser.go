@@ -40,20 +40,20 @@ const (
 )
 
 var (
-	primaryKeyPattern0 = regexp.MustCompile(`primaryKey\s*=\s*([^=]*)((\s+.*=)|$)`)
+	primaryKeyPattern0 = regexp.MustCompile(`primaryKey=([^=]*)((\s+.*=)|$)`)
 	primaryKeyPattern1 = regexp.MustCompile(`\(\s*\((.*)\)(.*)\)`)
 	primaryKeyPattern2 = regexp.MustCompile(`\(\s*([^,\s]+),?(.*)\)`)
 	primaryKeyPattern3 = regexp.MustCompile(`^\s*([^(),\s]+)\s*$`)
 
-	indexKeyPattern0 = regexp.MustCompile(`key\s*=\s*([^=]*)((\s+.*=)|$)`)
+	indexKeyPattern0 = regexp.MustCompile(`key=([^=]*)((\s+.*=)|$)`)
 
-	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
+	namePattern0 = regexp.MustCompile(`name=(\S*)`)
 
-	columnsPattern = regexp.MustCompile(`columns\s*=\s*\(([^\(\)]+)\)`)
+	columnsPattern = regexp.MustCompile(`columns=\(([^\(\)]+)\)`)
 
-	etlPattern0 = regexp.MustCompile(`etl\s*=\s*(\S*)`)
+	etlPattern0 = regexp.MustCompile(`etl=(\S*)`)
 
-	ttlPattern0 = regexp.MustCompile(`ttl\s*=\s*(\S*)`)
+	ttlPattern0 = regexp.MustCompile(`ttl=(\S*)`)
 
 	indexType = reflect.TypeOf((*Index)(nil)).Elem()
 )

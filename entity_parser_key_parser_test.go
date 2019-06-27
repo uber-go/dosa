@@ -608,7 +608,7 @@ func TestEntityParse(t *testing.T) {
 			TTL:   NoTTL(),
 		},
 		{
-			Tag:       "name=jj primaryKey=ok etl=OFF, ttl = 90h",
+			Tag:       "name=jj primaryKey=ok etl=OFF, ttl=90h",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -619,13 +619,13 @@ func TestEntityParse(t *testing.T) {
 			TTL:   time.Hour * 90,
 		},
 		{
-			Tag:       "name=jj primaryKey=ok etl=Off, ttl = 912ms",
+			Tag:       "name=jj primaryKey=ok etl=Off, ttl=912ms",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
-			Error: errors.New("invalid ttl tag:    ttl = 912ms: TTL is not allowed to set less than 1 second"),
+			Error: errors.New("invalid ttl tag:    ttl=912ms: TTL is not allowed to set less than 1 second"),
 			ETL:   EtlOff,
 			TTL:   time.Millisecond * 912,
 		},
