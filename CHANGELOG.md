@@ -1,7 +1,7 @@
 # Changelog
 
 ## v3.4.7 (unreleased)
- - Nothing changed yet
+ - don't allow whitespace beside equal sign
 
 ## v3.4.6 (2019-06-11)
  - use append but not copy to clone
