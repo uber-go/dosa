@@ -24,6 +24,7 @@ import (
 	"context"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -49,8 +50,18 @@ var (
 			buildRouter("default", "default", "memory"),
 		},
 	}
-	routersStr = "[{production.map -> memory},{production.default -> random},{ebook.ebook-store -> memory},{ebook.default -> random},{ebook.apple.* -> memory},{ebook.* -> devnull},{development.map -> memory},{development.default -> random},{default.default -> memory}]"
-	testInfo   = &dosa.EntityInfo{
+	routersStr = strings.Join([]string{
+		"{production.map -> memory}",
+		"{production.default -> random}",
+		"{ebook.ebook-store -> memory}",
+		"{ebook.default -> random}",
+		"{ebook.apple.* -> memory}",
+		"{ebook.* -> devnull}",
+		"{development.map -> memory}",
+		"{development.default -> random}",
+		"{default.default -> memory}",
+	}, ",")
+	testInfo = &dosa.EntityInfo{
 		Ref: &dosa.SchemaRef{
 			Scope:      "production",
 			NamePrefix: "map",
@@ -171,7 +182,7 @@ func TestGetConnector(t *testing.T) {
 	// no plugin
 	// glob match
 	rc := NewConnector(cfg, connectorMap)
-	assert.Equal(t, "[Routing "+routersStr+"]", rc.String())
+	assert.Equal(t, "[Routing ["+routersStr+"]]", rc.String())
 	ei := &dosa.EntityInfo{
 		Ref: &dosa.SchemaRef{Scope: "ebook", NamePrefix: "apple.v1"},
 	}
