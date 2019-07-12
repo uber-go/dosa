@@ -23,6 +23,7 @@ package routing
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -118,4 +119,16 @@ func (c *Config) findDefaultRouter() *Rule {
 		}
 	}
 	return nil
+}
+
+func (r *Routers) String() string {
+	s := []string{}
+	for _, rule := range *r {
+		s = append(s, rule.String())
+	}
+	return "[" + strings.Join(s, ",") + "]"
+}
+
+func (c *Config) String() string {
+	return c.Routers.String()
 }

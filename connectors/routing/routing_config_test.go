@@ -47,3 +47,9 @@ func TestTestNewRoutingConfigError(t *testing.T) {
 	assert.Nil(t, rConfig)
 	assert.Contains(t, err.Error(), "scope could not be empty")
 }
+
+func TestString(t *testing.T) {
+	r, err := NewRule("production", "test", "memory")
+	assert.Nil(t, err)
+	assert.Equal(t, "{production.test -> memory}", r.String())
+}

@@ -21,6 +21,7 @@
 package routing
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -67,6 +68,20 @@ routers:
 	assert.Equal(t, testCfg.Routers, rs)
 	err = yaml.Unmarshal([]byte(`bad yaml file`), testCfg)
 	assert.Error(t, err)
+
+	s := []string{
+		"{production.serviceA -> cassandra}",
+		"{production.default -> cassandra}",
+		"{ebook.ebook-store -> ebook}",
+		"{ebook.default -> ebook}",
+		"{ebook.apple.* -> ebook}",
+		"{ebook.* -> ebook}",
+		"{development.serviceB -> cassandra}",
+		"{development.default -> cassandra}",
+		"{default.default -> dosa}",
+	}
+
+	assert.Equal(t, "["+strings.Join(s, ",")+"]", rs.String())
 }
 
 func buildRouter(scope, namePrefix, connector string) *Rule {
