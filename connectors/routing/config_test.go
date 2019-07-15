@@ -21,67 +21,51 @@
 package routing
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 )
 
+var yamlFile = `
+routers:
+- production:
+    "*": cassandra1
+    serviceA: cassandra2
+- development:
+    default: cassandra3
+    serviceB: cassandra4
+- ebook:
+    app: ebook0
+    apple.*: ebook2
+    '*': ebook1
+    ebook-store: ebook4
+- default:
+    foo_*: dosa1
+    "*": dosa2
+`
+
 // TestBasicConfig test the basic yaml file conversion
 func TestBasicConfig(t *testing.T) {
-	yamlFile := `
-routers:
-# routers structure looks like:
-# - [scope]
-#    [namePrefix_1]: connectorName
-#    [namePrefix_2]: connectorName
-- production:
-    default: cassandra
-    serviceA: cassandra
-- development:
-    default: cassandra
-    serviceB: cassandra
-- ebook:
-    '*': ebook
-    apple.*: ebook
-    default: ebook
-    ebook-store: ebook
-- default:
-    default: dosa
-`
 	testCfg := &Config{}
 	err := yaml.Unmarshal([]byte(yamlFile), testCfg)
 	assert.NoError(t, err)
 	assert.Len(t, testCfg.Routers, 9)
 	rs := Routers{
-		buildRouter("production", "serviceA", "cassandra"),
-		buildRouter("production", "default", "cassandra"),
-		buildRouter("ebook", "ebook-store", "ebook"),
-		buildRouter("ebook", "default", "ebook"),
-		buildRouter("ebook", "apple.*", "ebook"),
-		buildRouter("ebook", "*", "ebook"),
-		buildRouter("development", "serviceB", "cassandra"),
-		buildRouter("development", "default", "cassandra"),
-		buildRouter("default", "default", "dosa"),
+		buildRouter("development", "serviceB", "cassandra4"),
+		buildRouter("development", "default", "cassandra3"),
+		buildRouter("ebook", "app", "ebook0"),
+		buildRouter("ebook", "apple.*", "ebook2"),
+		buildRouter("ebook", "ebook-store", "ebook4"),
+		buildRouter("ebook", "*", "ebook1"),
+		buildRouter("production", "serviceA", "cassandra2"),
+		buildRouter("production", "*", "cassandra1"),
+		buildRouter("default", "foo_*", "dosa"),
+		buildRouter("default", "*", "dosa2"),
 	}
 	assert.Equal(t, testCfg.Routers, rs)
 	err = yaml.Unmarshal([]byte(`bad yaml file`), testCfg)
 	assert.Error(t, err)
-
-	s := []string{
-		"{production.serviceA -> cassandra}",
-		"{production.default -> cassandra}",
-		"{ebook.ebook-store -> ebook}",
-		"{ebook.default -> ebook}",
-		"{ebook.apple.* -> ebook}",
-		"{ebook.* -> ebook}",
-		"{development.serviceB -> cassandra}",
-		"{development.default -> cassandra}",
-		"{default.default -> dosa}",
-	}
-
-	assert.Equal(t, "["+strings.Join(s, ",")+"]", rs.String())
 }
 
 func buildRouter(scope, namePrefix, connector string) *Rule {
@@ -90,24 +74,6 @@ func buildRouter(scope, namePrefix, connector string) *Rule {
 }
 
 func TestRouter(t *testing.T) {
-	yamlFile := `
-routers:
-- production:
-    '*': cassandra
-    serviceA: cassandra
-    serviceX: schemaless
-- development:
-    serviceB: cassandra
-    "*": cassandra
-    serviceX: schemaless
-- ebook:
-    '*': ebook
-    apple.*: ebook
-    ebook-store: ebook
-- default:
-    sless_*: schemaless
-    "*": dosa_dev
-`
 	testCfg := &Config{}
 	err := yaml.Unmarshal([]byte(yamlFile), testCfg)
 	assert.NoError(t, err)
@@ -116,14 +82,20 @@ routers:
 	assert.Equal(t, cfg.Scope, "default")
 
 	cfg = testCfg.FindRouter("production", "serviceA")
-	assert.Equal(t, cfg, buildRouter("production", "serviceA", "cassandra"))
+	assert.Equal(t, cfg, buildRouter("production", "serviceA", "cassandra2"))
+
+	cfg = testCfg.FindRouter("development", "serviceA")
+	assert.Equal(t, cfg, buildRouter("development", "default", "cassandra3"))
 
 	cfg = testCfg.FindRouter("ebook", "apple.k")
-	assert.Equal(t, cfg, buildRouter("ebook", "apple.*", "ebook"))
+	assert.Equal(t, cfg, buildRouter("ebook", "apple.*", "ebook2"))
 
 	cfg = testCfg.FindRouter("ebook", "d.k")
-	assert.Equal(t, cfg, buildRouter("ebook", "*", "ebook"))
+	assert.Equal(t, cfg, buildRouter("ebook", "*", "ebook1"))
+
+	cfg = testCfg.FindRouter("dev_user2", "foo_bar")
+	assert.Equal(t, cfg, buildRouter("default", "foo_*", "dosa1"))
 
 	cfg = testCfg.FindRouter("a", "d.k")
-	assert.Equal(t, cfg, buildRouter("default", "d.k", "dosa_dev"))
+	assert.Equal(t, cfg, buildRouter("default", "*", "dosa2"))
 }
