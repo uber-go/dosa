@@ -28,12 +28,10 @@ import (
 	"github.com/uber-go/dosa"
 )
 
-// Connector holds a slice of configured connectors to route to
+// The routing connector maps a (scope, namePrefix) pair into a storage engine.
+
+// Connector is a routing connector.
 type Connector struct {
-	// config connector slice is sorted in a manner:
-	// for the value of Config name prefix, strict string without "*" always comes first,
-	// and then string with "*" suffix (glob match) and pure "*".
-	// There shouldn't be any scope with a prefix "*" like "*.service.v1"
 	config     Config
 	connectors map[string]dosa.Connector
 }

@@ -28,8 +28,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Rule stores routing rule
-// to decide which connector the Connector talks to
+// Rule is an assignment from scope.prefixPattern to a connector name.
 type Rule struct {
 	Scope      string
 	NamePrefix string
@@ -40,20 +39,25 @@ type Rule struct {
 // NewRule initializes Rule
 func NewRule(scope, namePrefix, connector string) (*Rule, error) {
 	if namePrefix == "" {
-		return nil, errors.New("namePrefix could not be empty, should be defined in yaml file")
+		return nil, errors.New("namePrefix cannot be empty")
 	}
 
 	if scope == "" {
-		return nil, errors.New("scope could not be empty, should be defined in yaml file")
+		return nil, errors.New("scope cannot be empty")
 	}
 
-	if strings.HasPrefix(namePrefix, "*") && len(namePrefix) != 1 {
-		// we don't support name like '*.service.v1'
-		return nil, errors.Errorf(
-			"namePrefix like %v is not supported, cannot put * at the beginning of namePrefix.", namePrefix)
+	// namePrefix must be a valid prefix name, optionally with a suffix *
+	var isPrefix bool
+	if strings.HasSuffix(namePrefix, "*") {
+		isPrefix = true
+		namePrefix = namePrefix[:-1]
+	}
+	if err := dosa.IsValidNamePrefix(namePrefix); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid namePrefix %s", namePrefix))
 	}
 
-	globMatch := glob.MustCompile(namePrefix)
+	// Make a regular expression and construct a matcher.
+	globMatch := glob.MustCompile(makeRegexp(namePrefix, isPrefix))
 
 	return &Rule{NamePrefix: namePrefix, Scope: scope, Connector: connector, GlobMatch: globMatch}, nil
 }

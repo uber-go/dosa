@@ -92,23 +92,21 @@ func buildRouter(scope, namePrefix, connector string) *Rule {
 func TestRouter(t *testing.T) {
 	yamlFile := `
 routers:
-# routers structure looks like:
-# - [scope]
-#    [namePrefix_1]: connectorName
-#    [namePrefix_2]: connectorName
 - production:
-    default: cassandra
+    '*': cassandra
     serviceA: cassandra
+    serviceX: schemaless
 - development:
-    default: cassandra
     serviceB: cassandra
+    "*": cassandra
+    serviceX: schemaless
 - ebook:
     '*': ebook
     apple.*: ebook
-    default: ebook
     ebook-store: ebook
 - default:
-    default: dosa
+    sless_*: schemaless
+    "*": dosa_dev
 `
 	testCfg := &Config{}
 	err := yaml.Unmarshal([]byte(yamlFile), testCfg)
@@ -127,5 +125,5 @@ routers:
 	assert.Equal(t, cfg, buildRouter("ebook", "*", "ebook"))
 
 	cfg = testCfg.FindRouter("a", "d.k")
-	assert.Equal(t, cfg, buildRouter("default", "default", "dosa"))
+	assert.Equal(t, cfg, buildRouter("default", "d.k", "dosa_dev"))
 }

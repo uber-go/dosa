@@ -42,9 +42,11 @@ func (r Routers) Swap(i, j int) {
 }
 func (r Routers) Less(i, j int) bool {
 	if r[i].Scope == r[j].Scope {
+		// * MUST sort after letters!
 		return r[i].NamePrefix > r[j].NamePrefix
 	}
 
+	// "default" or "*" MUST sort at the end!
 	return r[i].Scope > r[j].Scope
 }
 
@@ -90,12 +92,31 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-// Config is a struct contains fields from yaml
-// scope should be an exact string in any case,
-// namePrefix could be in 3 different format:
-// 1. exact string like "service" that matches namePrefix that is exactly "service"
-// 2. partial glob match like "service.*" that matches all namePrefix that has a prefix of "service."
-// 3. full glob match like "*" that matches all namePrefix
+// Config for the routing connector is a "case statement" of scope names, and each entry is a list
+// of assigments "pattern" -> engine-name.
+//
+// Example:
+//
+// routers:
+// - production:
+//     serviceA: cassandra
+//     serviceX: schemaless
+//     *: dosa
+// - development:
+//     *: dosa_dev
+//     serviceB: cassandra
+//     serviceX: schemaless
+// - ebook:
+//     '*': ebook
+//     apple.*: ebook
+//     ebook-store: ebook
+// - default:
+//     sless_*: schemaless
+//     "*": dosa_dev
+//
+// A pattern is not a regular expression: only prefixes may be specified (i.e. trailing "*").
+// Literal strings (no "*") sort before any pattern.
+//
 type Config struct {
 	Routers Routers `yaml:"routers"`
 }
