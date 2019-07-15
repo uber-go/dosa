@@ -21,6 +21,7 @@
 package routing
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/gobwas/glob"
@@ -74,4 +75,8 @@ func (r *Rule) RouteTo(scope string, namePrefix string) bool {
 	}
 
 	return false
+}
+
+func (r *Rule) String() string {
+	return fmt.Sprintf("{%s.%s -> %s}", r.Scope, r.NamePrefix, r.Connector)
 }

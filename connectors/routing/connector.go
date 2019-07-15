@@ -47,6 +47,10 @@ func NewConnector(cfg Config, connectorMap map[string]dosa.Connector) *Connector
 	}
 }
 
+func (rc *Connector) String() string {
+	return fmt.Sprintf("[Routing %s]", rc.config.String())
+}
+
 // get connector by scope an namePrefix
 func (rc *Connector) getConnector(scope, namePrefix string) (dosa.Connector, error) {
 	router := rc.config.FindRouter(scope, namePrefix)
