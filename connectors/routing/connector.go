@@ -28,7 +28,7 @@ import (
 	"github.com/uber-go/dosa"
 )
 
-// The routing connector maps a (scope, namePrefix) pair into a storage engine name.
+// The routing connector maps a (scope, namePrefix) pair into a storage engine connector.
 
 // Connector is a routing connector.
 type Connector struct {

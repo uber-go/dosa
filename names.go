@@ -42,7 +42,7 @@ var (
 	nameRegex       = regexp.MustCompile("^[a-z_][a-z0-9_]{0,31}$")
 )
 
-// IsValidNamePrefix checks if a name prefix.
+// IsValidNamePrefix checks if a name prefix is valid.
 func IsValidNamePrefix(namePrefix string) error {
 	normalized := strings.ToLower(strings.TrimSpace(namePrefix))
 	if !namePrefixRegex.MatchString(normalized) {

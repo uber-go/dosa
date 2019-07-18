@@ -110,10 +110,12 @@ func TestNormalizeName(t *testing.T) {
 			allowed:  true,
 			expected: "_alreadynormalized9",
 		},
+		// Invalid
 		{
-			arg:      "an apple",
-			allowed:  false,
-			expected: "",
+			arg: "an apple",
+		},
+		{
+			arg: "9Monkeys",
 		},
 	}
 
@@ -185,6 +187,10 @@ func TestNormalizeNamePrefix(t *testing.T) {
 		},
 		{
 			arg:   "a.b.c.d!",
+			bogus: true,
+		},
+		{
+			arg:   "9Monkeys",
 			bogus: true,
 		},
 	}
