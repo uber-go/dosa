@@ -127,13 +127,16 @@ type Config struct {
 // getEngineName returns the name of the engine to use for a given (scope, name-prefix). The "Routers" list
 // MUST be sorted in priority order.
 func (c *Config) getEngineName(scope, namePrefix string) string {
-	for _, rule := range c.Routers {
+	var rule *Rule
+	for _, rule = range c.Routers {
 		if rule.canHandle(scope, namePrefix) {
 			return rule.Destination()
 		}
 	}
 
-	return c.findDefaultRule().Destination()
+	// The last rule in the list is the default rule, which always exists; we should never
+	// reach this point.
+	return "an unknown error has occurred"
 }
 
 // findDefaultRouter finds the default rule.
