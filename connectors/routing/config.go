@@ -31,7 +31,11 @@ import (
 // DefaultName is an alias for the glob "*" (regexp .*)
 const DefaultName = "default"
 
-// Routers represents a list of routing config
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//                            NOTE: "Router" is a synonym for "Rule".
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Routers represents a list of routing rules.
 type Routers []*Rule
 
 func (r Routers) Len() int {
@@ -55,7 +59,7 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := unmarshal(&scopes); err != nil {
 		return err
 	}
-	defaultRouterExist := false
+	defaultRuleExists := false
 	for _, scopeMap := range scopes {
 		for scope, namePrefixes := range scopeMap {
 			namePrefixesMap, ok := namePrefixes.(map[interface{}]interface{})
@@ -74,15 +78,15 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 					return errors.Wrap(err, "failed to parse routing config")
 				}
 				routers = append(routers, router)
-				if scope == DefaultName || scope == "*" {
-					defaultRouterExist = true
+				if (scope == DefaultName || scope == "*") && (namePrefixStr == DefaultName || namePrefixStr == "*") {
+					defaultRuleExists = true
 				}
 			}
 		}
 	}
 
-	if !defaultRouterExist {
-		return errors.New("there should be a default scope defined in routing config yaml file")
+	if !defaultRuleExists {
+		return errors.New("no default rule defined in the 'routers' config")
 	}
 
 	sort.Sort(routers)
@@ -120,30 +124,26 @@ type Config struct {
 	Routers Routers `yaml:"routers"`
 }
 
-// FindRouter finds the router information based on scope and namePrefix. The "Routers" entry
-// must already be sorted in precedence order.
-func (c *Config) FindRouter(scope, namePrefix string) *Rule {
-	for _, router := range c.Routers {
-		if router.RouteTo(scope, namePrefix) {
-			return router
+// getEngineName returns the name of the engine to use for a given (scope, name-prefix). The "Routers" list
+// MUST be sorted in priority order.
+func (c *Config) getEngineName(scope, namePrefix string) string {
+	for _, rule := range c.Routers {
+		if rule.canHandle(scope, namePrefix) {
+			return rule.Destination()
 		}
 	}
 
-	return c.findDefaultRouter()
+	return c.findDefaultRule().Destination()
 }
 
-// findDefaultRouter finds the default router information.
-func (c *Config) findDefaultRouter() *Rule {
-	for _, router := range c.Routers {
-		if router.scope == DefaultName {
-			return router
-		}
+// findDefaultRouter finds the default rule.
+func (c *Config) findDefaultRule() *Rule {
+	// The rules are sorted such that the default rule (i.e. *.*) is at the end.
+	rule := c.Routers[len(c.Routers)-1]
+	if rule.Scope() == "*" && rule.NamePrefix() == "*" {
+		return rule
 	}
 	return nil
-}
-
-func (c *Config) String() string {
-	return c.Routers.String()
 }
 
 func (r *Routers) String() string {
@@ -152,4 +152,8 @@ func (r *Routers) String() string {
 		s = append(s, rule.String())
 	}
 	return "[" + strings.Join(s, ",") + "]"
+}
+
+func (c *Config) String() string {
+	return c.Routers.String()
 }

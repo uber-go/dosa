@@ -39,14 +39,14 @@ const idcount = 10
 var (
 	cfg = Config{
 		Routers: Routers{
-			buildRouter("ebook", "apple.*", "memory"),
-			buildRouter("ebook", "ebook_store", "memory"),
-			buildRouter("ebook", "*", "devnull"),
-			buildRouter("development", "map", "memory"),
-			buildRouter("development", "default", "random"),
-			buildRouter("production", "map", "memory"),
-			buildRouter("production", "default", "random"),
-			buildRouter("default", "default", "memory"),
+			buildRule("ebook", "apple.*", "memory"),
+			buildRule("ebook", "ebook_store", "memory"),
+			buildRule("ebook", "*", "devnull"),
+			buildRule("development", "map", "memory"),
+			buildRule("development", "default", "random"),
+			buildRule("production", "map", "memory"),
+			buildRule("production", "default", "random"),
+			buildRule("default", "default", "memory"),
 		},
 	}
 	routersStr = strings.Join([]string{
@@ -54,10 +54,10 @@ var (
 		"{ebook.ebook_store -> memory}",
 		"{ebook.* -> devnull}",
 		"{development.map -> memory}",
-		"{development.default -> random}",
+		"{development.* -> random}",
 		"{production.map -> memory}",
-		"{production.default -> random}",
-		"{default.default -> memory}",
+		"{production.* -> random}",
+		"{*.* -> memory}",
 	}, ",")
 	testInfo = &dosa.EntityInfo{
 		Ref: &dosa.SchemaRef{

@@ -50,31 +50,38 @@ func NewRule(scope, namePrefix, connector string) (*Rule, error) {
 	if scope == "" {
 		return nil, errors.New("scope cannot be empty")
 	}
+	if scope == DefaultName {
+		scope = "*"
+	}
 	var scopeIsPattern bool
 	if strings.HasSuffix(scope, "*") {
 		scopeIsPattern = true
 		scope = strings.TrimSuffix(scope, "*")
 	}
-	nScope, err := canonicalize(scope, scopeIsPattern, true) // isScope = true
+	canonScope, err := canonicalize(scope, scopeIsPattern, true) // isScope = true
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("invalid scope name %s", scope))
 	}
 
-	// namePrefix must be a valid prefix name, optionally with a suffix *
+	// namePrefix must be a valid prefix name, optionally with a suffix *. If it's just a "*"
+	// it's converted to "".
 	if namePrefix == "" {
 		return nil, errors.New("namePrefix cannot be empty")
+	}
+	if namePrefix == DefaultName {
+		namePrefix = "*"
 	}
 	var prefixIsPattern bool
 	if strings.HasSuffix(namePrefix, "*") {
 		prefixIsPattern = true
 		namePrefix = strings.TrimSuffix(namePrefix, "*")
 	}
-	if namePrefix != "" {
+	if namePrefix != "" { // No need to check, this is the pattern "*".
 		if err := dosa.IsValidNamePrefix(namePrefix); err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid namePrefix %s", namePrefix))
 		}
 	}
-	nPrefix, _ := canonicalize(namePrefix, prefixIsPattern, false) // isScope = false
+	canonPrefix, _ := canonicalize(namePrefix, prefixIsPattern, false) // isScope = false
 
 	// Make a regular expressions and matchers
 	prefixPat := makeRegexp(namePrefix, prefixIsPattern)
@@ -88,13 +95,45 @@ func NewRule(scope, namePrefix, connector string) (*Rule, error) {
 		scopePattern:    scopePat,
 		prefixIsPattern: prefixIsPattern,
 		prefixPattern:   prefixPat,
-		canonScope:      nScope,
-		canonPfx:        nPrefix,
+		canonScope:      canonScope,
+		canonPfx:        canonPrefix,
 	}, nil
 }
 
-// RouteTo (bad name!) says whether or not this Rule can handle the given scope:prefix.
-func (r *Rule) RouteTo(scope string, namePrefix string) bool {
+// Scope returns the rule's scope.
+func (r *Rule) Scope() string {
+	if !r.scopeIsPattern {
+		return r.scope
+	}
+	return r.scope + "*"
+}
+
+// NamePrefix returns the rule's name-prefix.
+func (r *Rule) NamePrefix() string {
+	if !r.prefixIsPattern {
+		return r.namePrefix
+	}
+	return r.namePrefix + "*"
+}
+
+// Destination returns the rule's destination.
+func (r *Rule) Destination() string {
+	return r.connector
+}
+
+func (r *Rule) String() string {
+	var prefixPat, scopePat string
+	if r.scopeIsPattern {
+		scopePat = "*"
+	}
+	if r.prefixIsPattern {
+		prefixPat = "*"
+	}
+	return fmt.Sprintf("{%s%s.%s%s -> %s}", r.scope, scopePat, r.namePrefix, prefixPat, r.connector)
+}
+
+// canHandle says whether or not this Rule can handle the given scope:prefix.
+func (r *Rule) canHandle(scope string, namePrefix string) bool {
 	if r.scope == scope {
 		if r.namePrefix == namePrefix {
 			// Exact match for both.
@@ -120,35 +159,9 @@ func (r *Rule) RouteTo(scope string, namePrefix string) bool {
 	return false
 }
 
-// Scope returns the rule's scope.
-func (r *Rule) Scope() string {
-	return r.scope
-}
-
-// NamePrefix returns the rule's name-prefix.
-func (r *Rule) NamePrefix() string {
-	return r.namePrefix
-}
-
-// Destination returns the rule's destination.
-func (r *Rule) Destination() string {
-	return r.connector
-}
-
-func (r *Rule) String() string {
-	var prefixPat, scopePat string
-	if r.scopeIsPattern {
-		scopePat = "*"
-	}
-	if r.prefixIsPattern {
-		prefixPat = "*"
-	}
-	return fmt.Sprintf("{%s%s.%s%s -> %s}", r.scope, scopePat, r.namePrefix, prefixPat, r.connector)
-}
-
 // Make a regexp from the "glob" pattern used in Rule rules.
 func makeRegexp(pat string, isPrefix bool) *regexp.Regexp {
-	if pat == DefaultName {
+	if pat == "" && isPrefix {
 		return regexp.MustCompile(".")
 	}
 	// Quote dots and add begin-of-line

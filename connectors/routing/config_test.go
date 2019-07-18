@@ -21,6 +21,7 @@
 package routing
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,7 +47,7 @@ routers:
     '*': ebook.42
 - default:
     foo_*: dosa1
-    "*": dosa2
+    default: dosa2
 `
 
 // TestBasicConfig test the basic yaml file conversion
@@ -55,79 +56,100 @@ func TestBasicConfig(t *testing.T) {
 	err := yaml.Unmarshal([]byte(yamlFile), testCfg)
 	assert.NoError(t, err)
 	rs := Routers{
-		buildRouter("development", "serviceB", "cassandra4"),
-		buildRouter("development", "default", "cassandra3"),
-		buildRouter("ebook", "app", "ebook0"),
-		buildRouter("ebook", "apple.*", "ebook2"),
-		buildRouter("ebook", "ebook_store", "ebook4"),
-		buildRouter("ebook", "*", "ebook1"),
-		buildRouter("ebook*", "foo", "ebook-foo"),
-		buildRouter("ebook*", "foo*", "ebook-foo-2"),
-		buildRouter("ebook*", "*", "ebook.42"),
-		buildRouter("production", "serviceA", "cassandra2"),
-		buildRouter("production", "*", "cassandra1"),
-		buildRouter("default", "foo_*", "dosa1"),
-		buildRouter("default", "*", "dosa2"),
+		buildRule("development", "serviceB", "cassandra4"),
+		buildRule("development", "default", "cassandra3"),
+		buildRule("ebook", "app", "ebook0"),
+		buildRule("ebook", "apple.*", "ebook2"),
+		buildRule("ebook", "ebook_store", "ebook4"),
+		buildRule("ebook", "*", "ebook1"),
+		buildRule("ebook*", "foo", "ebook-foo"),
+		buildRule("ebook*", "foo*", "ebook-foo-2"),
+		buildRule("ebook*", "*", "ebook.42"),
+		buildRule("production", "serviceA", "cassandra2"),
+		buildRule("production", "*", "cassandra1"),
+		buildRule("default", "foo_*", "dosa1"),
+		buildRule("default", "default", "dosa2"),
 	}
 	assert.Equal(t, testCfg.Routers, rs)
+
 	err = yaml.Unmarshal([]byte(`bad yaml file`), testCfg)
 	assert.Error(t, err)
+
+	s := []string{
+		"{development.serviceB -> cassandra4}",
+		"{development.* -> cassandra3}",
+		"{ebook.app -> ebook0}",
+		"{ebook.apple.* -> ebook2}",
+		"{ebook.ebook_store -> ebook4}",
+		"{ebook.* -> ebook1}",
+		"{ebook*.foo -> ebook-foo}",
+		"{ebook*.foo* -> ebook-foo-2}",
+		"{ebook*.* -> ebook.42}",
+		"{production.serviceA -> cassandra2}",
+		"{production.* -> cassandra1}",
+		"{*.foo_* -> dosa1}",
+		"{*.* -> dosa2}",
+	}
+
+	assert.Equal(t, "["+strings.Join(s, ",")+"]", rs.String())
 }
 
-func buildRouter(scope, namePrefix, connector string) *Rule {
+func buildRule(scope, namePrefix, connector string) *Rule {
 	rc, _ := NewRule(scope, namePrefix, connector)
 	return rc
 }
 
-func TestRouter(t *testing.T) {
+func TestRouting(t *testing.T) {
 	testCfg := &Config{}
 	err := yaml.Unmarshal([]byte(yamlFile), testCfg)
 	assert.NoError(t, err)
 
-	r := testCfg.findDefaultRouter()
-	assert.Equal(t, r.Scope(), "default")
+	rule := testCfg.findDefaultRule()
+	assert.Equal(t, rule.Scope(), "*")
 
-	r = testCfg.FindRouter("production", "serviceA")
-	assert.Equal(t, r.Destination(), "cassandra2")
+	var eng string
 
-	r = testCfg.FindRouter("production", "something_else")
-	assert.Equal(t, r.Destination(), "cassandra1")
+	eng = testCfg.getEngineName("production", "serviceA")
+	assert.Equal(t, eng, "cassandra2")
 
-	r = testCfg.FindRouter("development", "serviceA")
-	assert.Equal(t, r.Destination(), "cassandra3")
+	eng = testCfg.getEngineName("production", "something_else")
+	assert.Equal(t, eng, "cassandra1")
 
-	r = testCfg.FindRouter("ebook", "app")
-	assert.Equal(t, r.Destination(), "ebook0")
+	eng = testCfg.getEngineName("development", "serviceA")
+	assert.Equal(t, eng, "cassandra3")
 
-	r = testCfg.FindRouter("ebook", "apple.k")
-	assert.Equal(t, r.Destination(), "ebook2")
+	eng = testCfg.getEngineName("ebook", "app")
+	assert.Equal(t, eng, "ebook0")
 
-	r = testCfg.FindRouter("ebook", "apple2")
-	assert.Equal(t, r.Destination(), "ebook1")
+	eng = testCfg.getEngineName("ebook", "apple.k")
+	assert.Equal(t, eng, "ebook2")
 
-	r = testCfg.FindRouter("ebook", "d.k")
-	assert.Equal(t, r.Destination(), "ebook1")
+	eng = testCfg.getEngineName("ebook", "apple2")
+	assert.Equal(t, eng, "ebook1")
 
-	r = testCfg.FindRouter("ebook", "foo")
-	assert.Equal(t, r.Destination(), "ebook1")
+	eng = testCfg.getEngineName("ebook", "d.k")
+	assert.Equal(t, eng, "ebook1")
 
-	r = testCfg.FindRouter("ebook2", "foo")
-	assert.Equal(t, r.Destination(), "ebook-foo")
+	eng = testCfg.getEngineName("ebook", "foo")
+	assert.Equal(t, eng, "ebook1")
 
-	r = testCfg.FindRouter("ebook2", "app")
-	assert.Equal(t, r.Destination(), "ebook.42")
+	eng = testCfg.getEngineName("ebook2", "foo")
+	assert.Equal(t, eng, "ebook-foo")
 
-	r = testCfg.FindRouter("ebook2", "foo_bar")
-	assert.Equal(t, r.Destination(), "ebook-foo-2")
+	eng = testCfg.getEngineName("ebook2", "app")
+	assert.Equal(t, eng, "ebook.42")
 
-	r = testCfg.FindRouter("ebook_bar", "baz")
-	assert.Equal(t, r.Destination(), "ebook.42")
+	eng = testCfg.getEngineName("ebook2", "foo_bar")
+	assert.Equal(t, eng, "ebook-foo-2")
 
-	r = testCfg.FindRouter("dev_user2", "foo_bar")
-	assert.Equal(t, r.Destination(), "dosa1")
+	eng = testCfg.getEngineName("ebook_bar", "baz")
+	assert.Equal(t, eng, "ebook.42")
 
-	r = testCfg.FindRouter("a", "d.k")
-	assert.Equal(t, r.Destination(), "dosa2")
+	eng = testCfg.getEngineName("dev_user2", "foo_bar")
+	assert.Equal(t, eng, "dosa1")
+
+	eng = testCfg.getEngineName("a", "d.k")
+	assert.Equal(t, eng, "dosa2")
 }
 
 var prodConfig = `
@@ -155,14 +177,14 @@ func TestProdConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	rs := Routers{
-		buildRouter("dosa_test", "*", "dosa_staging"),
-		buildRouter("production", "another_client*", "dosa_prod_a"),
-		buildRouter("production", "dosa3test*", "dosa_prod_a"),
-		buildRouter("production", "eternal2a", "dosa_prod_a"),
-		buildRouter("production", "*", "dosa"),
-		buildRouter("service", "*", "cl_service"),
-		buildRouter("service_tier1", "*", "cl_service_tier1"),
-		buildRouter("default", "*", "dosa_dev"),
+		buildRule("dosa_test", "*", "dosa_staging"),
+		buildRule("production", "another_client*", "dosa_prod_a"),
+		buildRule("production", "dosa3test*", "dosa_prod_a"),
+		buildRule("production", "eternal2a", "dosa_prod_a"),
+		buildRule("production", "*", "dosa"),
+		buildRule("service", "*", "cl_service"),
+		buildRule("service_tier1", "*", "cl_service_tier1"),
+		buildRule("default", "*", "dosa_dev"),
 	}
 	assert.Equal(t, prodCfg.Routers, rs)
 }
