@@ -29,15 +29,19 @@ import (
 	"github.com/uber-go/dosa"
 )
 
+const lastASCIIChar = "~"
+
 // Rule is an assignment from scope.prefixPattern to a connector name.
 type Rule struct {
-	scope         string
-	namePrefix    string
-	connector     string
-	prefixPattern *regexp.Regexp
-	scopePattern  *regexp.Regexp
-	canonScope    string
-	canonPfx      string
+	scope           string
+	namePrefix      string
+	connector       string
+	prefixIsPattern bool
+	prefixPattern   *regexp.Regexp
+	scopeIsPattern  bool
+	scopePattern    *regexp.Regexp
+	canonScope      string
+	canonPfx        string
 }
 
 // NewRule initializes Rule
@@ -60,16 +64,15 @@ func NewRule(scope, namePrefix, connector string) (*Rule, error) {
 	if namePrefix == "" {
 		return nil, errors.New("namePrefix cannot be empty")
 	}
-	if namePrefix == "*" {
-		namePrefix = DefaultName // This makes the following code simpler.
-	}
 	var prefixIsPattern bool
 	if strings.HasSuffix(namePrefix, "*") {
 		prefixIsPattern = true
 		namePrefix = strings.TrimSuffix(namePrefix, "*")
 	}
-	if err := dosa.IsValidNamePrefix(namePrefix); err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid namePrefix %s", namePrefix))
+	if namePrefix != "" {
+		if err := dosa.IsValidNamePrefix(namePrefix); err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid namePrefix %s", namePrefix))
+		}
 	}
 	nPrefix, _ := canonicalize(namePrefix, prefixIsPattern, false) // isScope = false
 
@@ -78,13 +81,15 @@ func NewRule(scope, namePrefix, connector string) (*Rule, error) {
 	scopePat := makeRegexp(scope, scopeIsPattern)
 
 	return &Rule{
-		namePrefix:    namePrefix,
-		scope:         scope,
-		connector:     connector,
-		scopePattern:  scopePat,
-		prefixPattern: prefixPat,
-		canonScope:    nScope,
-		canonPfx:      nPrefix,
+		namePrefix:      namePrefix,
+		scope:           scope,
+		connector:       connector,
+		scopeIsPattern:  scopeIsPattern,
+		scopePattern:    scopePat,
+		prefixIsPattern: prefixIsPattern,
+		prefixPattern:   prefixPat,
+		canonScope:      nScope,
+		canonPfx:        nPrefix,
 	}, nil
 }
 
@@ -115,8 +120,30 @@ func (r *Rule) RouteTo(scope string, namePrefix string) bool {
 	return false
 }
 
+// Scope returns the rule's scope.
+func (r *Rule) Scope() string {
+	return r.scope
+}
+
+// NamePrefix returns the rule's name-prefix.
+func (r *Rule) NamePrefix() string {
+	return r.namePrefix
+}
+
+// Destination returns the rule's destination.
+func (r *Rule) Destination() string {
+	return r.connector
+}
+
 func (r *Rule) String() string {
-	return fmt.Sprintf("{%s.%s -> %s}", r.scope, r.namePrefix, r.connector)
+	var prefixPat, scopePat string
+	if r.scopeIsPattern {
+		scopePat = "*"
+	}
+	if r.prefixIsPattern {
+		prefixPat = "*"
+	}
+	return fmt.Sprintf("{%s%s.%s%s -> %s}", r.scope, scopePat, r.namePrefix, prefixPat, r.connector)
 }
 
 // Make a regexp from the "glob" pattern used in Rule rules.
@@ -134,6 +161,10 @@ func makeRegexp(pat string, isPrefix bool) *regexp.Regexp {
 
 // Convert a string to canonical form that allows lexicographic sorting according to Rule rules.
 func canonicalize(s string, isPattern bool, isScope bool) (string, error) {
+	if s == "" && isPattern {
+		return lastASCIIChar, nil
+	}
+
 	// Returned value is not necessarily a valid regexp.
 	var err error
 	if isScope {
@@ -144,8 +175,11 @@ func canonicalize(s string, isPattern bool, isScope bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if s == DefaultName {
+		s = lastASCIIChar
+	}
 	if !isPattern {
 		return s, nil
 	}
-	return s + "~", nil // 0x7e
+	return s + lastASCIIChar, nil // 0x7e
 }

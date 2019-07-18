@@ -35,17 +35,17 @@ func TestNewRoutingConfig(t *testing.T) {
 func TestNewRoutingConfigWithStarPrefix(t *testing.T) {
 	rConfig, err := NewRule("production", "*.v1", "memory")
 	assert.Nil(t, rConfig)
-	assert.Contains(t, err.Error(), "is not supported")
+	assert.Contains(t, err.Error(), "invalid")
 }
 
 func TestTestNewRoutingConfigError(t *testing.T) {
 	rConfig, err := NewRule("production", "", "memory")
 	assert.Nil(t, rConfig)
-	assert.Contains(t, err.Error(), "could not be empty")
+	assert.Contains(t, err.Error(), "cannot be empty")
 
 	rConfig, err = NewRule("", "test", "memory")
 	assert.Nil(t, rConfig)
-	assert.Contains(t, err.Error(), "scope could not be empty")
+	assert.Contains(t, err.Error(), "scope cannot be empty")
 }
 
 func TestString(t *testing.T) {
@@ -132,8 +132,4 @@ func TestCanonicalize(t *testing.T) {
 			assert.True(t, cpf < cpt)
 		}
 	}
-}
-
-func TestRouteTo(t *testing.T) {
-
 }

@@ -42,10 +42,10 @@ func (r Routers) Swap(i, j int) {
 }
 func (r Routers) Less(i, j int) bool {
 	if r[i].canonScope == r[j].canonScope {
-		return r[i].canonPfx > r[j].canonPfx
+		return r[i].canonPfx < r[j].canonPfx
 	}
 
-	return r[i].canonScope > r[j].canonScope
+	return r[i].canonScope < r[j].canonScope
 }
 
 // UnmarshalYAML unmarshals the config into gocql cluster config
@@ -120,7 +120,8 @@ type Config struct {
 	Routers Routers `yaml:"routers"`
 }
 
-// FindRouter finds the router information based on scope and namePrefix.
+// FindRouter finds the router information based on scope and namePrefix. The "Routers" entry
+// must already be sorted in precedence order.
 func (c *Config) FindRouter(scope, namePrefix string) *Rule {
 	for _, router := range c.Routers {
 		if router.RouteTo(scope, namePrefix) {
@@ -141,14 +142,14 @@ func (c *Config) findDefaultRouter() *Rule {
 	return nil
 }
 
+func (c *Config) String() string {
+	return c.Routers.String()
+}
+
 func (r *Routers) String() string {
 	s := []string{}
 	for _, rule := range *r {
 		s = append(s, rule.String())
 	}
 	return "[" + strings.Join(s, ",") + "]"
-}
-
-func (c *Config) String() string {
-	return c.Routers.String()
 }
