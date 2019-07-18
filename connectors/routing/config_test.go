@@ -40,6 +40,10 @@ routers:
     apple.*: ebook2
     '*': ebook1
     ebook-store: ebook4
+- ebook*:
+    foo: ebook-foo
+    foo*: ebook-foo-2
+    '*': ebook0
 - default:
     foo_*: dosa1
     "*": dosa2
@@ -58,6 +62,9 @@ func TestBasicConfig(t *testing.T) {
 		buildRouter("ebook", "apple.*", "ebook2"),
 		buildRouter("ebook", "ebook-store", "ebook4"),
 		buildRouter("ebook", "*", "ebook1"),
+		buildRouter("ebook*", "foo", "ebook-foo"),
+		buildRouter("ebook*", "foo*", "ebook-foo-2"),
+		buildRouter("ebook*", "*", "ebook0"),
 		buildRouter("production", "serviceA", "cassandra2"),
 		buildRouter("production", "*", "cassandra1"),
 		buildRouter("default", "foo_*", "dosa"),
@@ -79,7 +86,7 @@ func TestRouter(t *testing.T) {
 	assert.NoError(t, err)
 
 	cfg := testCfg.findDefaultRouter()
-	assert.Equal(t, cfg.Scope, "default")
+	assert.Equal(t, cfg.scope, "default")
 
 	cfg = testCfg.FindRouter("production", "serviceA")
 	assert.Equal(t, cfg, buildRouter("production", "serviceA", "cassandra2"))
@@ -93,9 +100,52 @@ func TestRouter(t *testing.T) {
 	cfg = testCfg.FindRouter("ebook", "d.k")
 	assert.Equal(t, cfg, buildRouter("ebook", "*", "ebook1"))
 
+	cfg = testCfg.FindRouter("ebook2", "bar")
+	assert.Equal(t, cfg, buildRouter("ebook*", "*", "ebook0"))
+
+	cfg = testCfg.FindRouter("ebook2", "foo_bar")
+	assert.Equal(t, cfg, buildRouter("ebook*", "foo_bar", "ebook-foo-2"))
+
 	cfg = testCfg.FindRouter("dev_user2", "foo_bar")
 	assert.Equal(t, cfg, buildRouter("default", "foo_*", "dosa1"))
 
 	cfg = testCfg.FindRouter("a", "d.k")
 	assert.Equal(t, cfg, buildRouter("default", "*", "dosa2"))
+}
+
+var prodConfig = `
+routers:
+  - production:
+      "dosa3test*": dosa_prod_a
+      "eternal2a": dosa_prod_a
+      "another_client*": dosa_prod_a
+      "*": dosa
+  - service:
+      "*": cl_service
+  - service_tier1:
+      "*": cl_service_tier1
+  - dosa_test:
+      "*": dosa_staging
+  - default:
+      "*": dosa_dev
+`
+
+func TestProdConfig(t *testing.T) {
+	// Make sure the production config works as expected.
+
+	prodCfg := &Config{}
+	err := yaml.Unmarshal([]byte(prodConfig), prodCfg)
+	assert.NoError(t, err)
+
+	rs := Routers{
+		buildRouter("dosa_test", "*", "dosa_staging"),
+		buildRouter("service", "*", "cl_service"),
+		buildRouter("service_tier1", "*", "cl_service_tier1"),
+		buildRouter("production", "another_client", "dosa_prod_a"),
+		buildRouter("production", "dosa3test*", "dosa_prod_a"),
+		buildRouter("production", "eternal2a", "dosa_prod_a"),
+		buildRouter("production", "*", "dosa"),
+		buildRouter("default", "*", "dosa_dev"),
+	}
+	assert.Equal(t, prodCfg.Routers, rs)
 }

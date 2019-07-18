@@ -27,66 +27,52 @@ import (
 	"github.com/pkg/errors"
 )
 
+// This module does some sanity checking of names used in DOSA. A name must have a leading letter,
+// followed by a string of letters and digits. A name can have up to 32 chars.
+//
+// A special kind of name is the name-prefix. A name-prefix has the same restrictions as a name,
+// except that a name-prefix can also contain the "." character.
+
 const (
 	maxNameLen = 32
 )
 
 var (
 	namePrefixRegex = regexp.MustCompile("^[a-z_][a-z0-9_.]{0,31}$")
+	nameRegex       = regexp.MustCompile("^[a-z_][a-z0-9_]{0,31}$")
 )
 
-// IsValidNamePrefix checks if a name prefix (a namespace prefixed to all DOSA entity type names)
-// conforms the following rules:
-// 1. name prefix starts with [a-z_]
-// 2. the rest of name prefix can contain only [a-z0-9_.]
-// 3. the length of name prefix must be greater than 0 and less than or equal to 32
+// IsValidNamePrefix checks if a name prefix.
 func IsValidNamePrefix(namePrefix string) error {
 	normalized := strings.ToLower(strings.TrimSpace(namePrefix))
 	if !namePrefixRegex.MatchString(normalized) {
-		return errors.Errorf("Name Prefix %s is invalid. It was normalized to "+
-			"%s which means it does not pass the regex %s",
-			namePrefix,
-			normalized,
-			namePrefixRegex.String(),
-		)
+		return errors.Errorf("invalid name-prefix '%s'", namePrefix)
 	}
 	return nil
 }
 
-func isInvalidFirstRune(r rune) bool {
-	return !((r >= 'a' && r <= 'z') || r == '_')
-}
-
-func isInvalidOtherRune(r rune) bool {
-	return !(r >= '0' && r <= '9') && isInvalidFirstRune(r)
-}
-
-// IsValidName checks if a name conforms the following rules:
-// 1. name starts with [a-z_]
-// 2. the rest of name can contain only [a-z0-9_]
-// 3. the length of name must be greater than 0 and less than or equal to maxNameLen
+// IsValidName checks if a string corresponds to DOSA naming rules.
 func IsValidName(name string) error {
-	if len(name) == 0 {
-		return errors.Errorf("cannot be empty")
-	}
-	if len(name) > maxNameLen {
-		return errors.Errorf("too long: %v has length %d, max allowed is %d", name, len(name), maxNameLen)
-	}
-	if strings.IndexFunc(name[:1], isInvalidFirstRune) != -1 {
-		return errors.Errorf("name must start with [a-z_]. Actual='%s'", name)
-	}
-	if strings.IndexFunc(name[1:], isInvalidOtherRune) != -1 {
-		return errors.Errorf("name must contain only [a-z0-9_], Actual='%s'", name)
+	if !nameRegex.MatchString(name) {
+		return errors.Errorf("invalid name '%s'", name)
 	}
 	return nil
 }
 
-// NormalizeName normalizes names to a canonical representation by lowercase everything.
-// It returns error if the resultant canonical name is invalid.
+// NormalizeName normalizes a name to a canonical representation.
 func NormalizeName(name string) (string, error) {
 	lowercaseName := strings.ToLower(strings.TrimSpace(name))
 	if err := IsValidName(lowercaseName); err != nil {
-		return "", errors.Wrapf(err, "failed to normalize to a valid name for %s", name)
+		return "", err
+	}
+	return lowercaseName, nil
+}
+
+// NormalizeNamePrefix normalizes a name-prefix to a canonical representation.
+func NormalizeNamePrefix(name string) (string, error) {
+	lowercaseName := strings.ToLower(strings.TrimSpace(name))
+	if err := IsValidNamePrefix(lowercaseName); err != nil {
+		return "", err
 	}
 	return lowercaseName, nil
 }

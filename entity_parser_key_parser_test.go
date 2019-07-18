@@ -309,7 +309,7 @@ func TestNameTag(t *testing.T) {
 		},
 		{
 			Tag:      "name=ji^&*",
-			Error:    errors.New("failed to normalize to a valid name for ji^&*"),
+			Error:    errors.New("invalid"),
 			Name:     "",
 			FullName: "",
 		},
@@ -680,7 +680,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
-			Error: errors.New("cannot be empty"),
+			Error: errors.New("invalid"),
 			ETL:   EtlOff,
 		},
 		{

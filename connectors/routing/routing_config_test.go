@@ -29,7 +29,7 @@ import (
 func TestNewRoutingConfig(t *testing.T) {
 	rConfig, err := NewRule("production", "test", "memory")
 	assert.Nil(t, err)
-	assert.Equal(t, rConfig.NamePrefix, "test")
+	assert.Equal(t, rConfig.namePrefix, "test")
 }
 
 func TestNewRoutingConfigWithStarPrefix(t *testing.T) {
@@ -52,4 +52,88 @@ func TestString(t *testing.T) {
 	r, err := NewRule("production", "test", "memory")
 	assert.Nil(t, err)
 	assert.Equal(t, "{production.test -> memory}", r.String())
+}
+
+func TestCanonicalize(t *testing.T) {
+	cases := []struct {
+		pat     string
+		cpat    string
+		isScope bool
+		err     bool
+	}{
+		{
+			pat:  "foobar",
+			cpat: "foobar",
+		},
+		{
+			pat:  "fooBar",
+			cpat: "foobar",
+		},
+		{
+			pat:     "foobar",
+			cpat:    "foobar",
+			isScope: true,
+		},
+		{
+			pat:     "fooBar",
+			cpat:    "foobar",
+			isScope: true,
+		},
+		{
+			pat: "9foobar",
+			err: true,
+		},
+		{
+			pat: "9fooBar",
+			err: true,
+		},
+		{
+			pat:     "9foobar",
+			isScope: true,
+			err:     true,
+		},
+		{
+			pat:     "9fooBar",
+			isScope: true,
+			err:     true,
+		},
+		{
+			pat:  "foo.Bar",
+			cpat: "foo.bar",
+		},
+		{
+			pat:     "foo.bar",
+			isScope: true,
+			err:     true,
+		},
+		{
+			pat: "foo!bar",
+			err: true,
+		},
+		{
+			pat:     "foo!bar",
+			isScope: true,
+			err:     true,
+		},
+	}
+	for _, tc := range cases {
+		cpf, e1 := canonicalize(tc.pat, false, tc.isScope)
+		if tc.err {
+			assert.Error(t, e1)
+		} else {
+			assert.NoError(t, e1)
+		}
+		cpt, e2 := canonicalize(tc.pat, true, tc.isScope)
+		if tc.err {
+			assert.Error(t, e2)
+		} else {
+			assert.NoError(t, e2)
+			assert.Equal(t, tc.cpat, cpf)
+			assert.True(t, cpf < cpt)
+		}
+	}
+}
+
+func TestRouteTo(t *testing.T) {
+
 }

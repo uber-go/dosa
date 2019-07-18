@@ -22,65 +22,130 @@ package routing
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
-	"github.com/gobwas/glob"
 	"github.com/pkg/errors"
+	"github.com/uber-go/dosa"
 )
 
 // Rule is an assignment from scope.prefixPattern to a connector name.
 type Rule struct {
-	Scope      string
-	NamePrefix string
-	Connector  string
-	GlobMatch  glob.Glob
+	scope         string
+	namePrefix    string
+	connector     string
+	prefixPattern *regexp.Regexp
+	scopePattern  *regexp.Regexp
+	canonScope    string
+	canonPfx      string
 }
 
 // NewRule initializes Rule
 func NewRule(scope, namePrefix, connector string) (*Rule, error) {
-	if namePrefix == "" {
-		return nil, errors.New("namePrefix cannot be empty")
-	}
-
+	// scope must be a valid name, optionally with a suffix *.
 	if scope == "" {
 		return nil, errors.New("scope cannot be empty")
 	}
+	var scopeIsPattern bool
+	if strings.HasSuffix(scope, "*") {
+		scopeIsPattern = true
+		scope = strings.TrimSuffix(scope, "*")
+	}
+	nScope, err := canonicalize(scope, scopeIsPattern, true) // isScope = true
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("invalid scope name %s", scope))
+	}
 
 	// namePrefix must be a valid prefix name, optionally with a suffix *
-	var isPrefix bool
+	if namePrefix == "" {
+		return nil, errors.New("namePrefix cannot be empty")
+	}
+	if namePrefix == "*" {
+		namePrefix = DefaultName // This makes the following code simpler.
+	}
+	var prefixIsPattern bool
 	if strings.HasSuffix(namePrefix, "*") {
-		isPrefix = true
-		namePrefix = namePrefix[:-1]
+		prefixIsPattern = true
+		namePrefix = strings.TrimSuffix(namePrefix, "*")
 	}
 	if err := dosa.IsValidNamePrefix(namePrefix); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid namePrefix %s", namePrefix))
+		return nil, errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid namePrefix %s", namePrefix))
 	}
+	nPrefix, _ := canonicalize(namePrefix, prefixIsPattern, false) // isScope = false
 
-	// Make a regular expression and construct a matcher.
-	globMatch := glob.MustCompile(makeRegexp(namePrefix, isPrefix))
+	// Make a regular expressions and matchers
+	prefixPat := makeRegexp(namePrefix, prefixIsPattern)
+	scopePat := makeRegexp(scope, scopeIsPattern)
 
-	return &Rule{NamePrefix: namePrefix, Scope: scope, Connector: connector, GlobMatch: globMatch}, nil
+	return &Rule{
+		namePrefix:    namePrefix,
+		scope:         scope,
+		connector:     connector,
+		scopePattern:  scopePat,
+		prefixPattern: prefixPat,
+		canonScope:    nScope,
+		canonPfx:      nPrefix,
+	}, nil
 }
 
-// RouteTo implements the method to choose the matched connector
+// RouteTo (bad name!) says whether or not this Rule can handle the given scope:prefix.
 func (r *Rule) RouteTo(scope string, namePrefix string) bool {
-	// scope should be an exact match
-	if r.Scope != scope {
-		return false
+	if r.scope == scope {
+		if r.namePrefix == namePrefix {
+			// Exact match for both.
+			return true
+		}
+		if r.prefixPattern != nil && r.prefixPattern.MatchString(namePrefix) {
+			// Exact match for scope, RE match for prefix.
+			return true
+		}
 	}
 
-	// namePrefix could be glob match, but first check if there's an exact match
-	if r.NamePrefix == namePrefix {
-		return true
-	}
-
-	if r.GlobMatch.Match(namePrefix) {
-		return true
+	if r.scopePattern != nil && r.scopePattern.MatchString(scope) {
+		if r.namePrefix == namePrefix {
+			// RE match for scope, exact match for prefix.
+			return true
+		}
+		if r.prefixPattern != nil && r.prefixPattern.MatchString(namePrefix) {
+			// RE match for both.
+			return true
+		}
 	}
 
 	return false
 }
 
 func (r *Rule) String() string {
-	return fmt.Sprintf("{%s.%s -> %s}", r.Scope, r.NamePrefix, r.Connector)
+	return fmt.Sprintf("{%s.%s -> %s}", r.scope, r.namePrefix, r.connector)
+}
+
+// Make a regexp from the "glob" pattern used in Rule rules.
+func makeRegexp(pat string, isPrefix bool) *regexp.Regexp {
+	if pat == DefaultName {
+		return regexp.MustCompile(".")
+	}
+	// Quote dots and add begin-of-line
+	pat = "^" + strings.Join(strings.Split(pat, "."), "\\.")
+	if !isPrefix {
+		pat = pat + "$"
+	}
+	return regexp.MustCompile(pat)
+}
+
+// Convert a string to canonical form that allows lexicographic sorting according to Rule rules.
+func canonicalize(s string, isPattern bool, isScope bool) (string, error) {
+	// Returned value is not necessarily a valid regexp.
+	var err error
+	if isScope {
+		s, err = dosa.NormalizeName(s)
+	} else {
+		s, err = dosa.NormalizeNamePrefix(s)
+	}
+	if err != nil {
+		return "", err
+	}
+	if !isPattern {
+		return s, nil
+	}
+	return s + "~", nil // 0x7e
 }

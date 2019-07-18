@@ -53,9 +53,9 @@ func (rc *Connector) String() string {
 func (rc *Connector) getConnector(scope, namePrefix string) (dosa.Connector, error) {
 	router := rc.config.FindRouter(scope, namePrefix)
 
-	c, ok := rc.connectors[router.Connector]
+	c, ok := rc.connectors[router.connector]
 	if !ok {
-		return nil, fmt.Errorf("can't find %q connector", router.Connector)
+		return nil, fmt.Errorf("can't find %q connector", router.connector)
 	}
 
 	return c, nil

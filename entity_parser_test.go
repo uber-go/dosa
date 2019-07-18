@@ -565,7 +565,7 @@ func TestInvalidStructName(t *testing.T) {
 	table, err := TableFromInstance(&ăBădNăme{})
 	assert.Nil(t, table)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "ormalize")
+	assert.Contains(t, err.Error(), "invalid")
 }
 func TestInvalidFieldInTag(t *testing.T) {
 	type HasInvalidCharInTag struct {

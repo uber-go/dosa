@@ -28,8 +28,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// DefaultScope represents the default scope
-const DefaultScope = "default"
+// DefaultName is an alias for the glob "*" (regexp .*)
+const DefaultName = "default"
 
 // Routers represents a list of routing config
 type Routers []*Rule
@@ -41,13 +41,11 @@ func (r Routers) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
 func (r Routers) Less(i, j int) bool {
-	if r[i].Scope == r[j].Scope {
-		// * MUST sort after letters!
-		return r[i].NamePrefix > r[j].NamePrefix
+	if r[i].canonScope == r[j].canonScope {
+		return r[i].canonPfx > r[j].canonPfx
 	}
 
-	// "default" or "*" MUST sort at the end!
-	return r[i].Scope > r[j].Scope
+	return r[i].canonScope > r[j].canonScope
 }
 
 // UnmarshalYAML unmarshals the config into gocql cluster config
@@ -76,7 +74,7 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 					return errors.Wrap(err, "failed to parse routing config")
 				}
 				routers = append(routers, router)
-				if scope == DefaultScope {
+				if scope == DefaultName || scope == "*" {
 					defaultRouterExist = true
 				}
 			}
@@ -109,13 +107,14 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // - ebook:
 //     '*': ebook
 //     apple.*: ebook
-//     ebook-store: ebook
+//     ebook_store: ebook
 // - default:
 //     sless_*: schemaless
 //     "*": dosa_dev
 //
 // A pattern is not a regular expression: only prefixes may be specified (i.e. trailing "*").
-// Literal strings (no "*") sort before any pattern.
+// The string "default" is a synonym for "*".
+// Literal strings (no "*") sort before any pattern, i.e. "foo" < "foo*"
 //
 type Config struct {
 	Routers Routers `yaml:"routers"`
@@ -135,7 +134,7 @@ func (c *Config) FindRouter(scope, namePrefix string) *Rule {
 // findDefaultRouter finds the default router information.
 func (c *Config) findDefaultRouter() *Rule {
 	for _, router := range c.Routers {
-		if router.Scope == DefaultScope {
+		if router.scope == DefaultName {
 			return router
 		}
 	}

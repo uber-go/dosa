@@ -1061,7 +1061,7 @@ type TestEntityC struct {
 		{
 			dirs:        []string{tmpdir},
 			scope:       scope,
-			errContains: "cannot be empty",
+			errContains: "invalid",
 		},
 	}
 
