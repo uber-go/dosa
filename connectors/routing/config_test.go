@@ -100,7 +100,7 @@ func TestBasicConfig(t *testing.T) {
 	assert.Equal(t, "["+strings.Join(s, ",")+"]", rs.String())
 }
 
-func buildRule(scope, namePrefix, connector string) *Rule {
+func buildRule(scope, namePrefix, connector string) *rule {
 	rc, _ := NewRule(scope, namePrefix, connector)
 	return rc
 }

@@ -68,7 +68,7 @@ type Config struct {
 }
 
 // Routers represents a list of routing rules.
-type Routers []*Rule
+type Routers []*rule
 
 // Sort methods so that rules are ordered according to the spec.
 func (r Routers) Len() int {
@@ -126,7 +126,7 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // getEngineName returns the name of the engine to use for a given (scope, name-prefix). The "Routers" list
 // MUST be sorted in priority order.
 func (c *Config) getEngineName(scope, namePrefix string) string {
-	var rule *Rule
+	var rule *rule
 	for _, rule = range c.Routers {
 		if rule.canHandle(scope, namePrefix) {
 			return rule.Destination()
@@ -138,8 +138,8 @@ func (c *Config) getEngineName(scope, namePrefix string) string {
 	return "an unknown error has occurred"
 }
 
-// findDefaultRouter finds the default rule.
-func (c *Config) findDefaultRule() *Rule {
+// findDefaultRule finds the default rule.
+func (c *Config) findDefaultRule() *rule {
 	// The rules are sorted such that the default rule (i.e. *.*) is at the end.
 	rule := c.Routers[len(c.Routers)-1]
 	if rule.Scope() == "*" && rule.NamePrefix() == "*" {
