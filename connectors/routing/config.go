@@ -35,9 +35,40 @@ const DefaultName = "default"
 //                            NOTE: "Router" is a synonym for "Rule".
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Config for the routing connector is a "case statement" of scope names, and each entry is a list
+// of assigments "pattern" -> engine-name.
+//
+// Example:
+//
+// routers:
+// - "*":
+//     sless_*: schemaless
+//     "*": dosa_dev
+// - production:
+//     serviceA: cassandra
+//     serviceX: schemaless
+//     *: dosa
+// - development:
+//     *: dosa_dev
+//     serviceB: cassandra
+//     serviceX: schemaless
+// - ebook:
+//     '*': ebook
+//     apple.*: ebook
+//     ebook_store: ebook
+//
+// A pattern is not a regular expression: only prefixes may be specified (i.e. trailing "*").
+// The string "default" is a synonym for "*".
+// Literal strings (no "*") sort before any pattern, i.e. "foo" < "foo*"
+//
+type Config struct {
+	Routers Routers `yaml:"routers"`
+}
+
 // Routers represents a list of routing rules.
 type Routers []*Rule
 
+// Sort methods so that rules are ordered according to the spec.
 func (r Routers) Len() int {
 	return len(r)
 }
@@ -88,36 +119,6 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	*r = routers
 	return nil
-}
-
-// Config for the routing connector is a "case statement" of scope names, and each entry is a list
-// of assigments "pattern" -> engine-name.
-//
-// Example:
-//
-// routers:
-// - "*":
-//     sless_*: schemaless
-//     "*": dosa_dev
-// - production:
-//     serviceA: cassandra
-//     serviceX: schemaless
-//     *: dosa
-// - development:
-//     *: dosa_dev
-//     serviceB: cassandra
-//     serviceX: schemaless
-// - ebook:
-//     '*': ebook
-//     apple.*: ebook
-//     ebook_store: ebook
-//
-// A pattern is not a regular expression: only prefixes may be specified (i.e. trailing "*").
-// The string "default" is a synonym for "*".
-// Literal strings (no "*") sort before any pattern, i.e. "foo" < "foo*"
-//
-type Config struct {
-	Routers Routers `yaml:"routers"`
 }
 
 // getEngineName returns the name of the engine to use for a given (scope, name-prefix). The "Routers" list
