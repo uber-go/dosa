@@ -52,6 +52,8 @@ const DefaultName = "default"
 //     *: dosa_dev
 //     serviceB: cassandra
 //     serviceX: schemaless
+// - engineB_*:
+//     *: engine-b
 // - ebook:
 //     '*': ebook
 //     apple.*: ebook

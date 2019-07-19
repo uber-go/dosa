@@ -61,31 +61,39 @@ func NewRule(scope, namePrefix, connector string) (*Rule, error) {
 	}
 
 	var scopePat, prefixPat *regexp.Regexp
+	var scopeIsGlob, prefixIsGlob bool
 
 	if strings.HasSuffix(scope, "*") {
 		scope = strings.TrimSuffix(scope, "*")
-		scopePat = makePrefixRegexp(scope)
+		scopeIsGlob = true
 	}
 	if scope != "" { // No need to check "", that is the pattern "*".
 		if _, err := dosa.NormalizeName(scope); err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid scope %s", scope))
 		}
 	}
-	canonScope, err := canonicalize(scope, scopePat != nil, true) // isScope = true
+	canonScope, err := canonicalize(scope, scopeIsGlob, true) // isScope = true
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("invalid scope name %s", scope))
 	}
 
 	if strings.HasSuffix(namePrefix, "*") {
 		namePrefix = strings.TrimSuffix(namePrefix, "*")
-		prefixPat = makePrefixRegexp(namePrefix)
+		prefixIsGlob = true
 	}
 	if namePrefix != "" {
 		if _, err := dosa.NormalizeNamePrefix(namePrefix); err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid namePrefix %s", namePrefix))
 		}
 	}
-	canonPrefix, _ := canonicalize(namePrefix, prefixPat != nil, false) // isScope = false
+	canonPrefix, _ := canonicalize(namePrefix, prefixIsGlob, false) // isScope = false
+
+	if scopeIsGlob {
+		scopePat = makePrefixRegexp(scope)
+	}
+	if prefixIsGlob {
+		prefixPat = makePrefixRegexp(namePrefix)
+	}
 
 	return &Rule{
 		namePrefix:    namePrefix,
@@ -162,7 +170,8 @@ func makePrefixRegexp(pat string) *regexp.Regexp {
 	if pat == "" {
 		return regexp.MustCompile(".")
 	}
-	// Quote dots and add begin-of-line
+	// Quote dots and add begin-of-line. The string is known to be a valid scope/prefix name i.e.
+	// alphanumeric possibly with "." characters, no other special chars need to be quoted.
 	return regexp.MustCompile("^" + strings.Join(strings.Split(pat, "."), "\\."))
 }
 
