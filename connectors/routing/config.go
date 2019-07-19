@@ -121,7 +121,6 @@ func (r *routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 
 	*r = routers
-	fmt.Printf("**\n%s\n", r.String())
 	return nil
 }
 
