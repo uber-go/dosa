@@ -65,20 +65,20 @@ const defaultName = "default"
 // Rules are tried in order. Literal strings (no "*") sort before patterns, i.e. "footer" < "foo*"
 //
 type Config struct {
-	Routers Routers `yaml:"routers"`
+	Routers routers `yaml:"routers"`
 }
 
-// Routers represents a list of routing rules.
-type Routers []*rule
+// routers represents a list of routing rules.
+type routers []*rule
 
 // Sort methods so that rules are ordered according to the spec.
-func (r Routers) Len() int {
+func (r routers) Len() int {
 	return len(r)
 }
-func (r Routers) Swap(i, j int) {
+func (r routers) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
-func (r Routers) Less(i, j int) bool {
+func (r routers) Less(i, j int) bool {
 	if r[i].canonScope == r[j].canonScope {
 		return r[i].canonPfx < r[j].canonPfx
 	}
@@ -87,8 +87,8 @@ func (r Routers) Less(i, j int) bool {
 }
 
 // UnmarshalYAML unmarshals the config into gocql cluster config
-func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	routers := make(Routers, 0)
+func (r *routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	routers := make(routers, 0)
 	scopes := make([]map[string]interface{}, 0)
 	if err := unmarshal(&scopes); err != nil {
 		return err
@@ -121,6 +121,7 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 
 	*r = routers
+	fmt.Printf("**\n%s\n", r.String())
 	return nil
 }
 
@@ -149,7 +150,7 @@ func (c *Config) findDefaultRule() *rule {
 	return nil
 }
 
-func (r *Routers) String() string {
+func (r *routers) String() string {
 	s := []string{}
 	for _, rule := range *r {
 		s = append(s, rule.String())

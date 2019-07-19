@@ -38,7 +38,7 @@ const idcount = 10
 
 var (
 	cfg = Config{
-		Routers: Routers{
+		Routers: routers{
 			buildRule("ebook", "apple.*", "memory"),
 			buildRule("ebook", "ebook_store", "memory"),
 			buildRule("ebook", "*", "devnull"),

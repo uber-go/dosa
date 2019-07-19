@@ -57,7 +57,7 @@ func TestBasicConfig(t *testing.T) {
 	testCfg := &Config{}
 	err := yaml.Unmarshal([]byte(yamlFile), testCfg)
 	assert.NoError(t, err)
-	rs := Routers{
+	rs := routers{
 		buildRule("development", "a.b.c.d.*", "external"),
 		buildRule("development", "serviceB", "cassandra4"),
 		buildRule("development", "default", "cassandra3"),
@@ -218,7 +218,7 @@ func TestProdConfig(t *testing.T) {
 	err := yaml.Unmarshal([]byte(prodConfig), prodCfg)
 	assert.NoError(t, err)
 
-	rs := Routers{
+	rs := routers{
 		buildRule("dosa_test", "*", "dosa_staging"),
 		buildRule("production", "dosa3test*", "dosa_prod_a"),
 		buildRule("production", "eternal2a", "dosa_prod_a"),
@@ -267,7 +267,7 @@ func TestOtherRouting(t *testing.T) {
 	err := yaml.Unmarshal([]byte(stConfig), tsCfg)
 	assert.NoError(t, err)
 
-	rs := Routers{
+	rs := routers{
 		buildRule("kestrel", "*", "kestrel"),
 		buildRule("kestrel_level1", "*", "kestrel_level1"),
 		buildRule("krait_*", "*", "krait_prod"),
