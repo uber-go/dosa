@@ -21,6 +21,7 @@
 package routing
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -117,19 +118,23 @@ func TestCanonicalize(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		cpf, e1 := canonicalize(tc.pat, false, tc.isScope)
+		// literal string
+		cpLit, e1 := canonicalize(tc.pat, false, tc.isScope)
 		if tc.err {
 			assert.Error(t, e1)
 		} else {
 			assert.NoError(t, e1)
 		}
-		cpt, e2 := canonicalize(tc.pat, true, tc.isScope)
+		// * at the end
+		cpGlob, e2 := canonicalize(tc.pat, true, tc.isScope)
 		if tc.err {
 			assert.Error(t, e2)
 		} else {
 			assert.NoError(t, e2)
-			assert.Equal(t, tc.cpat, cpf)
-			assert.True(t, cpf < cpt)
+			assert.Equal(t, tc.cpat, cpLit)
+			// Check that globs sort after literals and are prefixes
+			assert.True(t, cpLit < cpGlob)
+			assert.True(t, strings.HasPrefix(cpGlob, cpLit))
 		}
 	}
 }

@@ -36,6 +36,7 @@ routers:
 - development:
     default: cassandra3
     serviceB: cassandra4
+    a.b.c.d.*: external
 - ebook:
     app: ebook0
     apple.*: ebook2
@@ -56,6 +57,7 @@ func TestBasicConfig(t *testing.T) {
 	err := yaml.Unmarshal([]byte(yamlFile), testCfg)
 	assert.NoError(t, err)
 	rs := Routers{
+		buildRule("development", "a.b.c.d.*", "external"),
 		buildRule("development", "serviceB", "cassandra4"),
 		buildRule("development", "default", "cassandra3"),
 		buildRule("ebook", "app", "ebook0"),
@@ -76,6 +78,7 @@ func TestBasicConfig(t *testing.T) {
 	assert.Error(t, err)
 
 	s := []string{
+		"{development.a.b.c.d.* -> external}",
 		"{development.serviceB -> cassandra4}",
 		"{development.* -> cassandra3}",
 		"{ebook.app -> ebook0}",
@@ -134,6 +137,18 @@ func TestRouting(t *testing.T) {
 	assert.Equal(t, eng, "cassandra1")
 
 	eng = testCfg.getEngineName("development", "serviceA")
+	assert.Equal(t, eng, "cassandra3")
+
+	eng = testCfg.getEngineName("development", "a.b.c.d.")
+	assert.Equal(t, eng, "external")
+
+	eng = testCfg.getEngineName("development", "a.b.c.d.42")
+	assert.Equal(t, eng, "external")
+
+	eng = testCfg.getEngineName("development", "a.b.c.d,42")
+	assert.Equal(t, eng, "cassandra3")
+
+	eng = testCfg.getEngineName("development", "a.b.c.d42")
 	assert.Equal(t, eng, "cassandra3")
 
 	eng = testCfg.getEngineName("ebook", "app")
