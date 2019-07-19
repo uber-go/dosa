@@ -198,9 +198,6 @@ func canonicalize(s string, isPattern bool, isScope bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if s == DefaultName {
-		s = lastASCIIChar
-	}
 	if !isPattern {
 		return s, nil
 	}
