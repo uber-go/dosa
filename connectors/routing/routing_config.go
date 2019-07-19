@@ -48,51 +48,26 @@ func NewRule(scope, namePrefix, connector string) (*Rule, error) {
 	// scope must be a valid name, optionally with a suffix *. namePrefix must be a valid prefix name,
 	// optionally with a suffix *. If it's just a "*" it's converted to "".
 	if scope == "" {
-		return nil, errors.New("scope cannot be empty")
+		return nil, errors.New("could not parse routing rule: scope cannot be empty")
 	}
 	if scope == DefaultName {
 		scope = "*"
 	}
 	if namePrefix == "" {
-		return nil, errors.New("namePrefix cannot be empty")
+		return nil, errors.New("could not parse routing rule: namePrefix cannot be empty")
 	}
 	if namePrefix == DefaultName {
 		namePrefix = "*"
 	}
 
-	var scopePat, prefixPat *regexp.Regexp
-	var scopeIsGlob, prefixIsGlob bool
-
-	if strings.HasSuffix(scope, "*") {
-		scope = strings.TrimSuffix(scope, "*")
-		scopeIsGlob = true
-	}
-	if scope != "" { // No need to check "", that is the pattern "*".
-		if _, err := dosa.NormalizeName(scope); err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid scope %s", scope))
-		}
-	}
-	canonScope, err := canonicalize(scope, scopeIsGlob, true) // isScope = true
+	scope, canonScope, scopePat, err := parseName(scope, true)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("invalid scope name %s", scope))
+		return nil, errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid scope %s", scope))
 	}
 
-	if strings.HasSuffix(namePrefix, "*") {
-		namePrefix = strings.TrimSuffix(namePrefix, "*")
-		prefixIsGlob = true
-	}
-	if namePrefix != "" {
-		if _, err := dosa.NormalizeNamePrefix(namePrefix); err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid namePrefix %s", namePrefix))
-		}
-	}
-	canonPrefix, _ := canonicalize(namePrefix, prefixIsGlob, false) // isScope = false
-
-	if scopeIsGlob {
-		scopePat = makePrefixRegexp(scope)
-	}
-	if prefixIsGlob {
-		prefixPat = makePrefixRegexp(namePrefix)
+	namePrefix, canonPrefix, prefixPat, err := parseName(namePrefix, false)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid namePrefix %s", namePrefix))
 	}
 
 	return &Rule{
@@ -104,6 +79,38 @@ func NewRule(scope, namePrefix, connector string) (*Rule, error) {
 		canonScope:    canonScope,
 		canonPfx:      canonPrefix,
 	}, nil
+}
+
+// Parse a name (scope or prefix) optionaly with a "*" suffix. Return the underlying name, a canonical representation
+// of the name, and if the name is a glob, a regular expression recognizing it.
+func parseName(name string, isScope bool) (string, string, *regexp.Regexp, error) {
+	var regex *regexp.Regexp
+	isGlob := false
+
+	if strings.HasSuffix(name, "*") {
+		name = strings.TrimSuffix(name, "*")
+		isGlob = true
+	}
+	// Sanity check the name. No need to check "", that's the pattern "*".
+	if name != "" {
+		var err error
+		if isScope {
+			_, err = dosa.NormalizeName(name)
+		} else {
+			_, err = dosa.NormalizeNamePrefix(name)
+		}
+		if err != nil {
+			return "", "", nil, err
+		}
+	}
+	canon, err := canonicalize(name, isGlob, isScope)
+	if err != nil {
+		return "", "", nil, err
+	}
+	if isGlob {
+		regex = makePrefixRegexp(name)
+	}
+	return name, canon, regex, nil
 }
 
 // Scope returns the rule's scope.
