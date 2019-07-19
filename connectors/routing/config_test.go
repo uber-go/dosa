@@ -40,6 +40,7 @@ routers:
 - ebook:
     app: ebook0
     apple.*: ebook2
+    apple.foo.bar: ebook5
     '*': ebook1
     ebook_store: ebook4
 - ebook*:
@@ -61,6 +62,7 @@ func TestBasicConfig(t *testing.T) {
 		buildRule("development", "serviceB", "cassandra4"),
 		buildRule("development", "default", "cassandra3"),
 		buildRule("ebook", "app", "ebook0"),
+		buildRule("ebook", "apple.foo.bar", "ebook5"),
 		buildRule("ebook", "apple.*", "ebook2"),
 		buildRule("ebook", "ebook_store", "ebook4"),
 		buildRule("ebook", "*", "ebook1"),
@@ -82,6 +84,7 @@ func TestBasicConfig(t *testing.T) {
 		"{development.serviceB -> cassandra4}",
 		"{development.* -> cassandra3}",
 		"{ebook.app -> ebook0}",
+		"{ebook.apple.foo.bar -> ebook5}",
 		"{ebook.apple.* -> ebook2}",
 		"{ebook.ebook_store -> ebook4}",
 		"{ebook.* -> ebook1}",
@@ -155,6 +158,12 @@ func TestRouting(t *testing.T) {
 	assert.Equal(t, eng, "ebook0")
 
 	eng = testCfg.getEngineName("ebook", "apple.k")
+	assert.Equal(t, eng, "ebook2")
+
+	eng = testCfg.getEngineName("ebook", "apple.foo.bar")
+	assert.Equal(t, eng, "ebook5")
+
+	eng = testCfg.getEngineName("ebook", "apple.foo.bar.")
 	assert.Equal(t, eng, "ebook2")
 
 	eng = testCfg.getEngineName("ebook", "apple2")
