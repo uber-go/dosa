@@ -44,17 +44,17 @@ type rule struct {
 // NewRule creates a rule.
 func NewRule(scope, namePrefix, connector string) (*rule, error) {
 	// scope must be a valid name, optionally with a suffix *. namePrefix must be a valid prefix name,
-	// optionally with a suffix *. If it's just a "*" it's converted to "".
+	// optionally with a suffix *.
 	if scope == "" {
 		return nil, errors.New("could not parse routing rule: scope cannot be empty")
 	}
-	if scope == DefaultName {
+	if scope == defaultName {
 		scope = "*"
 	}
 	if namePrefix == "" {
 		return nil, errors.New("could not parse routing rule: namePrefix cannot be empty")
 	}
-	if namePrefix == DefaultName {
+	if namePrefix == defaultName {
 		namePrefix = "*"
 	}
 
@@ -184,12 +184,12 @@ func makePrefixRegexp(pat string) *regexp.Regexp {
 const lastASCIIChar = "~"
 
 // Convert a string to canonical form that allows lexicographic sorting according to the routing rule semantics.
+// The returned value is not necessarily a valid regexp.
 func canonicalize(s string, isPattern bool, isScope bool) (string, error) {
 	if s == "" && isPattern {
 		return lastASCIIChar, nil
 	}
 
-	// Returned value is not necessarily a valid regexp.
 	var err error
 	if isScope {
 		s, err = dosa.NormalizeName(s)
@@ -202,5 +202,5 @@ func canonicalize(s string, isPattern bool, isScope bool) (string, error) {
 	if !isPattern {
 		return s, nil
 	}
-	return s + lastASCIIChar, nil // 0x7e
+	return s + lastASCIIChar, nil
 }

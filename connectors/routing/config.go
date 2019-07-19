@@ -28,8 +28,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// DefaultName is an alias for the glob "*" (regexp .*)
-const DefaultName = "default"
+// defaultName is an alias for the glob "*" (regexp .*)
+const defaultName = "default"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //                            NOTE: "Router" is a synonym for "Rule".
@@ -57,11 +57,12 @@ const DefaultName = "default"
 // - ebook:
 //     '*': ebook
 //     apple.*: ebook
+//     apple.foo.bar: other-one
 //     ebook_store: ebook
 //
 // A pattern is not a regular expression: only prefixes may be specified (i.e. trailing "*").
 // The string "default" is a synonym for "*".
-// Literal strings (no "*") sort before any pattern, i.e. "foo" < "foo*"
+// Rules are tried in order. Literal strings (no "*") sort before patterns, i.e. "footer" < "foo*"
 //
 type Config struct {
 	Routers Routers `yaml:"routers"`
