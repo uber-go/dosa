@@ -231,3 +231,57 @@ func TestProdConfig(t *testing.T) {
 	assert.Equal(t, prodCfg.getEngineName("dosa_test", "indexer"), "dosa_staging")
 	assert.Equal(t, prodCfg.getEngineName("myDevScope", "myService"), "dosa_dev")
 }
+
+var stConfig = `
+routers:
+  - production:
+      "testsvc2a*": svc_prod_a
+      "turtle2a": svc_prod_a
+      "anaconda*": svc_prod_a
+      "krait_*": krait_dev
+      "*": dosa
+  - kestrel:
+      "*": kestrel
+  - kestrel_level1:
+      "*": kestrel_level1
+  - svc_test:
+      "*": svc_staging
+  - krait_*:
+      "*": krait_prod
+  - default:
+      "krait_*": krait_dev
+      "*": svc_dev
+`
+
+func TestOtherRouting(t *testing.T) {
+	tsCfg := &Config{}
+	err := yaml.Unmarshal([]byte(stConfig), tsCfg)
+	assert.NoError(t, err)
+
+	rs := Routers{
+		buildRule("kestrel", "*", "kestrel"),
+		buildRule("kestrel_level1", "*", "kestrel_level1"),
+		buildRule("krait_*", "*", "krait_prod"),
+		buildRule("production", "anaconda*", "svc_prod_a"),
+		buildRule("production", "krait_*", "krait_dev"),
+		buildRule("production", "testsvc2a*", "svc_prod_a"),
+		buildRule("production", "turtle2a", "svc_prod_a"),
+		buildRule("production", "*", "dosa"),
+		buildRule("svc_test", "*", "svc_staging"),
+		buildRule("default", "krait_*", "krait_dev"),
+		buildRule("default", "*", "svc_dev"),
+	}
+	assert.Equal(t, tsCfg.Routers, rs)
+
+	assert.Equal(t, tsCfg.getEngineName("production", "krait_trips"), "krait_dev")
+	assert.Equal(t, tsCfg.getEngineName("kestrel", "svc"), "kestrel")
+	assert.Equal(t, tsCfg.getEngineName("kestrel_level1", "helper"), "kestrel_level1")
+	assert.Equal(t, tsCfg.getEngineName("krait_store", "krait_trips"), "krait_prod")
+	assert.Equal(t, tsCfg.getEngineName("krait_meta", "krait_accts"), "krait_prod")
+	assert.Equal(t, tsCfg.getEngineName("krajt_store", "other_trips"), "svc_dev")
+	assert.Equal(t, tsCfg.getEngineName("krajt_meta", "other_accts"), "svc_dev")
+	assert.Equal(t, tsCfg.getEngineName("my_dev", "krait_trips"), "krait_dev")
+	assert.Equal(t, tsCfg.getEngineName("team4", "krait_accts"), "krait_dev")
+	assert.Equal(t, tsCfg.getEngineName("my_dev", "service"), "svc_dev")
+	assert.Equal(t, tsCfg.getEngineName("team4", "users"), "svc_dev")
+}
