@@ -59,7 +59,6 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := unmarshal(&scopes); err != nil {
 		return err
 	}
-	defaultRuleExists := false
 	for _, scopeMap := range scopes {
 		for scope, namePrefixes := range scopeMap {
 			namePrefixesMap, ok := namePrefixes.(map[interface{}]interface{})
@@ -78,18 +77,15 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 					return errors.Wrap(err, "failed to parse routing config")
 				}
 				routers = append(routers, router)
-				if (scope == DefaultName || scope == "*") && (namePrefixStr == DefaultName || namePrefixStr == "*") {
-					defaultRuleExists = true
-				}
 			}
 		}
 	}
-
-	if !defaultRuleExists {
+	sort.Sort(routers)
+	lastRule := routers[len(routers)-1]
+	if lastRule.Scope() != "*" || lastRule.NamePrefix() != "*" {
 		return errors.New("no default rule defined in the 'routers' config")
 	}
 
-	sort.Sort(routers)
 	*r = routers
 	return nil
 }
@@ -100,6 +96,9 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // Example:
 //
 // routers:
+// - "*":
+//     sless_*: schemaless
+//     "*": dosa_dev
 // - production:
 //     serviceA: cassandra
 //     serviceX: schemaless
@@ -112,9 +111,6 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 //     '*': ebook
 //     apple.*: ebook
 //     ebook_store: ebook
-// - default:
-//     sless_*: schemaless
-//     "*": dosa_dev
 //
 // A pattern is not a regular expression: only prefixes may be specified (i.e. trailing "*").
 // The string "default" is a synonym for "*".

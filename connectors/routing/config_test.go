@@ -99,6 +99,24 @@ func buildRule(scope, namePrefix, connector string) *Rule {
 	return rc
 }
 
+func TestMissingDefault(t *testing.T) {
+	badFile := `
+routers:
+- production:
+    "*": cassandra1
+    serviceA: cassandra2
+- development:
+    default: cassandra3
+    serviceB: cassandra4
+- "*":
+    foo_*: dosa1
+`
+	var cfg Config
+	err := yaml.Unmarshal([]byte(badFile), &cfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no default rule")
+}
+
 func TestRouting(t *testing.T) {
 	testCfg := &Config{}
 	err := yaml.Unmarshal([]byte(yamlFile), testCfg)
