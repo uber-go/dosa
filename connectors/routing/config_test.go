@@ -157,7 +157,7 @@ routers:
   - production:
       "dosa3test*": dosa_prod_a
       "eternal2a": dosa_prod_a
-      "another_client*": dosa_prod_a
+      "other_client*": dosa_prod_a
       "*": dosa
   - service:
       "*": cl_service
@@ -178,13 +178,23 @@ func TestProdConfig(t *testing.T) {
 
 	rs := Routers{
 		buildRule("dosa_test", "*", "dosa_staging"),
-		buildRule("production", "another_client*", "dosa_prod_a"),
 		buildRule("production", "dosa3test*", "dosa_prod_a"),
 		buildRule("production", "eternal2a", "dosa_prod_a"),
+		buildRule("production", "other_client*", "dosa_prod_a"),
 		buildRule("production", "*", "dosa"),
 		buildRule("service", "*", "cl_service"),
 		buildRule("service_tier1", "*", "cl_service_tier1"),
 		buildRule("default", "*", "dosa_dev"),
 	}
 	assert.Equal(t, prodCfg.Routers, rs)
+
+	assert.Equal(t, prodCfg.getEngineName("production", "other_client"), "dosa_prod_a")
+	assert.Equal(t, prodCfg.getEngineName("production", "other_client_b"), "dosa_prod_a")
+	assert.Equal(t, prodCfg.getEngineName("production", "dosa3test.bar"), "dosa_prod_a")
+	assert.Equal(t, prodCfg.getEngineName("production", "eternal2a"), "dosa_prod_a")
+	assert.Equal(t, prodCfg.getEngineName("production", "prog1"), "dosa")
+	assert.Equal(t, prodCfg.getEngineName("service", "all_users"), "cl_service")
+	assert.Equal(t, prodCfg.getEngineName("service_tier1", "all_users"), "cl_service_tier1")
+	assert.Equal(t, prodCfg.getEngineName("dosa_test", "indexer"), "dosa_staging")
+	assert.Equal(t, prodCfg.getEngineName("myDevScope", "myService"), "dosa_dev")
 }
