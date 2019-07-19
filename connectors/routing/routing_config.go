@@ -66,6 +66,11 @@ func NewRule(scope, namePrefix, connector string) (*Rule, error) {
 		scope = strings.TrimSuffix(scope, "*")
 		scopePat = makePrefixRegexp(scope)
 	}
+	if scope != "" { // No need to check "", that is the pattern "*".
+		if _, err := dosa.NormalizeName(scope); err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid scope %s", scope))
+		}
+	}
 	canonScope, err := canonicalize(scope, scopePat != nil, true) // isScope = true
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("invalid scope name %s", scope))
@@ -75,8 +80,8 @@ func NewRule(scope, namePrefix, connector string) (*Rule, error) {
 		namePrefix = strings.TrimSuffix(namePrefix, "*")
 		prefixPat = makePrefixRegexp(namePrefix)
 	}
-	if namePrefix != "" { // No need to check, this is the pattern "*".
-		if err := dosa.IsValidNamePrefix(namePrefix); err != nil {
+	if namePrefix != "" {
+		if _, err := dosa.NormalizeNamePrefix(namePrefix); err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("could not parse routing rule: invalid namePrefix %s", namePrefix))
 		}
 	}
