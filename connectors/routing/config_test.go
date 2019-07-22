@@ -128,9 +128,6 @@ func TestRouting(t *testing.T) {
 	err := yaml.Unmarshal([]byte(yamlFile), testCfg)
 	assert.NoError(t, err)
 
-	rule := testCfg.findDefaultRule()
-	assert.Equal(t, rule.Scope(), "*")
-
 	var eng string
 
 	eng = testCfg.getEngineName("production", "serviceA")

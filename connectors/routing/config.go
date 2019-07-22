@@ -127,8 +127,8 @@ func (r *routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // getEngineName returns the name of the engine to use for a given (scope, name-prefix). The "Routers" list
 // MUST be sorted in priority order.
 func (c *Config) getEngineName(scope, namePrefix string) string {
-	var rule *rule
-	for _, rule = range c.Routers {
+	// At some point we should replace this sequential search with something like a trie....
+	for _, rule := range c.Routers {
 		if rule.canHandle(scope, namePrefix) {
 			return rule.Destination()
 		}
@@ -137,16 +137,6 @@ func (c *Config) getEngineName(scope, namePrefix string) string {
 	// The last rule in the list is the default rule, which always exists; we should never
 	// reach this point.
 	return "an unknown error has occurred"
-}
-
-// findDefaultRule finds the default rule.
-func (c *Config) findDefaultRule() *rule {
-	// The rules are sorted such that the default rule (i.e. *.*) is at the end.
-	rule := c.Routers[len(c.Routers)-1]
-	if rule.Scope() == "*" && rule.NamePrefix() == "*" {
-		return rule
-	}
-	return nil
 }
 
 func (r *routers) String() string {
