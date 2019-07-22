@@ -3,7 +3,7 @@
 ## v3.4.8 (unreleased)
  - Nothing changed yet
 
-## v3.4.7 (2019-07-20)
+## v3.4.7 (2019-07-22)
  - Add String() method to all components of the routing connector
  - Fix many bugs in the routing connector
 
