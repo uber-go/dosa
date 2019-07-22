@@ -38,28 +38,26 @@ const idcount = 10
 
 var (
 	cfg = Config{
-		Routers: Routers{
-			buildRouter("production", "map", "memory"),
-			buildRouter("production", "default", "random"),
-			buildRouter("ebook", "ebook-store", "memory"),
-			buildRouter("ebook", "default", "random"),
-			buildRouter("ebook", "apple.*", "memory"),
-			buildRouter("ebook", "*", "devnull"),
-			buildRouter("development", "map", "memory"),
-			buildRouter("development", "default", "random"),
-			buildRouter("default", "default", "memory"),
+		Routers: routers{
+			buildRule("ebook", "apple.*", "memory"),
+			buildRule("ebook", "ebook_store", "memory"),
+			buildRule("ebook", "*", "devnull"),
+			buildRule("development", "map", "memory"),
+			buildRule("development", "default", "random"),
+			buildRule("production", "map", "memory"),
+			buildRule("production", "default", "random"),
+			buildRule("default", "default", "memory"),
 		},
 	}
 	routersStr = strings.Join([]string{
-		"{production.map -> memory}",
-		"{production.default -> random}",
-		"{ebook.ebook-store -> memory}",
-		"{ebook.default -> random}",
 		"{ebook.apple.* -> memory}",
+		"{ebook.ebook_store -> memory}",
 		"{ebook.* -> devnull}",
 		"{development.map -> memory}",
-		"{development.default -> random}",
-		"{default.default -> memory}",
+		"{development.* -> random}",
+		"{production.map -> memory}",
+		"{production.* -> random}",
+		"{*.* -> memory}",
 	}, ",")
 	testInfo = &dosa.EntityInfo{
 		Ref: &dosa.SchemaRef{
@@ -191,7 +189,7 @@ func TestGetConnector(t *testing.T) {
 	assert.NotNil(t, conn)
 
 	// exact match
-	ei.Ref.NamePrefix = "ebook-store"
+	ei.Ref.NamePrefix = "ebook_store"
 	conn, err = rc.getConnector(ei.Ref.Scope, ei.Ref.NamePrefix)
 	assert.Nil(t, err)
 	assert.NotNil(t, conn)

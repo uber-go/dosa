@@ -82,7 +82,7 @@ func TestEntityDefinitionEnsureValid(t *testing.T) {
 		{
 			e:     invalidName,
 			valid: false,
-			msg:   "name must contain only",
+			msg:   "invalid",
 		},
 		{
 			e:     nilColumn,
@@ -229,7 +229,7 @@ func TestEntityDefinitionEnsureValidForIndex(t *testing.T) {
 		{
 			e:     invalidName,
 			valid: false,
-			msg:   "name must contain only",
+			msg:   "invalid",
 		},
 		{
 			e:     nilPK,

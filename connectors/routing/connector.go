@@ -28,12 +28,10 @@ import (
 	"github.com/uber-go/dosa"
 )
 
-// Connector holds a slice of configured connectors to route to
+// The routing connector maps a (scope, namePrefix) pair into a storage engine connector.
+
+// Connector is a routing connector.
 type Connector struct {
-	// config connector slice is sorted in a manner:
-	// for the value of Config name prefix, strict string without "*" always comes first,
-	// and then string with "*" suffix (glob match) and pure "*".
-	// There shouldn't be any scope with a prefix "*" like "*.service.v1"
 	config     Config
 	connectors map[string]dosa.Connector
 }
@@ -51,13 +49,12 @@ func (rc *Connector) String() string {
 	return fmt.Sprintf("[Routing %s]", rc.config.String())
 }
 
-// get connector by scope an namePrefix
+// get connector by scope and namePrefix
 func (rc *Connector) getConnector(scope, namePrefix string) (dosa.Connector, error) {
-	router := rc.config.FindRouter(scope, namePrefix)
-
-	c, ok := rc.connectors[router.Connector]
+	connName := rc.config.getEngineName(scope, namePrefix)
+	c, ok := rc.connectors[connName]
 	if !ok {
-		return nil, fmt.Errorf("can't find %q connector", router.Connector)
+		return nil, fmt.Errorf("can't find %q connector", connName)
 	}
 
 	return c, nil

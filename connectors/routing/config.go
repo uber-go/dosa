@@ -28,34 +28,71 @@ import (
 	"github.com/pkg/errors"
 )
 
-// DefaultScope represents the default scope
-const DefaultScope = "default"
+// defaultName is an alias for the glob "*" (regexp .*)
+const defaultName = "default"
 
-// Routers represents a list of routing config
-type Routers []*Rule
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//                            NOTE: "Router" is a synonym for "Rule".
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-func (r Routers) Len() int {
+// Config for the routing connector is a "case statement" of scope names, and each entry is a list
+// of assigments "pattern" -> engine-name.
+//
+// Example:
+//
+// routers:
+// - "*":
+//     sless_*: schemaless
+//     "*": dosa_dev
+// - production:
+//     serviceA: cassandra
+//     serviceX: schemaless
+//     *: dosa
+// - development:
+//     *: dosa_dev
+//     serviceB: cassandra
+//     serviceX: schemaless
+// - engineB_*:
+//     *: engine-b
+// - ebook:
+//     '*': ebook
+//     apple.*: ebook
+//     apple.foo.bar: other-one
+//     ebook_store: ebook
+//
+// A pattern is not a regular expression: only prefixes may be specified (i.e. trailing "*").
+// The string "default" is a synonym for "*".
+// Rules are tried in order. Literal strings (no "*") sort before patterns, i.e. "footer" < "foo*"
+//
+type Config struct {
+	Routers routers `yaml:"routers"`
+}
+
+// routers represents a list of routing rules.
+type routers []*rule
+
+// Sort methods so that rules are ordered according to the spec.
+func (r routers) Len() int {
 	return len(r)
 }
-func (r Routers) Swap(i, j int) {
+func (r routers) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
-func (r Routers) Less(i, j int) bool {
-	if r[i].Scope == r[j].Scope {
-		return r[i].NamePrefix > r[j].NamePrefix
+func (r routers) Less(i, j int) bool {
+	if r[i].canonScope == r[j].canonScope {
+		return r[i].canonPfx < r[j].canonPfx
 	}
 
-	return r[i].Scope > r[j].Scope
+	return r[i].canonScope < r[j].canonScope
 }
 
 // UnmarshalYAML unmarshals the config into gocql cluster config
-func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	routers := make(Routers, 0)
+func (r *routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	routers := make(routers, 0)
 	scopes := make([]map[string]interface{}, 0)
 	if err := unmarshal(&scopes); err != nil {
 		return err
 	}
-	defaultRouterExist := false
 	for _, scopeMap := range scopes {
 		for scope, namePrefixes := range scopeMap {
 			namePrefixesMap, ok := namePrefixes.(map[interface{}]interface{})
@@ -74,54 +111,35 @@ func (r *Routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 					return errors.Wrap(err, "failed to parse routing config")
 				}
 				routers = append(routers, router)
-				if scope == DefaultScope {
-					defaultRouterExist = true
-				}
 			}
 		}
 	}
-
-	if !defaultRouterExist {
-		return errors.New("there should be a default scope defined in routing config yaml file")
+	sort.Sort(routers)
+	lastRule := routers[len(routers)-1]
+	if lastRule.Scope() != "*" || lastRule.NamePrefix() != "*" {
+		return errors.New("no default rule defined in the 'routers' config")
 	}
 
-	sort.Sort(routers)
 	*r = routers
 	return nil
 }
 
-// Config is a struct contains fields from yaml
-// scope should be an exact string in any case,
-// namePrefix could be in 3 different format:
-// 1. exact string like "service" that matches namePrefix that is exactly "service"
-// 2. partial glob match like "service.*" that matches all namePrefix that has a prefix of "service."
-// 3. full glob match like "*" that matches all namePrefix
-type Config struct {
-	Routers Routers `yaml:"routers"`
-}
-
-// FindRouter finds the router information based on scope and namePrefix.
-func (c *Config) FindRouter(scope, namePrefix string) *Rule {
-	for _, router := range c.Routers {
-		if router.RouteTo(scope, namePrefix) {
-			return router
+// getEngineName returns the name of the engine to use for a given (scope, name-prefix). The "Routers" list
+// MUST be sorted in priority order.
+func (c *Config) getEngineName(scope, namePrefix string) string {
+	// At some point we should replace this sequential search with something like a trie....
+	for _, rule := range c.Routers {
+		if rule.canHandle(scope, namePrefix) {
+			return rule.Destination()
 		}
 	}
 
-	return c.findDefaultRouter()
+	// The last rule in the list is the default rule, which always exists; we should never
+	// reach this point.
+	return "an unknown error has occurred"
 }
 
-// findDefaultRouter finds the default router information.
-func (c *Config) findDefaultRouter() *Rule {
-	for _, router := range c.Routers {
-		if router.Scope == DefaultScope {
-			return router
-		}
-	}
-	return nil
-}
-
-func (r *Routers) String() string {
+func (r *routers) String() string {
 	s := []string{}
 	for _, rule := range *r {
 		s = append(s, rule.String())

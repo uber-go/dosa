@@ -110,10 +110,12 @@ func TestNormalizeName(t *testing.T) {
 			allowed:  true,
 			expected: "_alreadynormalized9",
 		},
+		// Invalid
 		{
-			arg:      "an apple",
-			allowed:  false,
-			expected: "",
+			arg: "an apple",
+		},
+		{
+			arg: "9Monkeys",
 		},
 	}
 
@@ -147,4 +149,59 @@ func TestIsValidNamePrefix(t *testing.T) {
 
 	err = IsValidNamePrefix("this.prefix.has.more.than.thrity.two.characters.in.it")
 	assert.Error(t, err)
+}
+
+func TestNormalizeNamePrefix(t *testing.T) {
+	cases := []struct {
+		arg      string
+		bogus    bool
+		expected string
+	}{
+		{
+			arg:      "lOwerEVeryTHiNG",
+			expected: "lowereverything",
+		},
+		{
+			arg:      "_MyName",
+			expected: "_myname",
+		},
+		{
+			arg:      "_alreadynormalized9",
+			expected: "_alreadynormalized9",
+		},
+		{
+			arg:      "_My.Name",
+			expected: "_my.name",
+		},
+		{
+			arg:      "_already.normalized.9",
+			expected: "_already.normalized.9",
+		},
+		{
+			arg:   "an apple",
+			bogus: true,
+		},
+		{
+			arg:   "apple!",
+			bogus: true,
+		},
+		{
+			arg:   "a.b.c.d!",
+			bogus: true,
+		},
+		{
+			arg:   "9Monkeys",
+			bogus: true,
+		},
+	}
+
+	for _, tc := range cases {
+		name, err := NormalizeNamePrefix(tc.arg)
+		if tc.bogus {
+			assert.Error(t, err)
+		} else {
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, name)
+		}
+	}
 }

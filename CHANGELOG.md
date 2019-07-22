@@ -1,7 +1,11 @@
 # Changelog
 
-## v3.4.7 (unreleased)
+## v3.4.8 (unreleased)
+ - Nothing changed yet
+
+## v3.4.7 (2019-07-22)
  - Add String() method to all components of the routing connector
+ - Fix many bugs in the routing connector
 
 ## v3.4.6 (2019-06-11)
  - use append but not copy to clone
