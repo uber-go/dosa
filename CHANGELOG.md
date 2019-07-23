@@ -1,7 +1,7 @@
 # Changelog
 
 ## v3.4.8 (unreleased)
- - Nothing changed yet
+ - Add transport parameter to yarpc connector and cli
 
 ## v3.4.7 (2019-07-22)
  - Add String() method to all components of the routing connector
