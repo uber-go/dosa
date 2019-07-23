@@ -1119,3 +1119,41 @@ func TestPanic(t *testing.T) {
 		sut.ScopeExists(ctx, "")
 	})
 }
+
+func TestYarpcBuilder(t *testing.T) {
+	tests := map[string]struct {
+		cfg Config
+		err error
+	}{
+		"valid http": {
+			cfg: Config{ServiceName: "dosa", Host: "http://dosa.uberinternal.com:9090", Transport: httpTransport},
+		},
+		"valid http with port": {
+			cfg: Config{ServiceName: "dosa", Host: "http://dosa.uberinternal.com", Port: "9090", Transport: httpTransport},
+		},
+		"valid tchannel": {
+			cfg: Config{ServiceName: "dosa", Host: "http://dosa.uberinternal.com", Port: "12001", Transport: tchannelTransport, CallerName: "test"},
+		},
+		"valid grpc": {
+			cfg: Config{ServiceName: "dosa", Host: "http://dosa.uberinternal.com", Transport: grpcTransport},
+		},
+		"invalid transport": {
+			cfg: Config{ServiceName: "dosa", Host: "http://dosa.uberinternal.com", Transport: "fake"},
+			err: errors.New("invalid transport"),
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			res, err := buildYARPCConfig(tt.cfg)
+			if tt.err != nil {
+				assert.NotNil(t, err, "expected err but got nil")
+				assert.Error(t, tt.err, err.Error(), "expected err and received err not equal")
+			} else {
+				assert.NotNil(t, res)
+				assert.NotNil(t, res.Outbounds)
+				assert.NotNil(t, res.Outbounds["dosa"])
+			}
+		})
+	}
+}

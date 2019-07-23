@@ -30,27 +30,31 @@ import:
   - transport/tchannel
 - package: gopkg.in/yaml.v2
   version: ^2.2.1
+- package: google.golang.org/grpc
+  version: ^1.22.0
+- package: github.com/prometheus/procfs
+  version: ^0.0.3
 testImport:
 - package: github.com/stretchr/testify
   version: ^1.2.1
   subpackages:
   - assert
-
-# The following packages are needed soley for build and test 
-# reporting related things. None of our actual code (including 
-# out tests) depends on these packages.
 - package: github.com/axw/gocov
   subpackages:
-    - gocov
+  - gocov
 - package: github.com/matm/gocov-html
 - package: github.com/mattn/goveralls
 - package: github.com/go-playground/overalls
 - package: golang.org/x/lint
   subpackages:
-    - golint
+  - golint
 - package: github.com/kisielk/errcheck
 - package: github.com/kisielk/gotool
 - package: github.com/sectioneight/md-to-godoc
 - package: github.com/yookoala/realpath
-- package: golang.org/x/tools/cover
-- package: golang.org/x/sys/unix
+- package: golang.org/x/tools
+  subpackages:
+  - cover
+- package: golang.org/x/sys
+  subpackages:
+  - unix
