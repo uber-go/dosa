@@ -70,7 +70,8 @@ func (b BuildInfo) Execute(args []string) error {
 type GlobalOptions struct {
 	Host        string     `long:"host" default:"127.0.0.1" description:"The hostname or IP for the gateway."`
 	Port        string     `short:"p" long:"port" default:"21300" description:"The hostname or IP for the gateway."`
-	ServiceName string     `short:"s" long:"service" default:"dosa-gateway" description:"The TChannel service name for the gateway."`
+	ServiceName string     `short:"s" long:"service" default:"dosa-gateway" description:"The service name for the gateway."`
+	Transport   string     `long:"transport" default:"tchannel" description:"The transport to use when connecting to the gateway. Valid options: tchannel, http."`
 	CallerName  callerFlag `long:"caller" default:"dosacli-$USER" description:"The RPC Caller name."`
 	Timeout     timeFlag   `long:"timeout" default:"60s" description:"The timeout for gateway requests. E.g., 100ms, 0.5s, 1s. If no unit is specified, milliseconds are assumed."`
 	Version     bool       `long:"version" description:"Display version info"`

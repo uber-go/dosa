@@ -166,6 +166,7 @@ func provideShellQueryClient(opts GlobalOptions, scope, prefix, path, structName
 		Port:         opts.Port,
 		CallerName:   opts.CallerName.String(),
 		ServiceName:  opts.ServiceName,
+		Transport:    opts.Transport,
 		ExtraHeaders: getAuthHeaders(),
 	}
 
