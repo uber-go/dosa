@@ -553,3 +553,26 @@ func TestClone(t *testing.T) {
 	ed1 := ed.Clone()
 	assert.Equal(t, ed, ed1)
 }
+
+func TestColumnDefinitionPrint(t *testing.T) {
+	cd := dosa.ColumnDefinition{
+		Name:      "foo",
+		Type:      dosa.TUUID,
+		IsPointer: true,
+		Tags: map[string]string{
+			"e": "bar1",
+			"c": "bar2",
+			"a": "bar3",
+			"b": "bar4",
+			"d": "bar5",
+		},
+	}
+	assert.Equal(t, "{Name: foo, Type: TUUID, IsPointer: true, Tags: {a: bar3, b: bar4, c: bar2, d: bar5, e: bar1}}",
+		cd.String())
+
+	cd = dosa.ColumnDefinition{
+		Name: "bar",
+		Type: dosa.Int64,
+	}
+	assert.Equal(t, "{Name: bar, Type: Int64, IsPointer: false, Tags: {}}", cd.String())
+}

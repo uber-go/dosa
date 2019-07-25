@@ -23,6 +23,7 @@ package dosa
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -177,15 +178,29 @@ type ColumnDefinition struct {
 
 // Clone returns a deep copy of ColumnDefinition
 func (cd *ColumnDefinition) Clone() *ColumnDefinition {
-	// TODO: clone tag
 	return &ColumnDefinition{
-		Name: cd.Name,
-		Type: cd.Type,
+		Name:      cd.Name,
+		Type:      cd.Type,
+		IsPointer: cd.IsPointer,
+		Tags:      cd.cloneTags(),
 	}
 }
 
+func (cd *ColumnDefinition) cloneTags() map[string]string {
+	if cd.Tags == nil {
+		return nil
+	}
+	tags := map[string]string{}
+	for k, v := range cd.Tags {
+		tags[k] = v
+	}
+	return tags
+}
+
 func (cd *ColumnDefinition) String() string {
-	return fmt.Sprintf("%+v", *cd)
+	// We want this to be deterministic, and cd.Tags is a map....
+	return fmt.Sprintf("{Name: %s, Type: %v, IsPointer: %v, Tags: %s}", cd.Name, cd.Type, cd.IsPointer,
+		deterministicPrintMap(cd.Tags))
 }
 
 // IndexDefinition stores information about a DOSA entity's index
@@ -542,4 +557,17 @@ func stringSliceEqual(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+func deterministicPrintMap(m map[string]string) string {
+	keys := make([]string, 0, len(m))
+	for k, _ := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	pairs := make([]string, 0, len(m))
+	for _, k := range keys {
+		pairs = append(pairs, fmt.Sprintf("%s: %s", k, m[k]))
+	}
+	return "{" + strings.Join(pairs, ", ") + "}"
 }
