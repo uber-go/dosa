@@ -101,7 +101,7 @@ func TestBasicConfig(t *testing.T) {
 }
 
 func buildRule(scope, namePrefix, connector string) *rule {
-	rc, _ := NewRule(scope, namePrefix, connector)
+	rc, _ := newRule(scope, namePrefix, connector)
 	return rc
 }
 

@@ -22,10 +22,8 @@ package dosa
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
-
-	"reflect"
-
 	"time"
 
 	"github.com/pkg/errors"
@@ -55,6 +53,15 @@ func (ck ClusteringKey) String() string {
 	return ck.Name + " ASC"
 }
 
+// Format a key's ClusteringKeys.
+func formatClusteringKeys(keys []*ClusteringKey) string {
+	pieces := make([]string, len(keys))
+	for index, ck := range keys {
+		pieces[index] = ck.String()
+	}
+	return strings.Join(pieces, ", ")
+}
+
 // PrimaryKey stores information about partition keys and clustering keys
 type PrimaryKey struct {
 	PartitionKeys  []string
@@ -70,7 +77,6 @@ func (pk PrimaryKey) Clone() *PrimaryKey {
 		for i, k := range pk.PartitionKeys {
 			npk.PartitionKeys[i] = k
 		}
-
 	}
 
 	if pk.ClusteringKeys != nil {
@@ -84,6 +90,45 @@ func (pk PrimaryKey) Clone() *PrimaryKey {
 	}
 
 	return npk
+}
+
+func (pk PrimaryKey) String() string {
+	var b bytes.Buffer
+	b.WriteByte('(')
+	b.WriteString(formatPartitionKeys(pk.PartitionKeys))
+	b.WriteString(pk.clusteringKeysString())
+	b.WriteByte(')')
+	return b.String()
+}
+
+func (pk PrimaryKey) clusteringKeysString() string {
+	if pk.ClusteringKeys == nil || len(pk.ClusteringKeys) == 0 {
+		return ""
+	}
+	return ", " + formatClusteringKeys(pk.ClusteringKeys)
+}
+
+func (pk PrimaryKey) equal(other *PrimaryKey) error {
+	if !stringSliceEqual(pk.PartitionKeys, other.PartitionKeys) {
+		return errors.Errorf("partition key mismatch: (%v vs %v)", pk.PartitionKeys, other.PartitionKeys)
+	}
+	if err := clusteringKeysEqual(pk.ClusteringKeys, other.ClusteringKeys); err != nil {
+		return err
+	}
+	return nil
+}
+
+func clusteringKeysEqual(ck1, ck2 []*ClusteringKey) error {
+	if len(ck1) != len(ck2) {
+		return errors.Errorf("clustering keys mismatch: (%v vs %v)", ck1, ck2)
+	}
+	for i, k1 := range ck1 {
+		k2 := ck2[i]
+		if *k1 != *k2 {
+			return errors.Errorf("clustering key mismatch: (%v vs %v)", k1, k2)
+		}
+	}
+	return nil
 }
 
 // ClusteringKeySet returns a set of all clustering keys.
@@ -113,36 +158,11 @@ func (pk PrimaryKey) PrimaryKeySet() map[string]struct{} {
 	return m
 }
 
-// formatClusteringKeys takes an array of ClusteringKeys and returns
-// a string that shows all of them, separated by commas
-func formatClusteringKeys(keys []*ClusteringKey) string {
-	pieces := make([]string, len(keys))
-	for index, ck := range keys {
-		pieces[index] = ck.String()
-	}
-	return strings.Join(pieces, ", ")
-}
-
 func formatPartitionKeys(keys []string) string {
 	if len(keys) > 1 {
 		return "(" + strings.Join(keys, ", ") + ")"
 	}
 	return keys[0]
-}
-
-// String method produces the following output:
-// for multiple partition keys: ((partition-key, ...), clustering-key ASC/DESC, ...)
-// for one partition key: (partition-key, clustering-key ASC/DESC, ...)
-func (pk PrimaryKey) String() string {
-	var b bytes.Buffer
-	b.WriteByte('(')
-	b.WriteString(formatPartitionKeys(pk.PartitionKeys))
-	if pk.ClusteringKeys != nil && len(pk.ClusteringKeys) > 0 {
-		b.WriteString(", ")
-		b.WriteString(formatClusteringKeys(pk.ClusteringKeys))
-	}
-	b.WriteByte(')')
-	return b.String()
 }
 
 // ColumnDefinition stores information about a column
@@ -164,6 +184,10 @@ func (cd *ColumnDefinition) Clone() *ColumnDefinition {
 	}
 }
 
+func (cd *ColumnDefinition) String() string {
+	return fmt.Sprintf("%+v", *cd)
+}
+
 // IndexDefinition stores information about a DOSA entity's index
 type IndexDefinition struct {
 	Key     *PrimaryKey
@@ -180,6 +204,20 @@ func (id *IndexDefinition) Clone() *IndexDefinition {
 		Key:     id.Key.Clone(),
 		Columns: columns,
 	}
+}
+
+func (id *IndexDefinition) String() string {
+	return fmt.Sprintf("%+v", *id)
+}
+
+func (id *IndexDefinition) equal(other *IndexDefinition) error {
+	if err := id.Key.equal(other.Key); err != nil {
+		return errors.Errorf("partitionKey mismatch: (%v)", err)
+	}
+	if !stringSliceEqual(id.Columns, other.Columns) {
+		return errors.Errorf("columns mismatch: (%v vs %v)", id.Columns, other.Columns)
+	}
+	return nil
 }
 
 // EntityDefinition stores information about a DOSA entity
@@ -412,21 +450,10 @@ func (e *EntityDefinition) CanBeUpsertedOn(older *EntityDefinition) error {
 	}
 
 	// primary key should be exactly same
-	pksNewer := newer.Key.PartitionKeys
-	pksOlder := older.Key.PartitionKeys
-
-	b := reflect.DeepEqual(pksNewer, pksOlder)
-	if !b {
-		return errors.Errorf("partition key mismatch: (%v vs %v)", pksNewer, pksOlder)
+	if err := newer.Key.equal(older.Key); err != nil {
+		return err
 	}
 
-	cksNewer := newer.Key.ClusteringKeys
-	cksOlder := older.Key.ClusteringKeys
-	if len(cksOlder) != 0 || len(cksNewer) != 0 {
-		if !reflect.DeepEqual(cksNewer, cksOlder) {
-			return errors.Errorf("clustering key mismatch: (%v vs %v)", cksNewer, cksOlder)
-		}
-	}
 	// only allow to add new columns
 	colsMapNewer := newer.ColumnTypes()
 	colsMapOlder := older.ColumnTypes()
@@ -453,8 +480,9 @@ func (e *EntityDefinition) CanBeUpsertedOn(older *EntityDefinition) error {
 				return errors.Errorf("Index %s in the old entity %s are missing in the new entity", name, older.Name)
 			}
 
-			if !reflect.DeepEqual(indexNewer, indexOlder) {
-				return errors.Errorf("index %q mismatch: (%v vs %v)", name, indexNewer, indexOlder)
+			// Type here is *IndexDefinition
+			if err := indexNewer.equal(indexOlder); err != nil {
+				return errors.Errorf("index %q mismatch: %v", name, err)
 			}
 		}
 	}
@@ -502,4 +530,16 @@ func (e *EntityDefinition) UniqueKey(oldKey *PrimaryKey) *PrimaryKey {
 	}
 
 	return &result
+}
+
+func stringSliceEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, s := range a {
+		if s != b[i] {
+			return false
+		}
+	}
+	return true
 }

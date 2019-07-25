@@ -28,29 +28,29 @@ import (
 )
 
 func TestNewRoutingConfig(t *testing.T) {
-	rConfig, err := NewRule("production", "test", "memory")
+	rConfig, err := newRule("production", "test", "memory")
 	assert.Nil(t, err)
 	assert.Equal(t, rConfig.namePrefix, "test")
 }
 
 func TestNewRoutingConfigWithStarPrefix(t *testing.T) {
-	rConfig, err := NewRule("production", "*.v1", "memory")
+	rConfig, err := newRule("production", "*.v1", "memory")
 	assert.Nil(t, rConfig)
 	assert.Contains(t, err.Error(), "invalid")
 }
 
 func TestTestNewRoutingConfigError(t *testing.T) {
-	rConfig, err := NewRule("production", "", "memory")
+	rConfig, err := newRule("production", "", "memory")
 	assert.Nil(t, rConfig)
 	assert.Contains(t, err.Error(), "cannot be empty")
 
-	rConfig, err = NewRule("", "test", "memory")
+	rConfig, err = newRule("", "test", "memory")
 	assert.Nil(t, rConfig)
 	assert.Contains(t, err.Error(), "scope cannot be empty")
 }
 
 func TestString(t *testing.T) {
-	r, err := NewRule("production", "test", "memory")
+	r, err := newRule("production", "test", "memory")
 	assert.Nil(t, err)
 	assert.Equal(t, "{production.test -> memory}", r.String())
 }

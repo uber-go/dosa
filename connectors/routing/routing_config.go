@@ -41,8 +41,8 @@ type rule struct {
 	canonPfx   string
 }
 
-// NewRule creates a rule.
-func NewRule(scope, namePrefix, connector string) (*rule, error) {
+// newRule creates a rule.
+func newRule(scope, namePrefix, connector string) (*rule, error) {
 	// scope must be a valid name, optionally with a suffix *. namePrefix must be a valid prefix name,
 	// optionally with a suffix *.
 	if scope == "" {
