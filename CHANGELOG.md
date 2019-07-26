@@ -1,7 +1,10 @@
 # Changelog
 
-## v3.4.8 (unreleased)
+## v3.4.9 (unreleased)
  - Nothing changed yet
+
+## v3.4.8 (2019-07-26)
+ - CheckSchema needs to compare schemas carefully, and not just use reflect.DeepEqual
 
 ## v3.4.7 (2019-07-22)
  - Add String() method to all components of the routing connector
