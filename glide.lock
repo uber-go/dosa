@@ -1,5 +1,5 @@
-hash: 3a161b2246b45ecccd550c70486c37361650084e22a34da58be7d980f0f38c1e
-updated: 2019-05-30T11:49:02.779243-07:00
+hash: 7e0f969f8bfbb698df1a524f3bfb1fd14da239d36984ac1e1605a68a6047e396
+updated: 2019-07-22T16:40:18.526302-07:00
 imports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -30,6 +30,10 @@ imports:
   - util/strings
 - name: github.com/gofrs/uuid
   version: 6b08a5c5172ba18946672b49749cde22873dd7c2
+- name: github.com/gogo/googleapis
+  version: d31c731455cb061f42baff3bda55bad0118b126b
+  subpackages:
+  - google/rpc
 - name: github.com/gogo/protobuf
   version: ba06b47c162d49f2af050fb4c75bcbc86a159d5c
   subpackages:
@@ -57,8 +61,12 @@ imports:
   - protoc-gen-gogo/grpc
   - protoc-gen-gogo/plugin
   - protoc-gen-gogoslick
+  - sortkeys
+  - types
   - vanity
   - vanity/command
+- name: github.com/gogo/status
+  version: 935308aef7372e7685e8fbee162aae8f7a7e515a
 - name: github.com/golang/mock
   version: 9fa652df1129bef0e734c9cf9bf6dbae9ef3b9fa
   subpackages:
@@ -66,9 +74,13 @@ imports:
   - mockgen
   - mockgen/model
 - name: github.com/golang/protobuf
-  version: b5d812f8a3706043e23a9cd5babf2e5423744d30
+  version: 6c65a5562fc06764971b7c5d05c76c75e84bdbf7
   subpackages:
   - proto
+  - ptypes
+  - ptypes/any
+  - ptypes/duration
+  - ptypes/timestamp
 - name: github.com/jessevdk/go-flags
   version: c6ca198ec95c841fdb89fc0de7496fed11ab854e
 - name: github.com/kisielk/errcheck
@@ -91,9 +103,10 @@ imports:
 - name: github.com/pkg/errors
   version: ba968bfe8b2f7e042a574c888954fccecfa385b4
 - name: github.com/prometheus/client_golang
-  version: c5b7fccd204277076155f10851dad72b76a49317
+  version: 2641b987480bca71fb39738eb8c8b0d577cb1d76
   subpackages:
   - prometheus
+  - prometheus/internal
   - prometheus/promhttp
 - name: github.com/prometheus/client_model
   version: 99fa1f4be8e564e8a6b613da7fa6f46c9edafc6c
@@ -106,11 +119,9 @@ imports:
   - internal/bitbucket.org/ww/goautoneg
   - model
 - name: github.com/prometheus/procfs
-  version: 8b1c2da0d56deffdbb9e48d4414b4e674bd8083e
+  version: 3f98efb27840a48a7a2898ec80be07674d19f9c8
   subpackages:
-  - internal/util
-  - nfs
-  - xfs
+  - internal/fs
 - name: github.com/samuel/go-thrift
   version: e8b6b52668fe9c972220addc130edf46a9b466b1
   subpackages:
@@ -120,9 +131,9 @@ imports:
   subpackages:
   - internal/mapstructure
 - name: github.com/uber-go/tally
-  version: 24c699f78afd17db5aac42f83c1c5cad70254294
+  version: f266f90e9c4d5894364039a324a05d061f2f34e2
 - name: github.com/uber/dosa-idl
-  version: 097e20c83d25cc733a977da96a6894cc9434fb99
+  version: 61de9654292bf3f07f1a82524d0af900d9cfa7e9
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -148,7 +159,7 @@ imports:
   - push
   - tallypush
 - name: go.uber.org/thriftrw
-  version: f3ff6fef5b56823cf763aebc81b42b8cbd1082c1
+  version: 23f23e7fc269002cb7e34f4e2dc079593cd6ad36
   subpackages:
   - ast
   - compile
@@ -180,7 +191,7 @@ imports:
   subpackages:
   - update-license
 - name: go.uber.org/yarpc
-  version: 515ae026b5555b1fa00a77ffa650ab4dc32c72ed
+  version: 32f8a122a940ef0bd42bef358ea46c7d91b14f4c
   subpackages:
   - api/backoff
   - api/encoding
@@ -195,11 +206,13 @@ imports:
   - internal/config
   - internal/digester
   - internal/errorsync
+  - internal/grpcerrorcodes
   - internal/humanize
   - internal/inboundmiddleware
   - internal/interpolate
   - internal/introspection
   - internal/iopool
+  - internal/net
   - internal/observability
   - internal/outboundmiddleware
   - internal/request
@@ -210,6 +223,7 @@ imports:
   - pkg/errors
   - pkg/lifecycle
   - pkg/procedure
+  - transport/grpc
   - transport/http
   - transport/tchannel
   - transport/tchannel/internal
@@ -228,14 +242,27 @@ imports:
   subpackages:
   - golint
 - name: golang.org/x/net
-  version: f3200d17e092c607f615320ecaad13d87ad9a2b3
+  version: da137c7871d730100384dbcf36e6f8fa493aef5b
   subpackages:
   - bpf
   - context
+  - http/httpguts
+  - http2
+  - http2/hpack
+  - idna
   - internal/iana
   - internal/socket
+  - internal/timeseries
   - ipv4
   - ipv6
+  - trace
+- name: golang.org/x/text
+  version: 5d731a35f4867878fc89f7744f7b6debb3beded6
+  subpackages:
+  - secure/bidirule
+  - transform
+  - unicode/bidi
+  - unicode/norm
 - name: golang.org/x/tools
   version: 6aabc1ca790df3e0b556593b27bc25d26b151751
   repo: https://github.com/golang/tools
@@ -254,6 +281,45 @@ imports:
   - internal/fastwalk
   - internal/gopathwalk
   - internal/semver
+- name: google.golang.org/genproto
+  version: 5fe7a883aa19554f42890211544aa549836af7b7
+  subpackages:
+  - googleapis/rpc/status
+- name: google.golang.org/grpc
+  version: 1d89a3c832915b2314551c1d2a506874d62e53f7
+  subpackages:
+  - balancer
+  - balancer/base
+  - balancer/roundrobin
+  - binarylog/grpc_binarylog_v1
+  - codes
+  - connectivity
+  - credentials
+  - credentials/internal
+  - encoding
+  - encoding/proto
+  - grpclog
+  - internal
+  - internal/backoff
+  - internal/balancerload
+  - internal/binarylog
+  - internal/channelz
+  - internal/envconfig
+  - internal/grpcrand
+  - internal/grpcsync
+  - internal/syscall
+  - internal/transport
+  - keepalive
+  - metadata
+  - naming
+  - peer
+  - resolver
+  - resolver/dns
+  - resolver/passthrough
+  - serviceconfig
+  - stats
+  - status
+  - tap
 - name: gopkg.in/yaml.v2
   version: 51d6538a90f86fe93ac480b35f37b2be17fef232
 - name: honnef.co/go/tools

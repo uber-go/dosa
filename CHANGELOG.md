@@ -4,6 +4,7 @@
  - Nothing changed yet
 
 ## v3.4.8 (2019-07-26)
+ - Add transport parameter to yarpc connector and cli
  - CheckSchema needs to compare schemas carefully, and not just use reflect.DeepEqual
 
 ## v3.4.7 (2019-07-22)

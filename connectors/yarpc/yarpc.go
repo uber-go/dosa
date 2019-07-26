@@ -24,14 +24,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
+
+	"crypto/tls"
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 	"github.com/uber/dosa-idl/.gen/dosa/dosaclient"
 	rpc "go.uber.org/yarpc"
+	"go.uber.org/yarpc/peer"
+	"go.uber.org/yarpc/peer/hostport"
+	"go.uber.org/yarpc/transport/grpc"
+	"go.uber.org/yarpc/transport/http"
 	"go.uber.org/yarpc/transport/tchannel"
+	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -39,6 +47,9 @@ const (
 	errCodeNotFound      int32  = 404
 	errCodeAlreadyExists int32  = 409
 	errConnectionRefused string = "getsockopt: connection refused"
+	httpTransport        string = "http"
+	tchannelTransport    string = "tchannel"
+	grpcTransport        string = "grpc"
 )
 
 // ErrConnectionRefused is used to help deliver a better error message when
@@ -63,6 +74,7 @@ type Config struct {
 	Port         string `yaml:"port"`
 	CallerName   string `yaml:"callerName"`
 	ServiceName  string `yaml:"serviceName"`
+	Transport    string `yaml:"transport"`
 	ExtraHeaders map[string]string
 }
 
@@ -73,6 +85,57 @@ type Connector struct {
 	headers    map[string]string
 }
 
+func buildYARPCConfig(config Config) (rpc.Config, error) {
+	ycfg := rpc.Config{Name: config.CallerName}
+	hostPort := fmt.Sprintf("%s:%s", config.Host, config.Port)
+	switch strings.ToLower(config.Transport) {
+	case tchannelTransport:
+		// this looks wrong, BUT since it's a uni-directional tchannel
+		// connection, we have to pass CallerName as the tchannel "ServiceName"
+		// for source/destination to be reported correctly by RPC layer.
+		ts, err := tchannel.NewChannelTransport(tchannel.ServiceName(config.CallerName))
+		if err != nil {
+			return ycfg, err
+		}
+		ycfg.Outbounds = rpc.Outbounds{
+			config.ServiceName: {
+				Unary: ts.NewSingleOutbound(hostPort),
+			},
+		}
+	case httpTransport:
+		// a http host can contain a path segement after the port, breaking the simplified host+port parsing.
+		uri, err := url.Parse(config.Host)
+		if err != nil {
+			return ycfg, errors.New("invalid host given to yarpc connector")
+		}
+		// set the port if not specified in the host, if not set, will default to either :80 or :443 based on scheme.
+		if uri.Port() == "" && config.Port != "" {
+			uri.Host = fmt.Sprintf("%s:%s", uri.Host, config.Port)
+		}
+		ts := http.NewTransport()
+		ycfg.Outbounds = rpc.Outbounds{
+			config.ServiceName: {
+				Unary: ts.NewSingleOutbound(uri.String()),
+			},
+		}
+	case grpcTransport:
+		tc := credentials.NewTLS(&tls.Config{})
+		ts := grpc.NewTransport()
+		chooser := peer.NewSingle(
+			hostport.Identify(hostPort),
+			ts.NewDialer(grpc.DialerCredentials(tc)),
+		)
+		ycfg.Outbounds = rpc.Outbounds{
+			config.ServiceName: {
+				Unary: ts.NewOutbound(chooser),
+			},
+		}
+	default:
+		return ycfg, errors.New("invalid transport given to yarpc connector")
+	}
+	return ycfg, nil
+}
+
 // NewConnector creates a new instance with user provided transport
 func NewConnector(config Config) (*Connector, error) {
 	// Ensure host, port, serviceName, and callerName are all specified.
@@ -80,7 +143,8 @@ func NewConnector(config Config) (*Connector, error) {
 		return nil, errors.New("no host specified")
 	}
 
-	if config.Port == "" {
+	// port is optional for http transports
+	if config.Port == "" && config.Transport != httpTransport {
 		return nil, errors.New("no port specified")
 	}
 
@@ -92,19 +156,14 @@ func NewConnector(config Config) (*Connector, error) {
 		return nil, errors.New("no callerName specified")
 	}
 
-	ycfg := rpc.Config{Name: config.CallerName}
-	hostPort := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	// this looks wrong, BUT since it's a uni-directional tchannel
-	// connection, we have to pass CallerName as the tchannel "ServiceName"
-	// for source/destination to be reported correctly by RPC layer.
-	ts, err := tchannel.NewChannelTransport(tchannel.ServiceName(config.CallerName))
+	// preserve legacy behavior by defaulting to tchannel
+	if config.Transport == "" {
+		config.Transport = tchannelTransport
+	}
+
+	ycfg, err := buildYARPCConfig(config)
 	if err != nil {
 		return nil, err
-	}
-	ycfg.Outbounds = rpc.Outbounds{
-		config.ServiceName: {
-			Unary: ts.NewSingleOutbound(hostPort),
-		},
 	}
 
 	// important to note that this will panic if config contains invalid
