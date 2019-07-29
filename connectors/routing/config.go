@@ -106,7 +106,7 @@ func (r *routers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 				if !ok {
 					return fmt.Errorf("failed to parse the config: %v", namePrefixesMap)
 				}
-				router, err := NewRule(scope, namePrefixStr, connectorName)
+				router, err := newRule(scope, namePrefixStr, connectorName)
 				if err != nil {
 					return errors.Wrap(err, "failed to parse routing config")
 				}
