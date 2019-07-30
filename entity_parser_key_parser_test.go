@@ -938,6 +938,28 @@ func TestIndexParse(t *testing.T) {
 			Error:          nil,
 		},
 		{
+			Tag:               "name=jj, columns=(ok), key=ok",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Columns:        []string{"ok"},
+			Error:          nil,
+		},
+		{
+			Tag:               "name=jj, key=ok, columns=(ok),",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Columns:        []string{"ok"},
+			Error:          nil,
+		},
+		{
 			Tag:               "name=jj key=ok columns=(ok, test, hi,)",
 			ExpectedIndexName: "jj",
 			PrimaryKey: &PrimaryKey{
