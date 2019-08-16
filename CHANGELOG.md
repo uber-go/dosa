@@ -1,7 +1,7 @@
 # Changelog
 
 ## v3.4.9 (unreleased)
- - Nothing changed yet
+ - modify the test cases using space as the delimiter between tags
 
 ## v3.4.8 (2019-07-26)
  - Add transport parameter to yarpc connector and cli
