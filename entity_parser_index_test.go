@@ -81,8 +81,8 @@ func TestMultipleIndexes(t *testing.T) {
 
 type ComplexIndexes struct {
 	Entity       `dosa:"primaryKey=PrimaryKey"`
-	SearchByData Index `dosa:"key=(Data, Date, PrimaryKey DESC) name=index_data"`
-	SearchByDate Index `dosa:"key=((Date, PrimaryKey), Data) name=index_date"`
+	SearchByData Index `dosa:"key=(Data, Date, PrimaryKey DESC), name=index_data"`
+	SearchByDate Index `dosa:"key=((Date, PrimaryKey), Data), name=index_date"`
 	PrimaryKey   int64
 	Data         string
 	Date         time.Time
@@ -123,8 +123,8 @@ func TestComplexIndexes(t *testing.T) {
 
 type IndexesWithColumnsTag struct {
 	Entity       `dosa:"primaryKey=(ID)"`
-	SearchByCity Index `dosa:"key=(City, Payload) columns=(ID)"`
-	SearchByID   Index `dosa:"key=(City) columns=(ID, Payload)"`
+	SearchByCity Index `dosa:"key=(City, Payload), columns=(ID)"`
+	SearchByID   Index `dosa:"key=(City), columns=(ID, Payload)"`
 
 	ID      UUID
 	City    string

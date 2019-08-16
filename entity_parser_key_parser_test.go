@@ -417,17 +417,6 @@ func TestEntityParse(t *testing.T) {
 		Error      error
 	}{
 		{
-			Tag:       "name=jj primaryKey=ok",
-			TableName: "jj",
-			PrimaryKey: &PrimaryKey{
-				PartitionKeys:  []string{"ok"},
-				ClusteringKeys: nil,
-			},
-			ETL:   EtlOff,
-			TTL:   NoTTL(),
-			Error: nil,
-		},
-		{
 			Tag:       "name=jj, primaryKey=ok",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
@@ -473,28 +462,6 @@ func TestEntityParse(t *testing.T) {
 		},
 		{
 			Tag:       "primaryKey=(ok), , ,, name=jj",
-			TableName: "jj",
-			PrimaryKey: &PrimaryKey{
-				PartitionKeys:  []string{"ok"},
-				ClusteringKeys: nil,
-			},
-			ETL:   EtlOff,
-			TTL:   NoTTL(),
-			Error: nil,
-		},
-		{
-			Tag:       "primaryKey=(ok) name=jj",
-			TableName: "jj",
-			PrimaryKey: &PrimaryKey{
-				PartitionKeys:  []string{"ok"},
-				ClusteringKeys: nil,
-			},
-			ETL:   EtlOff,
-			TTL:   NoTTL(),
-			Error: nil,
-		},
-		{
-			Tag:       "primaryKey=((ok)) name=jj",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -553,18 +520,7 @@ func TestEntityParse(t *testing.T) {
 			Error: nil,
 		},
 		{
-			Tag:       "name=jj primaryKey=ok, etl=on",
-			TableName: "jj",
-			PrimaryKey: &PrimaryKey{
-				PartitionKeys:  []string{"ok"},
-				ClusteringKeys: nil,
-			},
-			Error: nil,
-			ETL:   EtlOn,
-			TTL:   NoTTL(),
-		},
-		{
-			Tag:       "name=jj primaryKey=ok, etl=ON, ttl=90s",
+			Tag:       "name=jj, primaryKey=ok, etl=ON, ttl=90s",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -575,7 +531,7 @@ func TestEntityParse(t *testing.T) {
 			TTL:   time.Second * 90,
 		},
 		{
-			Tag:       "name=jj primaryKey=ok, etl=On, ttl=80m",
+			Tag:       "name=jj, primaryKey=ok, etl=On, ttl=80m",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -586,7 +542,7 @@ func TestEntityParse(t *testing.T) {
 			TTL:   time.Minute * 80,
 		},
 		{
-			Tag:       "name=jj primaryKey=ok, etl=On, ttl=-80m",
+			Tag:       "name=jj, primaryKey=ok, etl=On, ttl=-80m",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -597,7 +553,7 @@ func TestEntityParse(t *testing.T) {
 			TTL:   NoTTL(),
 		},
 		{
-			Tag:       "name=jj primaryKey=ok etl=off",
+			Tag:       "name=jj, primaryKey=ok, etl=off",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -608,7 +564,7 @@ func TestEntityParse(t *testing.T) {
 			TTL:   NoTTL(),
 		},
 		{
-			Tag:       "name=jj primaryKey=ok etl=OFF, ttl = 90h",
+			Tag:       "name=jj, primaryKey=ok, etl=OFF, ttl = 90h",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -619,7 +575,7 @@ func TestEntityParse(t *testing.T) {
 			TTL:   time.Hour * 90,
 		},
 		{
-			Tag:       "name=jj primaryKey=ok etl=Off, ttl = 912ms",
+			Tag:       "name=jj, primaryKey=ok, etl=Off, ttl = 912ms",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -630,7 +586,7 @@ func TestEntityParse(t *testing.T) {
 			TTL:   time.Millisecond * 912,
 		},
 		{
-			Tag:       "name=jj primaryKey=ok etl=Off, ttl=912d",
+			Tag:       "name=jj, primaryKey=ok, etl=Off, ttl=912d",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -641,7 +597,7 @@ func TestEntityParse(t *testing.T) {
 			TTL:   NoTTL(),
 		},
 		{
-			Tag:       "name=jj primaryKey=ok etl=Off, ttl",
+			Tag:       "name=jj, primaryKey=ok, etl=Off, ttl",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -652,7 +608,7 @@ func TestEntityParse(t *testing.T) {
 			TTL:   NoTTL(),
 		},
 		{
-			Tag:       "name=jj primaryKey=ok etl=Off, ttl=",
+			Tag:       "name=jj, primaryKey=ok, etl=Off, ttl=",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -663,7 +619,7 @@ func TestEntityParse(t *testing.T) {
 			TTL:   NoTTL(),
 		},
 		{
-			Tag:       "name=jj primaryKey=ok etl=Off, ttl=1us",
+			Tag:       "name=jj, primaryKey=ok, etl=Off, ttl=1us",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -674,7 +630,7 @@ func TestEntityParse(t *testing.T) {
 			TTL:   NoTTL(),
 		},
 		{
-			Tag:       "name=jj primaryKey=ok etl=",
+			Tag:       "name=jj, primaryKey=ok, etl=",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -684,13 +640,13 @@ func TestEntityParse(t *testing.T) {
 			ETL:   EtlOff,
 		},
 		{
-			Tag:       "name=jj primaryKey=ok etl",
+			Tag:       "name=jj, primaryKey=ok, etl",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
-			Error: errors.New("struct testStruct has an invalid primary key \"ok etl\""),
+			Error: errors.New("invalid"),
 			ETL:   EtlOff,
 		},
 		{
@@ -712,7 +668,7 @@ func TestEntityParse(t *testing.T) {
 			Error:      errors.New("invalid name tag:  name=jj**"),
 		},
 		{
-			Tag:        "primaryKey=(ok) name=jj nxxx",
+			Tag:        "primaryKey=(ok), name=jj, nxxx",
 			TableName:  "jj",
 			PrimaryKey: nil,
 			Error:      errors.New("struct testStruct with an invalid dosa struct tag: nxxx"),
@@ -743,7 +699,7 @@ func TestIndexParse(t *testing.T) {
 		Error             error
 	}{
 		{
-			Tag:               "name=jj key=ok",
+			Tag:               "name=jj, key=ok",
 			ExpectedIndexName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -803,7 +759,7 @@ func TestIndexParse(t *testing.T) {
 			Error:          nil,
 		},
 		{
-			Tag:               "key=(ok) name=jj",
+			Tag:               "key=(ok), name=jj",
 			ExpectedIndexName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -813,7 +769,7 @@ func TestIndexParse(t *testing.T) {
 			Error:          nil,
 		},
 		{
-			Tag:               "key=((ok)) name=jj",
+			Tag:               "key=((ok)), name=jj",
 			ExpectedIndexName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -823,7 +779,7 @@ func TestIndexParse(t *testing.T) {
 			Error:          nil,
 		},
 		{
-			Tag:               "key=((ok, dd), a,b DESC,  c ASC) name=jj",
+			Tag:               "key=((ok, dd), a,b DESC,  c ASC), name=jj",
 			ExpectedIndexName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys: []string{"ok", "dd"},
@@ -890,14 +846,14 @@ func TestIndexParse(t *testing.T) {
 			Error:             errors.New("invalid name tag:  name=jj**"),
 		},
 		{
-			Tag:               "key=(ok) name=jj nxxx",
+			Tag:               "key=(ok), name=jj, nxxx",
 			ExpectedIndexName: "jj",
 			PrimaryKey:        nil,
 			InputIndexName:    "SearchByKey",
 			Error:             errors.New("index field SearchByKey with an invalid dosa index tag: nxxx"),
 		},
 		{
-			Tag:               "key=((ok)) name=jj",
+			Tag:               "key=((ok)), name=jj",
 			ExpectedIndexName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -927,7 +883,7 @@ func TestIndexParse(t *testing.T) {
 			Error:          errors.New("index name (searchByKey) must be exported, try (SearchByKey) instead"),
 		},
 		{
-			Tag:               "name=jj key=ok columns=(ok)",
+			Tag:               "name=jj, key=ok, columns=(ok)",
 			ExpectedIndexName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -938,7 +894,7 @@ func TestIndexParse(t *testing.T) {
 			Error:          nil,
 		},
 		{
-			Tag:               "name=jj key=ok columns=(ok, test, hi,)",
+			Tag:               "name=jj, key=ok, columns=(ok, test, hi,)",
 			ExpectedIndexName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -949,7 +905,7 @@ func TestIndexParse(t *testing.T) {
 			Error:          nil,
 		},
 		{
-			Tag:               "name=jj key=ok columns=(ok, test, (hi),)",
+			Tag:               "name=jj, key=ok, columns=(ok, test, (hi),)",
 			ExpectedIndexName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
