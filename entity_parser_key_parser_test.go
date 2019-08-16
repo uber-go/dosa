@@ -472,6 +472,28 @@ func TestEntityParse(t *testing.T) {
 			Error: nil,
 		},
 		{
+			Tag:       "primaryKey=(ok), name=jj",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			ETL:   EtlOff,
+			TTL:   NoTTL(),
+			Error: nil,
+		},
+		{
+			Tag:       "primaryKey=((ok)), name=jj",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			ETL:   EtlOff,
+			TTL:   NoTTL(),
+			Error: nil,
+		},
+		{
 			Tag:       "primaryKey=((ok, dd), a,b DESC,  c ASC) name=jj",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
@@ -518,6 +540,17 @@ func TestEntityParse(t *testing.T) {
 			ETL:   EtlOff,
 			TTL:   NoTTL(),
 			Error: nil,
+		},
+		{
+			Tag:       "name=jj, primaryKey=ok, etl=on",
+			TableName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			Error: nil,
+			ETL:   EtlOn,
+			TTL:   NoTTL(),
 		},
 		{
 			Tag:       "name=jj, primaryKey=ok, etl=ON, ttl=90s",
