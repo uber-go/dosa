@@ -255,8 +255,8 @@ func TestPrimaryKey(t *testing.T) {
 		k, err := parsePrimaryKey("t", d.PrimaryKey)
 		if nil == d.Error {
 			assert.Nil(t, err)
-			assert.Equal(t, k.PartitionKeys, d.Result.PartitionKeys)
-			assert.Equal(t, k.ClusteringKeys, d.Result.ClusteringKeys)
+			assert.Equal(t, d.Result.PartitionKeys, k.PartitionKeys)
+			assert.Equal(t, d.Result.ClusteringKeys, k.ClusteringKeys)
 		} else {
 			assert.Contains(t, err.Error(), d.Error.Error())
 		}
@@ -318,8 +318,8 @@ func TestNameTag(t *testing.T) {
 	for _, d := range data {
 		fullName, name, err := parseNameTag(d.Tag, defaultName)
 		if d.Error == nil {
-			assert.Equal(t, name, d.Name)
-			assert.Equal(t, fullName, d.FullName)
+			assert.Equal(t, d.Name, name)
+			assert.Equal(t, d.FullName, fullName)
 			assert.Nil(t, err)
 		} else {
 			assert.Contains(t, err.Error(), d.Error.Error())
@@ -399,7 +399,7 @@ func TestFieldParse(t *testing.T) {
 		if d.Error != nil {
 			assert.Contains(t, err.Error(), d.Error.Error())
 		} else {
-			assert.Equal(t, cn, d.Column)
+			assert.Equal(t, d.Column, cn)
 			assert.Nil(t, err)
 		}
 	}
@@ -714,8 +714,8 @@ func TestEntityParse(t *testing.T) {
 			assert.Contains(t, err.Error(), d.Error.Error())
 		} else {
 			assert.Nil(t, err)
-			assert.Equal(t, tableName, d.TableName)
-			assert.Equal(t, primaryKey, d.PrimaryKey)
+			assert.Equal(t, d.TableName, tableName)
+			assert.Equal(t, d.PrimaryKey, primaryKey)
 			assert.Equal(t, d.ETL, etl)
 			assert.Equal(t, d.TTL, ttl)
 		}
@@ -956,9 +956,9 @@ func TestIndexParse(t *testing.T) {
 			assert.Contains(t, err.Error(), d.Error.Error())
 		} else {
 			assert.Nil(t, err)
-			assert.Equal(t, name, d.ExpectedIndexName)
-			assert.Equal(t, primaryKey, d.PrimaryKey)
-			assert.Equal(t, columns, d.Columns)
+			assert.Equal(t, d.ExpectedIndexName, name)
+			assert.Equal(t, d.PrimaryKey, primaryKey)
+			assert.Equal(t, d.Columns, columns)
 		}
 	}
 }
