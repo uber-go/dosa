@@ -23,7 +23,6 @@ package dosa
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 	"strings"
 	"time"
 	"unicode"
@@ -40,140 +39,9 @@ const (
 )
 
 var (
-	primaryKeyPattern0 = regexp.MustCompile(`primaryKey\s*=\s*([^=]*)((\s+.*=)|$)`)
-	primaryKeyPattern1 = regexp.MustCompile(`\(\s*\((.*)\)(.*)\)`)
-	primaryKeyPattern2 = regexp.MustCompile(`\(\s*([^,\s]+),?(.*)\)`)
-	primaryKeyPattern3 = regexp.MustCompile(`^\s*([^(),\s]+)\s*$`)
-
-	indexKeyPattern0 = regexp.MustCompile(`key\s*=\s*([^=]*)((\s+.*=)|$)`)
-
-	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
-
-	columnsPattern = regexp.MustCompile(`columns\s*=\s*\(([^\(\)]+)\)`)
-
-	etlPattern0 = regexp.MustCompile(`etl\s*=\s*(\S*)`)
-
-	ttlPattern0 = regexp.MustCompile(`ttl\s*=\s*(\S*)`)
-
 	indexType = reflect.TypeOf((*Index)(nil)).Elem()
+	tagsKey   = []string{"primaryKey", "key", "name", "columns", "etl", "ttl"}
 )
-
-// parseClusteringKeys func parses the clustering key of DOSA object
-func parseClusteringKeys(ckStr string) ([]*ClusteringKey, error) {
-	ckStr = strings.TrimSpace(ckStr)
-	cks := strings.Split(ckStr, ",")
-	var clusteringKeys []*ClusteringKey
-	for _, ck := range cks {
-		fields := strings.Fields(ck)
-		if len(fields) == 0 {
-			continue
-		}
-		if len(fields) > 2 {
-			return nil, fmt.Errorf("Clustering key definition %q should look like \"name[ asc/desc]\"",
-				ck)
-		}
-		descending := false
-		if len(fields) == 2 {
-			switch strings.ToLower(fields[1]) {
-			case desc:
-				descending = true
-			case asc:
-				descending = false
-			default:
-				return nil, fmt.Errorf("invalid clustering key order %q in %q", fields[1], ck)
-			}
-
-		}
-
-		clusteringKeys = append(clusteringKeys, &ClusteringKey{Name: strings.TrimSpace(fields[0]), Descending: descending})
-	}
-	return clusteringKeys, nil
-}
-
-// parsePartitionKey func parses the partition key of DOSA object
-func parsePartitionKey(pkStr string) []string {
-	pkStr = strings.TrimSpace(pkStr)
-	var pks []string
-	partitionKeys := strings.Split(pkStr, ",")
-	for _, pk := range partitionKeys {
-		npk := strings.TrimSpace(pk)
-		if len(pk) > 0 {
-			pks = append(pks, npk)
-		}
-	}
-	return pks
-}
-
-// parsePrimaryKey func parses the primary key of DOSA object
-func parsePrimaryKey(tableName, pkStr string) (*PrimaryKey, error) {
-	// parens must be matched
-	if !parensBalanced(pkStr) {
-		return nil, fmt.Errorf("unmatched parentheses: %q", pkStr)
-	}
-	// filter out "trailing comma and space"
-	pkStr = strings.TrimRight(pkStr, ", ")
-	pkStr = strings.TrimSpace(pkStr)
-
-	var partitionKeyStr string
-	var clusteringKeyStr string
-	matched := false
-	// case 1: primaryKey=((PK1,PK2), PK3, PK4)
-	matchs := primaryKeyPattern1.FindStringSubmatch(pkStr)
-	if len(matchs) == 3 {
-		matched = true
-		partitionKeyStr = matchs[1]
-		clusteringKeyStr = matchs[2]
-	}
-
-	// case 2: primaryKey=(PK1,PK2)
-	if !matched {
-		matchs = primaryKeyPattern2.FindStringSubmatch(pkStr)
-		if len(matchs) == 3 {
-			matched = true
-			partitionKeyStr = matchs[1]
-			clusteringKeyStr = matchs[2]
-		}
-	}
-
-	// case 3: primaryKey=PK1 (only one primary key)
-	if !matched {
-		matchs = primaryKeyPattern3.FindStringSubmatch(pkStr)
-		if len(matchs) == 2 {
-			matched = true
-			partitionKeyStr = matchs[1]
-			clusteringKeyStr = ""
-		}
-	}
-
-	if !matched {
-		return nil, fmt.Errorf("invalid primary key: %s", pkStr)
-	}
-	partitionKeys := parsePartitionKey(partitionKeyStr)
-	clusteringKeys, err := parseClusteringKeys(clusteringKeyStr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid primary key: %s", pkStr)
-	}
-
-	// TODO optimize this , this is too slow
-	// search for duplicates
-	everything := partitionKeys
-	for _, ck := range clusteringKeys {
-		everything = append(everything, ck.Name)
-	}
-	seen := map[string]bool{}
-	for v := range everything {
-		if _, ok := seen[everything[v]]; ok {
-			return nil, fmt.Errorf("Object %q has duplicate field %q in key struct tag", tableName, everything[v])
-		}
-
-		seen[everything[v]] = true
-	}
-
-	return &PrimaryKey{
-		PartitionKeys:  partitionKeys,
-		ClusteringKeys: clusteringKeys,
-	}, nil
-}
 
 // TableFromInstance creates a dosa.Table from a dosa.DomainObject instance.
 // Note: this method is not cheap as it does a lot of reflection to build the
@@ -241,6 +109,368 @@ func TableFromInstance(object DomainObject) (*Table, error) {
 	return t, nil
 }
 
+// parseEntityTag function parses DOSA tag on the "Entity" field
+func parseEntityTag(structName, dosaAnnotation string) (string, time.Duration, ETLState, *PrimaryKey, error) {
+	tagsMap, err := getTags(dosaAnnotation)
+	if err != nil {
+		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "dosa.Entity on object %s with an invalid annotation %q", structName, dosaAnnotation)
+	}
+	if len(tagsMap) == 0 && dosaAnnotation != "" {
+		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "dosa.Entity on object %s with an invalid annotation %q", structName, dosaAnnotation)
+	}
+
+	name, err := parseNameTag(structName, tagsMap)
+	if err != nil {
+		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "struct %s has invalid name tag %q", structName, dosaAnnotation)
+	}
+
+	ttl, err := parseTTLTag(tagsMap)
+	if err != nil {
+		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "struct %s has invalid ttl tag %q", structName, dosaAnnotation)
+	}
+
+	etlState, err := parseETLTag(tagsMap)
+	if err != nil {
+		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "struct %s has invalid etl tag %q", structName, dosaAnnotation)
+	}
+
+	var primaryKey *PrimaryKey
+	if val, ok := tagsMap["primaryKey"]; ok {
+		primaryKey, err = parsePrimaryKey(val)
+		if err != nil {
+			return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "struct %s has invalid primaryKey tag %q", structName, dosaAnnotation)
+		}
+	}
+	return name, ttl, etlState, primaryKey, nil
+}
+
+// parseIndexTag functions parses DOSA index tag
+func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, []string, error) {
+	tagsMap, err := getTags(dosaAnnotation)
+	if err != nil {
+		return "", nil, nil, errors.Wrapf(err, "dosa.Index on object %s with an invalid annotation %q", indexName, dosaAnnotation)
+	}
+	if len(tagsMap) == 0 && dosaAnnotation != "" {
+		return "", nil, nil, errors.Wrapf(err, "dosa.Index on object %s with an invalid annotation %q", indexName, dosaAnnotation)
+	}
+
+	// index name struct must be exported in the entity,
+	// otherwise it will be ignored when upserting the schema.
+	if len(indexName) != 0 && unicode.IsLower([]rune(indexName)[0]) {
+		expected := []rune(indexName)
+		expected[0] = unicode.ToUpper(expected[0])
+		return "", nil, nil, fmt.Errorf("index name (%s) must be exported, try (%s) instead", indexName, string(expected))
+	}
+
+	name, err := parseNameTag(indexName, tagsMap)
+	if err != nil {
+		return "", nil, nil, errors.Wrapf(err, "index %s has invalid name tag %q", indexName, dosaAnnotation)
+	}
+
+	columns, err := parseColumnsTag(tagsMap)
+	if err != nil {
+		return "", nil, nil, errors.Wrapf(err, "index %s has invalid columns tag %q", indexName, dosaAnnotation)
+	}
+
+	var key *PrimaryKey
+	if val, ok := tagsMap["key"]; ok {
+		key, err = parsePrimaryKey(val)
+		if err != nil {
+			return "", nil, nil, errors.Wrapf(err, "index %s has invalid key tag %q", indexName, dosaAnnotation)
+		}
+	}
+
+	return name, key, columns, nil
+}
+
+// parseSinglePrimaryKey func parses the single parimary key of DOSA object
+func parseSinglePrimaryKey(s string) (*PrimaryKey, error) {
+	s = strings.TrimSpace(s)
+	spaceIdx := strings.Index(s, " ")
+	if spaceIdx != -1 {
+		return nil, fmt.Errorf("invalid partition key: %s", s)
+	}
+	commaIdx := strings.Index(s, ",")
+	if commaIdx != -1 {
+		return nil, fmt.Errorf("invalid partition key: %s", s)
+	}
+	return &PrimaryKey{
+		PartitionKeys: []string{s},
+	}, nil
+}
+
+// parseCompoundPartitionKeys func parses the compund partition key of DOSA object
+func parseCompoundPartitionKeys(s string) ([]string, error) {
+	s = strings.TrimSpace(strings.Trim(s, "()"))
+	fields := strings.Split(s, ",")
+	pks := []string{}
+	for _, field := range fields {
+		field = strings.TrimSpace(field)
+		if field == "" {
+			return nil, fmt.Errorf("invalid partition key %s", s)
+		}
+		pks = append(pks, field)
+	}
+	return pks, nil
+}
+
+// parseClusteringKeys func parses the clustering key of DOSA object
+func parseClusteringKeys(s string) ([]*ClusteringKey, error) {
+	s = strings.TrimSpace(strings.Trim(s, "()"))
+	fields := strings.Split(s, ",")
+	ckFields := []string{}
+	for _, field := range fields {
+		field = strings.TrimSpace(field)
+		if field == "" {
+			return nil, fmt.Errorf("invalid clustering key %s", s)
+		}
+		ckFields = append(ckFields, field)
+	}
+
+	cks := []*ClusteringKey{}
+	for _, ckField := range ckFields {
+		fields := strings.Fields(ckField)
+		if len(fields) == 0 {
+			continue
+		}
+		if len(fields) > 2 {
+			return nil, fmt.Errorf("Clustering key definition %q should look like \"name[ asc/desc]\"",
+				ckField)
+		}
+		descending := false
+		if len(fields) == 2 {
+			switch strings.ToLower(fields[1]) {
+			case "desc":
+				descending = true
+			case "asc":
+				descending = false
+			default:
+				return nil, fmt.Errorf("invalid clustering key order %q in %q", fields[1], ckField)
+			}
+		}
+
+		name := strings.TrimSpace(fields[0])
+		cks = append(cks, &ClusteringKey{Name: name, Descending: descending})
+	}
+
+	return cks, nil
+}
+
+// parsePrimaryKey func parses the primary key of DOSA object
+func parsePrimaryKey(s string) (*PrimaryKey, error) {
+	annotation := s
+	// single partition key, e.g. key=UUID
+	if s[0] != '(' {
+		return parseSinglePrimaryKey(s)
+	}
+
+	// Trim outermost parenthesis
+	if s[0] == '(' && s[len(s)-1] == ')' {
+		s = strings.TrimSpace(s[1 : len(s)-1])
+	} else {
+		return nil, fmt.Errorf("invalid primary key: %s", annotation)
+	}
+	if s == "" {
+		return nil, fmt.Errorf("invalid primary key: %s", annotation)
+	}
+	// single partition key, e.g. key=(UUID) key=(UUID1, UUID2, UUID3)
+	if s[0] != '(' {
+		commaPos := strings.Index(s, ",")
+		if commaPos == -1 {
+			return parseSinglePrimaryKey(s)
+		}
+		pkFields := []string{strings.TrimSpace(s[:commaPos])}
+		cks, err := parseClusteringKeys(strings.TrimSpace(s[commaPos+1:]))
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid primary key: %s", annotation)
+		}
+		return &PrimaryKey{
+			PartitionKeys:  pkFields,
+			ClusteringKeys: cks,
+		}, nil
+	}
+
+	// find partition keys
+	i := skipParens(0, s)
+	pkFields, err := parseCompoundPartitionKeys(s[:i+1])
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid primary key: %s", annotation)
+	}
+	if i+1 == len(s) {
+		return &PrimaryKey{
+			PartitionKeys: pkFields,
+		}, nil
+	}
+	if i+1 < len(s) && s[i+1] != ',' {
+		return nil, fmt.Errorf("invalid primary key: %s", annotation)
+	}
+
+	// find clustering keys
+	s = strings.TrimSpace(s[i+2:])
+	cks, err := parseClusteringKeys(strings.TrimSpace(s))
+	if err != nil {
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid primary key: %s", annotation)
+		}
+	}
+
+	// check duplicate fields
+	allFields := pkFields
+	for _, ck := range cks {
+		allFields = append(allFields, ck.Name)
+	}
+	seen := map[string]bool{}
+	for _, field := range allFields {
+		if _, ok := seen[field]; ok {
+			return nil, fmt.Errorf("duplicate field %q in key tag", field)
+		}
+		seen[field] = true
+	}
+
+	return &PrimaryKey{
+		PartitionKeys:  pkFields,
+		ClusteringKeys: cks,
+	}, nil
+}
+
+// parseNameTag functions parses DOSA "name" tag
+func parseNameTag(defaultName string, tagsMap map[string]string) (string, error) {
+	name := defaultName
+	if val, ok := tagsMap["name"]; ok {
+		name = val
+	}
+
+	name, err := NormalizeName(name)
+	if err != nil {
+		return "", err
+	}
+	return name, nil
+}
+
+// parseColumnsTag parses the "columns" tag of a dosa.Index in the entity. It returns
+// the matched section of the tag string and a list of the selected fields.
+func parseColumnsTag(tagsMap map[string]string) ([]string, error) {
+	if _, ok := tagsMap["columns"]; !ok {
+		return nil, nil
+	}
+	s := strings.TrimSpace(tagsMap["columns"])
+	if s[0] != '(' || s[len(s)-1] != ')' {
+		return nil, fmt.Errorf("invalid columns tag %s", s)
+	}
+	s = s[1 : len(s)-1]
+	fields := strings.Split(s, ",")
+	columns := []string{}
+	for _, field := range fields {
+		field = strings.TrimSpace(field)
+		if field == "" {
+			return nil, fmt.Errorf("invalid columns tag %s", s)
+		}
+		field, err := NormalizeName(field)
+		if err != nil {
+			return nil, err
+		}
+		columns = append(columns, field)
+	}
+	// check duplicate fields in columns
+	seen := map[string]bool{}
+	for _, c := range columns {
+		if _, ok := seen[c]; ok {
+			return nil, fmt.Errorf("duplicate field %s in columns tag", c)
+		}
+		seen[c] = true
+	}
+
+	return columns, nil
+}
+
+// parseTTLTag functions parses DOSA "ttl" tag
+func parseTTLTag(tagsMap map[string]string) (time.Duration, error) {
+	if _, ok := tagsMap["ttl"]; !ok {
+		return NoTTL(), nil
+	}
+	ttl, err := time.ParseDuration(tagsMap["ttl"])
+	if err != nil {
+		return NoTTL(), err
+	}
+	if err = ValidateTTL(ttl); err != nil {
+		return NoTTL(), err
+	}
+	return ttl, nil
+}
+
+// parseETLTag functions parses DOSA "etl" tag
+func parseETLTag(tagsMap map[string]string) (ETLState, error) {
+	if _, ok := tagsMap["etl"]; !ok {
+		return EtlOff, nil
+	}
+	etlTag, err := NormalizeName(tagsMap["etl"])
+	if err != nil {
+		return EtlOff, err
+	}
+	etlState, err := ToETLState(etlTag)
+	if err != nil {
+		return EtlOff, err
+	}
+	return etlState, nil
+}
+
+// getTags get tags splited and return map of the key=val pairs
+func getTags(s string) (map[string]string, error) {
+	s = strings.TrimSpace(s)
+	if !parensBalanced(s) {
+		return nil, fmt.Errorf("unmatched parentheses:%q", s)
+	}
+
+	tagsMap := make(map[string]string)
+
+	i := 0
+	start := 0
+	for ; i < len(s); i++ {
+		if s[i] == '(' {
+			i = skipParens(i, s)
+			if i+1 != len(s) && s[i+1] != ',' {
+				return nil, fmt.Errorf("illegal delimiter %c in %s", s[i+1], s)
+			}
+		}
+		if s[i] == ',' || i+1 == len(s) {
+			tag := s[start:i]
+			if i+1 == len(s) {
+				tag = s[start:]
+			}
+			tag = strings.TrimSpace(tag)
+			validTag := false
+
+			for _, key := range tagsKey {
+				if strings.HasPrefix(tag, key) {
+					if _, exist := tagsMap[key]; exist {
+						return nil, fmt.Errorf("duplicate tag %q in %s", key, s)
+					}
+					idx := len(key)
+					for ; idx < len(tag); idx++ {
+						if tag[idx] != ' ' && tag[idx] != '=' {
+							break
+						}
+					}
+					val := tag[idx:]
+					if val == "" {
+						return nil, fmt.Errorf("invalid %s tag", key)
+					}
+					tagsMap[key] = val
+					validTag = true
+					break
+				}
+			}
+			// report that this tag has no prefix in tagsKey
+			if !validTag {
+				return nil, fmt.Errorf("invalid dosa annotation %s", tag)
+			}
+			start = i + 1
+		}
+	}
+
+	return tagsMap, nil
+}
+
 // translateKeyName translate the primary keys to the internal column name based on the mapping
 // between fields and columns.
 func translateKeyName(t *Table) {
@@ -277,208 +507,6 @@ func translateKeyName(t *Table) {
 	}
 }
 
-// parseIndexTag functions parses DOSA index tag
-func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, []string, error) {
-	// index name struct must be exported in the entity,
-	// otherwise it will be ignored when upserting the schema.
-	if len(indexName) != 0 && unicode.IsLower([]rune(indexName)[0]) {
-		expected := []rune(indexName)
-		expected[0] = unicode.ToUpper(expected[0])
-		return "", nil, nil, fmt.Errorf("index name (%s) must be exported, "+
-			"try (%s) instead", indexName, string(expected))
-	}
-	tag := dosaAnnotation
-
-	// find the primaryKey
-	matchs := indexKeyPattern0.FindStringSubmatch(tag)
-	if len(matchs) != 4 {
-		return "", nil, nil, fmt.Errorf("dosa.Index %s with an invalid dosa index tag %q", indexName, tag)
-	}
-	pkString := matchs[1]
-	key, err := parsePrimaryKey(indexName, pkString)
-	if err != nil {
-		return "", nil, nil, errors.Wrapf(err, "struct %s has an invalid index key %q", indexName, pkString)
-	}
-	toRemove := strings.TrimSuffix(matchs[0], matchs[2])
-	toRemove = strings.TrimSuffix(matchs[0], matchs[3])
-	tag = strings.Replace(tag, toRemove, "", 1)
-
-	//find the name
-	fullNameTag, name, err := parseNameTag(tag, indexName)
-	if err != nil {
-		return "", nil, nil, errors.Wrapf(err, "invalid name tag: %s", tag)
-	}
-	tag = strings.Replace(tag, fullNameTag, "", 1)
-
-	// find the columns
-	fullColumnsTag, indexColumns, err := parseColumnsTag(tag)
-	if err != nil {
-		return "", nil, nil, errors.Wrapf(err, "invalid columns tag: %s", tag)
-	}
-	tag = strings.Replace(tag, fullColumnsTag, "", 1)
-
-	tag = strings.TrimSpace(tag)
-	if tag != "" {
-		return "", nil, nil, fmt.Errorf("index field %s with an invalid dosa index tag: %s", indexName, tag)
-	}
-
-	return name, key, indexColumns, nil
-}
-
-// parseNameTag functions parses DOSA "name" tag
-func parseNameTag(tag, defaultName string) (string, string, error) {
-	fullNameTag := ""
-	name := defaultName
-
-	matches := namePattern0.FindStringSubmatch(tag)
-	if len(matches) == 2 {
-		fullNameTag = matches[0]
-		name = matches[1]
-	}
-
-	// filter out "trailing comma"
-	name = strings.TrimRight(name, " ,")
-
-	var err error
-	name, err = NormalizeName(name)
-	if err != nil {
-		return "", "", err
-	}
-
-	return fullNameTag, name, nil
-}
-
-// parseColumnsTag parses the "columns" tag of a dosa.Index in the entity. It returns
-// the matched section of the tag string and a list of the selected fields.
-func parseColumnsTag(tag string) (string, []string, error) {
-	fullColumnsTag := ""
-	var indexColumns []string
-	var fields []string
-	matches := columnsPattern.FindStringSubmatch(tag)
-	if len(matches) == 2 {
-		fullColumnsTag = matches[0]
-		fields = strings.Split(matches[1], ",")
-	}
-	for _, field := range fields {
-		field = strings.TrimSpace(field)
-		if field != "" {
-			field, err := NormalizeName(strings.TrimSpace(field))
-			if err != nil {
-				return "", nil, err
-			}
-			indexColumns = append(indexColumns, field)
-		}
-	}
-	return fullColumnsTag, indexColumns, nil
-}
-
-// parseETLTag functions parses DOSA "etl" tag
-func parseETLTag(tag string) (string, ETLState, error) {
-	fullETLTag := ""
-	etlTag := ""
-	matches := etlPattern0.FindStringSubmatch(tag)
-	if len(matches) == 2 {
-		fullETLTag = matches[0]
-		etlTag = matches[1]
-	}
-
-	if len(matches) == 0 {
-		return "", EtlOff, nil
-	}
-
-	// filter out "trailing comma"
-	etlTag = strings.TrimRight(etlTag, " ,")
-
-	var err error
-	etlTag, err = NormalizeName(etlTag)
-	if err != nil {
-		return "", EtlOff, err
-	}
-
-	etlState, err := ToETLState(etlTag)
-	if err != nil {
-		return "", EtlOff, err
-	}
-	return fullETLTag, etlState, nil
-}
-
-// parseTTLTag functions parses DOSA "ttl" tag
-func parseTTLTag(tag string) (string, time.Duration, error) {
-	fullTTLTag := ""
-	ttlTag := ""
-	matches := ttlPattern0.FindStringSubmatch(tag)
-
-	if len(matches) == 0 {
-		return "", NoTTL(), nil
-	}
-
-	if len(matches) == 2 {
-		fullTTLTag = matches[0]
-		ttlTag = matches[1]
-	}
-
-	// filter out "trailing comma"
-	ttlTag = strings.TrimRight(ttlTag, " ,")
-	ttl, err := time.ParseDuration(ttlTag)
-	if err != nil {
-		return "", NoTTL(), err
-	}
-
-	if err = ValidateTTL(ttl); err != nil {
-		return "", NoTTL(), err
-	}
-
-	return fullTTLTag, ttl, nil
-}
-
-// parseEntityTag function parses DOSA tag on the "Entity" field
-func parseEntityTag(structName, dosaAnnotation string) (string, time.Duration, ETLState, *PrimaryKey, error) {
-	tag := dosaAnnotation
-
-	// find the primaryKey
-	matchs := primaryKeyPattern0.FindStringSubmatch(tag)
-	if len(matchs) != primaryKeyPattern0.NumSubexp()+1 {
-		return "", NoTTL(), EtlOff, nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag %q", structName, tag)
-	}
-	pkString := matchs[1]
-
-	key, err := parsePrimaryKey(structName, pkString)
-	if err != nil {
-		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "struct %s has an invalid primary key %q", structName, pkString)
-	}
-	toRemove := strings.TrimSuffix(matchs[0], matchs[2])
-	toRemove = strings.TrimSuffix(matchs[0], matchs[3])
-	tag = strings.Replace(tag, toRemove, "", 1)
-
-	// find the name
-	fullNameTag, name, err := parseNameTag(tag, structName)
-	if err != nil {
-		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "invalid name tag: %s", tag)
-	}
-	tag = strings.Replace(tag, fullNameTag, "", 1)
-
-	// find the ETL flag
-	fullETLTag, etlState, err := parseETLTag(tag)
-	if err != nil {
-		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "invalid etl tag: %s", tag)
-	}
-	tag = strings.Replace(tag, fullETLTag, "", 1)
-
-	// find the ttl flag
-	fullTTLTag, ttl, err := parseTTLTag(tag)
-	if err != nil {
-		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "invalid ttl tag: %s", tag)
-	}
-	tag = strings.Replace(tag, fullTTLTag, "", 1)
-
-	tag = strings.TrimSpace(tag)
-	if tag != "" {
-		return "", NoTTL(), EtlOff, nil, fmt.Errorf("struct %s with an invalid dosa struct tag: %s", structName, tag)
-	}
-
-	return name, ttl, etlState, key, nil
-}
-
 // parseFieldTag function parses DOSA tag on the fields in the DOSA struct except the "Entity" field
 func parseFieldTag(structField reflect.StructField, dosaAnnotation string) (*ColumnDefinition, error) {
 	typ, isPointer, err := typify(structField.Type)
@@ -490,14 +518,17 @@ func parseFieldTag(structField reflect.StructField, dosaAnnotation string) (*Col
 
 func parseField(typ Type, isPointer bool, name string, tag string) (*ColumnDefinition, error) {
 	// parse name tag
-	fullNameTag, name, err := parseNameTag(tag, name)
+	tagsMap, err := getTags(tag)
 	if err != nil {
-		return nil, fmt.Errorf("invalid name tag: %s", tag)
+		return nil, errors.Wrapf(err, "invalid dosa field tag: %s", tag)
+	}
+	if len(tagsMap) == 0 && tag != "" {
+		return nil, fmt.Errorf("invalid dosa field tag: %s", tag)
 	}
 
-	tag = strings.Replace(tag, fullNameTag, "", 1)
-	if strings.TrimSpace(tag) != "" {
-		return nil, fmt.Errorf("field %s with an invalid dosa field tag: %s", name, tag)
+	name, err = parseNameTag(name, tagsMap)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid dosa field tag: %s", tag)
 	}
 
 	return &ColumnDefinition{Name: name, IsPointer: isPointer, Type: typ}, nil
@@ -521,6 +552,22 @@ func parensBalanced(s string) bool {
 	}
 	// Stack must be empty
 	return ssize == 0
+}
+
+// skipParens start from i to the matching close parenthesis position
+func skipParens(i int, s string) int {
+	var count uint
+	for ; i < len(s); i++ {
+		if s[i] == '(' {
+			count++
+		} else if s[i] == ')' {
+			count--
+		}
+		if count == 0 {
+			break
+		}
+	}
+	return i
 }
 
 var (

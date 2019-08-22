@@ -279,8 +279,7 @@ func TestMissingAnnotation(t *testing.T) {
 	dosaTable, err := TableFromInstance(&MissingAnnotation{})
 	assert.Nil(t, dosaTable)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "struct")
-	assert.Contains(t, err.Error(), "tag")
+	assert.Contains(t, err.Error(), "cannot find dosa.Entity in object")
 }
 
 type AllTypes struct {
@@ -554,7 +553,7 @@ func TestDuplicateKey(t *testing.T) {
 	table, err := TableFromInstance(&DuplicateKeyDefinition{})
 	assert.Nil(t, table)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "uplicate")
+	assert.Contains(t, err.Error(), "a column cannot be used twice")
 }
 
 func TestInvalidStructName(t *testing.T) {
@@ -619,7 +618,7 @@ func TestRenameToInvalidName(t *testing.T) {
 	table, err := TableFromInstance(&InvalidRename{})
 	assert.Nil(t, table)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid name tag: name=ABădNăme")
+	assert.Contains(t, err.Error(), "invalid name")
 }
 
 type BadColNameButRenamed struct {
