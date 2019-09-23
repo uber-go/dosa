@@ -178,7 +178,7 @@ type Client interface {
 	Remove(ctx context.Context, objectToRemove DomainObject) error
 
 	// RemoveRange removes all of the rows that fall within the range specified by the
-	// given RemoveRangeOp.
+	// given RemoveRangeOp. Note that only Primary Key queries may be used here.
 	RemoveRange(ctx context.Context, removeRangeOp *RemoveRangeOp) error
 
 	// Range fetches entities within a range

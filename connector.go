@@ -165,7 +165,7 @@ type Connector interface {
 	MultiUpsert(ctx context.Context, ei *EntityInfo, multiValues []map[string]FieldValue) (result []error, err error)
 	// Remove deletes a row
 	Remove(ctx context.Context, ei *EntityInfo, keys map[string]FieldValue) error
-	// RemoveRange removes all entities in a particular range
+	// RemoveRange removes all entities in a particular range, only Primary Key queries are allowed.
 	RemoveRange(ctx context.Context, ei *EntityInfo, columnConditions map[string][]*Condition) error
 	// MultiRemove removes multiple rows
 	MultiRemove(ctx context.Context, ei *EntityInfo, multiKeys []map[string]FieldValue) (result []error, err error)
