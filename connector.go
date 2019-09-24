@@ -116,6 +116,8 @@ const (
 	Staging
 	// Production scope
 	Production
+	// PinglessDosa2a scope
+	PinglessDosa2a
 )
 
 // ScopeFlagType is a set of scope flags
@@ -215,6 +217,8 @@ func (t ScopeType) String() string {
 		return "staging"
 	case Development:
 		return "development"
+	case PinglessDosa2a:
+		return "pingless_dosa2a"
 	}
 	return fmt.Sprintf("unknown scope type %d", t)
 }
