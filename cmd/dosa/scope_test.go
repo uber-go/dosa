@@ -122,6 +122,16 @@ func TestScope_Create(t *testing.T) {
 
 	err = scopeCreate.Execute([]string{})
 	assert.Error(t, err)
+
+	scopeCreate = ScopeCreate{
+		ScopeCmd: &ScopeCmd{
+			provideClient: provideClient,
+		},
+	}
+	scopeCreate.Args.Scopes = []string{"no_owner"}
+
+	err = scopeCreate.Execute([]string{})
+	assert.Contains(t, err.Error(), "--owner")
 }
 
 func TestScopeDrop_Execute(t *testing.T) {

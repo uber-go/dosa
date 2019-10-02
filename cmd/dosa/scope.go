@@ -89,7 +89,7 @@ func (c *ScopeCreate) Execute(args []string) error {
 		return err
 	}
 	if len(c.Owner) == 0 {
-		return errors.New("the owning ublame-group must be specified")
+		return errors.New("No owner specified; use --owner with a ublame_group to fix")
 	}
 	return c.doScopeOp("create",
 		func(client dosa.AdminClient, ctx context.Context, scope string) error {
