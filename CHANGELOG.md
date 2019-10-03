@@ -1,6 +1,7 @@
 # Changelog
 
 ## v3.4.9 (unreleased)
+ - clarifying message on success of scope drop, to wait before re-creating
  - modify the test cases using space as the delimiter between tags
 
 ## v3.4.8 (2019-07-26)
