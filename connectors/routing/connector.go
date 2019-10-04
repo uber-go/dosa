@@ -49,9 +49,14 @@ func (rc *Connector) String() string {
 	return fmt.Sprintf("[Routing %s]", rc.config.String())
 }
 
+// Resolve returns the destination engine for the given scope and name-prefix.
+func (rc *Connector) Resolve(scope, namePrefix string) string {
+	return rc.config.getEngineName(scope, namePrefix)
+}
+
 // get connector by scope and namePrefix
 func (rc *Connector) getConnector(scope, namePrefix string) (dosa.Connector, error) {
-	connName := rc.config.getEngineName(scope, namePrefix)
+	connName := rc.Resolve(scope, namePrefix)
 	c, ok := rc.connectors[connName]
 	if !ok {
 		return nil, fmt.Errorf("can't find %q connector", connName)

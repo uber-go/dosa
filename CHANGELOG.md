@@ -3,6 +3,7 @@
 ## v3.4.9 (unreleased)
  - clarifying message on success of scope drop, to wait before re-creating
  - modify the test cases using space as the delimiter between tags
+ - expose a method Resolve(scope,prefix) -> cluster
 
 ## v3.4.8 (2019-07-26)
  - Add transport parameter to yarpc connector and cli
