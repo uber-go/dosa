@@ -1,6 +1,9 @@
 # Changelog
 
-## v3.4.9 (unreleased)
+## v3.4.10 (unreleased)
+ - Nothing changed yet.
+
+## v3.4.9 (2019-10-04)
  - clarifying message on success of scope drop, to wait before re-creating
  - modify the test cases using space as the delimiter between tags
  - expose a method Resolve(scope,prefix) -> cluster
