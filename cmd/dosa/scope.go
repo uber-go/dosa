@@ -58,7 +58,7 @@ func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Conte
 		}
 		fmt.Printf("%s scope %q: OK\n", name, s)
 		if name == "drop" {
-			fmt.Println("\nPlease wait 10 minutes if you are going to re-create the scope with the same name.\n")	
+			fmt.Println("\nPlease wait 10 minutes if you are going to re-create the scope with the same name.\n")
 		}
 	}
 	return nil
@@ -67,7 +67,7 @@ func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Conte
 // ScopeCreate contains data for executing scope create command.
 type ScopeCreate struct {
 	*ScopeCmd
-	Owner    string `short:"o" long:"owner" description:"The owning group (ublame name)"`
+	Owner    string `short:"o" long:"owner" description:"The owning group (uown name)"`
 	Type     string `short:"t" long:"type" description:"Scope type (default: 'development')"`
 	Cluster  string `short:"c" long:"cluster" description:"Hosting cluster for a production scope"`
 	ReadRPS  int32  `short:"r" long:"read-rate" description:"Max read rate for a production scope"`
@@ -92,7 +92,7 @@ func (c *ScopeCreate) Execute(args []string) error {
 		return err
 	}
 	if len(c.Owner) == 0 {
-		return errors.New("No owner specified; use --owner with a ublame_group to fix")
+		return errors.New("No owner specified; use --owner with a uown_group to fix")
 	}
 	return c.doScopeOp("create",
 		func(client dosa.AdminClient, ctx context.Context, scope string) error {
