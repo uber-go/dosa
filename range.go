@@ -148,10 +148,9 @@ func (r *RangeOp) LimitRows() int {
 // IndexFromConditions returns the name of the index or the base table to use, along with the key info
 // for that index. If no suitable index could be found, an error is returned
 func (ei *EntityInfo) IndexFromConditions(conditions map[string][]*Condition, searchIndexes bool) (name string, key *PrimaryKey, err error) {
-	identityFunc := func(s string) string { return s }
 	// see if we match the primary key for this table
 	var baseTableError error
-	if baseTableError = EnsureValidRangeConditions(ei.Def, ei.Def.Key, conditions, identityFunc); baseTableError == nil {
+	if baseTableError = EnsureValidRangeConditions(ei.Def, ei.Def.Key, conditions, nil); baseTableError == nil {
 		return ei.Def.Name, ei.Def.Key, nil
 	}
 	if searchIndexes == false || len(ei.Def.Indexes) == 0 {
@@ -162,7 +161,7 @@ func (ei *EntityInfo) IndexFromConditions(conditions map[string][]*Condition, se
 	for name, indexDef = range ei.Def.Indexes {
 		key = indexDef.Key
 		// we check the range conditions before adding the uniqueness columns
-		if err := EnsureValidRangeConditions(ei.Def, key, conditions, identityFunc); err == nil {
+		if err := EnsureValidRangeConditions(ei.Def, key, conditions, nil); err == nil {
 			return name, ei.Def.UniqueKey(key), nil
 		}
 	}

@@ -81,6 +81,10 @@ func EnsureValidRangeConditions(ed *EntityDefinition, pk *PrimaryKey, columnCond
 	//     partition key: each field must be present, with a single Eq constraint on each
 	//     clustering key: conditions must be applied to consecutive fields and must all be Eq except for the last one
 
+	if transform == nil {
+		transform = func(s string) string { return s }
+	}
+
 	// Get the partition key. Fields will be removed from missingPKs as we find them in columnConditions.
 	partitionKeys := pk.PartitionKeySet()
 	missingPKs := pk.PartitionKeySet()
