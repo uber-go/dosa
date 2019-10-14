@@ -294,7 +294,7 @@ func (c *client) Initialize(ctx context.Context) error {
 	// fetch latest version for all registered entities, assume order is preserved
 	version, err := c.connector.CheckSchema(ctx, c.registrar.Scope(), c.registrar.NamePrefix(), eds)
 	if err != nil {
-		return errors.Wrap(err, "schema on the server is inccompatible with the code")
+		return errors.Wrap(err, "schema on the server is incompatible with the code")
 	}
 
 	// set version for all registered entities
