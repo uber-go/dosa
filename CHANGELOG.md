@@ -4,7 +4,7 @@
  - (nothing changed yet)
 
 ## v3.4.10 (2019-10-14)
- - Allow nil transform-function in EnsureaValidRangeConditions
+ - Allow nil transform-function in EnsureValidRangeConditions
  - Improve some CLI error messages
 
 ## v3.4.9 (2019-10-04)
