@@ -1,6 +1,9 @@
 # Changelog
 
-## v3.4.10 (unreleased)
+## v3.4.11 (unreleased)
+ - (nothing changed yet)
+
+## v3.4.10 (2019-10-14)
  - Allow nil transform-function in EnsureaValidRangeConditions
  - Improve some CLI error messages
 
