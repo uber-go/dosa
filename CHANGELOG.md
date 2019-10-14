@@ -2,6 +2,7 @@
 
 ## v3.4.10 (unreleased)
  - Allow nil transform-function in EnsureaValidRangeConditions
+ - Improve some CLI error messages
 
 ## v3.4.9 (2019-10-04)
  - clarifying message on success of scope drop, to wait before re-creating

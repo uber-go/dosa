@@ -407,7 +407,7 @@ func (c *SchemaDump) doSchemaDumpInJavaClient() {
 	fmt.Printf("%s", out.String())
 }
 
-// expandDirectory verifies that each argument is actually a directory or
+// expandDirectories verifies that each argument is actually a directory or
 // uses the special go suffix of /... to mean recursively walk from here
 // example: ./... means the current directory and all subdirectories
 func expandDirectories(dirs []string) ([]string, error) {
@@ -422,12 +422,12 @@ func expandDirectories(dirs []string) ([]string, error) {
 				return nil
 			})
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrapf(err, "couldn't walk %q", dir)
 			}
 		} else {
 			info, err := os.Stat(dir)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrapf(err, "%q does not exist", dir)
 			}
 			if !info.IsDir() {
 				return nil, fmt.Errorf("%q is not a directory", dir)

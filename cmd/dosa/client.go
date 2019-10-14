@@ -69,7 +69,7 @@ func (c *shellQueryClient) Initialize(ctx context.Context) error {
 
 	version, err := c.connector.CheckSchema(ctx, registar.Scope(), registar.NamePrefix(), []*dosa.EntityDefinition{reg.EntityDefinition()})
 	if err != nil {
-		return errors.New("CheckSchema failed")
+		return errors.New("schema on the server is inccompatible with the code")
 	}
 	reg.SetVersion(version)
 	return nil

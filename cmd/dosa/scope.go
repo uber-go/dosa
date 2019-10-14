@@ -58,7 +58,7 @@ func (c *ScopeCmd) doScopeOp(name string, f func(dosa.AdminClient, context.Conte
 		}
 		fmt.Printf("%s scope %q: OK\n", name, s)
 		if name == "drop" {
-			fmt.Println("\nPlease wait 10 minutes if you are going to re-create the scope with the same name.\n")
+			fmt.Print("\nPlease wait 10 minutes if you are going to re-create the scope with the same name.\n\n")
 		}
 	}
 	return nil
