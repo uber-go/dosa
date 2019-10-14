@@ -294,7 +294,7 @@ func (c *client) Initialize(ctx context.Context) error {
 	// fetch latest version for all registered entities, assume order is preserved
 	version, err := c.connector.CheckSchema(ctx, c.registrar.Scope(), c.registrar.NamePrefix(), eds)
 	if err != nil {
-		return errors.Wrap(err, "CheckSchema failed")
+		return errors.Wrap(err, "schema on the server is incompatible with the code")
 	}
 
 	// set version for all registered entities
@@ -647,7 +647,7 @@ func (c *adminClient) CanUpsertSchema(ctx context.Context, namePrefix string) (*
 	}
 	version, err := c.connector.CanUpsertSchema(ctx, c.scope, namePrefix, defs)
 	if err != nil {
-		return nil, errors.Wrapf(err, "CheckSchema failed, directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
+		return nil, errors.Wrapf(err, "schema incompatible: directories: %s, excludes: %s, scope: %s", c.dirs, c.excludes, c.scope)
 	}
 	return &SchemaStatus{
 		Version: version,
@@ -658,7 +658,7 @@ func (c *adminClient) CanUpsertSchema(ctx context.Context, namePrefix string) (*
 func (c *adminClient) CheckSchemaStatus(ctx context.Context, namePrefix string, version int32) (*SchemaStatus, error) {
 	status, err := c.connector.CheckSchemaStatus(ctx, c.scope, namePrefix, version)
 	if err != nil {
-		return nil, errors.Wrapf(err, "CheckSchemaStatus status failed")
+		return nil, errors.Wrapf(err, "check schema application status")
 	}
 	return status, nil
 }
