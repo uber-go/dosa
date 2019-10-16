@@ -1,7 +1,7 @@
 # Changelog
 
 ## v3.4.11 (unreleased)
- - (nothing changed yet)
+ - Improve yarpc connector naming, differentiate goyarpc from dosarpc
 
 ## v3.4.10 (2019-10-14)
  - Allow nil transform-function in EnsureValidRangeConditions

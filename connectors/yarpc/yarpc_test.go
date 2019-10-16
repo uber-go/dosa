@@ -31,9 +31,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
 	"github.com/uber-go/dosa/testutil"
-	drpc "github.com/uber/dosa-idl/.gen/dosa"
+	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 	"github.com/uber/dosa-idl/.gen/dosa/dosatest"
-	yarpc2 "go.uber.org/yarpc"
+	goyarpc "go.uber.org/yarpc"
 )
 
 var (
@@ -48,7 +48,7 @@ var (
 		Version:    12345,
 	}
 
-	testRPCSchemaRef = drpc.SchemaRef{
+	testRPCSchemaRef = dosarpc.SchemaRef{
 		Scope:      testutil.TestStringPtr("scope1"),
 		NamePrefix: testutil.TestStringPtr("namePrefix"),
 		EntityName: testutil.TestStringPtr("eName"),
@@ -93,21 +93,21 @@ func TestYARPCClient_Read(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	// set up the parameters
-	readRequest := &drpc.ReadRequest{
+	readRequest := &dosarpc.ReadRequest{
 		Ref:          &testRPCSchemaRef,
-		KeyValues:    map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}}},
+		KeyValues:    map[string]*dosarpc.Value{"f1": {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}}},
 		FieldsToRead: map[string]struct{}{"f1": {}},
 	}
 
 	// we expect a single call to Read, and we return back two fields, f1 which is in the typemap and another field that is not
-	mockedClient.EXPECT().Read(ctx, readRequest, gomock.Any()).Return(&drpc.ReadResponse{drpc.FieldValueMap{
-		"c1":               {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
-		"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
-		"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
-		"c3":               {ElemValue: &drpc.RawValue{StringValue: testutil.TestStringPtr("f3value")}},
-		"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
-		"c5":               {ElemValue: &drpc.RawValue{BoolValue: testutil.TestBoolPtr(false)}},
-		"c6":               {ElemValue: &drpc.RawValue{Int32Value: testutil.TestInt32Ptr(1)}},
+	mockedClient.EXPECT().Read(ctx, readRequest, gomock.Any()).Return(&dosarpc.ReadResponse{dosarpc.FieldValueMap{
+		"c1":               {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
+		"fieldNotInSchema": {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
+		"c2":               {ElemValue: &dosarpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
+		"c3":               {ElemValue: &dosarpc.RawValue{StringValue: testutil.TestStringPtr("f3value")}},
+		"c4":               {ElemValue: &dosarpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
+		"c5":               {ElemValue: &dosarpc.RawValue{BoolValue: testutil.TestBoolPtr(false)}},
+		"c6":               {ElemValue: &dosarpc.RawValue{Int32Value: testutil.TestInt32Ptr(1)}},
 	}}, nil)
 
 	// Prepare the dosa client interface using the mocked RPC layer
@@ -126,7 +126,7 @@ func TestYARPCClient_Read(t *testing.T) {
 	assert.Empty(t, values["fieldNotInSchema"]) // the unknown field is not present
 
 	errCode := int32(404)
-	mockedClient.EXPECT().Read(ctx, readRequest, gomock.Any()).Return(nil, &drpc.BadRequestError{ErrorCode: &errCode})
+	mockedClient.EXPECT().Read(ctx, readRequest, gomock.Any()).Return(nil, &dosarpc.BadRequestError{ErrorCode: &errCode})
 	_, err = sut.Read(ctx, testEi, map[string]dosa.FieldValue{"f1": dosa.FieldValue(int64(5))}, []string{"f1"})
 	assert.True(t, dosa.ErrorIsNotFound(err))
 
@@ -143,46 +143,46 @@ func TestYARPCClient_MultiRead(t *testing.T) {
 	sut := Connector{client: mockedClient}
 
 	data := []struct {
-		Request     *drpc.MultiReadRequest
-		Response    *drpc.MultiReadResponse
+		Request     *dosarpc.MultiReadRequest
+		Response    *dosarpc.MultiReadResponse
 		ResponseErr error
 	}{
 		{
-			Request: &drpc.MultiReadRequest{
+			Request: &dosarpc.MultiReadRequest{
 				Ref: &testRPCSchemaRef,
-				KeyValues: []drpc.FieldValueMap{
+				KeyValues: []dosarpc.FieldValueMap{
 					{
-						"f1": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
+						"f1": &dosarpc.Value{ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
 					},
 					{
-						"f2": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(6)}},
+						"f2": &dosarpc.Value{ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(6)}},
 					},
 				},
 				FieldsToRead: map[string]struct{}{"f1": {}},
 			},
-			Response: &drpc.MultiReadResponse{
-				Results: []*drpc.EntityOrError{
+			Response: &dosarpc.MultiReadResponse{
+				Results: []*dosarpc.EntityOrError{
 					{
-						EntityValues: drpc.FieldValueMap{
-							"c1":               {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
-							"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
-							"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
-							"c3":               {ElemValue: &drpc.RawValue{StringValue: testutil.TestStringPtr("f3value")}},
-							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
-							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testutil.TestBoolPtr(false)}},
-							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testutil.TestInt32Ptr(1)}},
+						EntityValues: dosarpc.FieldValueMap{
+							"c1":               {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
+							"fieldNotInSchema": {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
+							"c2":               {ElemValue: &dosarpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
+							"c3":               {ElemValue: &dosarpc.RawValue{StringValue: testutil.TestStringPtr("f3value")}},
+							"c4":               {ElemValue: &dosarpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
+							"c5":               {ElemValue: &dosarpc.RawValue{BoolValue: testutil.TestBoolPtr(false)}},
+							"c6":               {ElemValue: &dosarpc.RawValue{Int32Value: testutil.TestInt32Ptr(1)}},
 						},
 						Error: nil,
 					},
 					{
-						EntityValues: drpc.FieldValueMap{
-							"c1":               {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(2)}},
-							"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(15)}},
-							"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(12.2)}},
-							"c3":               {ElemValue: &drpc.RawValue{StringValue: testutil.TestStringPtr("f3value1")}},
-							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'a', 'i', '1', 'a', 'r', 'y'}}},
-							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testutil.TestBoolPtr(true)}},
-							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testutil.TestInt32Ptr(2)}},
+						EntityValues: dosarpc.FieldValueMap{
+							"c1":               {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(2)}},
+							"fieldNotInSchema": {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(15)}},
+							"c2":               {ElemValue: &dosarpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(12.2)}},
+							"c3":               {ElemValue: &dosarpc.RawValue{StringValue: testutil.TestStringPtr("f3value1")}},
+							"c4":               {ElemValue: &dosarpc.RawValue{BinaryValue: []byte{'a', 'i', '1', 'a', 'r', 'y'}}},
+							"c5":               {ElemValue: &dosarpc.RawValue{BoolValue: testutil.TestBoolPtr(true)}},
+							"c6":               {ElemValue: &dosarpc.RawValue{Int32Value: testutil.TestInt32Ptr(2)}},
 						},
 						Error: nil,
 					},
@@ -191,14 +191,14 @@ func TestYARPCClient_MultiRead(t *testing.T) {
 			ResponseErr: nil,
 		},
 		{
-			Request: &drpc.MultiReadRequest{
+			Request: &dosarpc.MultiReadRequest{
 				Ref: &testRPCSchemaRef,
-				KeyValues: []drpc.FieldValueMap{
+				KeyValues: []dosarpc.FieldValueMap{
 					{
-						"f1": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
+						"f1": &dosarpc.Value{ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
 					},
 					{
-						"f2": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(6)}},
+						"f2": &dosarpc.Value{ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(6)}},
 					},
 				},
 				FieldsToRead: map[string]struct{}{"f1": {}},
@@ -207,68 +207,68 @@ func TestYARPCClient_MultiRead(t *testing.T) {
 			ResponseErr: errors.New("test error"),
 		},
 		{
-			Request: &drpc.MultiReadRequest{
+			Request: &dosarpc.MultiReadRequest{
 				Ref: &testRPCSchemaRef,
-				KeyValues: []drpc.FieldValueMap{
+				KeyValues: []dosarpc.FieldValueMap{
 					{
-						"f1": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
+						"f1": &dosarpc.Value{ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
 					},
 					{
-						"f2": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(6)}},
+						"f2": &dosarpc.Value{ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(6)}},
 					},
 				},
 				FieldsToRead: map[string]struct{}{"f1": {}},
 			},
-			Response: &drpc.MultiReadResponse{
-				Results: []*drpc.EntityOrError{
+			Response: &dosarpc.MultiReadResponse{
+				Results: []*dosarpc.EntityOrError{
 					{
-						EntityValues: drpc.FieldValueMap{
-							"c1":               {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
-							"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
-							"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
-							"c3":               {ElemValue: &drpc.RawValue{StringValue: testutil.TestStringPtr("f3value")}},
-							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
-							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testutil.TestBoolPtr(false)}},
-							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testutil.TestInt32Ptr(1)}},
+						EntityValues: dosarpc.FieldValueMap{
+							"c1":               {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
+							"fieldNotInSchema": {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
+							"c2":               {ElemValue: &dosarpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
+							"c3":               {ElemValue: &dosarpc.RawValue{StringValue: testutil.TestStringPtr("f3value")}},
+							"c4":               {ElemValue: &dosarpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
+							"c5":               {ElemValue: &dosarpc.RawValue{BoolValue: testutil.TestBoolPtr(false)}},
+							"c6":               {ElemValue: &dosarpc.RawValue{Int32Value: testutil.TestInt32Ptr(1)}},
 						},
 						Error: nil,
 					},
 					{
-						Error: &drpc.Error{Msg: testutil.TestStringPtr("error fetching entity")},
+						Error: &dosarpc.Error{Msg: testutil.TestStringPtr("error fetching entity")},
 					},
 				},
 			},
 			ResponseErr: nil,
 		},
 		{
-			Request: &drpc.MultiReadRequest{
+			Request: &dosarpc.MultiReadRequest{
 				Ref: &testRPCSchemaRef,
-				KeyValues: []drpc.FieldValueMap{
+				KeyValues: []dosarpc.FieldValueMap{
 					{
-						"f1": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
+						"f1": &dosarpc.Value{ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
 					},
 					{
-						"f2": &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(6)}},
+						"f2": &dosarpc.Value{ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(6)}},
 					},
 				},
 				FieldsToRead: map[string]struct{}{"f1": {}},
 			},
-			Response: &drpc.MultiReadResponse{
-				Results: []*drpc.EntityOrError{
+			Response: &dosarpc.MultiReadResponse{
+				Results: []*dosarpc.EntityOrError{
 					{
-						EntityValues: drpc.FieldValueMap{
-							"c1":               {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
-							"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
-							"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
-							"c3":               {ElemValue: &drpc.RawValue{StringValue: testutil.TestStringPtr("f3value")}},
-							"c4":               {ElemValue: &drpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
-							"c5":               {ElemValue: &drpc.RawValue{BoolValue: testutil.TestBoolPtr(false)}},
-							"c6":               {ElemValue: &drpc.RawValue{Int32Value: testutil.TestInt32Ptr(1)}},
+						EntityValues: dosarpc.FieldValueMap{
+							"c1":               {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
+							"fieldNotInSchema": {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
+							"c2":               {ElemValue: &dosarpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
+							"c3":               {ElemValue: &dosarpc.RawValue{StringValue: testutil.TestStringPtr("f3value")}},
+							"c4":               {ElemValue: &dosarpc.RawValue{BinaryValue: []byte{'b', 'i', 'n', 'a', 'r', 'y'}}},
+							"c5":               {ElemValue: &dosarpc.RawValue{BoolValue: testutil.TestBoolPtr(false)}},
+							"c6":               {ElemValue: &dosarpc.RawValue{Int32Value: testutil.TestInt32Ptr(1)}},
 						},
 						Error: nil,
 					},
 					{
-						Error: &drpc.Error{
+						Error: &dosarpc.Error{
 							Msg:         testutil.TestStringPtr("entity not found"),
 							ShouldRetry: testutil.TestBoolPtr(false),
 							ErrCode:     testutil.TestInt32Ptr(404),
@@ -328,14 +328,14 @@ func TestYARPCClient_CreateIfNotExists(t *testing.T) {
 		// build up the input field list and the output field list
 		// the layout is quite different; inputs are a simple map but the actual RPC call expects a messier format
 		inFields := map[string]dosa.FieldValue{}
-		outFields := drpc.FieldValueMap{}
+		outFields := dosarpc.FieldValueMap{}
 		for _, item := range vals {
 			inFields[item.Name] = item.Value
 			rv, _ := RawValueFromInterface(item.Value)
-			outFields[item.Name] = &drpc.Value{ElemValue: rv}
+			outFields[item.Name] = &dosarpc.Value{ElemValue: rv}
 		}
 
-		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields, TTL: &nt}, gomock.Any())
+		mockedClient.EXPECT().CreateIfNotExists(ctx, &dosarpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields, TTL: &nt}, gomock.Any())
 
 		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
@@ -346,8 +346,8 @@ func TestYARPCClient_CreateIfNotExists(t *testing.T) {
 		assert.Nil(t, err)
 
 		errCode := int32(409)
-		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields, TTL: &nt}, gomock.Any()).Return(
-			&drpc.BadRequestError{ErrorCode: &errCode},
+		mockedClient.EXPECT().CreateIfNotExists(ctx, &dosarpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields, TTL: &nt}, gomock.Any()).Return(
+			&dosarpc.BadRequestError{ErrorCode: &errCode},
 		)
 
 		err = sut.CreateIfNotExists(ctx, testEi, inFields)
@@ -391,14 +391,14 @@ func TestYARPCClient_CreateIfNotExistsWithTTL(t *testing.T) {
 		tl := time.Duration(ttl)
 		ei.TTL = &tl
 		inFields := map[string]dosa.FieldValue{}
-		outFields := drpc.FieldValueMap{}
+		outFields := dosarpc.FieldValueMap{}
 		for _, item := range vals {
 			inFields[item.Name] = item.Value
 			rv, _ := RawValueFromInterface(item.Value)
-			outFields[item.Name] = &drpc.Value{ElemValue: rv}
+			outFields[item.Name] = &dosarpc.Value{ElemValue: rv}
 		}
 
-		mockedClient.EXPECT().CreateIfNotExists(ctx, &drpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields, TTL: &ttl}, gomock.Any())
+		mockedClient.EXPECT().CreateIfNotExists(ctx, &dosarpc.CreateRequest{Ref: &testRPCSchemaRef, EntityValues: outFields, TTL: &ttl}, gomock.Any())
 
 		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
@@ -422,14 +422,14 @@ func TestYARPCClient_Upsert(t *testing.T) {
 		// build up the input field list and the output field list
 		// the layout is quite different; inputs are a simple map but the actual RPC call expects a messier format
 		inFields := map[string]dosa.FieldValue{}
-		outFields := map[string]*drpc.Value{}
+		outFields := map[string]*dosarpc.Value{}
 		for _, item := range vals {
 			inFields[item.Name] = item.Value
 			rv, _ := RawValueFromInterface(item.Value)
-			outFields[item.Name] = &drpc.Value{ElemValue: rv}
+			outFields[item.Name] = &dosarpc.Value{ElemValue: rv}
 		}
 
-		mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
+		mockedClient.EXPECT().Upsert(ctx, &dosarpc.UpsertRequest{
 			Ref:          &testRPCSchemaRef,
 			EntityValues: outFields,
 			TTL:          &nt,
@@ -478,16 +478,16 @@ func TestYARPCClient_UpsertWithTTL(t *testing.T) {
 		// build up the input field list and the output field list
 		// the layout is quite different; inputs are a simple map but the actual RPC call expects a messier format
 		inFields := map[string]dosa.FieldValue{}
-		outFields := map[string]*drpc.Value{}
+		outFields := map[string]*dosarpc.Value{}
 		for _, item := range vals {
 			inFields[item.Name] = item.Value
 			rv, _ := RawValueFromInterface(item.Value)
-			outFields[item.Name] = &drpc.Value{ElemValue: rv}
+			outFields[item.Name] = &dosarpc.Value{ElemValue: rv}
 		}
 
 		tl := time.Duration(ttl)
 		ei.TTL = &tl
-		mockedClient.EXPECT().Upsert(ctx, &drpc.UpsertRequest{
+		mockedClient.EXPECT().Upsert(ctx, &dosarpc.UpsertRequest{
 			Ref:          &testRPCSchemaRef,
 			EntityValues: outFields,
 			TTL:          &ttl,
@@ -515,7 +515,7 @@ func TestYARPCClient_MultiUpsert(t *testing.T) {
 
 	testCases := []struct {
 		NetworkError  error
-		ResponseError *drpc.Error
+		ResponseError *dosarpc.Error
 		UpsertRequest []struct {
 			Name  string
 			Value interface{}
@@ -542,7 +542,7 @@ func TestYARPCClient_MultiUpsert(t *testing.T) {
 		},
 		{
 			nil,
-			&drpc.Error{
+			&dosarpc.Error{
 				Msg: &testErrMsg,
 			},
 			getStubbedUpsertRequests()[0],
@@ -554,11 +554,11 @@ func TestYARPCClient_MultiUpsert(t *testing.T) {
 		// build up the input field list and the output field list
 		// the layout is quite different; inputs are a simple map but the actual RPC call expects a messier format
 		inFields := map[string]dosa.FieldValue{}
-		outFields := map[string]*drpc.Value{}
+		outFields := map[string]*dosarpc.Value{}
 		for _, item := range testCase.UpsertRequest {
 			inFields[item.Name] = item.Value
 			rv, _ := RawValueFromInterface(item.Value)
-			outFields[item.Name] = &drpc.Value{ElemValue: rv}
+			outFields[item.Name] = &dosarpc.Value{ElemValue: rv}
 		}
 
 		ei := newTestEi()
@@ -572,11 +572,11 @@ func TestYARPCClient_MultiUpsert(t *testing.T) {
 		durationTTL := time.Duration(*expectedTTL)
 		ei.TTL = &durationTTL
 
-		mockedClient.EXPECT().MultiUpsert(ctx, &drpc.MultiUpsertRequest{
+		mockedClient.EXPECT().MultiUpsert(ctx, &dosarpc.MultiUpsertRequest{
 			Ref:      &testRPCSchemaRef,
-			Entities: []drpc.FieldValueMap{outFields},
+			Entities: []dosarpc.FieldValueMap{outFields},
 			// TTL:      expectedTTL,
-		}, gomock.Any()).Return(&drpc.MultiUpsertResponse{Errors: []*drpc.Error{testCase.ResponseError}}, testCase.NetworkError).Times(1)
+		}, gomock.Any()).Return(&dosarpc.MultiUpsertResponse{Errors: []*dosarpc.Error{testCase.ResponseError}}, testCase.NetworkError).Times(1)
 
 		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
@@ -613,7 +613,7 @@ func TestYARPCClient_MultiRemove(t *testing.T) {
 
 	testCases := []struct {
 		NetworkError  error
-		ResponseError *drpc.Error
+		ResponseError *dosarpc.Error
 		RemoveRequest map[string]dosa.FieldValue
 	}{
 		{
@@ -628,7 +628,7 @@ func TestYARPCClient_MultiRemove(t *testing.T) {
 		},
 		{
 			nil,
-			&drpc.Error{
+			&dosarpc.Error{
 				Msg: &testErrMsg,
 			},
 			getStubbedRemoveRequest(),
@@ -636,10 +636,10 @@ func TestYARPCClient_MultiRemove(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		mockedClient.EXPECT().MultiRemove(ctx, &drpc.MultiRemoveRequest{
+		mockedClient.EXPECT().MultiRemove(ctx, &dosarpc.MultiRemoveRequest{
 			Ref:       &testRPCSchemaRef,
-			KeyValues: []drpc.FieldValueMap{getStubbedRemoveDOSARequest()},
-		}, gomock.Any()).Return(&drpc.MultiRemoveResponse{Errors: []*drpc.Error{testCase.ResponseError}}, testCase.NetworkError).Times(1)
+			KeyValues: []dosarpc.FieldValueMap{getStubbedRemoveDOSARequest()},
+		}, gomock.Any()).Return(&dosarpc.MultiRemoveResponse{Errors: []*dosarpc.Error{testCase.ResponseError}}, testCase.NetworkError).Times(1)
 
 		// create the YARPCClient and give it the mocked RPC interface
 		// see https://en.wiktionary.org/wiki/SUT for the reason this is called sut
@@ -684,30 +684,30 @@ func TestClient_CheckSchema(t *testing.T) {
 	ed, err := dosa.TableFromInstance(&TestDosaObject{})
 	assert.NoError(t, err)
 	assert.Equal(t, ed.ETL, dosa.EtlOn)
-	expectedRequest := &drpc.CheckSchemaRequest{
+	expectedRequest := &dosarpc.CheckSchemaRequest{
 		Scope:      &sp,
 		NamePrefix: &prefix,
 		EntityDefs: EntityDefsToThrift([]*dosa.EntityDefinition{&ed.EntityDefinition}),
 	}
 	assert.Equal(t, ETLStateToThrift(ed.ETL), *expectedRequest.EntityDefs[0].Etl)
-	expectedRequest2 := &drpc.CanUpsertSchemaRequest{
+	expectedRequest2 := &dosarpc.CanUpsertSchemaRequest{
 		Scope:      &sp,
 		NamePrefix: &prefix,
 		EntityDefs: EntityDefsToThrift([]*dosa.EntityDefinition{&ed.EntityDefinition}),
 	}
 	v := int32(1)
 
-	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.CheckSchemaRequest, opts yarpc2.CallOption) {
+	mockedClient.EXPECT().CheckSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *dosarpc.CheckSchemaRequest, opts goyarpc.CallOption) {
 		assert.Equal(t, expectedRequest, request)
 		assert.NotNil(t, request.EntityDefs[0].Etl)
-	}).Return(&drpc.CheckSchemaResponse{Version: &v}, nil)
+	}).Return(&dosarpc.CheckSchemaResponse{Version: &v}, nil)
 	sr, err := sut.CheckSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
 	assert.Equal(t, v, sr)
 
-	mockedClient.EXPECT().CanUpsertSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.CanUpsertSchemaRequest, opts yarpc2.CallOption) {
+	mockedClient.EXPECT().CanUpsertSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *dosarpc.CanUpsertSchemaRequest, opts goyarpc.CallOption) {
 		assert.Equal(t, expectedRequest2, request)
-	}).Return(&drpc.CanUpsertSchemaResponse{Version: &v}, nil)
+	}).Return(&dosarpc.CanUpsertSchemaResponse{Version: &v}, nil)
 	sr, err = sut.CanUpsertSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
 	assert.Equal(t, v, sr)
@@ -722,15 +722,15 @@ func TestClient_CheckSchemaStatus(t *testing.T) {
 	version := int32(1)
 	sut := Connector{client: mockedClient}
 
-	expectedRequest := &drpc.CheckSchemaStatusRequest{
+	expectedRequest := &dosarpc.CheckSchemaStatusRequest{
 		Scope:      &sp,
 		NamePrefix: &prefix,
 		Version:    &version,
 	}
 
-	mockedClient.EXPECT().CheckSchemaStatus(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.CheckSchemaStatusRequest, opts yarpc2.CallOption) {
+	mockedClient.EXPECT().CheckSchemaStatus(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *dosarpc.CheckSchemaStatusRequest, opts goyarpc.CallOption) {
 		assert.Equal(t, expectedRequest, request)
-	}).Return(&drpc.CheckSchemaStatusResponse{Version: &version}, nil)
+	}).Return(&dosarpc.CheckSchemaStatusResponse{Version: &version}, nil)
 
 	sr, err := sut.CheckSchemaStatus(ctx, sp, prefix, version)
 	assert.NoError(t, err)
@@ -748,15 +748,15 @@ func TestClient_UpsertSchema(t *testing.T) {
 	sp := "scope"
 	prefix := "prefix"
 
-	expectedRequest := &drpc.UpsertSchemaRequest{
+	expectedRequest := &dosarpc.UpsertSchemaRequest{
 		Scope:      &sp,
 		NamePrefix: &prefix,
 		EntityDefs: EntityDefsToThrift([]*dosa.EntityDefinition{&ed.EntityDefinition}),
 	}
 	v := int32(1)
-	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.UpsertSchemaRequest, option yarpc2.CallOption) {
+	mockedClient.EXPECT().UpsertSchema(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *dosarpc.UpsertSchemaRequest, option goyarpc.CallOption) {
 		assert.Equal(t, expectedRequest, request)
-	}).Return(&drpc.UpsertSchemaResponse{Version: &v}, nil)
+	}).Return(&dosarpc.UpsertSchemaResponse{Version: &v}, nil)
 	result, err := sut.UpsertSchema(ctx, sp, prefix, []*dosa.EntityDefinition{&ed.EntityDefinition})
 	assert.NoError(t, err)
 	assert.Equal(t, &dosa.SchemaStatus{Version: v}, result)
@@ -824,17 +824,17 @@ func TestConnector_Range(t *testing.T) {
 	responseToken := "responseToken"
 	testLimit := int32(32)
 	// set up the parameters
-	op := drpc.OperatorEq
+	op := dosarpc.OperatorEq
 	fieldName := "c1"
 	fieldName1 := "c2"
-	field := drpc.Field{&fieldName, &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(10)}}}
-	field1 := drpc.Field{&fieldName1, &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(10)}}}
+	field := dosarpc.Field{&fieldName, &dosarpc.Value{ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(10)}}}
+	field1 := dosarpc.Field{&fieldName1, &dosarpc.Value{ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(10)}}}
 
 	// Prepare the dosa client interface using the mocked RPC layer
 	sut := Connector{client: mockedClient}
 
 	// successful call, return results
-	mockedClient.EXPECT().Range(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.RangeRequest, opts yarpc2.CallOption) {
+	mockedClient.EXPECT().Range(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *dosarpc.RangeRequest, opts goyarpc.CallOption) {
 		assert.Equal(t, map[string]struct{}{"c1": {}}, request.FieldsToRead)
 		assert.Equal(t, testLimit, *request.Limit)
 		assert.Equal(t, testRPCSchemaRef, *request.Ref)
@@ -848,12 +848,12 @@ func TestConnector_Range(t *testing.T) {
 			}
 		}
 		assert.Equal(t, len(request.Conditions), 2)
-	}).Return(&drpc.RangeResponse{
-		Entities: []drpc.FieldValueMap{
+	}).Return(&dosarpc.RangeResponse{
+		Entities: []dosarpc.FieldValueMap{
 			{
-				"c1":               {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
-				"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
-				"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
+				"c1":               {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
+				"fieldNotInSchema": {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
+				"c2":               {ElemValue: &dosarpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
 			},
 		},
 		NextToken: &responseToken,
@@ -918,10 +918,10 @@ func TestConnector_RemoveRange(t *testing.T) {
 
 	sut := Connector{client: mockedClient}
 	fieldName := "c1"
-	field := drpc.Field{&fieldName, &drpc.Value{ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(10)}}}
-	op := drpc.OperatorEq
+	field := dosarpc.Field{&fieldName, &dosarpc.Value{ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(10)}}}
+	op := dosarpc.OperatorEq
 
-	mockedClient.EXPECT().RemoveRange(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *drpc.RemoveRangeRequest, option yarpc2.CallOption) {
+	mockedClient.EXPECT().RemoveRange(ctx, gomock.Any(), gomock.Any()).Do(func(_ context.Context, request *dosarpc.RemoveRangeRequest, option goyarpc.CallOption) {
 		assert.Equal(t, testRPCSchemaRef, *request.Ref)
 		assert.Equal(t, len(request.Conditions), 1)
 		condition := request.Conditions[0]
@@ -967,7 +967,7 @@ func TestConnector_Scan(t *testing.T) {
 	responseToken := "responseToken"
 	testLimit := int32(32)
 	// set up the parameters for success request
-	sr := &drpc.ScanRequest{
+	sr := &dosarpc.ScanRequest{
 		Ref:          &testRPCSchemaRef,
 		Token:        &testToken,
 		Limit:        &testLimit,
@@ -975,7 +975,7 @@ func TestConnector_Scan(t *testing.T) {
 	}
 
 	// set up the parameters for notfound request
-	srNotFound := &drpc.ScanRequest{
+	srNotFound := &dosarpc.ScanRequest{
 		Ref:          &testRPCSchemaRef,
 		Token:        &testToken,
 		Limit:        &testLimit,
@@ -983,7 +983,7 @@ func TestConnector_Scan(t *testing.T) {
 	}
 
 	// set up the parameters for error request
-	srErr := &drpc.ScanRequest{
+	srErr := &dosarpc.ScanRequest{
 		Ref:          &testRPCSchemaRef,
 		Token:        &testToken,
 		Limit:        &testLimit,
@@ -992,15 +992,15 @@ func TestConnector_Scan(t *testing.T) {
 
 	// successful call, return results
 	mockedClient.EXPECT().Scan(ctx, sr, gomock.Any()).
-		Do(func(_ context.Context, r *drpc.ScanRequest, option yarpc2.CallOption) {
+		Do(func(_ context.Context, r *dosarpc.ScanRequest, option goyarpc.CallOption) {
 			assert.Equal(t, sr, r)
 		}).
-		Return(&drpc.ScanResponse{
-			Entities: []drpc.FieldValueMap{
+		Return(&dosarpc.ScanResponse{
+			Entities: []dosarpc.FieldValueMap{
 				{
-					"c1":               {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
-					"fieldNotInSchema": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
-					"c2":               {ElemValue: &drpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
+					"c1":               {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(1)}},
+					"fieldNotInSchema": {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}},
+					"c2":               {ElemValue: &dosarpc.RawValue{DoubleValue: testutil.TestFloat64Ptr(2.2)}},
 				},
 			},
 			NextToken: &responseToken,
@@ -1046,7 +1046,7 @@ func TestConnector_Remove(t *testing.T) {
 	mockedClient := dosatest.NewMockClient(ctrl)
 
 	// set up the parameters
-	removeRequest := &drpc.RemoveRequest{
+	removeRequest := &dosarpc.RemoveRequest{
 		Ref:       &testRPCSchemaRef,
 		KeyValues: getStubbedRemoveDOSARequest(),
 	}
@@ -1100,8 +1100,8 @@ func getStubbedUpsertRequests() [][]struct {
 	}
 }
 
-func getStubbedRemoveDOSARequest() map[string]*drpc.Value {
-	return map[string]*drpc.Value{"f1": {ElemValue: &drpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}}}
+func getStubbedRemoveDOSARequest() map[string]*dosarpc.Value {
+	return map[string]*dosarpc.Value{"f1": {ElemValue: &dosarpc.RawValue{Int64Value: testutil.TestInt64Ptr(5)}}}
 }
 
 func getStubbedRemoveRequest() map[string]dosa.FieldValue {
