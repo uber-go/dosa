@@ -33,7 +33,7 @@ import (
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 	"github.com/uber/dosa-idl/.gen/dosa/dosaclient"
-	rpc "go.uber.org/yarpc"
+	gorpc "go.uber.org/yarpc"
 	"go.uber.org/yarpc/peer"
 	"go.uber.org/yarpc/peer/hostport"
 	"go.uber.org/yarpc/transport/grpc"
@@ -81,12 +81,12 @@ type Config struct {
 // Connector holds the client-side RPC interface and some schema information
 type Connector struct {
 	client     dosaclient.Interface
-	dispatcher *rpc.Dispatcher
+	dispatcher *gorpc.Dispatcher
 	headers    map[string]string
 }
 
-func buildYARPCConfig(config Config) (rpc.Config, error) {
-	ycfg := rpc.Config{Name: config.CallerName}
+func buildYARPCConfig(config Config) (gorpc.Config, error) {
+	ycfg := gorpc.Config{Name: config.CallerName}
 	hostPort := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	switch strings.ToLower(config.Transport) {
 	case tchannelTransport:
@@ -97,7 +97,7 @@ func buildYARPCConfig(config Config) (rpc.Config, error) {
 		if err != nil {
 			return ycfg, err
 		}
-		ycfg.Outbounds = rpc.Outbounds{
+		ycfg.Outbounds = gorpc.Outbounds{
 			config.ServiceName: {
 				Unary: ts.NewSingleOutbound(hostPort),
 			},
@@ -113,7 +113,7 @@ func buildYARPCConfig(config Config) (rpc.Config, error) {
 			uri.Host = fmt.Sprintf("%s:%s", uri.Host, config.Port)
 		}
 		ts := http.NewTransport()
-		ycfg.Outbounds = rpc.Outbounds{
+		ycfg.Outbounds = gorpc.Outbounds{
 			config.ServiceName: {
 				Unary: ts.NewSingleOutbound(uri.String()),
 			},
@@ -125,7 +125,7 @@ func buildYARPCConfig(config Config) (rpc.Config, error) {
 			hostport.Identify(hostPort),
 			ts.NewDialer(grpc.DialerCredentials(tc)),
 		)
-		ycfg.Outbounds = rpc.Outbounds{
+		ycfg.Outbounds = gorpc.Outbounds{
 			config.ServiceName: {
 				Unary: ts.NewOutbound(chooser),
 			},
@@ -168,7 +168,7 @@ func NewConnector(config Config) (*Connector, error) {
 
 	// important to note that this will panic if config contains invalid
 	// values such as service name containing invalid characters
-	dispatcher := rpc.NewDispatcher(ycfg)
+	dispatcher := gorpc.NewDispatcher(ycfg)
 	if err := dispatcher.Start(); err != nil {
 		return nil, err
 	}
