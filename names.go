@@ -43,14 +43,13 @@ var (
 )
 
 // DosaNamingRule DOSA Name Rule
-const DosaNamingRule = `DOSA valid names must start with a letter or underscore,
-and may contain letters, digits, and underscores, and must not be longer than 32 characters.`
+const DosaNamingRule = "DOSA valid names must start with a letter or underscore, and may contain letters, digits, and underscores, and must not be longer than 32 characters."
 
 // IsValidNamePrefix checks if a name prefix is valid.
 func IsValidNamePrefix(namePrefix string) error {
 	normalized := strings.ToLower(strings.TrimSpace(namePrefix))
 	if !namePrefixRegex.MatchString(normalized) {
-		return errors.Errorf("invalid name-prefix '%s' %s", namePrefix, DosaNamingRule)
+		return errors.Errorf("invalid name-prefix '%s': %s", namePrefix, DosaNamingRule)
 	}
 	return nil
 }
@@ -58,7 +57,7 @@ func IsValidNamePrefix(namePrefix string) error {
 // IsValidName checks if a string corresponds to DOSA naming rules.
 func IsValidName(name string) error {
 	if !nameRegex.MatchString(name) {
-		return errors.Errorf("invalid name '%s' %s", name, DosaNamingRule)
+		return errors.Errorf("invalid name '%s': %s", name, DosaNamingRule)
 	}
 	return nil
 }
