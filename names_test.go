@@ -80,6 +80,7 @@ func TestIsValidName(t *testing.T) {
 			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", testData.arg))
 		} else {
 			assert.Error(t, err, fmt.Sprintf("expect error but got no error for %s", testData.arg))
+			assert.Contains(t, err.Error(), DosaNamingRule)
 		}
 	}
 }
@@ -127,6 +128,7 @@ func TestNormalizeName(t *testing.T) {
 				fmt.Sprintf("unexpected normalized name for %s", testData.arg))
 		} else {
 			assert.Error(t, err, fmt.Sprintf("expect error but got no error for %s", testData.arg))
+			assert.Contains(t, err.Error(), DosaNamingRule)
 		}
 	}
 }
@@ -140,15 +142,19 @@ func TestIsValidNamePrefix(t *testing.T) {
 
 	err = IsValidNamePrefix("")
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), DosaNamingRule)
 
 	err = IsValidNamePrefix("service.an entity")
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), DosaNamingRule)
 
 	err = IsValidNamePrefix("germanRush.über")
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), DosaNamingRule)
 
 	err = IsValidNamePrefix("this.prefix.has.more.than.thrity.two.characters.in.it")
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), DosaNamingRule)
 }
 
 func TestNormalizeNamePrefix(t *testing.T) {
@@ -199,6 +205,7 @@ func TestNormalizeNamePrefix(t *testing.T) {
 		name, err := NormalizeNamePrefix(tc.arg)
 		if tc.bogus {
 			assert.Error(t, err)
+			assert.Contains(t, err.Error(), DosaNamingRule)
 		} else {
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, name)
