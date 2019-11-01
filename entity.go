@@ -205,9 +205,9 @@ func (cd *ColumnDefinition) String() string {
 
 // IndexDefinition stores information about a DOSA entity's index
 type IndexDefinition struct {
-	Key       *PrimaryKey
-	Columns   []string
-	TableName string
+	Key        *PrimaryKey
+	Columns    []string
+	TableAlias string // May be empty
 }
 
 // Clone returns a deep copy of IndexDefinition
