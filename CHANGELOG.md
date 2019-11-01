@@ -1,7 +1,7 @@
 # Changelog
 
 ##v3.4.12 (unreleased)
- Nothing changed yet.
+ - Nothing changed yet.
 
 ## v3.4.11 (2019-11-01)
  - Improve yarpc connector naming, differentiate goyarpc from dosarpc
