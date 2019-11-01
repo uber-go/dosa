@@ -1,6 +1,9 @@
 # Changelog
 
-## v3.4.11 (unreleased)
+## v3.4.12 (unreleased)
+ - Nothing changed yet.
+
+## v3.4.11 (2019-11-01)
  - Improve yarpc connector naming, differentiate goyarpc from dosarpc
  - Improve the error message if name is invalid
  - Add TableName to IndexDefinition
