@@ -1,6 +1,6 @@
 # Changelog
 
-##v3.4.12 (unreleased)
+## v3.4.12 (unreleased)
  - Nothing changed yet.
 
 ## v3.4.11 (2019-11-01)
