@@ -54,47 +54,28 @@ func TestPrimaryKey(t *testing.T) {
 		},
 		{
 			PrimaryKey: "pk1,,",
-			Error:      nil,
-			Result: &PrimaryKey{
-				PartitionKeys:  []string{"pk1"},
-				ClusteringKeys: nil,
-			},
+			Error:      errors.New("invalid partition key"),
+			Result:     nil,
 		},
 		{
 			PrimaryKey: "pk1, pk2",
-			Error:      errors.New("invalid primary key: pk1, pk2"),
+			Error:      errors.New("invalid partition key"),
 			Result:     nil,
 		},
 		{
 			PrimaryKey: "pk1 desc",
-			Error:      errors.New("invalid primary key: pk1 desc"),
+			Error:      errors.New("invalid partition key"),
 			Result:     nil,
 		},
 		{
 			PrimaryKey: "(pk1, pk2,)",
-			Error:      nil,
-			Result: &PrimaryKey{
-				PartitionKeys: []string{"pk1"},
-				ClusteringKeys: []*ClusteringKey{
-					{
-						Name:       "pk2",
-						Descending: false,
-					},
-				},
-			},
+			Error:      errors.New("invalid primary key"),
+			Result:     nil,
 		},
 		{
 			PrimaryKey: "(pk1, pk2,),  , , ,",
-			Error:      nil,
-			Result: &PrimaryKey{
-				PartitionKeys: []string{"pk1"},
-				ClusteringKeys: []*ClusteringKey{
-					{
-						Name:       "pk2",
-						Descending: false,
-					},
-				},
-			},
+			Error:      errors.New("invalid primary key"),
+			Result:     nil,
 		},
 		{
 			PrimaryKey: "(pk1        , pk2              )",
@@ -111,16 +92,8 @@ func TestPrimaryKey(t *testing.T) {
 		},
 		{
 			PrimaryKey: "(pk1, , pk2,)",
-			Error:      nil,
-			Result: &PrimaryKey{
-				PartitionKeys: []string{"pk1"},
-				ClusteringKeys: []*ClusteringKey{
-					{
-						Name:       "pk2",
-						Descending: false,
-					},
-				},
-			},
+			Error:      errors.New("invalid primary key"),
+			Result:     nil,
 		},
 		{
 			PrimaryKey: "(pk1, pk2, io-$%^*)",
@@ -217,7 +190,7 @@ func TestPrimaryKey(t *testing.T) {
 			},
 		}, {
 			PrimaryKey: "((pk1, pk2), pk3 asc, pk4 zxdlk)",
-			Error:      errors.New("invalid primary key: ((pk1, pk2), pk3 asc, pk4 zxdlk)"),
+			Error:      errors.New("invalid clustering key order"),
 			Result:     nil,
 		},
 		{
@@ -252,7 +225,7 @@ func TestPrimaryKey(t *testing.T) {
 	}
 
 	for _, d := range data {
-		k, err := parsePrimaryKey("t", d.PrimaryKey)
+		k, err := parsePrimaryKey(d.PrimaryKey)
 		if nil == d.Error {
 			assert.Nil(t, err)
 			assert.Equal(t, d.Result.PartitionKeys, k.PartitionKeys)
@@ -266,60 +239,41 @@ func TestPrimaryKey(t *testing.T) {
 func TestNameTag(t *testing.T) {
 	defaultName := "default"
 	data := []struct {
-		Tag      string
-		Error    error
-		FullName string
-		Name     string
+		TagMaps map[string]string
+		Error   error
+		Name    string
 	}{
 		{
-			Tag:      "name=ji",
-			Error:    nil,
-			Name:     "ji",
-			FullName: "name=ji",
+			TagMaps: map[string]string{"name": "ji"},
+			Error:   nil,
+			Name:    "ji",
 		},
 		{
-			Tag:      "name=ji,",
-			Error:    nil,
-			Name:     "ji",
-			FullName: "name=ji,",
+			TagMaps: map[string]string{"name": "ji,,,,"},
+			Error:   errors.New("invalid"),
+			Name:    "",
 		},
 		{
-			Tag:      "name=ji,,,,",
-			Error:    nil,
-			Name:     "ji",
-			FullName: "name=ji,,,,",
+			TagMaps: map[string]string{"name": "ji12830"},
+			Error:   nil,
+			Name:    "ji12830",
 		},
 		{
-			Tag:      "name=ji12830",
-			Error:    nil,
-			Name:     "ji12830",
-			FullName: "name=ji12830",
+			TagMaps: map[string]string{"name": "name=ji^&*"},
+			Error:   errors.New("invalid"),
+			Name:    "",
 		},
 		{
-			Tag:      "name=ji12830 primaryKey=",
-			Error:    nil,
-			Name:     "ji12830",
-			FullName: "name=ji12830",
-		},
-		{
-			Tag:      "xxx name=ji12830 yyy",
-			Error:    nil,
-			Name:     "ji12830",
-			FullName: "name=ji12830",
-		},
-		{
-			Tag:      "name=ji^&*",
-			Error:    errors.New("invalid"),
-			Name:     "",
-			FullName: "",
+			TagMaps: map[string]string{},
+			Error:   nil,
+			Name:    defaultName,
 		},
 	}
 
 	for _, d := range data {
-		fullName, name, err := parseNameTag(d.Tag, defaultName)
+		name, err := parseNameTag(defaultName, d.TagMaps)
 		if d.Error == nil {
 			assert.Equal(t, d.Name, name)
-			assert.Equal(t, d.FullName, fullName)
 			assert.Nil(t, err)
 		} else {
 			assert.Contains(t, err.Error(), d.Error.Error())
@@ -381,17 +335,17 @@ func TestFieldParse(t *testing.T) {
 		{
 			StructField: validFieldType,
 			Tag:         "  name=  ",
-			Error:       errors.New("invalid name tag:   name="),
+			Error:       errors.New("invalid dosa field tag"),
 		},
 		{
 			StructField: validFieldType,
 			Tag:         "name=",
-			Error:       errors.New("invalid name tag: name="),
+			Error:       errors.New("invalid dosa field tag"),
 		},
 		{
 			StructField: validFieldType,
-			Tag:         "name=x name=0",
-			Error:       errors.New("invalid dosa field tag"),
+			Tag:         "name=x, name=0",
+			Error:       errors.New("duplicate tag"),
 		},
 	}
 	for _, d := range data {
@@ -469,7 +423,7 @@ func TestEntityParse(t *testing.T) {
 			},
 			ETL:   EtlOff,
 			TTL:   NoTTL(),
-			Error: nil,
+			Error: errors.New("invalid dosa annotation"),
 		},
 		{
 			Tag:       "primaryKey=(ok), name=jj",
@@ -494,7 +448,7 @@ func TestEntityParse(t *testing.T) {
 			Error: nil,
 		},
 		{
-			Tag:       "primaryKey=((ok, dd), a,b DESC,  c ASC) name=jj",
+			Tag:       "primaryKey=((ok, dd), a,b DESC,  c ASC), name=jj",
 			TableName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys: []string{"ok", "dd"},
@@ -581,7 +535,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
-			Error: errors.New("invalid ttl tag:    ttl=-80m: TTL is not allowed to set less than 1 second"),
+			Error: errors.New("invalid ttl tag"),
 			ETL:   EtlOn,
 			TTL:   NoTTL(),
 		},
@@ -614,7 +568,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
-			Error: errors.New("invalid ttl tag:    ttl = 912ms: TTL is not allowed to set less than 1 second"),
+			Error: errors.New("invalid ttl tag"),
 			ETL:   EtlOff,
 			TTL:   time.Millisecond * 912,
 		},
@@ -636,7 +590,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
-			Error: errors.New("struct testStruct with an invalid dosa struct tag: ttl"),
+			Error: errors.New("invalid ttl tag"),
 			ETL:   EtlOff,
 			TTL:   NoTTL(),
 		},
@@ -647,7 +601,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
-			Error: errors.New("invalid ttl tag:    ttl=: time: invalid duration"),
+			Error: errors.New("invalid ttl tag"),
 			ETL:   EtlOff,
 			TTL:   NoTTL(),
 		},
@@ -658,7 +612,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
-			Error: errors.New("invalid ttl tag:    ttl=1us: TTL is not allowed to set less than 1 second"),
+			Error: errors.New("invalid ttl tag"),
 			ETL:   EtlOff,
 			TTL:   NoTTL(),
 		},
@@ -669,7 +623,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
-			Error: errors.New("invalid"),
+			Error: errors.New("invalid etl tag"),
 			ETL:   EtlOff,
 		},
 		{
@@ -679,7 +633,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
-			Error: errors.New("invalid"),
+			Error: errors.New("invalid etl tag"),
 			ETL:   EtlOff,
 		},
 		{
@@ -692,19 +646,19 @@ func TestEntityParse(t *testing.T) {
 			Tag:        "primaryK=adsf, name=jj",
 			TableName:  "jj",
 			PrimaryKey: nil,
-			Error:      errors.New("dosa.Entity on object testStruct with an invalid dosa struct tag"),
+			Error:      errors.New("dosa.Entity on object testStruct with an invalid annotation"),
 		},
 		{
 			Tag:        "primaryKey=adsf, name=jj**",
 			TableName:  "jj",
 			PrimaryKey: nil,
-			Error:      errors.New("invalid name tag:  name=jj**"),
+			Error:      errors.New("invalid name tag"),
 		},
 		{
 			Tag:        "primaryKey=(ok), name=jj, nxxx",
 			TableName:  "jj",
 			PrimaryKey: nil,
-			Error:      errors.New("struct testStruct with an invalid dosa struct tag: nxxx"),
+			Error:      errors.New("dosa.Entity on object testStruct with an invalid annotation"),
 		},
 	}
 
@@ -789,7 +743,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "SearchByKey",
-			Error:          nil,
+			Error:          errors.New("dosa.Index on object SearchByKey with an invalid annotation"),
 		},
 		{
 			Tag:               "key=(ok), name=jj",
@@ -869,21 +823,21 @@ func TestIndexParse(t *testing.T) {
 			ExpectedIndexName: "jj",
 			PrimaryKey:        nil,
 			InputIndexName:    "SearchByKey",
-			Error:             errors.New("dosa.Index SearchByKey with an invalid dosa index tag"),
+			Error:             errors.New("dosa.Index on object SearchByKey with an invalid annotation"),
 		},
 		{
 			Tag:               "key=adsf, name=jj**",
 			ExpectedIndexName: "jj",
 			PrimaryKey:        nil,
 			InputIndexName:    "SearchByKey",
-			Error:             errors.New("invalid name tag:  name=jj**"),
+			Error:             errors.New("invalid name tag"),
 		},
 		{
 			Tag:               "key=(ok), name=jj, nxxx",
 			ExpectedIndexName: "jj",
 			PrimaryKey:        nil,
 			InputIndexName:    "SearchByKey",
-			Error:             errors.New("index field SearchByKey with an invalid dosa index tag: nxxx"),
+			Error:             errors.New("invalid dosa annotation nxxx"),
 		},
 		{
 			Tag:               "key=((ok)), name=jj",
@@ -903,7 +857,7 @@ func TestIndexParse(t *testing.T) {
 				ClusteringKeys: nil,
 			},
 			InputIndexName: "",
-			Error:          errors.New("invalid name tag"),
+			Error:          errors.New("invalid name"),
 		},
 		{
 			Tag:               "key=((ok))",
@@ -927,7 +881,7 @@ func TestIndexParse(t *testing.T) {
 			Error:          nil,
 		},
 		{
-			Tag:               "name=jj, key=ok, columns=(ok, test, hi,)",
+			Tag:               "name=jj, key=ok, columns=(ok, test, hi)",
 			ExpectedIndexName: "jj",
 			PrimaryKey: &PrimaryKey{
 				PartitionKeys:  []string{"ok"},
@@ -938,6 +892,28 @@ func TestIndexParse(t *testing.T) {
 			Error:          nil,
 		},
 		{
+			Tag:               "name=jj, key=ok, columns=(ok, test, hi,)",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Columns:        []string{"ok", "test", "hi"},
+			Error:          errors.New("invalid columns tag"),
+		},
+		{
+			Tag:               "name=jj, key=ok, columns=(ok, hi, hi)",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Columns:        []string{"ok", "test", "hi"},
+			Error:          errors.New("duplicate field hi in columns tag"),
+		},
+		{
 			Tag:               "name=jj, key=ok, columns=(ok, test, (hi),)",
 			ExpectedIndexName: "jj",
 			PrimaryKey: &PrimaryKey{
@@ -946,7 +922,18 @@ func TestIndexParse(t *testing.T) {
 			},
 			InputIndexName: "SearchByKey",
 			Columns:        []string{"ok", "test", "hi"},
-			Error:          errors.New("index field SearchByKey with an invalid dosa index tag: columns=(ok, test, (hi),)"),
+			Error:          errors.New("invalid columns tag"),
+		},
+		{
+			Tag:               "name=jj, key=ok, columns=(ok, test, (hi))",
+			ExpectedIndexName: "jj",
+			PrimaryKey: &PrimaryKey{
+				PartitionKeys:  []string{"ok"},
+				ClusteringKeys: nil,
+			},
+			InputIndexName: "SearchByKey",
+			Columns:        []string{"ok", "test", "hi"},
+			Error:          errors.New("invalid columns tag"),
 		},
 	}
 
