@@ -216,15 +216,15 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 	if err != nil {
 		if be, ok := err.(*dosarpc.BadRequestError); ok {
 			if be.ErrorCode != nil && *be.ErrorCode == errCodeAlreadyExists {
-				return errors.Wrap(&dosa.ErrAlreadyExists{}, "failed to create")
+				return errors.Wrap(&dosa.ErrAlreadyExists{}, "CreateIfNotExists failed")
 			}
 		}
 
 		if !dosarpc.Dosa_CreateIfNotExists_Helper.IsException(err) {
-			return errors.Wrap(err, "failed to CreateIfNotExists due to network issue")
+			return errors.Wrap(err, "CreateIfNotExists failed due to network issue")
 		}
 	}
-	return errors.Wrap(err, "failed to CreateIfNotExists")
+	return errors.Wrap(err, "CreateIfNotExists failed")
 }
 
 // Upsert inserts or updates your data
@@ -340,8 +340,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 		return nil, errors.Wrap(err, "failed to Read")
 	}
 
-	// no error, so for each column, transform it into the map of (col->value) items
-
+	// no error, so transform the row into a map colname->value
 	return decodeResults(ei, response.EntityValues), nil
 }
 
@@ -515,9 +514,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 func createRPCConditions(columnConditions map[string][]*dosa.Condition) ([]*dosarpc.Condition, error) {
 	rpcConditions := []*dosarpc.Condition{}
 	for field, conditions := range columnConditions {
-		// Warning: Don't remove this line.
-		// field variable always has the same address. If we want to dereference it, we have to assign the value to a new variable.
-		fieldName := field
+		fieldName := field // Warning: see https://github.com/golang/go/issues/20725.
 		for _, condition := range conditions {
 			rv, err := RawValueFromInterface(condition.Value)
 			if err != nil {
@@ -577,7 +574,7 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 			return dosa.InvalidVersion, errors.Wrap(err, "failed to CheckSchema due to network issue")
 		}
 
-		return dosa.InvalidVersion, wrapError(err, "failed to CheckSchema", scope)
+		return dosa.InvalidVersion, wrapError(err, "failed to CheckSchema")
 	}
 
 	return *response.Version, nil
@@ -597,9 +594,9 @@ func (c *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix strin
 	response, err := c.client.CanUpsertSchema(ctx, &csr, getHeaders(c.headers)...)
 	if err != nil {
 		if !dosarpc.Dosa_CanUpsertSchema_Helper.IsException(err) {
-			return dosa.InvalidVersion, errors.Wrap(err, "failed to CanUpsertSchema due to network issue")
+			return dosa.InvalidVersion, errors.Wrap(err, "CanUpsertSchema failed due to network issue")
 		}
-		return dosa.InvalidVersion, wrapError(err, "failed to CanUpsertSchema", scope)
+		return dosa.InvalidVersion, wrapError(err, "CanUpsertSchema failed")
 	}
 
 	return *response.Version, nil
@@ -619,7 +616,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 		if !dosarpc.Dosa_UpsertSchema_Helper.IsException(err) {
 			return nil, errors.Wrap(err, "failed to UpsertSchema due to network issue")
 		}
-		return nil, wrapError(err, "failed to UpsertSchema", scope)
+		return nil, wrapError(err, "failed to UpsertSchema")
 	}
 
 	status := ""
@@ -644,10 +641,10 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 
 	if err != nil {
 		if !dosarpc.Dosa_CheckSchemaStatus_Helper.IsException(err) {
-			return nil, errors.Wrap(err, "failed to CheckSchemaStatus due to network issue")
+			return nil, errors.Wrap(err, "CheckSchemaStatus failed due to network issue")
 		}
 
-		return nil, wrapError(err, "failed to CheckSchemaStatus", scope)
+		return nil, wrapError(err, "CheckSchemaStatus failed")
 	}
 
 	status := ""
@@ -656,7 +653,7 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 	}
 
 	if response.Version == nil {
-		return nil, errors.New("failed to ChecksShemaStatus: server returns version nil")
+		return nil, errors.New("CheckShemaStatus failed: server returned unknown version")
 	}
 
 	return &dosa.SchemaStatus{
@@ -747,7 +744,7 @@ func (c *Connector) Shutdown() error {
 	return c.dispatcher.Stop()
 }
 
-func wrapError(err error, message, scope string) error {
+func wrapError(err error, message string) error {
 	if ErrorIsConnectionRefused(err) {
 		err = &ErrConnectionRefused{err}
 	}

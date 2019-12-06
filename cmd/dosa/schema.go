@@ -150,6 +150,10 @@ func (c *SchemaCmd) doSchemaOp(name string, f func(dosa.AdminClient, context.Con
 	}
 	fmt.Printf("Version: %d\n", status.Version)
 	fmt.Printf("Status: %s\n", status.Status)
+	if strings.Contains(status.Status, "upgrade workflow is already in progress") {
+		fmt.Printf("Please re-try in ten minutes; if you get the same error, ask the DOSA oncaller to cancel the workflow.")
+	}
+
 	return nil
 }
 
