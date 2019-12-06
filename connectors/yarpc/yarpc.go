@@ -216,15 +216,15 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 	if err != nil {
 		if be, ok := err.(*dosarpc.BadRequestError); ok {
 			if be.ErrorCode != nil && *be.ErrorCode == errCodeAlreadyExists {
-				return errors.Wrap(&dosa.ErrAlreadyExists{}, "failed to create")
+				return errors.Wrap(&dosa.ErrAlreadyExists{}, "CreateIfNotExists failed")
 			}
 		}
 
 		if !dosarpc.Dosa_CreateIfNotExists_Helper.IsException(err) {
-			return errors.Wrap(err, "failed to CreateIfNotExists due to network issue")
+			return errors.Wrap(err, "CreateIfNotExists failed due to network issue")
 		}
 	}
-	return errors.Wrap(err, "failed to CreateIfNotExists")
+	return errors.Wrap(err, "CreateIfNotExists failed")
 }
 
 // Upsert inserts or updates your data
@@ -597,9 +597,9 @@ func (c *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix strin
 	response, err := c.client.CanUpsertSchema(ctx, &csr, getHeaders(c.headers)...)
 	if err != nil {
 		if !dosarpc.Dosa_CanUpsertSchema_Helper.IsException(err) {
-			return dosa.InvalidVersion, errors.Wrap(err, "failed to CanUpsertSchema due to network issue")
+			return dosa.InvalidVersion, errors.Wrap(err, "CanUpsertSchema failed due to network issue")
 		}
-		return dosa.InvalidVersion, wrapError(err, "failed to CanUpsertSchema")
+		return dosa.InvalidVersion, wrapError(err, "CanUpsertSchema failed")
 	}
 
 	return *response.Version, nil
