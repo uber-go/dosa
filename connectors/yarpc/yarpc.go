@@ -577,7 +577,7 @@ func (c *Connector) CheckSchema(ctx context.Context, scope, namePrefix string, e
 			return dosa.InvalidVersion, errors.Wrap(err, "failed to CheckSchema due to network issue")
 		}
 
-		return dosa.InvalidVersion, wrapError(err, "failed to CheckSchema", scope)
+		return dosa.InvalidVersion, wrapError(err, "failed to CheckSchema")
 	}
 
 	return *response.Version, nil
@@ -599,7 +599,7 @@ func (c *Connector) CanUpsertSchema(ctx context.Context, scope, namePrefix strin
 		if !dosarpc.Dosa_CanUpsertSchema_Helper.IsException(err) {
 			return dosa.InvalidVersion, errors.Wrap(err, "failed to CanUpsertSchema due to network issue")
 		}
-		return dosa.InvalidVersion, wrapError(err, "failed to CanUpsertSchema", scope)
+		return dosa.InvalidVersion, wrapError(err, "failed to CanUpsertSchema")
 	}
 
 	return *response.Version, nil
@@ -619,7 +619,7 @@ func (c *Connector) UpsertSchema(ctx context.Context, scope, namePrefix string, 
 		if !dosarpc.Dosa_UpsertSchema_Helper.IsException(err) {
 			return nil, errors.Wrap(err, "failed to UpsertSchema due to network issue")
 		}
-		return nil, wrapError(err, "failed to UpsertSchema", scope)
+		return nil, wrapError(err, "failed to UpsertSchema")
 	}
 
 	status := ""
@@ -644,10 +644,10 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 
 	if err != nil {
 		if !dosarpc.Dosa_CheckSchemaStatus_Helper.IsException(err) {
-			return nil, errors.Wrap(err, "failed to CheckSchemaStatus due to network issue")
+			return nil, errors.Wrap(err, "CheckSchemaStatus failed due to network issue")
 		}
 
-		return nil, wrapError(err, "failed to CheckSchemaStatus", scope)
+		return nil, wrapError(err, "CheckSchemaStatus failed")
 	}
 
 	status := ""
@@ -656,7 +656,7 @@ func (c *Connector) CheckSchemaStatus(ctx context.Context, scope, namePrefix str
 	}
 
 	if response.Version == nil {
-		return nil, errors.New("failed to ChecksShemaStatus: server returns version nil")
+		return nil, errors.New("CheckShemaStatus failed: server returned unknown version")
 	}
 
 	return &dosa.SchemaStatus{
@@ -747,7 +747,7 @@ func (c *Connector) Shutdown() error {
 	return c.dispatcher.Stop()
 }
 
-func wrapError(err error, message, scope string) error {
+func wrapError(err error, message string) error {
 	if ErrorIsConnectionRefused(err) {
 		err = &ErrConnectionRefused{err}
 	}
