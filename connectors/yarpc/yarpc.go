@@ -340,8 +340,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 		return nil, errors.Wrap(err, "failed to Read")
 	}
 
-	// no error, so for each column, transform it into the map of (col->value) items
-
+	// no error, so transform the row into a map colname->value
 	return decodeResults(ei, response.EntityValues), nil
 }
 
@@ -515,9 +514,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 func createRPCConditions(columnConditions map[string][]*dosa.Condition) ([]*dosarpc.Condition, error) {
 	rpcConditions := []*dosarpc.Condition{}
 	for field, conditions := range columnConditions {
-		// Warning: Don't remove this line.
-		// field variable always has the same address. If we want to dereference it, we have to assign the value to a new variable.
-		fieldName := field
+		fieldName := field // Warning: see https://github.com/golang/go/issues/20725.
 		for _, condition := range conditions {
 			rv, err := RawValueFromInterface(condition.Value)
 			if err != nil {
