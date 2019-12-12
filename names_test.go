@@ -29,58 +29,66 @@ import (
 
 func TestIsValidName(t *testing.T) {
 	dataProvider := []struct {
-		arg     string
-		allowed bool
+		arg string
+		err string
 	}{
 		{
-			arg:     "has_underscore",
-			allowed: true,
+			arg: "has_underscore",
 		},
 		{
-			arg:     "mixeDCase",
-			allowed: false,
+			arg: "mixeDCase",
+			err: "invalid name",
 		},
 		{
-			arg:     "md5",
-			allowed: true,
+			arg: "md5",
 		},
 		{
-			arg:     "_name",
-			allowed: true,
+			arg: "_name",
 		},
 		{
-			arg:     "_alreadynormalized9",
-			allowed: true,
+			arg: "_alreadynormalized9",
 		},
 		{
-			arg:     "123numberprefix",
-			allowed: false,
+			arg: "123numberprefix",
+			err: "invalid name",
 		},
 		{
-			arg:     "",
-			allowed: false,
+			arg: "",
+			err: "invalid name",
 		},
 		{
-			arg:     "longname012345678901234567890123456789",
-			allowed: false,
+			arg: "longname012345678901234567890123456789",
+			err: "invalid name",
 		},
 		{
-			arg:     "世界",
-			allowed: false,
+			arg: "世界",
+			err: "invalid name",
 		},
 		{
-			arg:     "an apple",
-			allowed: false,
+			arg: "an apple",
+			err: "invalid name",
+		},
+		{
+			arg: "token",
+			err: "reserved word",
+		},
+		{
+			arg: "keyspaces",
+			err: "reserved word",
+		},
+		{
+			arg: "schema",
+			err: "reserved word",
 		},
 	}
 
 	for _, testData := range dataProvider {
 		err := IsValidName(testData.arg)
-		if testData.allowed {
-			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", testData.arg))
+		if testData.err == "" {
+			assert.NoError(t, err, testData.arg)
 		} else {
-			assert.Error(t, err, fmt.Sprintf("expect error but got no error for %s", testData.arg))
-			assert.Contains(t, err.Error(), DosaNamingRule)
+			assert.Error(t, err, testData.arg)
+			assert.Contains(t, err.Error(), testData.err)
 		}
 	}
 }
@@ -123,12 +131,10 @@ func TestNormalizeName(t *testing.T) {
 	for _, testData := range dataProvider {
 		name, err := NormalizeName(testData.arg)
 		if testData.allowed {
-			assert.NoError(t, err, fmt.Sprintf("got error while expecting no error for %s", testData.arg))
-			assert.Equal(t, testData.expected, name,
-				fmt.Sprintf("unexpected normalized name for %s", testData.arg))
+			assert.NoError(t, err, testData.arg)
+			assert.Equal(t, testData.expected, name, testData.arg)
 		} else {
-			assert.Error(t, err, fmt.Sprintf("expect error but got no error for %s", testData.arg))
-			assert.Contains(t, err.Error(), DosaNamingRule)
+			assert.Error(t, err, testData.arg)
 		}
 	}
 }
@@ -142,19 +148,19 @@ func TestIsValidNamePrefix(t *testing.T) {
 
 	err = IsValidNamePrefix("")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), DosaNamingRule)
+	assert.Contains(t, err.Error(), "invalid name")
 
 	err = IsValidNamePrefix("service.an entity")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), DosaNamingRule)
+	assert.Contains(t, err.Error(), "invalid name")
 
 	err = IsValidNamePrefix("germanRush.über")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), DosaNamingRule)
+	assert.Contains(t, err.Error(), "invalid name")
 
 	err = IsValidNamePrefix("this.prefix.has.more.than.thrity.two.characters.in.it")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), DosaNamingRule)
+	assert.Contains(t, err.Error(), "invalid name")
 }
 
 func TestNormalizeNamePrefix(t *testing.T) {
@@ -205,7 +211,7 @@ func TestNormalizeNamePrefix(t *testing.T) {
 		name, err := NormalizeNamePrefix(tc.arg)
 		if tc.bogus {
 			assert.Error(t, err)
-			assert.Contains(t, err.Error(), DosaNamingRule)
+			assert.Contains(t, err.Error(), "invalid name")
 		} else {
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, name)
