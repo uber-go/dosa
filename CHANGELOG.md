@@ -1,7 +1,7 @@
 # Changelog
 
 ## v3.4.13 (unreleased)
- - Nothing changed yet.
+ - Do not allow Cassandra reserved words to be used as field names etc.
 
 ## v3.4.12 (2019-12-06)
  - Improve some CLI error messages
