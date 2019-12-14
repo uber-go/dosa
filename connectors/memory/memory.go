@@ -93,6 +93,9 @@ func partitionKeyBuilder(pk *dosa.PrimaryKey, values map[string]dosa.FieldValue)
 	var encodedKey []byte
 	for _, k := range pk.PartitionKeys {
 		if v, ok := values[k]; ok {
+			if isNilInterface(v) {
+				continue
+			}
 			encodedVal, _ := encoder.Encode(v)
 			encodedKey = append(encodedKey, encodedVal...)
 		} else {
@@ -712,6 +715,28 @@ func getStartingPoint(ei *dosa.EntityInfo, token string) (start string, startPar
 		return "", map[string]dosa.FieldValue{}, errors.Wrapf(err, "Can't build partition key for %q", ei.Def.Name)
 	}
 	return start, startPartKey, nil
+}
+
+func isNilInterface(v dosa.FieldValue) bool {
+	switch v := v.(type) {
+	case *dosa.UUID:
+		return v == nil
+	case *string:
+		return v == nil
+	case *int64:
+		return v == nil
+	case *int32:
+		return v == nil
+	case *float64:
+		return v == nil
+	case *[]byte:
+		return v == nil
+	case *time.Time:
+		return v == nil
+	case *bool:
+		return v == nil
+	}
+	return false
 }
 
 // CheckSchema is just a stub; there is no schema management for the in memory connector
