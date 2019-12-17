@@ -56,10 +56,6 @@ func TestIsValidName(t *testing.T) {
 			err: "invalid name",
 		},
 		{
-			arg: "longname012345678901234567890123456789",
-			err: "invalid name",
-		},
-		{
 			arg: "世界",
 			err: "invalid name",
 		},
@@ -154,10 +150,6 @@ func TestIsValidNamePrefix(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid name")
 
 	err = IsValidNamePrefix("germanRush.über")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid name")
-
-	err = IsValidNamePrefix("this.prefix.has.more.than.thrity.two.characters.in.it")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid name")
 }

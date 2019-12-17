@@ -35,8 +35,8 @@ import (
 // except that a name-prefix can also contain the "." character.
 
 var (
-	namePrefixRegex = regexp.MustCompile("^[a-z_][a-z0-9_.]$")
-	nameRegex       = regexp.MustCompile("^[a-z_][a-z0-9_]$")
+	namePrefixRegex = regexp.MustCompile("^[a-z_][a-z0-9_.]*$")
+	nameRegex       = regexp.MustCompile("^[a-z_][a-z0-9_]*$")
 
 	// Reserved words
 	reserved map[string]struct{}
