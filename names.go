@@ -34,13 +34,9 @@ import (
 // A special kind of name is the name-prefix. A name-prefix has the same restrictions as a name,
 // except that a name-prefix can also contain the "." character.
 
-const (
-	maxNameLen = 32
-)
-
 var (
-	namePrefixRegex = regexp.MustCompile("^[a-z_][a-z0-9_.]{0,31}$")
-	nameRegex       = regexp.MustCompile("^[a-z_][a-z0-9_]{0,31}$")
+	namePrefixRegex = regexp.MustCompile("^[a-z_][a-z0-9_.]$")
+	nameRegex       = regexp.MustCompile("^[a-z_][a-z0-9_]$")
 
 	// Reserved words
 	reserved map[string]struct{}
@@ -68,7 +64,7 @@ func init() {
 
 // DosaNamingRule is the error message for invalid names.
 const DosaNamingRule = "DOSA valid names must start with a letter or underscore, and may contain letters, " +
-	"digits, and underscores, and must not be longer than 32 characters."
+	"digits, and underscores."
 
 // IsValidNamePrefix checks if a name prefix is valid.
 func IsValidNamePrefix(namePrefix string) error {

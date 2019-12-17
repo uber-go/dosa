@@ -21,7 +21,6 @@
 package dosa
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
