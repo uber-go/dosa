@@ -1,7 +1,11 @@
 # Changelog
 
-## v3.4.13 (unreleased)
+## v3.4.14 (unreleased)
+ - Nothing changed yet
+
+## v3.4.13 (2019-12-17)
  - Do not allow Cassandra reserved words to be used as field names etc.
+ - Remove name length checks, only the server knows the limits on names
 
 ## v3.4.12 (2019-12-06)
  - Improve some CLI error messages

@@ -21,7 +21,6 @@
 package dosa
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -54,10 +53,6 @@ func TestIsValidName(t *testing.T) {
 		},
 		{
 			arg: "",
-			err: "invalid name",
-		},
-		{
-			arg: "longname012345678901234567890123456789",
 			err: "invalid name",
 		},
 		{
@@ -155,10 +150,6 @@ func TestIsValidNamePrefix(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid name")
 
 	err = IsValidNamePrefix("germanRush.über")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid name")
-
-	err = IsValidNamePrefix("this.prefix.has.more.than.thrity.two.characters.in.it")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid name")
 }
