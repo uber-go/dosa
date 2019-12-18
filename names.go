@@ -54,8 +54,8 @@ func init() {
 		"of", "on", "one", "order", "partition", "password", "per", "permission", "permissions",
 		"primary", "quorum", "rename", "revoke", "schema", "select", "set", "static", "storage",
 		"superuser", "table", "text", "time", "timestamp", "timeuuid", "three", "to", "token",
-		"truncate", "ttl", "tuple", "two", "type", "unlogged", "update", "use", "user", "users",
-		"using", "uuid", "values", "varchar", "varint", "view", "where", "with", "writetime"}
+		"truncate", "ttl", "tuple", "two", "unlogged", "update", "use", "user", "users",
+		"using", "values", "varchar", "varint", "view", "where", "with", "writetime"}
 	reserved = make(map[string]struct{})
 	for _, n := range cassandraRsvd {
 		reserved[n] = struct{}{}
@@ -83,7 +83,7 @@ func IsValidName(name string) error {
 	if _, ok := reserved[name]; !ok {
 		return nil
 	}
-	return errors.Errorf("%s is a reserved word", name)
+	return errors.Errorf("'%s' is a reserved word", name)
 }
 
 // NormalizeName normalizes a name to a canonical representation.

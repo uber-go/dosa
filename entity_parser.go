@@ -386,14 +386,8 @@ func parseETLTag(tag string) (string, ETLState, error) {
 		return "", EtlOff, nil
 	}
 
-	// filter out "trailing comma"
-	etlTag = strings.TrimRight(etlTag, " ,")
-
-	var err error
-	etlTag, err = NormalizeName(etlTag)
-	if err != nil {
-		return "", EtlOff, err
-	}
+	// filter out "trailing comma" and convert to lowercase
+	etlTag = strings.ToLower(strings.TrimRight(etlTag, " ,"))
 
 	etlState, err := ToETLState(etlTag)
 	if err != nil {
