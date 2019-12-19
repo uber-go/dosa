@@ -1,7 +1,10 @@
 # Changelog
 
-## v3.4.14 (unreleased)
+## v3.4.15 (unreleased)
  - Nothing changed yet
+
+## v3.4.14 (2019-12-18)
+ - Fix bug in ETL tag parsing
 
 ## v3.4.13 (2019-12-17)
  - Do not allow Cassandra reserved words to be used as field names etc.
