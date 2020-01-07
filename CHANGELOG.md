@@ -1,7 +1,10 @@
 # Changelog
 
-## v3.4.15 (unreleased)
+## v3.4.16 (unreleased)
  - Nothing changed yet
+
+## v3.4.15 (2020-01-07)
+ - Update the Cassandra reserved-word list (old list included non-reserved keywords).
 
 ## v3.4.14 (2019-12-18)
  - Fix bug in ETL tag parsing
