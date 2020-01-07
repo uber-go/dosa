@@ -44,18 +44,13 @@ var (
 
 func init() {
 	// Cassandra's reserved words
-	cassandraRsvd := []string{"add", "aggregate", "all", "allow", "alter", "and", "any", "apply", "as",
-		"asc", "ascii", "authorize", "batch", "begin", "bigint", "blob", "boolean", "by", "clustering",
-		"columnfamily", "compact", "consistency", "count", "counter", "create", "custom", "decimal",
-		"delete", "desc", "distinct", "double", "drop", "each_quorum", "entries", "exists", "filtering",
-		"float", "from", "frozen", "full", "grant", "if", "in", "index", "inet", "infinity", "insert",
-		"int", "into", "key", "keyspace", "keyspaces", "level", "limit", "list", "local_one",
-		"local_quorum", "map", "materialized", "modify", "nan", "norecursive", "nosuperuser", "not",
-		"of", "on", "one", "order", "partition", "password", "per", "permission", "permissions",
-		"primary", "quorum", "rename", "revoke", "schema", "select", "set", "static", "storage",
-		"superuser", "table", "text", "time", "timestamp", "timeuuid", "three", "to", "token",
-		"truncate", "ttl", "tuple", "two", "unlogged", "update", "use", "user", "users",
-		"using", "values", "varchar", "varint", "view", "where", "with", "writetime"}
+	cassandraRsvd := []string{
+		"add", "allow", "alter", "and", "apply", "asc", "authorize", "batch", "begin", "by",
+		"columnfamily", "create", "delete", "desc", "describe", "drop", "entries", "execute", "from",
+		"full", "grant", "if", "in", "index", "infinity", "insert", "into", "keyspace", "limit",
+		"modify", "nan", "norecursive", "not", "null", "of", "on", "or", "order", "primary",
+		"rename", "replace", "revoke", "schema", "select", "set", "table", "to", "token", "truncate",
+		"unlogged", "update", "use", "using", "where", "with"}
 	reserved = make(map[string]struct{})
 	for _, n := range cassandraRsvd {
 		reserved[n] = struct{}{}
