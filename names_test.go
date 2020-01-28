@@ -68,7 +68,7 @@ func TestIsValidName(t *testing.T) {
 			err: "reserved word",
 		},
 		{
-			arg: "keyspaces",
+			arg: "keyspace",
 			err: "reserved word",
 		},
 		{
