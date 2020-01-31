@@ -282,7 +282,7 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 	if colOrder == nil {
 		colOrder = getRPCEntityColumns(ed)
 	}
-	for i, colName := range ed.ColumnOrder {
+	for i, colName := range colOrder {
 		v := ed.FieldDescs[colName]
 		fields[i] = &dosa.ColumnDefinition{
 			Name: colName,
