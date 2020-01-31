@@ -253,3 +253,25 @@ func TestColumnOrder(t *testing.T) {
 	dosaEd := FromThriftToEntityDefinition(rpcEDs[0])
 	assert.Equal(t, dosaEd.Columns, testEntityDefinition.Columns)
 }
+
+func TestThriftDecode(t *testing.T) {
+	name := "foobar"
+	ty := dosarpc.ElemTypeBool
+	rpcED := &dosarpc.EntityDefinition{
+		Name: &name,
+		FieldDescs: map[string]*dosarpc.FieldDesc{
+			"field1": {
+				Type: &ty,
+			},
+		},
+		PrimaryKey: &dosarpc.PrimaryKey{
+			PartitionKeys: []string{"field1"},
+		},
+	}
+
+	ed := FromThriftToEntityDefinition(rpcED)
+	assert.NotNil(t, ed)
+	assert.NotNil(t, ed.Columns)
+	assert.NotEqual(t, 0, len(ed.Columns))
+	assert.NotNil(t, ed.Columns[0])
+}

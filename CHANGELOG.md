@@ -1,7 +1,10 @@
 # Changelog
 
-## v3.4.18 (unreleased)
+## v3.4.19 (unreleased)
  - No changes yet.
+
+## v3.4.18 (2020-01-31)
+ - Fix stupid bug in thrift parsing.
 
 ## v3.4.17 (2020-01-31)
  - Make thrift decode of EntityDefinition respect column ordering.
