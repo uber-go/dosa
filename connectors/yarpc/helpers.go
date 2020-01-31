@@ -230,10 +230,12 @@ func EntityDefsToThrift(eds []*dosa.EntityDefinition) []*dosarpc.EntityDefinitio
 }
 
 func entityDefToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
+	cols := make([]string, 0, len(ed.Columns))
 	fd := make(map[string]*dosarpc.FieldDesc, len(ed.Columns))
 	for _, column := range ed.Columns {
 		rpcType := RPCTypeFromClientType(column.Type)
 		fd[column.Name] = &dosarpc.FieldDesc{Type: &rpcType}
+		cols = append(cols, column.Name)
 	}
 
 	// indexes
@@ -243,13 +245,16 @@ func entityDefToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
 		indexes[name] = &dosarpc.IndexDefinition{Key: pkI, Columns: index.Columns}
 	}
 
+	// Column order
+
 	etl := ETLStateToThrift(ed.ETL)
 	return &dosarpc.EntityDefinition{
-		PrimaryKey: PrimaryKeyToThrift(ed.Key),
-		FieldDescs: fd,
-		Name:       &ed.Name,
-		Indexes:    indexes,
-		Etl:        &etl,
+		PrimaryKey:  PrimaryKeyToThrift(ed.Key),
+		FieldDescs:  fd,
+		Name:        &ed.Name,
+		Indexes:     indexes,
+		Etl:         &etl,
+		ColumnOrder: cols,
 	}
 }
 
