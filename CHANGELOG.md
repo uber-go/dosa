@@ -1,7 +1,10 @@
 # Changelog
 
-## v3.4.17 (unreleased)
+## v3.4.18 (unreleased)
  - No changes yet.
+
+## v3.4.17 (2020-01-31)
+ - Make thrift decode of EntityDefinition respect column ordering.
 
 ## v3.4.16 (2020-01-31)
  - Update to IDL 3.3 for column ordering
