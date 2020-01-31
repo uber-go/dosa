@@ -278,14 +278,17 @@ func FromThriftToPrimaryKey(key *dosarpc.PrimaryKey) *dosa.PrimaryKey {
 // FromThriftToEntityDefinition converts the RPC EntityDefinition to client EntityDefinition
 func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefinition {
 	fields := make([]*dosa.ColumnDefinition, len(ed.FieldDescs))
-	i := 0
-	for k, v := range ed.FieldDescs {
+	colOrder := ed.ColumnOrder
+	if colOrder == nil {
+		colOrder = getRPCEntityColumns(ed)
+	}
+	for i, colName := range ed.ColumnOrder {
+		v := ed.FieldDescs[colName]
 		fields[i] = &dosa.ColumnDefinition{
-			Name: k,
+			Name: colName,
 			Type: RPCTypeToClientType(*v.Type),
 			// TODO Tag
 		}
-		i++
 	}
 
 	indexes := make(map[string]*dosa.IndexDefinition)
@@ -308,6 +311,15 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 		Indexes: indexes,
 		ETL:     etlState,
 	}
+}
+
+// The columns are returned in arbitrary order.
+func getRPCEntityColumns(ed *dosarpc.EntityDefinition) []string {
+	cols := make([]string, 0, len(ed.FieldDescs))
+	for name := range ed.FieldDescs {
+		cols = append(cols, name)
+	}
+	return cols
 }
 
 func encodeOperator(o dosa.Operator) *dosarpc.Operator {

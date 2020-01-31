@@ -247,3 +247,9 @@ func TestGetHeaders(t *testing.T) {
 		assert.Equal(t, "yarpc.CallOption", reflect.TypeOf(h).String())
 	}
 }
+
+func TestColumnOrder(t *testing.T) {
+	rpcEDs := EntityDefsToThrift([]*dosa.EntityDefinition{testEntityDefinition})
+	dosaEd := FromThriftToEntityDefinition(rpcEDs[0])
+	assert.Equal(t, dosaEd.Columns, testEntityDefinition.Columns)
+}
