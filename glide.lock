@@ -1,5 +1,5 @@
-hash: 5a48c682e7acaa523bd51744fba3749c5f79ed11a9bf6a758bdc83e4888b89e2
-updated: 2020-01-30T15:46:32.099245-08:00
+hash: 26cfaf1fd5a4f02d5ad96813487c1dc75ea36566bc9cffc0d4c5758354c59c0f
+updated: 2020-01-30T17:54:28.41089-08:00
 imports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -120,7 +120,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 9709da01ea993da74e308d699f1853277b9dd68b
 - name: github.com/uber/dosa-idl
-  version: 146844293e10a128023b6e106e17d846ee349e96
+  version: 8c99883bdae3cc6dbd769c49ca0b36a75ff38194
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
@@ -357,7 +357,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: d8f796af33cc11cb798c1aaeb27a4ebc5099927d
+  version: 8991bc29aa16c548c550c7ff78260e27b9ab7c73
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
@@ -369,7 +369,7 @@ testImports:
 - name: github.com/mattn/goveralls
   version: 3dca685be5da15e615a09b54d22b74c47225bac4
 - name: github.com/pmezard/go-difflib
-  version: 5d4384ee4fb2527b0a1256a821ebfc92f91efefc
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/sectioneight/md-to-godoc
