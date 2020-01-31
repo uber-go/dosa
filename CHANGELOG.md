@@ -1,7 +1,11 @@
 # Changelog
 
-## v3.4.16 (unreleased)
+## v3.4.17 (unreleased)
+ - No changes yet.
+
+## v3.4.16 (2020-01-31)
  - Update to IDL 3.3 for column ordering
+ - Send column order with all schema requests
 
 ## v3.4.15 (2020-01-07)
  - Update the Cassandra reserved-word list (old list included non-reserved keywords).

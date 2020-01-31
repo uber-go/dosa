@@ -21,4 +21,4 @@
 package dosa
 
 // VERSION indicates the dosa client version
-const VERSION = "3.4.15"
+const VERSION = "3.4.16"
