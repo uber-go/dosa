@@ -50,9 +50,16 @@ func init() {
 		"full", "grant", "if", "in", "index", "infinity", "insert", "into", "keyspace", "limit",
 		"modify", "nan", "norecursive", "not", "null", "of", "on", "or", "order", "primary",
 		"rename", "replace", "revoke", "schema", "select", "set", "table", "to", "token", "truncate",
-		"unlogged", "update", "use", "using", "where", "with"}
+		"unlogged", "update", "use", "using", "where", "with",
+	}
+	docstoreRsvd := []string{
+		"data", "metadata", "partition_key", "row_key", "tombstone", "ts",
+	}
 	reserved = make(map[string]struct{})
 	for _, n := range cassandraRsvd {
+		reserved[n] = struct{}{}
+	}
+	for _, n := range docstoreRsvd {
 		reserved[n] = struct{}{}
 	}
 }

@@ -33,7 +33,7 @@ import (
 type SinglePrimaryKeyNoParen struct {
 	Entity     `dosa:"primaryKey=PrimaryKey"`
 	PrimaryKey int64
-	Data       string
+	TData      string
 }
 
 // happy path: A single primaryKey becomes the partition key
@@ -54,7 +54,7 @@ func TestNilPointer(t *testing.T) {
 type SinglePrimaryKey struct {
 	Entity     `dosa:"primaryKey=(PrimaryKey)"`
 	PrimaryKey int64
-	Data       string
+	TData      string
 }
 
 // happy path: A single primaryKey becomes the partition key
@@ -169,7 +169,7 @@ func TestNameInPrimaryKey(t *testing.T) {
 type NoETLTag struct {
 	Entity     `dosa:"name=noetltag,primaryKey=PrimaryKey"`
 	PrimaryKey int64
-	Data       string
+	TData      string
 }
 
 func TestNoETLTag(t *testing.T) {
@@ -181,7 +181,7 @@ func TestNoETLTag(t *testing.T) {
 type ETLTagOff struct {
 	Entity     `dosa:"primaryKey=PrimaryKey, etl=off"`
 	PrimaryKey int64
-	Data       string
+	TData      string
 }
 
 func TestETLTagOff(t *testing.T) {
@@ -193,7 +193,7 @@ func TestETLTagOff(t *testing.T) {
 type ETLTagOn struct {
 	Entity     `dosa:"name=etltagon, primaryKey=PrimaryKey, etl=on"`
 	PrimaryKey int64
-	Data       string
+	TData      string
 }
 
 func TestETLTagOn(t *testing.T) {
@@ -205,7 +205,7 @@ func TestETLTagOn(t *testing.T) {
 type ETLTagIncomplete struct {
 	Entity     `dosa:"primaryKey=PrimaryKey, etl="`
 	PrimaryKey int64
-	Data       string
+	TData      string
 }
 
 func TestETLTagInComplete(t *testing.T) {
@@ -218,7 +218,7 @@ func TestETLTagInComplete(t *testing.T) {
 type ETLTagNoMatch struct {
 	Entity     `dosa:"primaryKey=PrimaryKey, etl"`
 	PrimaryKey int64
-	Data       string
+	TData      string
 }
 
 func TestETLTagNoMatch(t *testing.T) {
@@ -230,7 +230,7 @@ func TestETLTagNoMatch(t *testing.T) {
 type ETLInPrimaryKey struct {
 	Entity     `dosa:"primaryKey=(PrimaryKey, Etl), etl=on"`
 	PrimaryKey int64
-	Data       string
+	TData      string
 	Etl        string
 }
 

@@ -1,7 +1,7 @@
 # Changelog
 
 ## v3.4.19 (unreleased)
- - No changes yet.
+ - Add Docstore reserved words to the exclusion list.
 
 ## v3.4.18 (2020-01-31)
  - Fix stupid bug in thrift parsing.
