@@ -29,9 +29,9 @@ import (
 
 type SingleIndexNoParen struct {
 	Entity       `dosa:"primaryKey=PrimaryKey"`
-	SearchByData Index `dosa:"key=Data"`
+	SearchByData Index `dosa:"key=TData"`
 	PrimaryKey   int64
-	Data         string
+	TData        string
 }
 
 func TestSingleIndexNoParen(t *testing.T) {
@@ -39,16 +39,16 @@ func TestSingleIndexNoParen(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, map[string]*IndexDefinition{
 		"searchbydata": {
-			Key: &PrimaryKey{PartitionKeys: []string{"data"}},
+			Key: &PrimaryKey{PartitionKeys: []string{"tdata"}},
 		},
 	}, dosaTable.Indexes)
 }
 
 type SingleIndexUnExported struct {
 	Entity       `dosa:"primaryKey=PrimaryKey"`
-	searchByData Index `dosa:"key=Data"`
+	searchByData Index `dosa:"key=TData"`
 	PrimaryKey   int64
-	Data         string
+	TData        string
 }
 
 func TestSingleIndexUnExported(t *testing.T) {
@@ -59,10 +59,10 @@ func TestSingleIndexUnExported(t *testing.T) {
 
 type MultipleIndexes struct {
 	Entity       `dosa:"primaryKey=PrimaryKey"`
-	Index        `dosa:"key=Data, name=SearchByData"`
+	Index        `dosa:"key=TData, name=SearchByData"`
 	SearchByDate Index `dosa:"key=Date"`
 	PrimaryKey   int64
-	Data         string
+	TData        string
 	Date         time.Time
 }
 
@@ -71,7 +71,7 @@ func TestMultipleIndexes(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, map[string]*IndexDefinition{
 		"searchbydata": {
-			Key: &PrimaryKey{PartitionKeys: []string{"data"}},
+			Key: &PrimaryKey{PartitionKeys: []string{"tdata"}},
 		},
 		"searchbydate": {
 			Key: &PrimaryKey{PartitionKeys: []string{"date"}},
@@ -81,10 +81,10 @@ func TestMultipleIndexes(t *testing.T) {
 
 type ComplexIndexes struct {
 	Entity       `dosa:"primaryKey=PrimaryKey"`
-	SearchByData Index `dosa:"key=(Data, Date, PrimaryKey DESC), name=index_data"`
-	SearchByDate Index `dosa:"key=((Date, PrimaryKey), Data), name=index_date"`
+	SearchByData Index `dosa:"key=(TData, Date, PrimaryKey DESC), name=index_data"`
+	SearchByDate Index `dosa:"key=((Date, PrimaryKey), TData), name=index_date"`
 	PrimaryKey   int64
-	Data         string
+	TData        string
 	Date         time.Time
 }
 
@@ -94,7 +94,7 @@ func TestComplexIndexes(t *testing.T) {
 	assert.Equal(t, map[string]*IndexDefinition{
 		"index_data": {
 			Key: &PrimaryKey{
-				PartitionKeys: []string{"data"},
+				PartitionKeys: []string{"tdata"},
 				ClusteringKeys: []*ClusteringKey{
 					{
 						Name:       "date",
@@ -112,7 +112,7 @@ func TestComplexIndexes(t *testing.T) {
 				PartitionKeys: []string{"date", "primarykey"},
 				ClusteringKeys: []*ClusteringKey{
 					{
-						Name:       "data",
+						Name:       "tdata",
 						Descending: false,
 					},
 				},
