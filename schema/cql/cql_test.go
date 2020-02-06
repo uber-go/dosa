@@ -47,7 +47,7 @@ type AllTypes struct {
 type SinglePrimaryKey struct {
 	dosa.Entity `dosa:"primaryKey=(PrimaryKey)"`
 	PrimaryKey  int64
-	Data        string
+	TData       string
 }
 
 func TestCQL(t *testing.T) {
@@ -57,7 +57,7 @@ func TestCQL(t *testing.T) {
 	}{
 		{
 			Instance:  &SinglePrimaryKey{},
-			Statement: `create table "singleprimarykey" ("primarykey" bigint, "data" text, primary key (primarykey));`,
+			Statement: `create table "singleprimarykey" ("primarykey" bigint, "tdata" text, primary key (primarykey));`,
 		},
 		{
 			Instance: &AllTypes{},
