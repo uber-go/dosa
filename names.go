@@ -53,7 +53,10 @@ func init() {
 		"unlogged", "update", "use", "using", "where", "with",
 	}
 	docstoreRsvd := []string{
-		"data", "metadata", "partition_key", "row_key", "tombstone", "ts",
+		"and", "array", "cast", "contains", "data", "default", "distinct", "else",
+		"false", "from", "group", "having", "interval", "limit", "metadata",
+		"null", "offset", "or", "order", "partition_key", "partition", "row_key",
+		"select", "tombstone", "true", "ts", "where",
 	}
 	reserved = make(map[string]struct{})
 	for _, n := range cassandraRsvd {
