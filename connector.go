@@ -176,18 +176,18 @@ type Connector interface {
 	// If minimumFields is empty or nil, all fields (including key fields) would be fetched.
 	Scan(ctx context.Context, ei *EntityInfo, minimumFields []string, token string, limit int) (multiValues []map[string]FieldValue, nextToken string, err error)
 
-	// DDL operations (schema)
-	// CheckSchema validates that the set of entities you have provided is valid and registered already
+	// DDL (schema) operations
+	// CheckSchema makes sure that the schema provided is compatible with the version on the database.
 	// It returns the latest schema version for use with later DML operations.
+	// This method should have been called something like 'IsSchemaCompatibleWithDB'.
 	CheckSchema(ctx context.Context, scope string, namePrefix string, eds []*EntityDefinition) (version int32, err error)
-	// CanUpsertSchema is used to validate whether new entities can be upserted
-	// by checking their compatibility with the latest applied schema.
-	// If compatible, the latest schema version is returned,
-	// which can be "invalid" (i.e. -1) if no schema has been applied yet.
+	// CanUpsertSchema checks whether the new schema is backwards-compatible with the schema on the DB.
+	// If compatible, the latest schema version is returned, which can be "invalid" (i.e. -1) if no schema
+	// has been applied yet.
 	CanUpsertSchema(ctx context.Context, scope string, namePrefix string, eds []*EntityDefinition) (version int32, err error)
-	// UpsertSchema updates the schema to match what you provide as entities, if possible
+	// UpsertSchema updates the schema to the one provided.
 	UpsertSchema(ctx context.Context, scope string, namePrefix string, ed []*EntityDefinition) (status *SchemaStatus, err error)
-	// CheckSchemaStatus checks the status of the schema whether it is accepted or in progress of application.
+	// CheckSchemaStatus checks the status of a schema upsert: whether it is accepted or in progress of application.
 	CheckSchemaStatus(ctx context.Context, scope string, namePrefix string, version int32) (*SchemaStatus, error)
 	// GetEntitySchema returns the entity info for a given entity in a given scope and prefix.
 	GetEntitySchema(ctx context.Context, scope, namePrefix, entityName string, version int32) (*EntityDefinition, error)
