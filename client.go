@@ -605,7 +605,7 @@ type adminClient struct {
 // NewAdminClient returns a new DOSA admin client for the connector provided.
 func NewAdminClient(conn Connector) AdminClient {
 	return &adminClient{
-		scope:     "default",
+		scope:     "unset_value",
 		dirs:      []string{"."},
 		excludes:  []string{"_test.go"},
 		connector: conn,
