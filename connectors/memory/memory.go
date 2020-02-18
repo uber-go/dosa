@@ -456,8 +456,9 @@ func (c *Connector) removeItem(name string, key *dosa.PrimaryKey, values map[str
 	if len(key.ClusteringKeySet()) == 0 {
 		// NOT delete(entityRef, encodedPartitionKey)
 		// Unfortunately, Scan relies on the fact that these are not completely deleted
+		deletedValues := entityRef[encodedPartitionKey][0]
 		entityRef[encodedPartitionKey] = nil
-		return nil
+		return deletedValues
 	}
 
 	var deletedValues map[string]dosa.FieldValue
