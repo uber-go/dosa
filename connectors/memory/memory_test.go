@@ -749,6 +749,34 @@ func TestConnector_Range(t *testing.T) {
 		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
 	}, dosa.All(), "", 200)
 	assert.Len(t, data, idcount)
+
+	// On an entity with no clustering keys, make sure Remove deletes from indexes also.
+
+	// Insert some values that will be indexed.
+	for x := 0; x < idcount; x++ {
+		err := sut.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{
+			"p1": dosa.FieldValue("data"),
+			"c1": dosa.FieldValue(int64(1)),
+			"c7": dosa.FieldValue(testUUIDs[x])})
+		assert.NoError(t, err)
+	}
+
+	err = sut.Remove(context.TODO(), testEi, map[string]dosa.FieldValue{
+		"p1": dosa.FieldValue("data"),
+	})
+	assert.NoError(t, err)
+
+	_, err = sut.Read(context.TODO(), testEi, map[string]dosa.FieldValue{
+		"p1": dosa.FieldValue("data"),
+	}, nil)
+	assert.Error(t, err)
+	assert.Equal(t, "not found", err.Error())
+
+	data, token, err = sut.Range(context.TODO(), testEi, map[string][]*dosa.Condition{
+		"c1": {{Op: dosa.Eq, Value: dosa.FieldValue(int64(1))}},
+	}, dosa.All(), "", 200)
+	assert.NoError(t, err)
+	assert.Empty(t, data) // Expect to not find the row
 }
 
 func TestConnector_TUUIDs(t *testing.T) {

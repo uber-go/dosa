@@ -2,6 +2,7 @@
 
 ## v3.4.19 (unreleased)
  - Add Docstore reserved words to the exclusion list.
+ - Fix mem connector bug: with no clustering keys, Remove should delete from any Indexes.
 
 ## v3.4.18 (2020-01-31)
  - Fix stupid bug in thrift parsing.
