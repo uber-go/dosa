@@ -1,6 +1,9 @@
 # Changelog
 
-## v3.4.19 (unreleased)
+## v3.4.20 (unreleased)
+ - Nothing changed yet
+
+## v3.4.19 (2020-02-19)
  - Add Docstore reserved words to the exclusion list.
  - Fix mem connector bug: with no clustering keys, Remove should delete from any Indexes.
 
