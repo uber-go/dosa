@@ -1,7 +1,10 @@
 # Changelog
 
-## v3.4.20 (unreleased)
+## v3.4.21 (unreleased)
  - Nothing changed yet
+
+## v3.4.20 (2020-03-12)
+ - Added String() methods to entity structs
 
 ## v3.4.19 (2020-02-19)
  - Add Docstore reserved words to the exclusion list.

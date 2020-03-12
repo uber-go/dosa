@@ -21,6 +21,7 @@
 package dosa_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -383,6 +384,18 @@ func getValidEntityDefinition() *dosa.EntityDefinition {
 		},
 		ETL: dosa.EtlOn,
 	}
+}
+
+func TestEntityDefinitionPrint(t *testing.T) {
+	e := getValidEntityDefinition()
+	expected := []string{"[Entity testentity PK (foo, bar DESC)",
+		"[Columns [{Name: foo, Type: TUUID, IsPointer: false, Tags: {}},",
+		"{Name: bar, Type: Int64, IsPointer: false, Tags: {}},",
+		"{Name: qux, Type: Blob, IsPointer: false, Tags: {}}]]",
+		"[Indexes {index1: {Key:(qux, bar DESC) Columns:[] TableName:},",
+		"index2: {Key:(bar) Columns:[qux foo] TableName:}}]]",
+	}
+	assert.Equal(t, strings.Join(expected, " "), e.String())
 }
 
 func TestEntityDefinitionCanBeUpsertedOn(t *testing.T) {

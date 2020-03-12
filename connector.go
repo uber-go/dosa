@@ -77,6 +77,10 @@ type EntityInfo struct {
 	TTL *time.Duration
 }
 
+func (ei *EntityInfo) String() string {
+	return fmt.Sprintf("[scope=%s prefix=%s %s]", ei.Ref.Scope, ei.Ref.NamePrefix, ei.Def.String())
+}
+
 // StringSet is a set of strings.
 type StringSet map[string]struct{}
 

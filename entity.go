@@ -228,7 +228,7 @@ func (id *IndexDefinition) String() string {
 
 func (id *IndexDefinition) equal(other *IndexDefinition) error {
 	if err := id.Key.equal(other.Key); err != nil {
-		return errors.Errorf("partitionKey mismatch: (%v)", err)
+		return errors.Errorf("key mismatch: (%v)", err)
 	}
 	if !stringSliceEqual(id.Columns, other.Columns) {
 		return errors.Errorf("columns mismatch: (%v vs %v)", id.Columns, other.Columns)
@@ -243,6 +243,11 @@ type EntityDefinition struct {
 	Columns []*ColumnDefinition
 	Indexes map[string]*IndexDefinition
 	ETL     ETLState
+}
+
+func (e *EntityDefinition) String() string {
+	return fmt.Sprintf("[Entity %s PK %s [Columns %s] [Indexes %s]]", e.Name, e.Key.String(),
+		strColumns(e.Columns), strIndexes(e.Indexes))
 }
 
 // Clone returns a deep copy of EntityDefinition
@@ -569,6 +574,28 @@ func deterministicPrintMap(m map[string]string) string {
 	pairs := make([]string, 0, len(m))
 	for _, k := range keys {
 		pairs = append(pairs, fmt.Sprintf("%s: %s", k, m[k]))
+	}
+	return "{" + strings.Join(pairs, ", ") + "}"
+}
+
+func strColumns(cols []*ColumnDefinition) string {
+	s := make([]string, 0, len(cols))
+	for _, c := range cols {
+		s = append(s, c.String())
+	}
+	return "[" + strings.Join(s, ", ") + "]"
+}
+
+func strIndexes(indexes map[string]*IndexDefinition) string {
+	names := make([]string, 0, len(indexes))
+	for n := range indexes {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+
+	pairs := make([]string, 0, len(indexes))
+	for _, n := range names {
+		pairs = append(pairs, fmt.Sprintf("%s: %s", n, indexes[n].String()))
 	}
 	return "{" + strings.Join(pairs, ", ") + "}"
 }
