@@ -1,7 +1,10 @@
 # Changelog
 
-## v3.4.21 (unreleased)
- - Nothing changed yet
+## v3.4.22 (unreleased)
+ - no changes yet,
+
+## v3.4.21 (2020-03-30)
+ - First pass to fix the terrible error messages in the client.
 
 ## v3.4.20 (2020-03-12)
  - Added String() methods to entity structs

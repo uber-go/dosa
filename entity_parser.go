@@ -282,10 +282,7 @@ func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, []str
 	// index name struct must be exported in the entity,
 	// otherwise it will be ignored when upserting the schema.
 	if len(indexName) != 0 && unicode.IsLower([]rune(indexName)[0]) {
-		expected := []rune(indexName)
-		expected[0] = unicode.ToUpper(expected[0])
-		return "", nil, nil, fmt.Errorf("index name (%s) must be exported, "+
-			"try (%s) instead", indexName, string(expected))
+		return "", nil, nil, fmt.Errorf("index %q is not exported", indexName)
 	}
 	tag := dosaAnnotation
 
@@ -306,7 +303,7 @@ func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, []str
 	//find the name
 	fullNameTag, name, err := parseNameTag(tag, indexName)
 	if err != nil {
-		return "", nil, nil, errors.Wrapf(err, "invalid name tag: %s", tag)
+		return "", nil, nil, err
 	}
 	tag = strings.Replace(tag, fullNameTag, "", 1)
 
@@ -447,7 +444,8 @@ func parseEntityTag(structName, dosaAnnotation string) (string, time.Duration, E
 	// find the name
 	fullNameTag, name, err := parseNameTag(tag, structName)
 	if err != nil {
-		return "", NoTTL(), EtlOff, nil, errors.Wrapf(err, "invalid name tag: %s", tag)
+		// parseNameTag returns a sane error.
+		return "", NoTTL(), EtlOff, nil, err
 	}
 	tag = strings.Replace(tag, fullNameTag, "", 1)
 
@@ -486,6 +484,10 @@ func parseField(typ Type, isPointer bool, name string, tag string) (*ColumnDefin
 	// parse name tag
 	fullNameTag, name, err := parseNameTag(tag, name)
 	if err != nil {
+		if tag == "" {
+			return nil, errors.Errorf("INTERNAL ERROR! no tag in parseFieldTag(%v, %v, %q, %q)",
+				typ, isPointer, name, tag)
+		}
 		return nil, fmt.Errorf("invalid name tag: %s", tag)
 	}
 
