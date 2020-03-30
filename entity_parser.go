@@ -303,6 +303,7 @@ func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, []str
 	//find the name
 	fullNameTag, name, err := parseNameTag(tag, indexName)
 	if err != nil {
+		// parseNameTag returns a sane error.
 		return "", nil, nil, err
 	}
 	tag = strings.Replace(tag, fullNameTag, "", 1)
