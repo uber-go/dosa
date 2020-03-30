@@ -485,11 +485,8 @@ func parseField(typ Type, isPointer bool, name string, tag string) (*ColumnDefin
 	// parse name tag
 	fullNameTag, name, err := parseNameTag(tag, name)
 	if err != nil {
-		if tag == "" {
-			return nil, errors.Errorf("INTERNAL ERROR! no tag in parseFieldTag(%v, %v, %q, %q)",
-				typ, isPointer, name, tag)
-		}
-		return nil, fmt.Errorf("invalid name tag: %s", tag)
+		// parseNameTag returns a sane error.
+		return nil, err
 	}
 
 	tag = strings.Replace(tag, fullNameTag, "", 1)
