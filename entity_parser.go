@@ -40,20 +40,20 @@ const (
 )
 
 var (
-	primaryKeyPattern0 = regexp.MustCompile(`primaryKey\s*=\s*([^=]*)((\s+.*=)|$)`)
-	primaryKeyPattern1 = regexp.MustCompile(`\(\s*\((.*)\)(.*)\)`)
-	primaryKeyPattern2 = regexp.MustCompile(`\(\s*([^,\s]+),?(.*)\)`)
-	primaryKeyPattern3 = regexp.MustCompile(`^\s*([^(),\s]+)\s*$`)
+	primaryKeyLeadingPattern  = regexp.MustCompile(`primaryKey\s*=\s*([^=]*)((\s+.*=)|$)`)
+	primaryKeyParensPattern   = regexp.MustCompile(`\(\s*\((.*)\)(.*)\)`)
+	primaryKeyNoParensPattern = regexp.MustCompile(`\(\s*([^,\s]+),?(.*)\)`)
+	primaryKeySoloPattern     = regexp.MustCompile(`^\s*([^(),\s]+)\s*$`)
 
-	indexKeyPattern0 = regexp.MustCompile(`key\s*=\s*([^=]*)((\s+.*=)|$)`)
+	indexKeyPattern = regexp.MustCompile(`key\s*=\s*([^=]*)((\s+.*=)|$)`)
 
-	namePattern0 = regexp.MustCompile(`name\s*=\s*(\S*)`)
+	namePattern = regexp.MustCompile(`name\s*=\s*(\S*)`)
 
 	columnsPattern = regexp.MustCompile(`columns\s*=\s*\(([^\(\)]+)\)`)
 
-	etlPattern0 = regexp.MustCompile(`etl\s*=\s*(\S*)`)
+	etlPattern = regexp.MustCompile(`etl\s*=\s*(\S*)`)
 
-	ttlPattern0 = regexp.MustCompile(`ttl\s*=\s*(\S*)`)
+	ttlPattern = regexp.MustCompile(`ttl\s*=\s*(\S*)`)
 
 	indexType = reflect.TypeOf((*Index)(nil)).Elem()
 )
@@ -118,7 +118,7 @@ func parsePrimaryKey(tableName, pkStr string) (*PrimaryKey, error) {
 	var clusteringKeyStr string
 	matched := false
 	// case 1: primaryKey=((PK1,PK2), PK3, PK4)
-	matchs := primaryKeyPattern1.FindStringSubmatch(pkStr)
+	matchs := primaryKeyParensPattern.FindStringSubmatch(pkStr)
 	if len(matchs) == 3 {
 		matched = true
 		partitionKeyStr = matchs[1]
@@ -127,7 +127,7 @@ func parsePrimaryKey(tableName, pkStr string) (*PrimaryKey, error) {
 
 	// case 2: primaryKey=(PK1,PK2)
 	if !matched {
-		matchs = primaryKeyPattern2.FindStringSubmatch(pkStr)
+		matchs = primaryKeyNoParensPattern.FindStringSubmatch(pkStr)
 		if len(matchs) == 3 {
 			matched = true
 			partitionKeyStr = matchs[1]
@@ -137,7 +137,7 @@ func parsePrimaryKey(tableName, pkStr string) (*PrimaryKey, error) {
 
 	// case 3: primaryKey=PK1 (only one primary key)
 	if !matched {
-		matchs = primaryKeyPattern3.FindStringSubmatch(pkStr)
+		matchs = primaryKeySoloPattern.FindStringSubmatch(pkStr)
 		if len(matchs) == 2 {
 			matched = true
 			partitionKeyStr = matchs[1]
@@ -287,7 +287,7 @@ func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, []str
 	tag := dosaAnnotation
 
 	// find the primaryKey
-	matchs := indexKeyPattern0.FindStringSubmatch(tag)
+	matchs := indexKeyPattern.FindStringSubmatch(tag)
 	if len(matchs) != 4 {
 		return "", nil, nil, fmt.Errorf("dosa.Index %s with an invalid dosa index tag %q", indexName, tag)
 	}
@@ -328,7 +328,7 @@ func parseNameTag(tag, defaultName string) (string, string, error) {
 	fullNameTag := ""
 	name := defaultName
 
-	matches := namePattern0.FindStringSubmatch(tag)
+	matches := namePattern.FindStringSubmatch(tag)
 	if len(matches) == 2 {
 		fullNameTag = matches[0]
 		name = matches[1]
@@ -374,7 +374,7 @@ func parseColumnsTag(tag string) (string, []string, error) {
 func parseETLTag(tag string) (string, ETLState, error) {
 	fullETLTag := ""
 	etlTag := ""
-	matches := etlPattern0.FindStringSubmatch(tag)
+	matches := etlPattern.FindStringSubmatch(tag)
 	if len(matches) == 2 {
 		fullETLTag = matches[0]
 		etlTag = matches[1]
@@ -398,7 +398,7 @@ func parseETLTag(tag string) (string, ETLState, error) {
 func parseTTLTag(tag string) (string, time.Duration, error) {
 	fullTTLTag := ""
 	ttlTag := ""
-	matches := ttlPattern0.FindStringSubmatch(tag)
+	matches := ttlPattern.FindStringSubmatch(tag)
 
 	if len(matches) == 0 {
 		return "", NoTTL(), nil
@@ -428,8 +428,8 @@ func parseEntityTag(structName, dosaAnnotation string) (string, time.Duration, E
 	tag := dosaAnnotation
 
 	// find the primaryKey
-	matchs := primaryKeyPattern0.FindStringSubmatch(tag)
-	if len(matchs) != primaryKeyPattern0.NumSubexp()+1 {
+	matchs := primaryKeyLeadingPattern.FindStringSubmatch(tag)
+	if len(matchs) != primaryKeyLeadingPattern.NumSubexp()+1 {
 		return "", NoTTL(), EtlOff, nil, fmt.Errorf("dosa.Entity on object %s with an invalid dosa struct tag %q", structName, tag)
 	}
 	pkString := matchs[1]

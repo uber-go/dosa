@@ -619,7 +619,7 @@ func TestRenameToInvalidName(t *testing.T) {
 	table, err := TableFromInstance(&InvalidRename{})
 	assert.Nil(t, table)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid name tag: name=ABădNăme")
+	assert.Contains(t, err.Error(), "invalid name")
 }
 
 type BadColNameButRenamed struct {
