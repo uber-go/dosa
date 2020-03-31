@@ -334,13 +334,13 @@ func TestFieldParse(t *testing.T) {
 	data := []struct {
 		StructField reflect.StructField
 		Tag         string
-		Error       error
+		Error       string
 		Column      *ColumnDefinition
 	}{
 		{
 			StructField: invalidFieldType,
 			Tag:         "",
-			Error:       errors.New("Invalid type []string"),
+			Error:       "Invalid type []string",
 		},
 		{
 			StructField: validFieldType,
@@ -361,43 +361,44 @@ func TestFieldParse(t *testing.T) {
 		{
 			StructField: validFieldType,
 			Tag:         "    name=jj  sddf  ",
-			Error:       errors.New("invalid dosa field tag"),
+			Error:       "invalid dosa field tag",
 		},
 		{
 			StructField: validFieldType,
 			Tag:         "asdf    name=jj    ",
-			Error:       errors.New("invalid dosa field tag"),
+			Error:       "invalid dosa field tag",
 		},
 		{
 			StructField: validFieldType,
 			Tag:         "asdf    name=jj    asdfads",
-			Error:       errors.New("invalid dosa field tag"),
+			Error:       "invalid dosa field tag",
 		},
 		{
 			StructField: validFieldType,
 			Tag:         "  asdfljk  ",
-			Error:       errors.New("invalid dosa field tag"),
+			Error:       "invalid dosa field tag",
 		},
 		{
 			StructField: validFieldType,
 			Tag:         "  name=  ",
-			Error:       errors.New("invalid name tag:   name="),
+			Error:       "invalid name",
 		},
 		{
 			StructField: validFieldType,
 			Tag:         "name=",
-			Error:       errors.New("invalid name tag: name="),
+			Error:       "invalid name",
 		},
 		{
 			StructField: validFieldType,
 			Tag:         "name=x name=0",
-			Error:       errors.New("invalid dosa field tag"),
+			Error:       "invalid dosa field tag",
 		},
 	}
 	for _, d := range data {
 		cn, err := parseFieldTag(d.StructField, d.Tag)
-		if d.Error != nil {
-			assert.Contains(t, err.Error(), d.Error.Error())
+		if d.Error != "" {
+			assert.NotNil(t, err)
+			assert.Contains(t, err.Error(), d.Error)
 		} else {
 			assert.Equal(t, d.Column, cn)
 			assert.Nil(t, err)
