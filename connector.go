@@ -28,6 +28,30 @@ import (
 	"time"
 )
 
+// ErrBadArgs allows connectors to indicate to their upstreams
+// that something about the args they recieved for a particular operation
+// are not valid.
+type ErrBadArgs struct {
+	msg string
+}
+
+func NewErrBadArgs(msg string) error {
+	return &ErrBadArgs{
+		msg: msg,
+	}
+}
+
+// Error returns the error message for an ErrBadArgs error.
+func (e *ErrBadArgs) Error() string {
+	return e.msg
+}
+
+// ErrorIsBadArgs checks if the error is an "ErrBadArgs".
+func ErrorIsBadArgs(err error) bool {
+	_, ok := errors.Cause(err).(*ErrBadArgs)
+	return ok
+}
+
 //go:generate stringer -type=Operator
 
 // Operator defines an operator against some data for range scans
