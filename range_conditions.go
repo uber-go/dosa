@@ -87,7 +87,7 @@ func ConditionsString(columnConditions map[string][]*Condition) string {
 	nc := NormalizeConditions(columnConditions)
 	s := make([]string, 0, len(nc))
 	for _, cc := range nc {
-		s = append(s, fmt.Sprintf("%v", cc))
+		s = append(s, cc.String())
 	}
 	if len(s) == 1 {
 		return s[0]
