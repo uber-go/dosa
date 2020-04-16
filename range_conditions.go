@@ -43,7 +43,7 @@ type ColumnCondition struct {
 }
 
 func (cc *ColumnCondition) String() string {
-	return fmt.Sprintf("(%s %v %v)", cc.Name, cc.Condition.Op, cc.Condition.Value)
+	return fmt.Sprintf("(%s %s %v)", cc.Name, cc.Condition.Op.Symbol(), cc.Condition.Value)
 }
 
 // SortedColumnCondition implements sorting of an array of columnConditions
