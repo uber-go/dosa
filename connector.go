@@ -268,6 +268,23 @@ func (f ScopeFlagType) String() string {
 func (op Operator) String() string {
 	switch op {
 	case Eq:
+		return "Eq"
+	case Lt:
+		return "Lt"
+	case LtOrEq:
+		return "LtOrEq"
+	case Gt:
+		return "Gt"
+	case GtOrEq:
+		return "GtOrEq"
+	default:
+		return "?"
+	}
+}
+
+func (op Operator) Symbol() string {
+	switch op {
+	case Eq:
 		return "=="
 	case Lt:
 		return "<"
