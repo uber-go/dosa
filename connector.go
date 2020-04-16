@@ -28,15 +28,14 @@ import (
 	"time"
 )
 
-//go:generate stringer -type=Operator
-
 // Operator defines an operator against some data for range scans
 type Operator int
 
-// order of appearance matter here
 const (
+	_ Operator = iota
+
 	// Eq is the equals operator
-	Eq Operator = iota + 1
+	Eq
 
 	// Lt is the less than operator
 	Lt
@@ -49,10 +48,10 @@ const (
 
 	// GtOrEq is the greater than or equal operator
 	GtOrEq
-
-	// InvalidVersion is version which is less than 1
-	InvalidVersion = -1
 )
+
+// InvalidVersion is an invalid value for a schema version.
+const InvalidVersion = -1
 
 // FieldNameValuePair is a field name and value
 type FieldNameValuePair struct {
@@ -264,4 +263,21 @@ func (f ScopeFlagType) String() string {
 		fs = append(fs, "AccessFromProd")
 	}
 	return "{" + strings.Join(fs, ", ") + "}"
+}
+
+func (op Operator) String() string {
+	switch op {
+	case Eq:
+		return "=="
+	case Lt:
+		return "<"
+	case LtOrEq:
+		return "<="
+	case Gt:
+		return ">"
+	case GtOrEq:
+		return ">="
+	default:
+		return "?"
+	}
 }

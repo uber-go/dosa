@@ -26,88 +26,75 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var rangeTestCases = []struct {
-	descript  string
-	rop       *RangeOp
-	stringer  string
-	converted string
-	err       string
-}{
-	{
-		descript:  "empty rangeop, valid",
-		rop:       NewRangeOp(&AllTypes{}),
-		stringer:  "<empty>",
-		converted: "<empty>",
-	},
-	{
-		descript:  "single string, valid",
-		rop:       NewRangeOp(&AllTypes{}).Eq("StringType", "word"),
-		stringer:  "StringType Eq word",
-		converted: "stringtype Eq word",
-	},
-	{
-		descript: "bad field name, invalid",
-		rop:      NewRangeOp(&AllTypes{}).Eq("badfield", "data"),
-		stringer: "badfield Eq data",
-		err:      "badfield",
-	},
-	{
-		descript: "numeric in string field, invalid",
-		rop:      NewRangeOp(&AllTypes{}).Gt("StringType", 1),
-		stringer: "StringType Gt 1",
-		err:      "invalid value for string",
-	},
-	{
-		descript:  "two conditions, valid",
-		rop:       NewRangeOp(&AllTypes{}).GtOrEq("Int32Type", int32(5)).LtOrEq("Int32Type", int32(10)),
-		stringer:  "Int32Type GtOrEq 5, Int32Type LtOrEq 10",
-		converted: "int32type GtOrEq 5, int32type LtOrEq 10",
-	},
-	{
-		descript:  "empty with limit",
-		rop:       NewRangeOp(&AllTypes{}).Limit(10),
-		stringer:  "<empty> limit 10",
-		converted: "<empty> limit 10",
-	},
-	{
-		descript:  "empty with adaptive limit",
-		rop:       NewRangeOp(&AllTypes{}).Limit(AdaptiveRangeLimit),
-		stringer:  "<empty> limit -1",
-		converted: "<empty> limit -1",
-	},
-	{
-		descript:  "empty with token",
-		rop:       NewRangeOp(&AllTypes{}).Offset("toketoketoke"),
-		stringer:  "<empty> token \"toketoketoke\"",
-		converted: "<empty> token \"toketoketoke\"",
-	},
-	{
-		descript: "error in one field",
-		rop:      NewRangeOp(&AllTypes{}).Lt("badfieldpropogate", "oopsie").Lt("StringType", "42").Limit(10),
-		stringer: "StringType Lt 42, badfieldpropogate Lt oopsie limit 10",
-		err:      "badfieldpropogate",
-	},
-	{
-		descript:  "valid, mixed types",
-		rop:       NewRangeOp(&AllTypes{}).Eq("StringType", "word").Eq("Int32Type", int32(-1)),
-		stringer:  "Int32Type Eq -1, StringType Eq word",
-		converted: "int32type Eq -1, stringtype Eq word",
-	},
-	{
-		descript:  "with valid field list",
-		rop:       NewRangeOp(&AllTypes{}).Fields([]string{"StringType"}),
-		stringer:  "<empty>",
-		converted: "<empty>",
-	},
-}
-
-func TestNewRangeOp(t *testing.T) {
-	assert.NotNil(t, NewRangeOp(&AllTypes{}))
-}
-
 func TestRangeOpStringer(t *testing.T) {
+	rangeTestCases := []struct {
+		descript string
+		rop      *RangeOp
+		stringer string
+		err      string
+	}{
+		{
+			descript: "empty rangeop, valid",
+			rop:      NewRangeOp(&AllTypes{}),
+			stringer: "()",
+		},
+		{
+			descript: "single string, valid",
+			rop:      NewRangeOp(&AllTypes{}).Eq("StringType", "word"),
+			stringer: "(StringType == word)",
+		},
+		{
+			descript: "bad field name, invalid",
+			rop:      NewRangeOp(&AllTypes{}).Eq("badfield", "data"),
+			stringer: "(badfield == data)",
+		},
+		{
+			descript: "numeric in string field, invalid",
+			rop:      NewRangeOp(&AllTypes{}).Gt("StringType", 1),
+			stringer: "(StringType > 1)",
+		},
+		{
+			descript: "two conditions, valid",
+			rop:      NewRangeOp(&AllTypes{}).GtOrEq("Int32Type", int32(5)).LtOrEq("Int32Type", int32(10)),
+			stringer: "((Int32Type <= 10) && (Int32Type >= 5))",
+		},
+		{
+			descript: "empty with limit",
+			rop:      NewRangeOp(&AllTypes{}).Limit(10),
+			stringer: "() limit 10",
+		},
+		{
+			descript: "empty with adaptive limit",
+			rop:      NewRangeOp(&AllTypes{}).Limit(AdaptiveRangeLimit),
+			stringer: "() limit -1",
+		},
+		{
+			descript: "empty with token",
+			rop:      NewRangeOp(&AllTypes{}).Offset("toketoketoke"),
+			stringer: "() token \"toketoketoke\"",
+		},
+		{
+			descript: "error in one field",
+			rop:      NewRangeOp(&AllTypes{}).Lt("badfieldpropogate", "oopsie").Lt("StringType", "42").Limit(10),
+			stringer: "((StringType < 42) && (badfieldpropogate < oopsie)) limit 10",
+		},
+		{
+			descript: "valid, mixed types",
+			rop:      NewRangeOp(&AllTypes{}).Eq("StringType", "word").Eq("Int32Type", int32(-1)),
+			stringer: "((Int32Type == -1) && (StringType == word))",
+		},
+		{
+			descript: "with valid field list",
+			rop:      NewRangeOp(&AllTypes{}).Fields([]string{"StringType"}),
+			stringer: "()",
+		},
+	}
 
 	for _, test := range rangeTestCases {
 		assert.Equal(t, test.stringer, test.rop.String(), test.descript)
 	}
+}
+
+func TestNewRangeOp(t *testing.T) {
+	assert.NotNil(t, NewRangeOp(&AllTypes{}))
 }

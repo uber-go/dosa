@@ -156,7 +156,7 @@ type Client interface {
 	Read(ctx context.Context, fieldsToRead []string, objectToRead DomainObject) error
 
 	// MultiRead fetches several rows by primary key. A list of fields can be
-	// specified. Use All() or nil for all fields.
+	// specified. Use All() or nil for all fields. All entities MUST be on the same partition.
 	// The domainObject will be filled by corresponding values if the object is fetched successfully.
 	// Otherwise the DomainObject as key and an error message as value will be saved into
 	// MultiResult map.
