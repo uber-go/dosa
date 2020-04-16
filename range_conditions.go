@@ -22,6 +22,7 @@ package dosa
 
 import (
 	"bytes"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -39,6 +40,10 @@ type Condition struct {
 type ColumnCondition struct {
 	Name      string
 	Condition *Condition
+}
+
+func (cc *ColumnCondition) String() string {
+	return fmt.Sprintf("(%s %v %v)", cc.Name, cc.Condition.Op, cc.Condition.Value)
 }
 
 // SortedColumnCondition implements sorting of an array of columnConditions
@@ -73,6 +78,21 @@ func NormalizeConditions(columnConditions map[string][]*Condition) []*ColumnCond
 
 	sort.Sort(sortedColumnCondition(cc))
 	return cc
+}
+
+func ConditionsString(columnConditions map[string][]*Condition) string {
+	if len(columnConditions) == 0 {
+		return "()"
+	}
+	nc := NormalizeConditions(columnConditions)
+	s := make([]string, 0, len(nc))
+	for _, cc := range nc {
+		s = append(s, fmt.Sprintf("%v", cc))
+	}
+	if len(s) == 1 {
+		return s[0]
+	}
+	return "(" + strings.Join(s, " && ") + ")"
 }
 
 // EnsureValidRangeConditions checks the conditions for a PK Range(). "transform" is a name-prettifying function.

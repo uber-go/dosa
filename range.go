@@ -22,8 +22,6 @@ package dosa
 
 import (
 	"bytes"
-	"fmt"
-	"sort"
 
 	"github.com/pkg/errors"
 )
@@ -75,30 +73,7 @@ func (r *RangeOp) Fields(fields []string) *RangeOp {
 // String satisfies the Stringer interface
 func (r *RangeOp) String() string {
 	result := &bytes.Buffer{}
-	if r.conditions == nil || len(r.conditions) == 0 {
-		result.WriteString("<empty>")
-	} else {
-		// sort the fields by name for deterministic results
-		keys := make([]string, 0, len(r.conditions))
-		for key := range r.conditions {
-			keys = append(keys, key)
-		}
-		sort.Strings(keys)
-		for _, field := range keys {
-			conds := r.conditions[field]
-			if result.Len() > 0 {
-				result.WriteString(", ")
-			}
-			result.WriteString(field)
-			result.WriteString(" ")
-			for i, cond := range conds {
-				if i > 0 {
-					_, _ = fmt.Fprintf(result, ", %s ", field)
-				}
-				_, _ = fmt.Fprintf(result, "%s %v", cond.Op.String(), cond.Value)
-			}
-		}
-	}
+	result.WriteString(ConditionsString(r.conditions))
 	addLimitTokenString(result, r.limit, r.token)
 	return result.String()
 }

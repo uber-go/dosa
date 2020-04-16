@@ -27,6 +27,69 @@ import (
 )
 
 func TestConvertConditions(t *testing.T) {
+	rangeTestCases := []struct {
+		descript  string
+		rop       *RangeOp
+		converted string
+		err       string
+	}{
+		{
+			descript:  "empty rangeop, valid",
+			rop:       NewRangeOp(&AllTypes{}),
+			converted: "()",
+		},
+		{
+			descript:  "single string, valid",
+			rop:       NewRangeOp(&AllTypes{}).Eq("StringType", "word"),
+			converted: "(stringtype == word)",
+		},
+		{
+			descript: "bad field name, invalid",
+			rop:      NewRangeOp(&AllTypes{}).Eq("badfield", "data"),
+			err:      "badfield",
+		},
+		{
+			descript: "numeric in string field, invalid",
+			rop:      NewRangeOp(&AllTypes{}).Gt("StringType", 1),
+			err:      "invalid value for string",
+		},
+		{
+			descript:  "two conditions, valid",
+			rop:       NewRangeOp(&AllTypes{}).GtOrEq("Int32Type", int32(5)).LtOrEq("Int32Type", int32(10)),
+			converted: "((int32type <= 10) && (int32type >= 5))",
+		},
+		{
+			descript:  "empty with limit",
+			rop:       NewRangeOp(&AllTypes{}).Limit(10),
+			converted: "()",
+		},
+		{
+			descript:  "empty with adaptive limit",
+			rop:       NewRangeOp(&AllTypes{}).Limit(AdaptiveRangeLimit),
+			converted: "()",
+		},
+		{
+			descript:  "empty with token",
+			rop:       NewRangeOp(&AllTypes{}).Offset("toketoketoke"),
+			converted: "()",
+		},
+		{
+			descript: "error in one field",
+			rop:      NewRangeOp(&AllTypes{}).Lt("badfieldpropogate", "oopsie").Lt("StringType", "42").Limit(10),
+			err:      "badfieldpropogate",
+		},
+		{
+			descript:  "valid, mixed types",
+			rop:       NewRangeOp(&AllTypes{}).Eq("stringtype", "word").Eq("int32type", int32(-1)),
+			converted: "((int32type == -1) && (stringtype == word))",
+		},
+		{
+			descript:  "with valid field list",
+			rop:       NewRangeOp(&AllTypes{}).Fields([]string{"StringType"}),
+			converted: "()",
+		},
+	}
+
 	alltypesTable, _ := TableFromInstance((*AllTypes)(nil))
 	for _, test := range rangeTestCases {
 		result, err := ConvertConditions(test.rop.conditions, alltypesTable)
@@ -34,12 +97,7 @@ func TestConvertConditions(t *testing.T) {
 			assert.Contains(t, err.Error(), test.err, test.descript)
 		} else {
 			if assert.NoError(t, err) {
-				// we don't have a stringify method on just the conditions bit
-				// so just build a new RangeOp from the old one
-				newRop := *test.rop
-				newRop.conditions = result
-				final := (&newRop).String()
-				assert.Equal(t, test.converted, final, test.descript)
+				assert.Equal(t, test.converted, ConditionsString(result), test.descript)
 			}
 		}
 	}
