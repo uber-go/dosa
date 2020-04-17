@@ -1,7 +1,11 @@
 # Changelog
 
-## v3.4.22 (unreleased)
+## v3.4.23 (unreleased)
  - no changes yet,
+
+## v3.4.22 (2020-04-17)
+ - Add some String() methods to query-related objects
+ - Some cleanup
 
 ## v3.4.21 (2020-03-30)
  - First pass to fix the terrible error messages in the client.
