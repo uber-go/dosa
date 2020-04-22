@@ -214,12 +214,6 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 
 	err = c.client.CreateIfNotExists(ctx, &createRequest, getHeaders(c.headers)...)
 	if err != nil {
-		if be, ok := err.(*dosarpc.BadRequestError); ok {
-			if be.ErrorCode != nil && *be.ErrorCode == errCodeAlreadyExists {
-				return errors.Wrap(&dosa.ErrAlreadyExists{}, "CreateIfNotExists failed")
-			}
-		}
-
 		if !dosarpc.Dosa_CreateIfNotExists_Helper.IsException(err) {
 			return errors.Wrap(err, "CreateIfNotExists failed due to network issue")
 		}
@@ -327,12 +321,6 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 
 	response, err := c.client.Read(ctx, readRequest, getHeaders(c.headers)...)
 	if err != nil {
-		if be, ok := err.(*dosarpc.BadRequestError); ok {
-			if be.ErrorCode != nil && *be.ErrorCode == errCodeNotFound {
-				return nil, errors.Wrap(&dosa.ErrNotFound{}, "Read failed: not found")
-			}
-		}
-
 		if !dosarpc.Dosa_Read_Helper.IsException(err) {
 			return nil, errors.Wrap(err, "failed to Read due to network issue")
 		}

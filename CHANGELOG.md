@@ -1,7 +1,10 @@
 # Changelog
 
-## v3.4.23 (unreleased)
- - no changes yet,
+## v3.4.24 (unreleased)
+ - no changes yet.
+
+## v3.4.23 (2020-04-22)
+ - Do not discard errors returned by the Gateway (for Read and CreateIfNotExists).
 
 ## v3.4.22 (2020-04-17)
  - Add some String() methods to query-related objects
