@@ -24,7 +24,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
+	nethttp "net/http"
 	"net/url"
 	"strings"
 
@@ -45,8 +45,8 @@ import (
 
 const (
 	_version                    = "version"
-	errCodeNotFound      int32  = http.StatusNotFound
-	errCodeAlreadyExists int32  = http.StatusConflict
+	errCodeNotFound      int32  = nethttp.StatusNotFound
+	errCodeAlreadyExists int32  = nethttp.StatusConflict
 	errConnectionRefused string = "getsockopt: connection refused"
 	httpTransport        string = "http"
 	tchannelTransport    string = "tchannel"
