@@ -24,6 +24,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -44,8 +45,8 @@ import (
 
 const (
 	_version                    = "version"
-	errCodeNotFound      int32  = 404
-	errCodeAlreadyExists int32  = 409
+	errCodeNotFound      int32  = http.StatusNotFound
+	errCodeAlreadyExists int32  = http.StatusConflict
 	errConnectionRefused string = "getsockopt: connection refused"
 	httpTransport        string = "http"
 	tchannelTransport    string = "tchannel"
@@ -214,6 +215,11 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 
 	err = c.client.CreateIfNotExists(ctx, &createRequest, getHeaders(c.headers)...)
 	if err != nil {
+		if be, ok := err.(*dosarpc.BadRequestError); ok {
+			if be.ErrorCode != nil && *be.ErrorCode == errCodeAlreadyExists {
+				return errors.Wrap(&dosa.ErrAlreadyExists{}, err.Error())
+			}
+		}
 		if !dosarpc.Dosa_CreateIfNotExists_Helper.IsException(err) {
 			return errors.Wrap(err, "CreateIfNotExists failed due to network issue")
 		}
@@ -321,6 +327,12 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 
 	response, err := c.client.Read(ctx, readRequest, getHeaders(c.headers)...)
 	if err != nil {
+		if be, ok := err.(*dosarpc.BadRequestError); ok {
+			if be.ErrorCode != nil && *be.ErrorCode == errCodeNotFound {
+				return nil, errors.Wrap(&dosa.ErrNotFound{}, err.Error())
+			}
+		}
+
 		if !dosarpc.Dosa_Read_Helper.IsException(err) {
 			return nil, errors.Wrap(err, "failed to Read due to network issue")
 		}
