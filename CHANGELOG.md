@@ -1,7 +1,7 @@
 # Changelog
 
 ## v3.4.24 (unreleased)
- - no changes yet.
+ - Update the copyright messages to 2020.
 
 ## v3.4.23 (2020-04-22)
  - Do not discard errors returned by the Gateway (for Read and CreateIfNotExists).
