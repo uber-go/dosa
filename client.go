@@ -134,6 +134,19 @@ func ErrorIsAlreadyExists(err error) bool {
 	return ok
 }
 
+// ErrRateLimited is an error returned when the rate limit is exceeded.
+type ErrRateLimited struct{}
+
+func (*ErrRateLimited) Error() string {
+	return "rate limited"
+}
+
+// ErrorIsRateLimited is an error returned when the rate limit is exceeded.
+func ErrorIsRateLimited(err error) bool {
+	_, ok := errors.Cause(err).(*ErrRateLimited)
+	return ok
+}
+
 // Client defines the methods to operate with DOSA entities
 type Client interface {
 	// GetRegistrar returns the registrar
