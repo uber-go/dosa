@@ -1,7 +1,11 @@
 # Changelog
 
+## v3.4.25 (unreleased)
+ - Nothing changed yet.
+
 ## v3.4.24 (unreleased)
  - Update the copyright messages to 2020.
+ - Temporarily remove the Docstore reserved word list
 
 ## v3.4.23 (2020-04-22)
  - Do not discard errors returned by the Gateway (for Read and CreateIfNotExists).

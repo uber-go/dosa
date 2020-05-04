@@ -72,10 +72,6 @@ func TestIsValidName(t *testing.T) {
 			err: "reserved word",
 		},
 		{
-			arg: "partition_key",
-			err: "reserved word",
-		},
-		{
 			arg: "schema",
 			err: "reserved word",
 		},
