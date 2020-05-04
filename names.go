@@ -52,12 +52,12 @@ func init() {
 		"rename", "replace", "revoke", "schema", "select", "set", "table", "to", "token", "truncate",
 		"unlogged", "update", "use", "using", "where", "with",
 	}
-	docstoreRsvd := []string{
-		"and", "array", "cast", "contains", "data", "default", "distinct", "else",
-		"false", "from", "group", "having", "interval", "limit", "metadata",
-		"null", "offset", "or", "order", "partition_key", "partition", "row_key",
-		"select", "tombstone", "true", "ts", "where",
-	}
+	docstoreRsvd := []string{} // Temporarily removed, shamim 2020-05-04
+	//	"and", "array", "cast", "contains", "data", "default", "distinct", "else",
+	//	"false", "from", "group", "having", "interval", "limit", "metadata",
+	//	"null", "offset", "or", "order", "partition_key", "partition", "row_key",
+	//	"select", "tombstone", "true", "ts", "where",
+	// }
 	reserved = make(map[string]struct{})
 	for _, n := range cassandraRsvd {
 		reserved[n] = struct{}{}
