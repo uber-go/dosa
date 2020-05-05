@@ -17,7 +17,7 @@ import:
   version: ^3.1.0
 - package: github.com/uber/dosa-idl
 #  version: ^3.3.1
-  branch: rate-limits
+  branch: master
   subpackages:
   - .gen/dosa
   - .gen/dosa/dosaclient
