@@ -1,9 +1,12 @@
 # Changelog
 
-## v3.4.25 (unreleased)
+## v3.4.26 (unreleased)
  - Nothing changed yet.
 
-## v3.4.24 (unreleased)
+## v3.4.25 (2020-05-05)
+ - Add the RateLimit error.
+
+## v3.4.24 (2020-05-04)
  - Update the copyright messages to 2020.
  - Temporarily remove the Docstore reserved word list
 
