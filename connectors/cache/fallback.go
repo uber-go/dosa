@@ -61,24 +61,24 @@ func WithSkipWriteInvalidateEntities(entities ...dosa.DomainObject) Options {
 }
 
 type ContextKey string
+
 // Context key used by SetCacheableEndpoints
 var (
 	// ContextEndpoint allows users to pass in calling endpoint name
 	ContextEndpoint ContextKey = "endpoint"
->>>>>>> TEst
 	// EndpointActiveStatus marks the endpoint as active
 	EndpointActiveStatus bool = true
 )
 
 // SetContextEndpoint set endpoint in context
 func SetContextEndpoint(ctx context.Context, endpoint string) context.Context {
-    return context.WithValue(ctx, ContextEndpoint, endpoint)
+	return context.WithValue(ctx, ContextEndpoint, endpoint)
 }
 
 // GetContextEndpoint get endpoint from context
 func GetContextEndpoint(ctx context.Context) string {
-    endpoint, _ := ctx.Value(ContextEndpoint).(string)
-    return endpoint
+	endpoint, _ := ctx.Value(ContextEndpoint).(string)
+	return endpoint
 }
 
 // SetCacheableEndpoints sets cacheable endpoints

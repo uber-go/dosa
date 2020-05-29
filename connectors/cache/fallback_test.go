@@ -1139,11 +1139,18 @@ func TestCacheableEntities(t *testing.T) {
 // Test setting cacheable endpoints
 func TestCacheableEndpoints(t *testing.T) {
 	c := NewConnector(memory.NewConnector(), memory.NewConnector(), nil, nil)
-	assert.Len(t, c.cacheableEndpoints, 0)
+	assert.Len(t, c.cacheableEndpointStatus, 0)
 
 	endpoints := []string{"getEaterPromotions", "getPromotionsForStores"}
 	c = NewConnector(memory.NewConnector(), memory.NewConnector(), nil, nil, SetCacheableEndpoints(endpoints...))
-	assert.Len(t, c.cacheableEndpoints, 2)
+	assert.Len(t, c.cacheableEndpointStatus, 2)
+
+    // Test context key setters and getters
+    for _, endpoint := range endpoints {
+        ctx := context.Background()
+        ctx = SetContextEndpoint(ctx, endpoint)
+        assert.Equal(t, GetContextEndpoint(ctx), endpoint)
+    }
 }
 
 func TestWriteKeyValueToFallback(t *testing.T) {
