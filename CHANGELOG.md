@@ -1,7 +1,7 @@
 # Changelog
 
 ## v3.4.26 (unreleased)
- - Nothing changed yet.
+ - Add cache configuration per endpoint in fallback cache
 
 ## v3.4.25 (2020-05-05)
  - Add the RateLimit error.
