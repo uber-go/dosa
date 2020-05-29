@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.4.27 (unreleased)
+ - Add cache configuration per endpoint in fallback cache
+
 ## v3.4.26 (unreleased)
  - Nothing changed yet.
 

@@ -23,6 +23,7 @@ package cache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -64,13 +65,22 @@ func WithSkipWriteInvalidateEntities(entities ...dosa.DomainObject) Options {
 var (
 	// ContextEndpoint allows users to pass in calling endpoint name
 	ContextEndpoint string = "endpoint"
+	// EndpointActiveStatus marks the endpoint as active
+	EndpointActiveStatus bool = true
 )
 
 // SetCacheableEndpoints sets cacheable endpoints
 func SetCacheableEndpoints(endpoints ...string) Options {
 	return func(c *Connector) error {
 		for _, endpoint := range endpoints {
-			c.cacheableEndpoints[endpoint] = true
+			fmt.Print("!!!!!!!!!!!!!!!!!1111")
+			fmt.Print("!!!!!!!!!!!!!!!!!1111")
+			fmt.Print("!!!!!!!!!!!!!!!!!1111")
+			fmt.Printf("SetCacheableEndpoints Setting Endpoint: %s", endpoint)
+			fmt.Print("!!!!!!!!!!!!!!!!!1111")
+			fmt.Print("!!!!!!!!!!!!!!!!!1111")
+			fmt.Print("!!!!!!!!!!!!!!!!!1111")
+			c.cacheableEndpointStatus[endpoint] = EndpointActiveStatus
 		}
 		return nil
 	}
@@ -92,14 +102,14 @@ func NewConnector(origin, fallback dosa.Connector, scope metrics.Scope, entities
 func newConnector(origin, fallback dosa.Connector, scope metrics.Scope, encoder encoding.Encoder, entities []dosa.DomainObject) *Connector {
 	bc := base.Connector{Next: origin}
 	set := createCachedEntitiesSet(entities)
-	cacheableEndpoints := make(map[string]bool)
+	cacheableEndpointStatus := make(map[string]bool)
 	return &Connector{
-		Connector:          bc,
-		fallback:           fallback,
-		encoder:            encoder,
-		cacheableEntities:  set,
-		cacheableEndpoints: cacheableEndpoints,
-		stats:              scope,
+		Connector:               bc,
+		fallback:                fallback,
+		encoder:                 encoder,
+		cacheableEntities:       set,
+		cacheableEndpointStatus: cacheableEndpointStatus,
+		stats:                   scope,
 	}
 }
 
@@ -109,7 +119,7 @@ type Connector struct {
 	fallback                       dosa.Connector
 	encoder                        encoding.Encoder
 	cacheableEntities              map[string]bool
-	cacheableEndpoints             map[string]bool
+	cacheableEndpointStatus        map[string]bool
 	skipWriteInvalidateEntitiesMap map[string]bool
 	mux                            sync.Mutex
 	stats                          metrics.Scope
@@ -439,12 +449,19 @@ func (c *Connector) isCacheable(ctx context.Context, ei *dosa.EntityInfo) bool {
 func (c *Connector) isEndpointCacheable(ctx context.Context) bool {
 	// Cacheable endpoints not set via. SetCacheableEndpoints
 	// return true to default behaviour
-	if len(c.cacheableEndpoints) == 0 {
+	if len(c.cacheableEndpointStatus) == 0 {
 		return true
 	}
 
 	endpoint, _ := ctx.Value(ContextEndpoint).(string)
-	return c.cacheableEndpoints[endpoint]
+	fmt.Print("!!!!!!!!!!!!!!!!!222")
+	fmt.Print("!!!!!!!!!!!!!!!!!222")
+	fmt.Print("!!!!!!!!!!!!!!!!!222")
+	fmt.Printf("isEndpointCacheable Checking Endpoint: %s", endpoint)
+	fmt.Print("!!!!!!!!!!!!!!!!!222")
+	fmt.Print("!!!!!!!!!!!!!!!!!222")
+	fmt.Print("!!!!!!!!!!!!!!!!!222")
+	return c.cacheableEndpointStatus[endpoint]
 }
 
 func createCacheMapFromEntites(entities []dosa.DomainObject) map[string]bool {
