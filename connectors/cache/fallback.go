@@ -23,7 +23,6 @@ package cache
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -61,25 +60,31 @@ func WithSkipWriteInvalidateEntities(entities ...dosa.DomainObject) Options {
 	}
 }
 
+type ContextKey string
 // Context key used by SetCacheableEndpoints
 var (
 	// ContextEndpoint allows users to pass in calling endpoint name
-	ContextEndpoint string = "endpoint"
+	ContextEndpoint ContextKey = "endpoint"
+>>>>>>> TEst
 	// EndpointActiveStatus marks the endpoint as active
 	EndpointActiveStatus bool = true
 )
+
+// SetContextEndpoint set endpoint in context
+func SetContextEndpoint(ctx context.Context, endpoint string) context.Context {
+    return context.WithValue(ctx, ContextEndpoint, endpoint)
+}
+
+// GetContextEndpoint get endpoint from context
+func GetContextEndpoint(ctx context.Context) string {
+    endpoint, _ := ctx.Value(ContextEndpoint).(string)
+    return endpoint
+}
 
 // SetCacheableEndpoints sets cacheable endpoints
 func SetCacheableEndpoints(endpoints ...string) Options {
 	return func(c *Connector) error {
 		for _, endpoint := range endpoints {
-			fmt.Print("!!!!!!!!!!!!!!!!!1111")
-			fmt.Print("!!!!!!!!!!!!!!!!!1111")
-			fmt.Print("!!!!!!!!!!!!!!!!!1111")
-			fmt.Printf("SetCacheableEndpoints Setting Endpoint: %s", endpoint)
-			fmt.Print("!!!!!!!!!!!!!!!!!1111")
-			fmt.Print("!!!!!!!!!!!!!!!!!1111")
-			fmt.Print("!!!!!!!!!!!!!!!!!1111")
 			c.cacheableEndpointStatus[endpoint] = EndpointActiveStatus
 		}
 		return nil
@@ -453,14 +458,7 @@ func (c *Connector) isEndpointCacheable(ctx context.Context) bool {
 		return true
 	}
 
-	endpoint, _ := ctx.Value(ContextEndpoint).(string)
-	fmt.Print("!!!!!!!!!!!!!!!!!222")
-	fmt.Print("!!!!!!!!!!!!!!!!!222")
-	fmt.Print("!!!!!!!!!!!!!!!!!222")
-	fmt.Printf("isEndpointCacheable Checking Endpoint: %s", endpoint)
-	fmt.Print("!!!!!!!!!!!!!!!!!222")
-	fmt.Print("!!!!!!!!!!!!!!!!!222")
-	fmt.Print("!!!!!!!!!!!!!!!!!222")
+	endpoint := GetContextEndpoint(ctx)
 	return c.cacheableEndpointStatus[endpoint]
 }
 
