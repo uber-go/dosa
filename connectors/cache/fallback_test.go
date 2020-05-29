@@ -1145,12 +1145,12 @@ func TestCacheableEndpoints(t *testing.T) {
 	c = NewConnector(memory.NewConnector(), memory.NewConnector(), nil, nil, SetCacheableEndpoints(endpoints...))
 	assert.Len(t, c.cacheableEndpointStatus, 2)
 
-    // Test context key setters and getters
-    for _, endpoint := range endpoints {
-        ctx := context.Background()
-        ctx = SetContextEndpoint(ctx, endpoint)
-        assert.Equal(t, GetContextEndpoint(ctx), endpoint)
-    }
+	// Test context key setters and getters
+	for _, endpoint := range endpoints {
+		ctx := context.Background()
+		ctx = SetContextEndpoint(ctx, endpoint)
+		assert.Equal(t, GetContextEndpoint(ctx), endpoint)
+	}
 }
 
 func TestWriteKeyValueToFallback(t *testing.T) {
