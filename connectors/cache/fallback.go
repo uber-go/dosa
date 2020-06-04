@@ -241,8 +241,8 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 
 // Scan returns scan result from origin.
 func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
-	// Scan will just call range with no conditions
-	return c.Range(ctx, ei, nil, minimumFields, token, limit)
+	// Make Scan call call Scan directly
+	return c.Next.Scan(ctx, ei, minimumFields, token, limit)
 }
 
 // MultiRead reads from fallback for the keys that failed
