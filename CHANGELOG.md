@@ -3,7 +3,7 @@
 ## v3.4.28 (unreleased)
  - Nothing changed yet.
 
-## v3.4.28 (unreleased)
+## v3.4.28 (2020-04-06)
  - Problem with v.4.27, needed to re-release.
 
 ## v3.4.27 (2020-06-04)
