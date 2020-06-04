@@ -134,7 +134,7 @@ type Connector struct {
 
 // Upsert removes (invalidates) the entry from the fallback if the entity is not in the skipWriteInvalidateEntitiesMap
 func (c *Connector) Upsert(ctx context.Context, ei *dosa.EntityInfo, values map[string]dosa.FieldValue) error {
-	if c.isCacheable(ctx, ei) {
+	if c.isWriteCacheable(ei) {
 		w := func() error {
 			return c.removeValueFromFallback(ctx, ei, createCacheKey(ei, values))
 		}
@@ -151,7 +151,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 		populateValuesWithKeys(keys, source)
 	}
 	// If we are not caching for this entity, just return
-	if !c.isCacheable(ctx, ei) {
+	if !c.isReadCacheable(ctx, ei) {
 		return source, sourceErr
 	}
 
@@ -203,7 +203,7 @@ func (c *Connector) write(ctx context.Context, ei *dosa.EntityInfo, keys map[str
 // Range returns range from origin, reverts to fallback if origin fails
 func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnConditions map[string][]*dosa.Condition, minimumFields []string, token string, limit int) ([]map[string]dosa.FieldValue, string, error) {
 	sourceRows, sourceToken, sourceErr := c.Next.Range(ctx, ei, columnConditions, dosa.All(), token, limit)
-	if !c.isCacheable(ctx, ei) || dosa.ErrorIsNotFound(sourceErr) {
+	if !c.isReadCacheable(ctx, ei) || dosa.ErrorIsNotFound(sourceErr) {
 		return sourceRows, sourceToken, sourceErr
 	}
 	cacheKey := rangeQuery{
@@ -264,7 +264,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 		}
 	}
 
-	if dosa.ErrorIsNotFound(sourceErr) || !c.isCacheable(ctx, ei) {
+	if dosa.ErrorIsNotFound(sourceErr) || !c.isReadCacheable(ctx, ei) {
 		return source, sourceErr
 	}
 
@@ -323,7 +323,7 @@ func (c *Connector) MultiRead(ctx context.Context, ei *dosa.EntityInfo, keys []m
 
 // Remove deletes an entry
 func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue) error {
-	if c.isCacheable(ctx, ei) {
+	if c.isWriteCacheable(ei) {
 		w := func() error {
 			return c.removeValueFromFallback(ctx, ei, createCacheKey(ei, keys))
 		}
@@ -335,7 +335,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 
 // MultiUpsert deletes the entries getting upserted from the fallback if the entity is not in the skipWriteInvalidateEntitiesMap
 func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiValues []map[string]dosa.FieldValue) (result []error, err error) {
-	if c.isCacheable(ctx, ei) {
+	if c.isWriteCacheable(ei) {
 		w := func() error {
 			for _, values := range multiValues {
 				_ = c.removeValueFromFallback(ctx, ei, createCacheKey(ei, values))
@@ -349,7 +349,7 @@ func (c *Connector) MultiUpsert(ctx context.Context, ei *dosa.EntityInfo, multiV
 
 // MultiRemove deletes multiple entries from the fallback
 func (c *Connector) MultiRemove(ctx context.Context, ei *dosa.EntityInfo, multiKeys []map[string]dosa.FieldValue) (result []error, err error) {
-	if c.isCacheable(ctx, ei) {
+	if c.isWriteCacheable(ei) {
 		w := func() error {
 			for _, keys := range multiKeys {
 				_ = c.removeValueFromFallback(ctx, ei, createCacheKey(ei, keys))
@@ -447,8 +447,14 @@ func (c *Connector) shouldSkipInvalidateCacheOnWrite(ei *dosa.EntityInfo) bool {
 	return c.skipWriteInvalidateEntitiesMap[ei.Def.Name]
 }
 
-func (c *Connector) isCacheable(ctx context.Context, ei *dosa.EntityInfo) bool {
+func (c *Connector) isReadCacheable(ctx context.Context, ei *dosa.EntityInfo) bool {
+	// Reads are cached based on entity and endpoint configurations
 	return c.cacheableEntities[ei.Def.Name] && c.isEndpointCacheable(ctx)
+}
+
+func (c *Connector) isWriteCacheable(ei *dosa.EntityInfo) bool {
+	// Writes are cached (cache invalidated) based on entity configurations
+	return c.cacheableEntities[ei.Def.Name]
 }
 
 func (c *Connector) isEndpointCacheable(ctx context.Context) bool {

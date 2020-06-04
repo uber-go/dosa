@@ -1153,6 +1153,127 @@ func TestCacheableEndpoints(t *testing.T) {
 	}
 }
 
+func TestCacheInvalidationPerConfigurations(t *testing.T) {
+	if !redis.IsRunning() {
+		t.Skip("Redis is not running")
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDownstreamConnector := mocks.NewMockConnector(ctrl)
+
+	testRedisConfig := redis.Config{
+		ServerSettings: redis.ServerConfig{
+			Host: "localhost",
+			Port: redis.RedisPort,
+		},
+		TTL: 15 * time.Second,
+	}
+	redisC := redis.NewConnector(testRedisConfig, nil)
+
+	testUUID := dosa.UUID("d1449c93-25b8-4032-920b-60471d91acc9")
+	testStr := "test string"
+	testStr2 := "another test string"
+	testInt64 := int64(29385235)
+	testInt32 := int32(232)
+	testFloat64 := float64(999.88)
+	var testbool bool
+	testTime := time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)
+	testBytes := []byte("test value byte array")
+
+	values := map[string]dosa.FieldValue{
+		// primary key
+		"an_uuid_key": testUUID,
+		"strkey":      testStr,
+		"int64key":    testInt64,
+
+		// values
+		"uuidv":          testUUID,
+		"strv":           testStr2,
+		"an_int64_value": testInt64,
+		"int32v":         testInt32,
+		"doublev":        testFloat64,
+		"boolv":          testbool,
+		"blobv":          testBytes,
+		"tsv":            testTime,
+
+		// pointers
+		"uuidvp":   &testUUID,
+		"strvp":    &testStr,
+		"int64vp":  &testInt64,
+		"int32vp":  &testInt32,
+		"doublevp": &testFloat64,
+		"boolvp":   &testbool,
+		"tsvp":     &testTime,
+	}
+
+    // Cache endpoint config
+    endpoint := "getEaterPromotions"
+	endpoints := []string{endpoint}
+	ctx := context.Background()
+	ctx = SetContextEndpoint(ctx, endpoint)
+
+	// Fake origin read succeeding, which will upsert the result into redis
+	mockDownstreamConnector.EXPECT().Read(ctx, testEi, values, dosa.All()).Return(values, nil)
+	// Fake origin read failing, and then read from redis
+	mockDownstreamConnector.EXPECT().Read(ctx, testEi, values, dosa.All()).Return(nil, assert.AnError)
+
+    connector := NewConnector(mockDownstreamConnector, redisC, nil, cacheableEntities, SetCacheableEndpoints(endpoints...))
+	connector.setSynchronousMode(true)
+
+    // This should return the redis cached value
+	_, err := connector.Read(ctx, testEi, values, nil)
+	assert.NoError(t, err)
+
+	resp, err := connector.Read(ctx, testEi, values, nil)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, resp)
+	expectedResult := map[string]dosa.FieldValue{
+		// primary key
+		"an_uuid_key": &testUUID,
+		"strkey":      &testStr,
+		"int64key":    &testInt64,
+
+		// values
+		"uuidv":          &testUUID,
+		"strv":           &testStr2,
+		"an_int64_value": &testInt64,
+		"int32v":         &testInt32,
+		"doublev":        &testFloat64,
+		"boolv":          &testbool,
+		"blobv":          testBytes,
+		"tsv":            &testTime,
+
+		// pointers
+		"uuidvp":   &testUUID,
+		"strvp":    &testStr,
+		"int64vp":  &testInt64,
+		"int32vp":  &testInt32,
+		"doublevp": &testFloat64,
+		"boolvp":   &testbool,
+		"tsvp":     &testTime,
+	}
+
+	assert.EqualValues(t, expectedResult, resp)
+
+    // Now upsert data which should remove it from cache
+	values = map[string]dosa.FieldValue{
+		"an_uuid_key": testUUID,
+		"strkey":      "test key string",
+		"StrV":        "test value string",
+		"BoolV":       false,
+	}
+    // Expect an upsert call, this should invalidate the cache
+	mockDownstreamConnector.EXPECT().Upsert(ctx, testEi, values).Return(nil)
+	err = connector.Upsert(ctx, testEi, values)
+	assert.NoError(t, err)
+
+    // Make a read call, make downstream call fail, the redis cache should also return assert.AnError
+	mockDownstreamConnector.EXPECT().Read(ctx, testEi, values, dosa.All()).Return(nil, assert.AnError)
+	resp, err = connector.Read(ctx, testEi, values, nil)
+	assert.Error(t, err)
+}
+
 func TestWriteKeyValueToFallback(t *testing.T) {
 	connector := NewConnector(memory.NewConnector(), memory.NewConnector(), nil, nil)
 	err := connector.writeKeyValueToFallback(context.TODO(), testEi, "a", nil)
