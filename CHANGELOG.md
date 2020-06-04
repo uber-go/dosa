@@ -1,6 +1,9 @@
 # Changelog
 
-## v3.4.27 (unreleased)
+## v3.4.28 (unreleased)
+ - Nothing changed yet.
+
+## v3.4.27 (2020-06-04)
  - Add separate fallback cache config checks for read and writes
 
 ## v3.4.26 (2020-05-29)
