@@ -971,7 +971,7 @@ func TestScan(t *testing.T) {
 
 	rangeResponse := []map[string]dosa.FieldValue{{"a": "b"}}
 	rangeTok := "nextToken"
-	mockOrigin.EXPECT().Range(context.TODO(), testEi, nil, dosa.All(), "token", 2).Return(rangeResponse, rangeTok, nil)
+	mockOrigin.EXPECT().Scan(context.TODO(), testEi, []string{}, "token", 2).Return(rangeResponse, rangeTok, nil)
 
 	connector := NewConnector(mockOrigin, memory.NewConnector(), nil, nil)
 	resp, tok, err := connector.Scan(context.TODO(), testEi, []string{}, "token", 2)
@@ -1207,8 +1207,8 @@ func TestCacheInvalidationPerConfigurations(t *testing.T) {
 		"tsvp":     &testTime,
 	}
 
-    // Cache endpoint config
-    endpoint := "getEaterPromotions"
+	// Cache endpoint config
+	endpoint := "getEaterPromotions"
 	endpoints := []string{endpoint}
 	ctx := context.Background()
 	ctx = SetContextEndpoint(ctx, endpoint)
@@ -1218,10 +1218,10 @@ func TestCacheInvalidationPerConfigurations(t *testing.T) {
 	// Fake origin read failing, and then read from redis
 	mockDownstreamConnector.EXPECT().Read(ctx, testEi, values, dosa.All()).Return(nil, assert.AnError)
 
-    connector := NewConnector(mockDownstreamConnector, redisC, nil, cacheableEntities, SetCacheableEndpoints(endpoints...))
+	connector := NewConnector(mockDownstreamConnector, redisC, nil, cacheableEntities, SetCacheableEndpoints(endpoints...))
 	connector.setSynchronousMode(true)
 
-    // This should return the redis cached value
+	// This should return the redis cached value
 	_, err := connector.Read(ctx, testEi, values, nil)
 	assert.NoError(t, err)
 
@@ -1256,19 +1256,19 @@ func TestCacheInvalidationPerConfigurations(t *testing.T) {
 
 	assert.EqualValues(t, expectedResult, resp)
 
-    // Now upsert data which should remove it from cache
+	// Now upsert data which should remove it from cache
 	values = map[string]dosa.FieldValue{
 		"an_uuid_key": testUUID,
 		"strkey":      "test key string",
 		"StrV":        "test value string",
 		"BoolV":       false,
 	}
-    // Expect an upsert call, this should invalidate the cache
+	// Expect an upsert call, this should invalidate the cache
 	mockDownstreamConnector.EXPECT().Upsert(ctx, testEi, values).Return(nil)
 	err = connector.Upsert(ctx, testEi, values)
 	assert.NoError(t, err)
 
-    // Make a read call, make downstream call fail, the redis cache should also return assert.AnError
+	// Make a read call, make downstream call fail, the redis cache should also return assert.AnError
 	mockDownstreamConnector.EXPECT().Read(ctx, testEi, values, dosa.All()).Return(nil, assert.AnError)
 	resp, err = connector.Read(ctx, testEi, values, nil)
 	assert.Error(t, err)

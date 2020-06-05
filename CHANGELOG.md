@@ -1,7 +1,7 @@
 # Changelog
 
 ## v3.4.29 (unreleased)
- - Nothing changed yet.
+ - Make fallback cache Scan API call connector Scan API instead of Range
 
 ## v3.4.28 (2020-04-06)
  - Problem with v.4.27, needed to re-release.
