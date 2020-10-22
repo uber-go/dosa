@@ -110,7 +110,7 @@ func parsePrimaryKey(tableName, pkStr string) (*PrimaryKey, error) {
 	if !parensBalanced(pkStr) {
 		return nil, fmt.Errorf("unmatched parentheses: %q", pkStr)
 	}
-	// filter out "trailing comma and space"
+	// filter out trailing commas and whitespace
 	pkStr = strings.TrimRight(pkStr, ", ")
 	pkStr = strings.TrimSpace(pkStr)
 
@@ -323,7 +323,7 @@ func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, []str
 	return name, key, indexColumns, nil
 }
 
-// parseNameTag functions parses DOSA "name" tag
+// parseNameTag recognises "name = word," at the beginning of tag. The matched part and the tag are both returned.
 func parseNameTag(tag, defaultName string) (string, string, error) {
 	fullNameTag := ""
 	name := defaultName
@@ -334,7 +334,7 @@ func parseNameTag(tag, defaultName string) (string, string, error) {
 		name = matches[1]
 	}
 
-	// filter out "trailing comma"
+	// filter out any trailing commas
 	name = strings.TrimRight(name, " ,")
 
 	var err error
@@ -384,7 +384,7 @@ func parseETLTag(tag string) (string, ETLState, error) {
 		return "", EtlOff, nil
 	}
 
-	// filter out "trailing comma" and convert to lowercase
+	// filter out trailing commas and convert to lowercase
 	etlTag = strings.ToLower(strings.TrimRight(etlTag, " ,"))
 
 	etlState, err := ToETLState(etlTag)
@@ -409,7 +409,7 @@ func parseTTLTag(tag string) (string, time.Duration, error) {
 		ttlTag = matches[1]
 	}
 
-	// filter out "trailing comma"
+	// filter out trailing commas
 	ttlTag = strings.TrimRight(ttlTag, " ,")
 	ttl, err := time.ParseDuration(ttlTag)
 	if err != nil {
@@ -472,7 +472,7 @@ func parseEntityTag(structName, dosaAnnotation string) (string, time.Duration, E
 	return name, ttl, etlState, key, nil
 }
 
-// parseFieldTag function parses DOSA tag on the fields in the DOSA struct except the "Entity" field
+// parseFieldTag parses the tag on a field.
 func parseFieldTag(structField reflect.StructField, dosaAnnotation string) (*ColumnDefinition, error) {
 	typ, isPointer, err := typify(structField.Type)
 	if err != nil {
@@ -481,20 +481,49 @@ func parseFieldTag(structField reflect.StructField, dosaAnnotation string) (*Col
 	return parseField(typ, isPointer, structField.Name, dosaAnnotation)
 }
 
-func parseField(typ Type, isPointer bool, name string, tag string) (*ColumnDefinition, error) {
-	// parse name tag
-	fullNameTag, name, err := parseNameTag(tag, name)
+// The only accepted tags here are "name" and "maxlen". The value of "name" is normalized.
+func parseField(typ Type, isPointer bool, name string, tagstr string) (*ColumnDefinition, error) {
+	tags, err := getTags(tagstr)
 	if err != nil {
-		// parseNameTag returns a sane error.
 		return nil, err
 	}
 
-	tag = strings.Replace(tag, fullNameTag, "", 1)
-	if strings.TrimSpace(tag) != "" {
-		return nil, fmt.Errorf("field %s with an invalid dosa field tag: %s", name, tag)
+	// Handle each tag.
+	for tag, value := range tags {
+		switch tag {
+		case "name":
+			name, err = NormalizeName(value)
+			if err != nil {
+				return nil, err
+			}
+		case "maxlen":
+			// No action needed.
+		default:
+			return nil, errors.Errorf("unrecognized tag '%s'", tag)
+		}
+	}
+	return &ColumnDefinition{Name: name, IsPointer: isPointer, Type: typ, Tags: tags}, nil
+}
+
+// Split a string that looks like " key1 = value1, key2=value2 , key3=value3 " into a key-value map. No
+// special characters are allowed, alphanumeric only.
+func getTags(tagstr string) (map[string]string, error) {
+	tags := map[string]string{}
+
+	// Remove all whitespace and split by commas.
+	sections := strings.Split(strings.Replace(tagstr, " ", "", -1), ",")
+
+	// Ensure each section is of the form name=value.
+	for _, s := range sections {
+		parts := strings.Split(s, "=")
+		if len(parts) != 2 {
+			return nil, errors.Errorf("unable to parse '%s'", s)
+		}
+
+		tags[parts[0]] = parts[1]
 	}
 
-	return &ColumnDefinition{Name: name, IsPointer: isPointer, Type: typ}, nil
+	return tags, nil
 }
 
 func parensBalanced(s string) bool {

@@ -185,6 +185,18 @@ func RPCTypeToClientType(t dosarpc.ElemType) dosa.Type {
 	panic("bad type")
 }
 
+// RPCTagsFromClientTags converts tags to the RPC version.
+func RPCTagsFromClientTags(tags map[string]string) []*dosarpc.FieldTag {
+	rpcTags := make([]*dosarpc.FieldTag, 0, len(tags))
+	for k, v := range tags {
+		name := k
+		value := v
+		ft := dosarpc.FieldTag{Name: &name, Value: &value}
+		rpcTags = append(rpcTags, &ft)
+	}
+	return rpcTags
+}
+
 // PrimaryKeyToThrift converts the dosa primary key to the thrift primary key type
 func PrimaryKeyToThrift(key *dosa.PrimaryKey) *dosarpc.PrimaryKey {
 	ck := make([]*dosarpc.ClusteringKey, len(key.ClusteringKeys))
@@ -234,7 +246,8 @@ func entityDefToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
 	fd := make(map[string]*dosarpc.FieldDesc, len(ed.Columns))
 	for _, column := range ed.Columns {
 		rpcType := RPCTypeFromClientType(column.Type)
-		fd[column.Name] = &dosarpc.FieldDesc{Type: &rpcType}
+		rpcTags := RPCTagsFromClientTags(column.Tags)
+		fd[column.Name] = &dosarpc.FieldDesc{Type: &rpcType, Tags: rpcTags}
 		cols = append(cols, column.Name)
 	}
 
