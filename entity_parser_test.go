@@ -21,11 +21,9 @@
 package dosa
 
 import (
-	"testing"
-
-	"time"
-
 	"io"
+	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -605,6 +603,53 @@ func TestParensBalanced(t *testing.T) {
 	assert.False(t, parensBalanced(")("))
 	assert.False(t, parensBalanced("(()))"))
 	assert.False(t, parensBalanced("((()())"))
+}
+
+func TestGetTags(t *testing.T) {
+	testCases := []struct {
+		tag string
+		exp string
+		err string
+	}{
+		{
+			tag: "",
+			exp: "{}",
+		},
+		{
+			tag: "a=b",
+			exp: "{a: b}",
+		},
+		{
+			tag: "a=b,c=d",
+			exp: "{a: b, c: d}",
+		},
+		{
+			tag: " a=b , c=d",
+			exp: "{a: b, c: d}",
+		},
+		{
+			tag: "a = b,c = d ",
+			exp: "{a: b, c: d}",
+		},
+		{
+			tag: "c",
+			err: "unable to parse 'c'",
+		},
+		{
+			tag: "a=b=c",
+			err: "unable to parse 'a=b=c'",
+		},
+	}
+	for _, tc := range testCases {
+		tags, err := getTags(tc.tag)
+		if tc.err == "" {
+			assert.Nil(t, err)
+			assert.Equal(t, tc.exp, deterministicPrintMap(tags))
+		} else {
+			assert.NotNil(t, err)
+			assert.Contains(t, err.Error(), tc.err)
+		}
+	}
 }
 
 /*

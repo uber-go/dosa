@@ -508,10 +508,14 @@ func parseField(typ Type, isPointer bool, name string, tagstr string) (*ColumnDe
 // Split a string that looks like " key1 = value1, key2=value2 , key3=value3 " into a key-value map. No
 // special characters are allowed, alphanumeric only.
 func getTags(tagstr string) (map[string]string, error) {
-	tags := map[string]string{}
-
 	// Remove all whitespace and split by commas.
-	sections := strings.Split(strings.Replace(tagstr, " ", "", -1), ",")
+	tagstr = strings.Replace(tagstr, " ", "", -1)
+	if tagstr == "" {
+		return nil, nil
+	}
+
+	tags := map[string]string{}
+	sections := strings.Split(tagstr, ",")
 
 	// Ensure each section is of the form name=value.
 	for _, s := range sections {
