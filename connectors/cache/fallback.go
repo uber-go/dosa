@@ -114,7 +114,7 @@ func newConnector(origin, fallback dosa.Connector, scope metrics.Scope, encoder 
 		encoder:                 encoder,
 		cacheableEntities:       set,
 		cacheableEndpointStatus: cacheableEndpointStatus,
-		stats: scope,
+		stats:                   scope,
 	}
 }
 
