@@ -258,8 +258,7 @@ func entityDefToThrift(ed *dosa.EntityDefinition) *dosarpc.EntityDefinition {
 	fd := make(map[string]*dosarpc.FieldDesc, len(ed.Columns))
 	for _, column := range ed.Columns {
 		rpcType := RPCTypeFromClientType(column.Type)
-		rpcTags := RPCTagsFromClientTags(column.Tags)
-		fd[column.Name] = &dosarpc.FieldDesc{Type: &rpcType, Tags: rpcTags}
+		fd[column.Name] = &dosarpc.FieldDesc{Type: &rpcType, Tags: RPCTagsFromClientTags(column.Tags)}
 		cols = append(cols, column.Name)
 	}
 
