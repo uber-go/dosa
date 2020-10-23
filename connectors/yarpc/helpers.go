@@ -197,6 +197,18 @@ func RPCTagsFromClientTags(tags map[string]string) []*dosarpc.FieldTag {
 	return rpcTags
 }
 
+// RPCTagsToClientTags converts thrift tags to a map.
+func RPCTagsToClientTags(rpcTags []*dosarpc.FieldTag) map[string]string {
+	if len(rpcTags) == 0 {
+		return nil
+	}
+	tags := map[string]string{}
+	for _, t := range rpcTags {
+		tags[*t.Name] = *t.Value
+	}
+	return tags
+}
+
 // PrimaryKeyToThrift converts the dosa primary key to the thrift primary key type
 func PrimaryKeyToThrift(key *dosa.PrimaryKey) *dosarpc.PrimaryKey {
 	ck := make([]*dosarpc.ClusteringKey, len(key.ClusteringKeys))
@@ -300,7 +312,7 @@ func FromThriftToEntityDefinition(ed *dosarpc.EntityDefinition) *dosa.EntityDefi
 		fields[i] = &dosa.ColumnDefinition{
 			Name: colName,
 			Type: RPCTypeToClientType(*v.Type),
-			// TODO Tag
+			Tags: RPCTagsToClientTags(v.Tags),
 		}
 	}
 
