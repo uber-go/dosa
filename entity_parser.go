@@ -486,7 +486,7 @@ func parseFieldTag(structField reflect.StructField, dosaAnnotation string) (*Col
 
 // The only accepted tags here are "name" and "maxlen". The value of "name" is normalized.
 func parseField(typ Type, isPointer bool, name string, tagstr string) (*ColumnDefinition, error) {
-	origName = name
+	origName := name
 	tags, err := getTags(tagstr)
 	if err != nil {
 		return nil, err
