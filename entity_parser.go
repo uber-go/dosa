@@ -486,6 +486,7 @@ func parseFieldTag(structField reflect.StructField, dosaAnnotation string) (*Col
 
 // The only accepted tags here are "name" and "maxlen". The value of "name" is normalized.
 func parseField(typ Type, isPointer bool, name string, tagstr string) (*ColumnDefinition, error) {
+	origName = name
 	tags, err := getTags(tagstr)
 	if err != nil {
 		return nil, err
@@ -499,14 +500,14 @@ func parseField(typ Type, isPointer bool, name string, tagstr string) (*ColumnDe
 		case "maxlen":
 			// No action needed.
 		default:
-			return nil, errors.Errorf("invalid dosa field tag '%s'", tag)
+			return nil, errors.Errorf("invalid dosa field tag '%s' on field '%s'", tag, origName)
 		}
 	}
 
 	// Normalize the name, and remove any "name" tag from the map.
 	name, err = NormalizeName(name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid dosa field tag '%s'", name)
+		return nil, errors.Wrapf(err, "invalid dosa field tag '%s' on field '%s'", name, origName)
 	}
 	delete(tags, "name")
 
