@@ -633,11 +633,11 @@ func TestGetTags(t *testing.T) {
 		},
 		{
 			tag: "c",
-			err: "unable to parse 'c'",
+			err: "invalid dosa field tag 'c'",
 		},
 		{
 			tag: "a=b=c",
-			err: "unable to parse 'a=b=c'",
+			err: "invalid dosa field tag 'a=b=c'",
 		},
 	}
 	for _, tc := range testCases {

@@ -612,7 +612,7 @@ func TestEntityParse(t *testing.T) {
 				PartitionKeys:  []string{"ok"},
 				ClusteringKeys: nil,
 			},
-			Error: "unknown unit d in duration",
+			Error: `unknown unit "d" in duration`,
 			ETL:   EtlOff,
 			TTL:   NoTTL(),
 		},
