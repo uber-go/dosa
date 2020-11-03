@@ -143,6 +143,7 @@ var testEntityDefinition = &dosa.EntityDefinition{
 		{
 			Name: stringKeyField,
 			Type: dosa.String,
+			Tags: map[string]string{"maxlen": "255"},
 		},
 		{
 			Name: int64KeyField,
@@ -160,6 +161,7 @@ var testEntityDefinition = &dosa.EntityDefinition{
 		{
 			Name: blobField,
 			Type: dosa.Blob,
+			Tags: map[string]string{"maxlen": "1000"},
 		},
 		{
 			Name: timestampField,
@@ -176,6 +178,7 @@ var testEntityDefinition = &dosa.EntityDefinition{
 		{
 			Name: stringField,
 			Type: dosa.String,
+			Tags: map[string]string{"maxlen": "100"},
 		},
 		{
 			Name: int64Field,

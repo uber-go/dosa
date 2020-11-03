@@ -56,6 +56,9 @@ var (
 	ttlPattern = regexp.MustCompile(`ttl\s*=\s*(\S*)`)
 
 	indexType = reflect.TypeOf((*Index)(nil)).Elem()
+
+	multSpacePat = regexp.MustCompile(`\s+`)
+	equalsPat    = regexp.MustCompile(`\s*=\s*`)
 )
 
 // parseClusteringKeys func parses the clustering key of DOSA object
@@ -110,7 +113,7 @@ func parsePrimaryKey(tableName, pkStr string) (*PrimaryKey, error) {
 	if !parensBalanced(pkStr) {
 		return nil, fmt.Errorf("unmatched parentheses: %q", pkStr)
 	}
-	// filter out "trailing comma and space"
+	// filter out trailing commas and whitespace
 	pkStr = strings.TrimRight(pkStr, ", ")
 	pkStr = strings.TrimSpace(pkStr)
 
@@ -323,7 +326,7 @@ func parseIndexTag(indexName, dosaAnnotation string) (string, *PrimaryKey, []str
 	return name, key, indexColumns, nil
 }
 
-// parseNameTag functions parses DOSA "name" tag
+// parseNameTag recognises "name = word," at the beginning of tag. The matched part and the tag are both returned.
 func parseNameTag(tag, defaultName string) (string, string, error) {
 	fullNameTag := ""
 	name := defaultName
@@ -334,7 +337,7 @@ func parseNameTag(tag, defaultName string) (string, string, error) {
 		name = matches[1]
 	}
 
-	// filter out "trailing comma"
+	// filter out any trailing commas
 	name = strings.TrimRight(name, " ,")
 
 	var err error
@@ -384,7 +387,7 @@ func parseETLTag(tag string) (string, ETLState, error) {
 		return "", EtlOff, nil
 	}
 
-	// filter out "trailing comma" and convert to lowercase
+	// filter out trailing commas and convert to lowercase
 	etlTag = strings.ToLower(strings.TrimRight(etlTag, " ,"))
 
 	etlState, err := ToETLState(etlTag)
@@ -409,7 +412,7 @@ func parseTTLTag(tag string) (string, time.Duration, error) {
 		ttlTag = matches[1]
 	}
 
-	// filter out "trailing comma"
+	// filter out trailing commas
 	ttlTag = strings.TrimRight(ttlTag, " ,")
 	ttl, err := time.ParseDuration(ttlTag)
 	if err != nil {
@@ -472,7 +475,7 @@ func parseEntityTag(structName, dosaAnnotation string) (string, time.Duration, E
 	return name, ttl, etlState, key, nil
 }
 
-// parseFieldTag function parses DOSA tag on the fields in the DOSA struct except the "Entity" field
+// parseFieldTag parses the tag on a field.
 func parseFieldTag(structField reflect.StructField, dosaAnnotation string) (*ColumnDefinition, error) {
 	typ, isPointer, err := typify(structField.Type)
 	if err != nil {
@@ -481,20 +484,76 @@ func parseFieldTag(structField reflect.StructField, dosaAnnotation string) (*Col
 	return parseField(typ, isPointer, structField.Name, dosaAnnotation)
 }
 
-func parseField(typ Type, isPointer bool, name string, tag string) (*ColumnDefinition, error) {
-	// parse name tag
-	fullNameTag, name, err := parseNameTag(tag, name)
+// The only accepted tags here are "name" and "maxlen". The value of "name" is normalized.
+func parseField(typ Type, isPointer bool, name string, tagstr string) (*ColumnDefinition, error) {
+	origName := name
+	tags, err := getTags(tagstr)
 	if err != nil {
-		// parseNameTag returns a sane error.
 		return nil, err
 	}
 
-	tag = strings.Replace(tag, fullNameTag, "", 1)
-	if strings.TrimSpace(tag) != "" {
-		return nil, fmt.Errorf("field %s with an invalid dosa field tag: %s", name, tag)
+	// Handle each tag.
+	for tag, value := range tags {
+		switch tag {
+		case "name":
+			name = value
+		case "maxlen":
+			// No action needed.
+		default:
+			return nil, errors.Errorf("invalid dosa field tag '%s' on field '%s'", tag, origName)
+		}
 	}
 
-	return &ColumnDefinition{Name: name, IsPointer: isPointer, Type: typ}, nil
+	// Normalize the name, and remove any "name" tag from the map.
+	name, err = NormalizeName(name)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid dosa field tag '%s' on field '%s'", name, origName)
+	}
+	delete(tags, "name")
+
+	if len(tags) == 0 {
+		tags = nil
+	}
+	return &ColumnDefinition{Name: name, IsPointer: isPointer, Type: typ, Tags: tags}, nil
+}
+
+// Split a string that looks like " key1 = value1 key2=value2 , key3=value3 " into a key-value map. No
+// special characters are allowed, alphanumeric only. Either commas or spaces may be used to separate
+// tags.
+func getTags(tagstr string) (map[string]string, error) {
+	// Convert commas to spaces and remove extra spaces.
+	tagstr = canonicalize(tagstr)
+	if tagstr == "" {
+		return nil, nil
+	}
+
+	tags := map[string]string{}
+	sections := strings.Split(tagstr, " ")
+
+	// Ensure each section is of the form name=value.
+	for _, s := range sections {
+		parts := strings.Split(s, "=")
+		if len(parts) != 2 {
+			return nil, errors.Errorf("invalid dosa field tag '%s'", s)
+		}
+
+		tags[parts[0]] = parts[1]
+	}
+
+	return tags, nil
+}
+
+func canonicalize(s string) string {
+	// Convert commas to space.
+	s = strings.Replace(s, ",", " ", -1)
+
+	// Remove spaces around the equals sign.
+	s = string(equalsPat.ReplaceAll([]byte(s), []byte("=")))
+
+	// Fold multiple spaces to singles.
+	s = string(multSpacePat.ReplaceAll([]byte(s), []byte(" ")))
+
+	return strings.TrimSpace(s)
 }
 
 func parensBalanced(s string) bool {

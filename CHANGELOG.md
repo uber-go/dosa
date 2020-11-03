@@ -1,8 +1,9 @@
 # Changelog
 
 ## v3.4.30 (unreleased)
- - Nothing changed yet.
- 
+ - Plumb through FieldTag into the YARPC connector.
+ - Add field tag "maxlen" to define the max. size of a field.
+
 ## v3.4.29 (2020-06-05)
  - Make fallback cache Scan API call connector Scan API instead of Range
 
