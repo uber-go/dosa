@@ -1,6 +1,9 @@
 # Changelog
 
-## v3.4.30 (unreleased)
+## v3.4.31 (unreleased)
+ - Nothing changed yet.
+
+## v3.4.30 (2020-11-03)
  - Plumb through FieldTag into the YARPC connector.
  - Add field tag "maxlen" to define the max. size of a field.
 
