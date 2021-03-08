@@ -1,7 +1,10 @@
 # Changelog
 
-## v3.4.31 (unreleased)
+## v3.4.32 (unreleased)
  - Nothing changed yet.
+
+## v3.4.31 (2021-03-08)
+ - Migrate to go modules.
 
 ## v3.4.30 (2020-11-03)
  - Plumb through FieldTag into the YARPC connector.
