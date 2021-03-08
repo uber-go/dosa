@@ -80,6 +80,7 @@ func NormalizeConditions(columnConditions map[string][]*Condition) []*ColumnCond
 	return cc
 }
 
+// ConditionsString returns a string representation of a request's query.
 func ConditionsString(columnConditions map[string][]*Condition) string {
 	if len(columnConditions) == 0 {
 		return "()"
