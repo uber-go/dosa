@@ -22,6 +22,7 @@ package memory
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"sort"
@@ -945,7 +946,7 @@ func TestConnector_Scan(t *testing.T) {
 	// first, insert some random UUID values into two partition keys
 	for x := 0; x < idcount; x++ {
 		err := sut.Upsert(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
-			"f1": dosa.FieldValue("data" + string(x%2)),
+			"f1": dosa.FieldValue(fmt.Sprintf("data%d", x%2)),
 			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
@@ -959,7 +960,7 @@ func TestConnector_Scan(t *testing.T) {
 	// there's an odd edge case when you delete everything, so do that, then call scan
 	for x := 0; x < idcount; x++ {
 		err := sut.Remove(context.TODO(), clusteredEi, map[string]dosa.FieldValue{
-			"f1": dosa.FieldValue("data" + string(x%2)),
+			"f1": dosa.FieldValue(fmt.Sprintf("data%d", x%2)),
 			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
@@ -974,7 +975,7 @@ func TestConnector_ScanWithToken(t *testing.T) {
 	sut := NewConnector()
 	const idcount = 100
 	createTestData(t, sut, func(id int) string {
-		return "data" + string(id%3)
+		return fmt.Sprintf("data%d", id%3)
 	}, idcount)
 	var token string
 	var err error
@@ -1009,7 +1010,7 @@ func TestConnector_ScanWithTokenFromWrongTable(t *testing.T) {
 	sut := NewConnector()
 	const idcount = 100
 	createTestData(t, sut, func(id int) string {
-		return "data" + string(id%3)
+		return fmt.Sprintf("data%d", id%3)
 	}, idcount)
 	err := sut.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{
 		"p1": dosa.FieldValue("test"),
@@ -1035,7 +1036,7 @@ func TestConnector_ScanWithTokenNoClustering(t *testing.T) {
 	const idcount = 100
 	for x := 0; x < idcount; x++ {
 		sut.Upsert(context.TODO(), testEi, map[string]dosa.FieldValue{
-			"p1": dosa.FieldValue("data" + string(x)),
+			"p1": dosa.FieldValue(fmt.Sprintf("data%d", x)),
 		})
 	}
 	var token string
