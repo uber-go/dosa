@@ -19,8 +19,6 @@ lint: vendor
 	$(ECHO_V)go test -i $(PKGS)
 	@echo "Checking formatting..."
 	@$(MAKE) fmt
-	@echo "Checking vet..."
-	$(ECHO_V)$(foreach dir,$(PKG_FILES),go tool vet $(VET_RULES) $(dir) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG);)
 	@echo "Checking lint..."
 	$(ECHO_V)$(foreach dir,$(PKGS),golint $(dir) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG);)
 	@echo "Checking unchecked errors..."
@@ -29,7 +27,3 @@ lint: vendor
 	$(ECHO_V)git grep -w -i fixme | grep -v -e $(_THIS_MAKEFILE) -e CONTRIBUTING.md | tee -a $(LINT_LOG)
 	@echo "Checking for imports of log package"
 	$(ECHO_V)go list -f '{{ .ImportPath }}: {{ .Imports }}' $(shell glide nv) | grep -e "\blog\b" | tee -a $(LINT_LOG)
-	@echo "Ensuring generated doc.go are up to date"
-	$(ECHO_V)$(MAKE) gendoc
-	$(ECHO_V)[ -z "$(shell git status --porcelain | grep '\bdoc.go$$')" ] || echo "Commit updated doc.go changes" | tee -a $(LINT_LOG)
-	$(ECHO_V)[ ! -s $(LINT_LOG) ]

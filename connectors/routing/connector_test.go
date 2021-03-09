@@ -22,6 +22,7 @@ package routing
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -754,7 +755,7 @@ func TestConnector_Scan(t *testing.T) {
 	// first, insert some random UUID values into two partition keys
 	for x := 0; x < idcount; x++ {
 		err := rc.Upsert(ctx, clusteredEi, map[string]dosa.FieldValue{
-			"f1": dosa.FieldValue("data" + string(x%2)),
+			"f1": dosa.FieldValue(fmt.Sprintf("data%d", x%2)),
 			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
@@ -768,7 +769,7 @@ func TestConnector_Scan(t *testing.T) {
 	// there's an odd edge case when you delete everything, so do that, then call scan
 	for x := 0; x < idcount; x++ {
 		err := rc.Remove(ctx, clusteredEi, map[string]dosa.FieldValue{
-			"f1": dosa.FieldValue("data" + string(x%2)),
+			"f1": dosa.FieldValue(fmt.Sprintf("data%d", x%2)),
 			"c1": dosa.FieldValue(int64(1)),
 			"c7": dosa.FieldValue(testUUIDs[x])})
 		assert.NoError(t, err)
@@ -850,7 +851,7 @@ func TestConnector_ScanWithToken(t *testing.T) {
 	rc := NewConnector(cfg, connectorMap)
 
 	createTestData(t, rc, func(id int) string {
-		return "data" + string(id%3)
+		return fmt.Sprintf("data%d", id%3)
 	}, idcount)
 	var token string
 	var err error
@@ -886,7 +887,7 @@ func TestConnector_ScanWithTokenFromWrongTable(t *testing.T) {
 	rc := NewConnector(cfg, connectorMap)
 
 	createTestData(t, rc, func(id int) string {
-		return "data" + string(id%3)
+		return fmt.Sprintf("data%d", id%3)
 	}, idcount)
 	err := rc.Upsert(ctx, testInfo, map[string]dosa.FieldValue{
 		"p1": dosa.FieldValue("test"),
@@ -911,7 +912,7 @@ func TestConnector_ScanWithTokenNoClustering(t *testing.T) {
 
 	for x := 0; x < idcount; x++ {
 		rc.Upsert(ctx, testInfo, map[string]dosa.FieldValue{
-			"p1": dosa.FieldValue("data" + string(x)),
+			"p1": dosa.FieldValue(fmt.Sprintf("data%d", x)),
 		})
 	}
 	var token string

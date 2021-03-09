@@ -282,6 +282,7 @@ func (op Operator) String() string {
 	}
 }
 
+// Symbol returns the symbol of the operator.
 func (op Operator) Symbol() string {
 	switch op {
 	case Eq:
