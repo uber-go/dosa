@@ -47,6 +47,23 @@ func TestTestClient(t *testing.T) {
 	err = client.Upsert(context.Background(), nil, &testEnt)
 	assert.NoError(t, err)
 
+	uuidv := dosa.NewUUID()
+	op := dosa.NewRangeOp(&testentity.TestEntity{}).
+		Eq("UUIDVP", dosa.UUID(uuidv)).
+		Limit(1)
+	results, _, err := client.Range(context.Background(), op)
+	assert.Empty(t, results)
+	assert.NoError(t, err)
+
+	testEnt.UUIDVP = &uuidv
+	err = client.Upsert(context.Background(), nil, &testEnt)
+	assert.NoError(t, err)
+
+	results, _, err = client.Range(context.Background(), op)
+	assert.Len(t, results, 1)
+	assert.Equal(t, &testEnt, results[0].(*testentity.TestEntity))
+	assert.NoError(t, err)
+
 	readEnt := testentity.TestEntity{
 		UUIDKey:  uuid,
 		StrKey:   "key",

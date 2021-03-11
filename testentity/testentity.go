@@ -28,18 +28,26 @@ import (
 
 // TestEntity uses common key types and all types in value fields.
 type TestEntity struct {
-	dosa.Entity `dosa:"name=awesome_test_entity, primaryKey=(UUIDKey, StrKey ASC, Int64Key DESC)"`
-	UUIDKey     dosa.UUID `dosa:"name=an_uuid_key"`
-	StrKey      string
-	Int64Key    int64
-	UUIDV       dosa.UUID
-	StrV        string
-	Int64V      int64 `dosa:"name=an_int64_value"`
-	Int32V      int32
-	DoubleV     float64
-	BoolV       bool
-	BlobV       []byte
-	TSV         time.Time
+	dosa.Entity      `dosa:"name=awesome_test_entity, primaryKey=(UUIDKey, StrKey ASC, Int64Key DESC)"`
+	EntityByUUIDVP   dosa.Index `dosa:"key=(UUIDVP)"`
+	EntityByStrVP    dosa.Index `dosa:"key=(StrVP)"`
+	EntityByInt64VP  dosa.Index `dosa:"key=(Int64VP)"`
+	EntityByInt32VP  dosa.Index `dosa:"key=(Int32VP)"`
+	EntityByDoubleVP dosa.Index `dosa:"key=(DoubleVP)"`
+	EntityByBoolVP   dosa.Index `dosa:"key=(BoolVP)"`
+	EntityByTSVP     dosa.Index `dosa:"key=(TSVP)"`
+
+	UUIDKey  dosa.UUID `dosa:"name=an_uuid_key"`
+	StrKey   string
+	Int64Key int64
+	UUIDV    dosa.UUID
+	StrV     string
+	Int64V   int64 `dosa:"name=an_int64_value"`
+	Int32V   int32
+	DoubleV  float64
+	BoolV    bool
+	BlobV    []byte
+	TSV      time.Time
 
 	UUIDVP   *dosa.UUID
 	StrVP    *string
