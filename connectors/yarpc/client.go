@@ -22,6 +22,7 @@ package yarpc
 
 import (
 	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/metrics"
 )
 
 // ClientConfig represents the settings for the dosa client
@@ -33,7 +34,7 @@ type ClientConfig struct {
 }
 
 // NewClient creates a DOSA client based on a ClientConfig
-func (c ClientConfig) NewClient(entities ...dosa.DomainObject) (dosa.Client, error) {
+func (c ClientConfig) NewClient(scope metrics.Scope, entities ...dosa.DomainObject) (dosa.Client, error) {
 	reg, err := dosa.NewRegistrar(c.Scope, c.NamePrefix, entities...)
 	if err != nil {
 		return nil, err
@@ -44,5 +45,6 @@ func (c ClientConfig) NewClient(entities ...dosa.DomainObject) (dosa.Client, err
 		return nil, err
 	}
 
-	return dosa.NewClient(reg, conn), nil
+
+	return dosa.NewClient(reg, conn, scope), nil
 }

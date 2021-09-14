@@ -49,6 +49,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/uber-go/dosa/metrics"
 	"io"
 	"reflect"
 	"time"
@@ -271,14 +272,16 @@ type client struct {
 	initialized bool
 	registrar   Registrar
 	connector   Connector
+	stats  metrics.Scope
 }
 
 // NewClient returns a new DOSA client for the registrar and connector provided.
 // This is currently only a partial implementation to demonstrate basic CRUD functionality.
-func NewClient(reg Registrar, conn Connector) Client {
+func NewClient(reg Registrar, conn Connector, scope metrics.Scope) Client {
 	return &client{
 		registrar: reg,
 		connector: conn,
+		stats: metrics.CheckIfNilStats(scope),
 	}
 }
 
@@ -318,6 +321,10 @@ func (c *client) Initialize(ctx context.Context) error {
 	return nil
 }
 
+func (c *client) incStat(action, method string) {
+	c.stats.SubScope("dosa").Tagged(map[string]string{"method": method}).Counter(action).Inc(1)
+}
+
 // CreateIfNotExists creates a row, but only if it does not exist. The entity
 // provided must contain values for all components of its primary key for the
 // operation to succeed.
@@ -352,6 +359,7 @@ func (c *client) Read(ctx context.Context, fieldsToRead []string, entity DomainO
 
 	results, err := c.connector.Read(ctx, re.EntityInfo(), fieldValues, columnsToRead)
 	if err != nil {
+		c.incStat("error", "Read")
 		return err
 	}
 
@@ -402,6 +410,7 @@ func (c *client) MultiRead(ctx context.Context, fieldsToRead []string, entities 
 
 	results, err := c.connector.MultiRead(ctx, re.EntityInfo(), listFieldValues, columnsToRead)
 	if err != nil {
+		c.incStat("error", "MultiRead")
 		return nil, err
 	}
 
@@ -466,7 +475,11 @@ func (c *client) createOrUpsert(ctx context.Context, fieldsToUpdate []string, en
 		ei.TTL = dynTTL
 	}
 
-	return fn(ctx, ei, fieldValues)
+	err = fn(ctx, ei, fieldValues)
+	if err != nil {
+		c.incStat("error", "CreateOrUpsert")
+	}
+	return
 }
 
 // Remove deletes an entity by primary key, The entity provided must contain
@@ -486,6 +499,9 @@ func (c *client) Remove(ctx context.Context, entity DomainObject) error {
 	keyFieldValues := re.KeyFieldValues(entity)
 
 	err = c.connector.Remove(ctx, re.EntityInfo(), keyFieldValues)
+	if err != nil {
+		c.incStat("error", "Remove")
+	}
 	return err
 }
 
@@ -537,6 +553,7 @@ func (c *client) Range(ctx context.Context, r *RangeOp) ([]DomainObject, string,
 	// call the server side method
 	values, token, err := c.connector.Range(ctx, re.EntityInfo(), columnConditions, fieldsToRead, r.token, r.limit)
 	if err != nil {
+		c.incStat("error", "Range")
 		return nil, "", errors.Wrap(err, "Range")
 	}
 
@@ -598,6 +615,7 @@ func (c *client) ScanEverything(ctx context.Context, sop *ScanOp) ([]DomainObjec
 	// call the server side method
 	values, token, err := c.connector.Scan(ctx, re.EntityInfo(), fieldsToRead, sop.token, sop.limit)
 	if err != nil {
+		c.incStat("error", "Scan")
 		return nil, "", err
 	}
 	objectArray := objectsFromValueArray(sop.object, values, re, nil)
