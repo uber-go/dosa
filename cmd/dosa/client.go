@@ -22,8 +22,8 @@ package main
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/uber-go/dosa"
 )
 
@@ -64,12 +64,12 @@ func (c *shellQueryClient) Initialize(ctx context.Context) error {
 	reg, err := registar.Find(&dosa.Entity{})
 	// this error should never happen for CLI query cases
 	if err != nil {
-		return errors.New("Error finding dosa entities")
+		return fmt.Errorf("Error finding dosa entities: %v", err)
 	}
 
 	version, err := c.connector.CheckSchema(ctx, registar.Scope(), registar.NamePrefix(), []*dosa.EntityDefinition{reg.EntityDefinition()})
 	if err != nil {
-		return errors.New("schema on the server is incompatible with the code")
+		return fmt.Errorf("Error when checking schema: %v", err)
 	}
 	reg.SetVersion(version)
 	return nil
