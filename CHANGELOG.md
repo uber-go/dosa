@@ -1,5 +1,8 @@
 # Changelog
 
+## v4.0.0 (2021-09-15)
+ - Add metrics to dosa library
+
 ## v3.4.32 (unreleased)
  - Nothing changed yet.
 
