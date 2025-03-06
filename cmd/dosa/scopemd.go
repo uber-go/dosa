@@ -50,7 +50,7 @@ func (c *ScopeList) Execute(args []string) error {
 	defer shutdownMDClient(client)
 
 	var scopes []string
-	if scopes, err = c.getScopes(client); err == nil {
+	if scopes, err = c.getScopes(client); err != nil {
 		return err
 	}
 	for _, sp := range scopes {
